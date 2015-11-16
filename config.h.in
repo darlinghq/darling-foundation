@@ -31,6 +31,8 @@
 #define HAVE_SYS_SOCKET_H 1
 #define HAVE_PTHREAD_H 1
 #define HAVE_NANOSLEEP 1
+#define HAVE_GETPWUID_R 1
+#define HAVE_GETPWUID 1
 /* #define HAVE_PTHREAD_NP_H 1 */
 #define HAVE_PTHREAD_MAIN_NP 1
 #define SETPGRP_VOID 1
