@@ -14,6 +14,7 @@ add_definitions(-D__APPLE__ -D__DYNAMIC__)
 add_definitions(-D__ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__=1080)
 add_definitions(-DOBJC_ZEROCOST_EXCEPTIONS=1 -DGNUSTEP -DPRIxPTR=\"lx\" -DPRIuPTR=\"lu\" -DPRIdPTR=\"ld\" -DPRIu64=\"ull\")
 add_definitions(-U__linux__) # Because of broken ifdef in NSPage.m
+add_definitions(-DGNUSTEP_BASE_LIBRARY)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -nostdinc -D__DARWIN_UNIX03 -fPIC -w -fconstant-string-class=NSConstantString -fobjc-nonfragile-abi -include ${CMAKE_CURRENT_BINARY_DIR}/config.h -ggdb -O0")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -nostdlib -Wl,--version-script=${DARLING_TOP_DIRECTORY}/darwin.map")
