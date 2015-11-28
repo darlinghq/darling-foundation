@@ -1343,6 +1343,8 @@ _bundle_load_callback(Class theClass, struct objc_category *theCategory)
        */
       BOOL isNonInstalledTool = NO;
 
+	  BOOL isOSXBundle = NO;
+
       /* If it's a tool, we will need the tool name.  Since we don't
          know yet if it's a tool or an application, we always store
          the executable name here - just in case it turns out it's a
@@ -1391,6 +1393,17 @@ _bundle_load_callback(Class theClass, struct objc_category *theCategory)
       if (isApplication == YES)
 	{
 	  s = [path lastPathComponent];
+#ifdef DARLING
+	  /* Support OS X bundle format */
+	  if ([s isEqualToString: @"MacOS"])
+	{
+	  /* remove MacOS */
+	  path = [path stringByDeletingLastPathComponent];
+      s = [[path stringByDeletingLastPathComponent] lastPathComponent];
+
+	  isOSXBundle = YES;
+	}
+#endif
 
 	  if ([s hasSuffix: @".app"] == NO
 	    && [s hasSuffix: @".debug"] == NO
@@ -1486,6 +1499,9 @@ _bundle_load_callback(Class theClass, struct objc_category *theCategory)
       _mainBundle = [self alloc];
       /* Please note that _mainBundle should *not* be nil.  */
       _mainBundle = [_mainBundle initWithPath: path];
+#ifdef DARLING
+	  _mainBundle->_OSXBundle = isOSXBundle;
+#endif
       NSAssert(_mainBundle != nil, NSInternalInconsistencyException);
     }
 
@@ -1890,6 +1906,11 @@ IF_NO_GC(
 
 - (NSString*) bundlePath
 {
+#ifdef DARLING
+  /* Remove "Contents" component from OS X bundles */
+  if (_OSXBundle)
+    return [_path stringByDeletingLastPathComponent];
+#endif
   return _path;
 }
 
