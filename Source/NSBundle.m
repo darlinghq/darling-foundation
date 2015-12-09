@@ -1393,7 +1393,7 @@ _bundle_load_callback(Class theClass, struct objc_category *theCategory)
       if (isApplication == YES)
 	{
 	  s = [path lastPathComponent];
-#ifdef DARLING
+#ifdef __APPLE__
 	  /* Support OS X bundle format */
 	  if ([s isEqualToString: @"MacOS"])
 	{
@@ -1499,7 +1499,7 @@ _bundle_load_callback(Class theClass, struct objc_category *theCategory)
       _mainBundle = [self alloc];
       /* Please note that _mainBundle should *not* be nil.  */
       _mainBundle = [_mainBundle initWithPath: path];
-#ifdef DARLING
+#ifdef __APPLE__
 	  _mainBundle->_OSXBundle = isOSXBundle;
 #endif
       NSAssert(_mainBundle != nil, NSInternalInconsistencyException);
@@ -1906,7 +1906,7 @@ IF_NO_GC(
 
 - (NSString*) bundlePath
 {
-#ifdef DARLING
+#ifdef __APPLE__
   /* Remove "Contents" component from OS X bundles */
   if (_OSXBundle)
     return [_path stringByDeletingLastPathComponent];

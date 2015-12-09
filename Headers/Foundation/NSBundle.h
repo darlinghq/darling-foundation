@@ -118,7 +118,7 @@ GS_EXPORT NSString* const NSLoadedClasses;
   BOOL			_codeLoaded;
   unsigned		_version;
   NSString      	*_frameworkVersion;
-#ifdef DARLING
+#ifdef __APPLE__
   BOOL			_OSXBundle;
 #endif
 #endif

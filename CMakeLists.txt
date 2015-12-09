@@ -19,6 +19,12 @@ add_definitions(-DGNUSTEP_BASE_LIBRARY)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -nostdinc -D__DARWIN_UNIX03 -fPIC -w -fconstant-string-class=NSConstantString -fobjc-nonfragile-abi -include ${CMAKE_CURRENT_BINARY_DIR}/config.h -ggdb -O0")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -nostdlib -Wl,--version-script=${DARLING_TOP_DIRECTORY}/darwin.map")
 
+if(BITS EQUAL 64)
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fobjc-nonfragile-abi -fobjc-runtime=macosx")
+else(BITS EQUAL 64)
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fobjc-fragile-abi -fobjc-runtime=macosx-fragile-10.6")
+endif(BITS EQUAL 64)
+
 SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib${SUFFIX}/darling")
 SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE) 
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)

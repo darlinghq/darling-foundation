@@ -141,7 +141,7 @@ GSPrivateLoadModule(NSString *filename, FILE *errorStream,
   void (*loadCallback)(Class, struct objc_category *),
   void **header, NSString *debugFilename)
 {
-#ifdef NeXT_RUNTIME
+#if defined(NeXT_RUNTIME) || defined(__APPLE__)
   int errcode;
   dynamic_loaded = YES;
   return objc_loadModule([filename fileSystemRepresentation],

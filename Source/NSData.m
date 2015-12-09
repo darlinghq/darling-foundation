@@ -69,8 +69,11 @@
 
 #import "common.h"
 
-#if !defined (__GNU_LIBOBJC__)
+#if !defined (__GNU_LIBOBJC__) && !defined (__APPLE__)
 #  include <objc/encoding.h>
+#endif
+#ifdef DARLING
+#  include <objc/extra/encoding.h>
 #endif
 
 #import "GNUstepBase/GSObjCRuntime.h"

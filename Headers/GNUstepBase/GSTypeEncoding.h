@@ -33,7 +33,7 @@
 #  include <objc/objc-runtime.h>
 #else
 #  include <objc/objc.h>
-#  if defined (__GNU_LIBOBJC__)
+#  if defined (__GNU_LIBOBJC__) || defined (__APPLE__)
 #    include <objc/runtime.h>
 #  else
 #    include <objc/objc-api.h>
@@ -103,7 +103,7 @@ typedef enum GSObjCTypeBound
   GSObjCTypeMax               = '~'
 } GSObjCTypeBound;
 
-#if defined (NeXT_RUNTIME)
+#if defined (NeXT_RUNTIME) || defined (__APPLE__)
 typedef enum GSObjCTypeQualifierMask
 {
   GSObjCQualifierConstMask        = 0x01,

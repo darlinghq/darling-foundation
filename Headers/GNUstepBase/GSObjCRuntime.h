@@ -35,7 +35,7 @@
 
 #include <stdio.h>
 
-#if NeXT_RUNTIME
+#if NeXT_RUNTIME || defined (__APPLE__)
  #include <objc/objc.h>
  #include <objc/objc-class.h>
  #include <objc/objc-runtime.h>

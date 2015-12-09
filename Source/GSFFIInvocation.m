@@ -24,7 +24,7 @@
 
 #import "common.h"
 
-#if !defined (__GNU_LIBOBJC__)
+#if !defined (__GNU_LIBOBJC__) && !defined(__APPLE__)
 #  include <objc/encoding.h>
 #endif
 
@@ -43,7 +43,7 @@
 #include <objc/hooks.h>
 #endif
 
-#ifdef __GNU_LIBOBJC__
+#if defined (__GNU_LIBOBJC__) || defined (__APPLE__)
 #include <objc/message.h>
 #endif
 
@@ -281,6 +281,7 @@ static id gs_objc_proxy_lookup(id receiver, SEL op)
 
 + (void) load
 {
+#ifndef __APPLE__
 #ifdef __GNUSTEP_RUNTIME__
   pthread_key_create(&thread_slot_key, free);
   __objc_msg_forward3 = gs_objc_msg_forward3;
@@ -291,6 +292,7 @@ static id gs_objc_proxy_lookup(id receiver, SEL op)
   __objc_msg_forward2 = gs_objc_msg_forward2;
 #else
   __objc_msg_forward = gs_objc_msg_forward;
+#endif
 #endif
 #endif
 }

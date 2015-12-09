@@ -120,8 +120,13 @@ extern "C" {
 /* weak attributed supported only with ELF, MINGW is COFF */
 #ifndef __MINGW32__
 
+#ifndef __APPLE__
 void *_Block_copy(void *) __attribute__((weak));
 void _Block_release(void *) __attribute__((weak));
+#else
+void *_Block_copy(const void *) __attribute__((weak));
+void _Block_release(const void *) __attribute__((weak));
+#endif
 
 #endif /* __MINGW32__ */
 

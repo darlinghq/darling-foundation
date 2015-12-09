@@ -25,8 +25,13 @@
 /* Declare the block copy functions ourself so that we don't depend on a
  * specific header location.
  */
+#ifndef __APPLE__
 void *_Block_copy(void *);
 void _Block_release(void *);
+#else
+void *_Block_copy(const void *);
+void _Block_release(const void *);
+#endif
 
 @interface GSBlock : NSObject
 @end
