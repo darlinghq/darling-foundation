@@ -1916,7 +1916,8 @@ IF_NO_GC(
 
 - (NSURL*) bundleURL
 {
-  return [NSURL fileURLWithPath: [self bundlePath]];
+  return [NSURL fileURLWithPath: [self bundlePath]
+                    isDirectory: YES];
 }
 
 - (Class) classNamed: (NSString *)className
@@ -2893,7 +2894,8 @@ IF_NO_GC(
 
 - (NSURL *) builtInPlugInsURL
 {
-  return [NSURL fileURLWithPath: [self builtInPlugInsPath]];
+  return [NSURL fileURLWithPath: [self builtInPlugInsPath]
+                    isDirectory: YES];
 }
 
 - (NSString *) privateFrameworksPath
@@ -2921,7 +2923,8 @@ IF_NO_GC(
 
 - (NSURL *) privateFrameworksURL
 {
-  return [NSURL fileURLWithPath: [self privateFrameworksPath]];
+  return [NSURL fileURLWithPath: [self privateFrameworksPath]
+                    isDirectory: YES];
 }
 
 

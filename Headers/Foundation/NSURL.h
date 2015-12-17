@@ -70,6 +70,18 @@ GS_EXPORT NSString* const NSURLFileScheme;
  */
 + (id) fileURLWithPath: (NSString*)aPath;
 
+#if OS_API_VERSION(MAC_OS_X_VERSION_10_5,GS_API_LATEST) 
+/**
+ * Create and return a file URL with the supplied path.<br />
+ * The value of aPath must be a valid filesystem path.<br />
+ * Calls -initFileURLWithPath:isDirectory:
+ * which escapes characters in the
+ * path where necessary.
+ */
++ (id) fileURLWithPath: (NSString*)aPath
+           isDirectory: (BOOL)isDir;
+#endif
+
 #if OS_API_VERSION(MAC_OS_X_VERSION_10_6,GS_API_LATEST) 
 /** Creates a file URL using a path built from components.
  */
