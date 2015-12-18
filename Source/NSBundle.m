@@ -1914,6 +1914,11 @@ IF_NO_GC(
   return _path;
 }
 
+- (NSString*) _bundleRootPath
+{
+  return _path;
+}
+
 - (NSURL*) bundleURL
 {
   return [NSURL fileURLWithPath: [self bundlePath]
@@ -2282,11 +2287,11 @@ IF_NO_GC(
 
 #if !defined(__MINGW__)
   if (_frameworkVersion)
-    rootPath = [NSString stringWithFormat:@"%@/Versions/%@", [self bundlePath],
-      _frameworkVersion];
+    rootPath = [NSString stringWithFormat:@"%@/Versions/%@",
+      [self _bundleRootPath], _frameworkVersion];
   else
 #endif
-    rootPath = [self bundlePath];
+    rootPath = [self _bundleRootPath];
 
   return [NSBundle _pathForResource: name
 			     ofType: extension
@@ -2375,7 +2380,7 @@ IF_NO_GC(
 			  inDirectory: (NSString *)subPath
 {
   return [[self class] _pathsForResourcesOfType: extension
-				inRootDirectory: [self bundlePath]
+				inRootDirectory: [self _bundleRootPath]
 				 inSubDirectory: subPath
 				   localization: nil];
 }
@@ -2391,7 +2396,7 @@ IF_NO_GC(
 
   result = [NSMutableArray array];
   paths = [[self class] _pathsForResourcesOfType: extension
-				 inRootDirectory: [self bundlePath]
+				 inRootDirectory: [self _bundleRootPath]
 				  inSubDirectory: subPath
 				    localization: localizationName];
 
