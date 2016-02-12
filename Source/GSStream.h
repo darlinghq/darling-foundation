@@ -60,6 +60,8 @@
 #import "Foundation/NSRunLoop.h"
 #import "Foundation/NSMapTable.h"
 #import "GNUstepBase/NSStream+GNUstepBase.h"
+#include <CoreFoundation/CFRunLoop.h>
+#include <dispatch/dispatch.h>
 
 /**
  * Convenience methods used to add streams to the run loop.
@@ -81,6 +83,8 @@
   NSMapTable		*_loops;	/* Run loops and their modes.	*/\
   void                  *_loopID;	/* file descriptor etc.		*/\
   int			_events;	/* Signalled events.		*/\
+  CFRunLoopSourceRef     _rlSource; \
+  dispatch_source_t     _source; \
 }
 
 /**

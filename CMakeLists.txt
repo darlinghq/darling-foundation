@@ -14,9 +14,9 @@ add_definitions(-D__APPLE__ -D__DYNAMIC__)
 add_definitions(-D__ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__=1080)
 add_definitions(-DOBJC_ZEROCOST_EXCEPTIONS=1 -DGNUSTEP -DPRIxPTR=\"lx\" -DPRIuPTR=\"lu\" -DPRIdPTR=\"ld\" -DPRIu64=\"ull\")
 add_definitions(-U__linux__) # Because of broken ifdef in NSPage.m
-add_definitions(-DGNUSTEP_BASE_LIBRARY)
+add_definitions(-DGNUSTEP_BASE_LIBRARY -DHAVE_DISPATCH_DISPATCH_H)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -nostdinc -D__DARWIN_UNIX03 -fPIC -w -fconstant-string-class=NSConstantString -include ${CMAKE_CURRENT_BINARY_DIR}/config.h -ggdb -O0")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -nostdinc -D__DARWIN_UNIX03 -fPIC -w -fconstant-string-class=NSConstantString -include ${CMAKE_CURRENT_BINARY_DIR}/config.h -fblocks -ggdb -O0")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -nostdlib -Wl,--version-script=${DARLING_TOP_DIRECTORY}/darwin.map")
 
 if(BITS EQUAL 64)
@@ -36,6 +36,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Headers)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Source)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/Headers)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../corefoundation/Headers)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/../corefoundation/Headers)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../libobjc2)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../libdispatch)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../icu/icuSources/common)
@@ -152,12 +154,12 @@ set(foundation_SRCS
 	Source/NSPipe.m
 	Source/NSNull.m
 	Source/NSLog.m
-	Source/NSSocketPortNameServer.m
+	# Source/NSSocketPortNameServer.m
 	Source/NSPathUtilities.m
 	Source/NSXMLDocument.m
-	Source/NSMessagePort.m
+	# Source/NSMessagePort.m
 	Source/unix/NSStream.m
-	Source/unix/GSRunLoopCtxt.m
+	# Source/unix/GSRunLoopCtxt.m
 	Source/GSFormat.m
 	Source/NSMapTable.m
 	Source/NSNotificationQueue.m
@@ -220,7 +222,7 @@ set(foundation_SRCS
 	Source/Additions/GSMime.m
 	Source/Additions/NSURL+GNUstepBase.m
 	Source/NSValue.m
-	Source/GSRunLoopWatcher.m
+	#Source/GSRunLoopWatcher.m
 	Source/NSZone.m
 	Source/NSClassDescription.m
 	Source/NSRange.m

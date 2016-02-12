@@ -263,6 +263,28 @@ static NSString*	NotificationKey = @"NSFileHandleNotificationKey";
 
 static GSTcpTune        *tune = nil;
 
+static void GSFileHandlePerformRead(void* p)
+{
+  GSFileHandle* h = (GSFileHandle*) p;
+
+  if (!h->isNonBlocking)
+      [h setNonBlocking: YES];
+
+  [h receivedEventRead];
+  dispatch_source_resume(h->sourceRead);
+}
+
+static void GSFileHandlePerformWrite(void* p)
+{
+  GSFileHandle* h = (GSFileHandle*) p;
+
+  if (!h->isNonBlocking)
+      [h setNonBlocking: YES];
+
+  [h receivedEventWrite];
+  dispatch_source_resume(h->sourceWrite);
+}
+
 + (void) initialize
 {
   if (nil == tune)
@@ -1205,6 +1227,9 @@ NSString * const GSSOCKSRecvAddr = @"GSSOCKSRecvAddr";
     {
       struct stat	sbuf;
       int		e;
+      dispatch_queue_t queue;
+      struct CFRunLoopSourceContext ctxt;
+      __block GSFileHandle* mySelf = self;
 
       if (fstat(desc, &sbuf) < 0)
 	{
@@ -1258,6 +1283,44 @@ NSString * const GSSOCKSRecvAddr = @"GSSOCKSRecvAddr";
       writeOK = YES;
       acceptOK = YES;
       connectOK = YES;
+      rl = CFRunLoopGetCurrent();
+      
+      sourceRead = sourceWrite = NULL;
+      rlSourceRead = rlSourceWrite = NULL;
+
+      queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+      sourceRead = dispatch_source_create(DISPATCH_SOURCE_TYPE_READ, descriptor,
+              0, queue);
+      sourceWrite = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, descriptor,
+              0, queue);
+
+      dispatch_source_set_event_handler(sourceRead, ^{
+          dispatch_suspend(mySelf->sourceRead);
+          CFRunLoopSourceSignal(mySelf->rlSourceRead);
+ 
+          CFRunLoopWakeUp(mySelf->rl);
+      });
+
+      dispatch_source_set_event_handler(sourceWrite, ^{
+          dispatch_suspend(mySelf->sourceWrite);
+          CFRunLoopSourceSignal(mySelf->rlSourceWrite);
+ 
+          CFRunLoopWakeUp(mySelf->rl);
+      });
+
+      ctxt.version = 0;
+      ctxt.info = self;
+      ctxt.retain = CFRetain;
+      ctxt.release = CFRelease;
+      ctxt.copyDescription = NULL;
+      ctxt.equal = NULL;
+      ctxt.hash = NULL;
+
+      ctxt.perform = GSFileHandlePerformRead;
+      rlSourceRead = CFRunLoopSourceCreate(NULL, 0, &ctxt);
+
+      ctxt.perform = GSFileHandlePerformWrite;
+      rlSourceWrite = CFRunLoopSourceCreate(NULL, 0, &ctxt);
     }
   return self;
 }
@@ -1768,6 +1831,31 @@ NSString * const GSSOCKSRecvAddr = @"GSSOCKSRecvAddr";
   readOK = NO;
   writeOK = NO;
 
+  if (rlSourceRead)
+    {
+      CFRunLoopSourceInvalidate(rlSourceRead);
+      CFRelease(rlSourceRead);
+      rlSourceRead = NULL;
+    }
+  if (rlSourceWrite)
+    {
+      CFRunLoopSourceInvalidate(rlSourceWrite);
+      CFRelease(rlSourceWrite);
+      rlSourceWrite = NULL;
+    }
+  if (sourceRead)
+    {
+      dispatch_source_cancel(sourceRead);
+      dispatch_release(sourceRead);
+      sourceRead = NULL;
+    }
+  if (sourceWrite)
+    {
+      dispatch_source_cancel(sourceWrite);
+      dispatch_release(sourceWrite);
+      sourceWrite = NULL;
+    }
+
   /*
    *    Clear any pending operations on the file handle, sending
    *    notifications if necessary.
@@ -1930,18 +2018,12 @@ NSString * const GSSOCKSRecvAddr = @"GSSOCKSRecvAddr";
 
       for (i = 0; i < [modes count]; i++)
 	{
-	  [l removeEvent: (void*)(uintptr_t)descriptor
-		    type: ET_RDESC
-		 forMode: [modes objectAtIndex: i]
-		     all: YES];
+      CFRunLoopRemoveSource(l, rlSourceRead, (CFStringRef) [modes objectAtIndex: i]);
         }
     }
   else
     {
-      [l removeEvent: (void*)(uintptr_t)descriptor
-		type: ET_RDESC
-	     forMode: NSDefaultRunLoopMode
-		 all: YES];
+      CFRunLoopRemoveSource(l, rlSourceRead, kCFRunLoopDefaultMode);
     }
 }
 
@@ -1970,52 +2052,41 @@ NSString * const GSSOCKSRecvAddr = @"GSSOCKSRecvAddr";
 
       for (i = 0; i < [modes count]; i++)
 	{
-	  [l removeEvent: (void*)(uintptr_t)descriptor
-		    type: ET_WDESC
-		 forMode: [modes objectAtIndex: i]
-		     all: YES];
+      CFRunLoopRemoveSource(l, rlSourceWrite, (CFStringRef) [modes objectAtIndex: i]);
         }
     }
   else
     {
-      [l removeEvent: (void*)(uintptr_t)descriptor
-		type: ET_WDESC
-	     forMode: NSDefaultRunLoopMode
-		 all: YES];
+      CFRunLoopRemoveSource(l, rlSourceWrite, kCFRunLoopDefaultMode);
     }
 }
 
 - (void) watchReadDescriptorForModes: (NSArray*)modes;
 {
-  NSRunLoop	*l;
+  CFRunLoopRef l;
 
   if (descriptor < 0)
     {
       return;
     }
 
-  l = [NSRunLoop currentRunLoop];
+  l = CFRunLoopGetCurrent();
   [self setNonBlocking: YES];
   if (modes && [modes count])
     {
       unsigned int	i;
 
       for (i = 0; i < [modes count]; i++)
-	{
-	  [l addEvent: (void*)(uintptr_t)descriptor
-		 type: ET_RDESC
-	      watcher: self
-	      forMode: [modes objectAtIndex: i]];
+	    {
+          CFRunLoopAddSource(l, rlSourceRead, (CFStringRef) [modes objectAtIndex: i]);
+          [readInfo setObject: modes forKey: NSFileHandleNotificationMonitorModes];
         }
-      [readInfo setObject: modes forKey: NSFileHandleNotificationMonitorModes];
     }
   else
     {
-      [l addEvent: (void*)(uintptr_t)descriptor
-	     type: ET_RDESC
-	  watcher: self
-	  forMode: NSDefaultRunLoopMode];
+      CFRunLoopAddSource(l, rlSourceRead, kCFRunLoopDefaultMode);
     }
+  dispatch_source_resume(sourceRead);
 }
 
 - (void) watchWriteDescriptor
@@ -2027,8 +2098,8 @@ NSString * const GSSOCKSRecvAddr = @"GSSOCKSRecvAddr";
   if ([writeInfo count] > 0)
     {
       NSMutableDictionary	*info = [writeInfo objectAtIndex: 0];
-      NSRunLoop			*l = [NSRunLoop currentRunLoop];
       NSArray			*modes = nil;
+      CFRunLoopRef l = CFRunLoopGetCurrent();
 
       modes = [info objectForKey: NSFileHandleNotificationMonitorModes];
 
@@ -2039,18 +2110,12 @@ NSString * const GSSOCKSRecvAddr = @"GSSOCKSRecvAddr";
 
 	  for (i = 0; i < [modes count]; i++)
 	    {
-	      [l addEvent: (void*)(uintptr_t)descriptor
-		     type: ET_WDESC
-		  watcher: self
-		  forMode: [modes objectAtIndex: i]];
+          CFRunLoopAddSource(l, rlSourceWrite, (CFStringRef) [modes objectAtIndex: i]);
 	    }
 	}
       else
 	{
-	  [l addEvent: (void*)(uintptr_t)descriptor
-		 type: ET_WDESC
-	      watcher: self
-	      forMode: NSDefaultRunLoopMode];
+      CFRunLoopAddSource(l, rlSourceRead, kCFRunLoopDefaultMode);
 	}
     }
 }
@@ -2227,27 +2292,6 @@ NSString * const GSSOCKSRecvAddr = @"GSSOCKSRecvAddr";
         { // Write operation completed.
           [self postWriteNotification];
         }
-    }
-}
-
-- (void) receivedEvent: (void*)data
-                  type: (RunLoopEventType)type
-		 extra: (void*)extra
-	       forMode: (NSString*)mode
-{
-  NSDebugMLLog(@"NSFileHandle", @"%@ event: %d", self, type);
-
-  if (isNonBlocking == NO)
-    {
-      [self setNonBlocking: YES];
-    }
-  if (type == ET_RDESC)
-    {
-      [self receivedEventRead];
-    }
-  else
-    {
-      [self receivedEventWrite];
     }
 }
 

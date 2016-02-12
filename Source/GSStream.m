@@ -4,6 +4,8 @@
    Written by:  Derek Zhou <derekzhou@gmail.com>
    Written by:  Richard Frith-Macdonald <rfm@gnu.org>
    Date: 2006
+  
+   Modified by Lubos Dolezel for CFRunLoop/GCD
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -77,64 +79,19 @@ NSString * const NSStreamSOCKSProxyVersionKey
   = @"NSStreamSOCKSProxyVersionKey";
 
 
-/*
- * Determine the type of event to use when adding a stream to the run loop.
- * By default add as an 'ET_TRIGGER' so that the stream will be notified
- * every time the loop runs (the event id/reference must be the address of
- * the stream itsself to ensure that event/type is unique).
- *
- * Streams which actually expect to wait for I/O events must be added with
- * the appropriate information for the loop to signal them.
- */
-static RunLoopEventType typeForStream(NSStream *aStream)
+static dispatch_source_type_t typeForStream(NSStream *aStream)
 {
-#if	defined(__MINGW__)
-  if ([aStream _loopID] == (void*)aStream)
-    {
-      return ET_TRIGGER;
-    }
-  else
-    {
-      return ET_HANDLE;
-    }
-#else
-  if ([aStream _loopID] == (void*)aStream)
-    {
-      return ET_TRIGGER;
-    }
-  else if ([aStream isKindOfClass: [NSOutputStream class]] == NO
+  if ([aStream isKindOfClass: [NSOutputStream class]] == NO
     && [aStream  streamStatus] != NSStreamStatusOpening)
     {
-      return ET_RDESC;
+      return DISPATCH_SOURCE_TYPE_READ;
     }
   else
     {
-      return ET_WDESC;	
+      return DISPATCH_SOURCE_TYPE_WRITE;	
     }
-#endif
 }
 
-@implementation	NSRunLoop (NSStream)
-- (void) addStream: (NSStream*)aStream mode: (NSString*)mode
-{
-  [self addEvent: [aStream _loopID]
-	    type: typeForStream(aStream)
-	 watcher: (id<RunLoopEvents>)aStream
-	 forMode: mode];
-}
-
-- (void) removeStream: (NSStream*)aStream mode: (NSString*)mode
-{
-  /* We may have added the stream more than once (eg if the stream -open
-   * method was called more than once, so we need to remove all event
-   * registrations.
-   */
-  [self removeEvent: [aStream _loopID]
-	       type: typeForStream(aStream)
-	    forMode: mode
-		all: YES];
-}
-@end
 
 @implementation GSStream
 
@@ -175,8 +132,15 @@ static RunLoopEventType typeForStream(NSStream *aStream)
       NSFreeMapTable(_loops);
       _loops = 0;
     }
+  if (_source != NULL)
+    {
+      dispatch_source_cancel(_source);
+      dispatch_release(_source);
+    }
   DESTROY(_properties);
   DESTROY(_lastError);
+  CFRunLoopSourceInvalidate(_rlSource);
+  CFRelease(_rlSource);
   [super dealloc];
 }
 
@@ -185,10 +149,19 @@ static RunLoopEventType typeForStream(NSStream *aStream)
   return _delegate;
 }
 
+static void GSStreamPerform(void* info)
+{
+	GSStream* stream = (GSStream*) info;
+	[stream _dispatch];
+	dispatch_resume(stream->_source);
+}
+
 - (id) init
 {
   if ((self = [super init]) != nil)
     {
+      struct CFRunLoopSourceContext ctxt;
+
       _delegate = self;
       _properties = nil;
       _lastError = nil;
@@ -196,6 +169,18 @@ static RunLoopEventType typeForStream(NSStream *aStream)
 	NSObjectMapValueCallBacks, 1);
       _currentStatus = NSStreamStatusNotOpen;
       _loopID = (void*)self;
+	  
+      ctxt.version = 0;
+      ctxt.info = self;
+      ctxt.retain = CFRetain;
+      ctxt.release = CFRelease;
+      ctxt.copyDescription = NULL;
+      ctxt.equal = NULL;
+      ctxt.hash = NULL;
+      ctxt.perform = GSStreamPerform;
+  
+      _rlSource = CFRunLoopSourceCreate(NULL, 0, &ctxt);
+      _source = NULL;
     }
   return self;
 }
@@ -217,14 +202,6 @@ static RunLoopEventType typeForStream(NSStream *aStream)
   return [_properties objectForKey: key];
 }
 
-- (void) receivedEvent: (void*)data
-                  type: (RunLoopEventType)type
-		 extra: (void*)extra
-	       forMode: (NSString*)mode
-{
-  [self _dispatch];
-}
-
 - (void) removeFromRunLoop: (NSRunLoop *)aRunLoop forMode: (NSString *)mode
 {
   if (aRunLoop != nil && mode != nil)
@@ -234,7 +211,7 @@ static RunLoopEventType typeForStream(NSStream *aStream)
       modes = (NSMutableArray*)NSMapGet(_loops, (void*)aRunLoop);
       if ([modes containsObject: mode])
 	{
-	  [aRunLoop removeStream: self mode: mode];
+	  [aRunLoop removeStream: self mode: mode]; // TODO
 	  [modes removeObject: mode];
 	  if ([modes count] == 0)
 	    {
@@ -246,6 +223,31 @@ static RunLoopEventType typeForStream(NSStream *aStream)
 
 - (void) scheduleInRunLoop: (NSRunLoop *)aRunLoop forMode: (NSString *)mode
 {
+  if (_source == NULL)  
+    {
+      dispatch_queue_t queue;
+      __block GSStream* mySelf = self;
+	  
+      queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+      _source = dispatch_source_create(typeForStream(self), _loopID, 0, queue);
+	  
+      dispatch_source_set_event_handler(_source, ^{
+          NSMapEnumerator em;
+          void* modes;
+          NSRunLoop* rl;
+
+          dispatch_suspend(mySelf->_source);
+          CFRunLoopSourceSignal(mySelf->_rlSource);
+ 
+          em = NSEnumerateMapTable(mySelf->_loops);
+          while (NSNextMapEnumeratorPair(&em, (void**) &rl, &modes))
+            {
+              CFRunLoopWakeUp([rl getCFRunLoop]);
+            }
+      });
+	  
+      dispatch_resume(_source);
+    }
   if (aRunLoop != nil && mode != nil)
     {
       NSMutableArray	*modes;
@@ -268,7 +270,10 @@ static RunLoopEventType typeForStream(NSStream *aStream)
 	   */
 	  if ([self _isOpened])
 	    {
-	      [aRunLoop addStream: self mode: mode];
+          CFRunLoopRef cf;
+          cf = [aRunLoop getCFRunLoop];
+		  
+		  CFRunLoopAddSource(cf, _rlSource, mode);
 	    }
 	}
     }
