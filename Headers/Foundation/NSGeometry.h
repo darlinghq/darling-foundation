@@ -56,8 +56,8 @@ extern "C" {
   CGFloat y;
 }</example>
  <p>Represents a 2-d cartesian position.</p> */
-typedef struct _NSPoint NSPoint;
-struct _NSPoint
+typedef struct _CGPoint NSPoint;
+struct _CGPoint
 {
   CGFloat x;
   CGFloat y;
@@ -76,8 +76,8 @@ typedef NSPoint *NSPointPointer;
   CGFloat height;
 }</example>
  <p>Floating point rectangle size.</p> */
-typedef struct _NSSize NSSize;
-struct _NSSize
+typedef struct _CGSize NSSize;
+struct _CGSize
 {
   CGFloat width;
   CGFloat height;
@@ -97,8 +97,8 @@ typedef NSSize *NSSizePointer;
 }</example>
 
  <p>Rectangle.</p> */
-typedef struct _NSRect NSRect;
-struct _NSRect
+typedef struct _CGRect NSRect;
+struct _CGRect
 {
   NSPoint origin;
   NSSize size;
@@ -131,11 +131,11 @@ enum
 typedef NSUInteger NSRectEdge;
 
 /** Point at 0,0 */
-static const NSPoint NSZeroPoint __attribute__((unused)) = {0.0,0.0};
+extern const NSPoint NSZeroPoint __attribute__((unused));
 /** Zero-size rectangle at 0,0 */
-static const NSRect NSZeroRect __attribute__((unused)) = {{0.0,0.0},{0.0,0.0}};
+extern const NSRect NSZeroRect __attribute__((unused));
 /** Zero size */
-static const NSSize NSZeroSize __attribute__((unused)) = {0.0,0.0};
+extern const NSSize NSZeroSize __attribute__((unused));
 
 /**** Function Prototypes ****************************************************/
 

@@ -50,6 +50,10 @@ static BOOL	(*scanFloatImp)(NSScanner*, SEL, CGFloat*);
 static BOOL	(*scanStringImp)(NSScanner*, SEL, NSString*, NSString**);
 static id 	(*scannerImp)(Class, SEL, NSString*);
 
+const NSPoint NSZeroPoint __attribute__((unused)) = {0.0,0.0};
+const NSRect NSZeroRect __attribute__((unused)) = {{0.0,0.0},{0.0,0.0}};
+const NSSize NSZeroSize __attribute__((unused)) = {0.0,0.0};
+
 static inline void
 setupCache(void)
 {
