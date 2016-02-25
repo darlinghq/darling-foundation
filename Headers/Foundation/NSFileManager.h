@@ -194,7 +194,7 @@ extern "C" {
 /* MacOS-X defines OSType as a 32bit unsigned integer.
  */
 #ifndef OSTYPE_DECLARED
-typedef	uint32_t	OSType;
+typedef	gsu32	OSType;
 #define OSTYPE_DECLARED
 #endif
 

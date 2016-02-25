@@ -214,7 +214,7 @@ typedef	gsuaddr gsaddr;
  * Wide unicode character type.
  */
 #ifndef	UTF32Char
-#define	UTF32Char	uint32_t
+#define	UTF32Char	gsu32
 #endif
 
 /*
