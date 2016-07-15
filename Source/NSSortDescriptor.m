@@ -123,16 +123,16 @@ static BOOL     initialized = NO;
 
 + (id) sortDescriptorWithKey: (NSString *)aKey ascending: (BOOL)ascending
 {
-	return AUTORELEASE([[self alloc] initWithKey: aKey ascending: ascending]);
+  return AUTORELEASE([[self alloc] initWithKey: aKey ascending: ascending]);
 }
 
 + (id) sortDescriptorWithKey: (NSString *)aKey 
                    ascending: (BOOL)ascending 
                     selector: (SEL)aSelector
 {
-	return AUTORELEASE([[self alloc] initWithKey: aKey 
-	                                   ascending: ascending 
-	                                    selector: aSelector]);
+  return AUTORELEASE([[self alloc] initWithKey: aKey 
+                                     ascending: ascending 
+                                      selector: aSelector]);
 }
 
 - (id) initWithKey: (NSString *) key ascending: (BOOL) ascending
@@ -344,7 +344,7 @@ GSSortUnstableConcurrent(id* buffer, NSRange range, id descriptorOrComparator,
 
 @implementation NSArray (NSSortDescriptorSorting)
 
-- (NSArray *) sortedArrayUsingDescriptors: (NSArray *) sortDescriptors
+- (NSArray *) sortedArrayUsingDescriptors: (NSArray *)sortDescriptors
 {
   NSMutableArray *sortedArray = [GSMutableArray arrayWithArray: self];
 
@@ -361,19 +361,19 @@ GSSortUnstableConcurrent(id* buffer, NSRange range, id descriptorOrComparator,
  */
 static void
 SortRange(id *objects, NSRange range, id *descriptors,
-  unsigned numDescriptors)
+  NSUInteger numDescriptors)
 {
   NSSortDescriptor	*sd = (NSSortDescriptor*)descriptors[0];
 
   GSSortUnstable(objects, range, sd, GSComparisonTypeSortDescriptor, NULL);
   if (numDescriptors > 1)
     {
-      unsigned	start = range.location;
-      unsigned	finish = NSMaxRange(range);
+      NSUInteger	start = range.location;
+      NSUInteger	finish = NSMaxRange(range);
 
       while (start < finish)
 	{
-	  unsigned	pos = start + 1;
+	  NSUInteger	pos = start + 1;
 
 	  /* Find next range of adjacent objects.
 	   */
@@ -400,8 +400,8 @@ SortRange(id *objects, NSRange range, id *descriptors,
 
 - (void) sortUsingDescriptors: (NSArray *)sortDescriptors
 {
-  unsigned	count = [self count];
-  unsigned	numDescriptors = [sortDescriptors count];
+  NSUInteger	count = [self count];
+  NSUInteger	numDescriptors = [sortDescriptors count];
 
   if (count > 1 && numDescriptors > 0)
     {
@@ -412,7 +412,7 @@ SortRange(id *objects, NSRange range, id *descriptors,
       [self getObjects: objects];
       if ([sortDescriptors isProxy])
 	{
-	  unsigned	i;
+	  NSUInteger	i;
 
 	  for (i = 0; i < numDescriptors; i++)
 	    {
@@ -437,7 +437,7 @@ SortRange(id *objects, NSRange range, id *descriptors,
 
 - (void) sortUsingDescriptors: (NSArray *)sortDescriptors
 {
-  unsigned	dCount = [sortDescriptors count];
+  NSUInteger	dCount = [sortDescriptors count];
 
   if (_count > 1 && dCount > 0)
     {
@@ -445,7 +445,7 @@ SortRange(id *objects, NSRange range, id *descriptors,
 
       if ([sortDescriptors isProxy])
 	{
-	  unsigned	i;
+	  NSUInteger	i;
 
 	  for (i = 0; i < dCount; i++)
 	    {
