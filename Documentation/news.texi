@@ -11,6 +11,31 @@ The currently released version of the library is
 See the @url{ReleaseNotes.html} document for more information.
 @end ifclear
 
+@section Noteworthy changes in version @samp{1.25.0}
+@itemize @bullet
+@item Garbage collection support removed (NSGarbageCollector stub remains)
+@item Support for Debian style multi-architecture installations added
+@item OpenSSL bundle removed since it didn't match GNUTLS support
+@item Ported to Debian/Hurd
+@item ICU string (regexp in particular) fixes
+@item OSX compatibity changes in NSRunLoop behavior
+@item Alterntive sort algorithms selectable at runtime
+@item As usual, this release also contains an update to include the
+most recent international timezone data.
+@end itemize
+
+@ifclear ANNOUNCE-ONLY
+
+@section Noteworthy changes in version @samp{1.24.9}
+@itemize @bullet
+@item Niels added support for generics
+@item Support for 'ng' runtime library (latest language features enabled)
+@item Performance optimisations and improved diagnostic messages
+@item Garbage Collection deprecated (support to be removed)
+@item As usual, this release also contains an update to include the
+most recent international timezone data.
+@end itemize
+
 @section Noteworthy changes in version @samp{1.24.8}
 @itemize @bullet
 @item Performance optimisations (particularly in the use of tiny string

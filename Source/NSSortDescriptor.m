@@ -30,6 +30,8 @@
 #import "Foundation/NSCoder.h"
 #import "Foundation/NSException.h"
 #import "Foundation/NSKeyValueCoding.h"
+#import "Foundation/NSNotification.h"
+#import "Foundation/NSUserDefaults.h"
 
 #import "GNUstepBase/GSObjCRuntime.h"
 #import "GSPrivate.h"
@@ -41,31 +43,61 @@ static BOOL     initialized = NO;
 #pragma clang diagnostic ignored "-Wreceiver-forward-class"
 #endif
 
-#if     GS_USE_TIMSORT
-@class  GSTimSortDescriptor;
-#endif
-#if     GS_USE_QUICKSORT
-@class  GSQuickSortPlaceHolder;
-#endif
-#if     GS_USE_SHELLSORT
-@class  GSShellSortPlaceHolder;
-#endif
+@interface GSTimSortPlaceHolder : NSObject
++ (void) setUnstable;
+@end
+@interface GSQuickSortPlaceHolder : NSObject
++ (void) setUnstable;
+@end
+@interface GSShellSortPlaceHolder : NSObject
++ (void) setUnstable;
+@end
 
 @implementation NSSortDescriptor
+
++ (void) defaultsChanged: (NSNotification*)n
+{
+  NSUserDefaults        *defs = (NSUserDefaults*)[n object];
+  NSString              *algorithm;
+
+  algorithm = [defs stringForKey: @"GSSortAlgorithm"];
+  if ([algorithm isEqual: @"QuickSort"])
+    {
+      [GSQuickSortPlaceHolder setUnstable];
+    }
+  else if ([algorithm isEqual: @"ShellSort"])
+    {
+      [GSShellSortPlaceHolder setUnstable];
+    }
+  else if ([algorithm isEqual: @"TimSort"])
+    {
+      [GSTimSortPlaceHolder setUnstable];
+    }
+  else
+    {
+      [GSTimSortPlaceHolder setUnstable];
+      if (nil != algorithm)
+        {
+          NSLog(@"GSSortAlgorithm default unknown value (%@)", algorithm);
+        }
+    }
+}
 
 + (void) initialize
 {
   if (NO == initialized)
     {
-#if     GS_USE_TIMSORT
-      [GSTimSortDescriptor class];
-#endif
-#if     GS_USE_QUICKSORT
-      [GSQuickSortPlaceHolder class];
-#endif
-#if     GS_USE_SHELLSORT
-      [GSShellSortPlaceHolder class];
-#endif
+      NSNotificationCenter      *nc;
+      NSUserDefaults            *defs;
+
+      [GSTimSortPlaceHolder class];     // default stable sort
+      nc = [NSNotificationCenter defaultCenter];
+      defs = [NSUserDefaults standardUserDefaults];
+      [nc addObserver: self
+             selector: @selector(defaultsChanged:)
+                 name: NSUserDefaultsDidChangeNotification
+               object: defs];
+      [self defaultsChanged: nil];      // set unstable sort
       initialized = YES;
     }
 }
@@ -350,7 +382,7 @@ GSSortUnstableConcurrent(id* buffer, NSRange range, id descriptorOrComparator,
 
   [sortedArray sortUsingDescriptors: sortDescriptors];
 
-  return [sortedArray makeImmutableCopyOnFail: NO];
+  return GS_IMMUTABLE(sortedArray);
 }
 
 @end
