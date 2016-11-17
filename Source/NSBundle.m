@@ -1735,6 +1735,17 @@ IF_NO_GC(
    */
   path = [path stringByStandardizingPath];
 
+  /* 4. Check if this is an OS X style bundle
+   */
+  BOOL isDir;
+  NSString* contentsPath = [path stringByAppendingPathComponent: @"Contents"];
+
+  if ([manager() fileExistsAtPath: contentsPath isDirectory: &isDir] && isDir)
+    {
+      path = contentsPath;
+      self->_OSXBundle = YES;
+    }
+
   /* check if we were already initialized for this directory */
   [load_lock lock];
   bundle = (NSBundle *)NSMapGet(_bundles, path);
