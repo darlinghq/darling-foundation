@@ -234,8 +234,9 @@ id __object = (object); (__object != nil) ? [__object autorelease] : nil; })
  * to be used to prvide the localisation information.
  * </p>
  */
-# define _(X) \
-  [GS_LOCALISATION_BUNDLE localizedStringForKey: (X) value: @"" table: nil]
+//# define _(X) \
+//  [GS_LOCALISATION_BUNDLE localizedStringForKey: (X) value: @"" table: nil]
+#define _(X) (X)
 
 #if	!defined(GS_LOCALISATION_BUNDLE)
 # if	defined(GS_LOCALISATION_BUNDLE_ID)

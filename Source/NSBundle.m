@@ -523,6 +523,7 @@ addBundlePath(NSMutableArray *list, NSArray *contents,
       while (nil != (alt = [enumerator nextObject]))
         {
           alt = [alt stringByAppendingPathExtension: @"lproj"];
+		  NSLog(@"Checking if %@ in %@", alt, contents);
           if (YES == [contents containsObject: alt])
             {
               alt = [path stringByAppendingPathComponent: alt];
@@ -2169,6 +2170,7 @@ IF_NO_GC(
 
   primary = [rootPath stringByAppendingPathComponent: @"Resources"];
   contents = bundle_directory_readable(primary);
+  NSLog(@"Contents: %@", contents);
   addBundlePath(array, contents, primary, subPath, nil);
   /* If we have been asked for a specific localization, we add it.
    */
@@ -2188,6 +2190,7 @@ IF_NO_GC(
 	  addBundlePath(array, contents, primary, subPath, language);
 	}
     }
+  addBundlePath(array, contents, primary, subPath, @"Base");
   primary = rootPath;
   contents = bundle_directory_readable(primary);
   addBundlePath(array, contents, primary, subPath, nil);
@@ -2203,6 +2206,7 @@ IF_NO_GC(
 	  addBundlePath(array, contents, primary, subPath, language);
 	}
     }
+  addBundlePath(array, contents, primary, subPath, @"Base");
   return array;
 }
 
@@ -2233,6 +2237,7 @@ IF_NO_GC(
     subPath: subPath localization: nil] objectEnumerator];
   while ((path = [pathlist nextObject]) != nil)
     {
+		NSLog(@"Eval path: %@", path);
       NSArray	*paths = bundle_directory_readable(path);
 
       if (YES == [paths containsObject: file])

@@ -60,9 +60,6 @@ enum {
   NSPropertyListOpenStepFormat = 1,
   NSPropertyListXMLFormat_v1_0 = 100,
   NSPropertyListBinaryFormat_v1_0 = 200,
-
-  NSPropertyListGNUstepFormat = 1000,
-  NSPropertyListGNUstepBinaryFormat
 };
 
 #if OS_API_VERSION(MAC_OS_X_VERSION_10_6,GS_API_LATEST)
