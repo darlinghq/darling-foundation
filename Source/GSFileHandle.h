@@ -29,7 +29,7 @@
 #import "Foundation/NSArray.h"
 #import "Foundation/NSDictionary.h"
 #import "Foundation/NSRunLoop.h"
-#include <dispatch/dispatch.h>
+
 
 #if	USE_ZLIB
 #include <zlib.h>
@@ -42,7 +42,7 @@ struct sockaddr_in;
  * and is not intended to be used by anyone else ... it is subject to
  * change or removal without warning.
  */
-@interface GSFileHandle : NSFileHandle
+@interface GSFileHandle : NSFileHandle <RunLoopEvents>
 {
 #if	GS_EXPOSE(GSFileHandle)
   int			descriptor;
@@ -70,9 +70,6 @@ struct sockaddr_in;
   WSAEVENT  		event;
 #endif
 #endif
-  dispatch_source_t sourceRead, sourceWrite;
-  CFRunLoopSourceRef rlSourceRead, rlSourceWrite;
-  CFRunLoopRef rl;
 }
 
 - (id) initAsClientAtAddress: (NSString*)address
@@ -104,6 +101,10 @@ struct sockaddr_in;
 - (void) postReadNotification;
 - (void) postWriteNotification;
 - (NSInteger) read: (void*)buf length: (NSUInteger)len;
+- (void) receivedEvent: (void*)data
+		  type: (RunLoopEventType)type
+	         extra: (void*)extra
+	       forMode: (NSString*)mode;
 - (void) setAddr: (struct sockaddr *)sin;
 - (BOOL) useCompression;
 - (void) watchReadDescriptorForModes: (NSArray*)modes;

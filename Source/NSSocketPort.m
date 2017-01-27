@@ -46,8 +46,6 @@
 #import "GSPortPrivate.h"
 #import "GSPrivate.h"
 #import "GSNetwork.h"
-#include <dispatch/dispatch.h>
-#include <CoreFoundation/CFRunLoop.h>
 
 #include <stdio.h>
 
@@ -197,7 +195,7 @@ typedef enum {
   GS_H_CONNECTED	// Currently connected.
 } GSHandleState;
 
-@interface GSTcpHandle : NSObject
+@interface GSTcpHandle : NSObject <RunLoopEvents>
 {
   SOCKET		desc;		/* File descriptor for I/O.	*/
   unsigned		wItem;		/* Index of item being written.	*/
@@ -220,9 +218,6 @@ typedef enum {
   BOOL                  inReplyMode;    /* Indicate when have addEvent self */
   BOOL                  readyToSend;    /* Indicate when send */
 #endif
-  CFRunLoopSourceRef rlSourceRead, rlSourceWrite;
-  dispatch_source_t sourceRead, sourceWrite;
-  CFRunLoopRef rl;
 
 @public
   NSRecursiveLock	*myLock;	/* Lock for this handle.	*/
@@ -242,6 +237,10 @@ typedef enum {
 #endif
 - (void) invalidate;
 - (BOOL) isValid;
+- (void) receivedEvent: (void*)data
+                  type: (RunLoopEventType)type
+		 extra: (void*)extra
+	       forMode: (NSString*)mode;
 - (void) receivedEventRead;
 - (void) receivedEventWrite;
 - (NSSocketPort*) recvPort;
@@ -374,32 +373,14 @@ static Class	runLoopClass;
   return nil;
 }
 
-static void GSTcpHandlePerformRead(void* p)
-{
-  GSTcpHandle* h = (GSTcpHandle*) p;
-
-  [h receivedEventRead];
-  dispatch_source_resume(h->sourceRead);
-}
-
-static void GSTcpHandlePerformWrite(void* p)
-{
-  GSTcpHandle* h = (GSTcpHandle*) p;
-
-  [h receivedEventWrite];
-  dispatch_source_resume(h->sourceWrite);
-}
-
 + (GSTcpHandle*) handleWithDescriptor: (SOCKET)d
 {
-  __block GSTcpHandle	*handle;
+  GSTcpHandle	*handle;
 #ifdef __MINGW__
   unsigned long dummy;
 #else
   int		e;
 #endif /* __MINGW__ */
-  dispatch_queue_t queue;
-  struct CFRunLoopSourceContext ctxt;
 
 #ifdef __MINGW__
   WSAEVENT ev;
@@ -442,43 +423,6 @@ static void GSTcpHandlePerformWrite(void* p)
   handle->wMsgs = [NSMutableArray new];
   handle->myLock = [GSLazyRecursiveLock new];
   handle->valid = YES;
-  
-  queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
-  
-  handle->rl = CFRunLoopGetCurrent();
-  handle->sourceRead = dispatch_source_create(DISPATCH_SOURCE_TYPE_READ,
-          handle->desc, 0, queue);
-  handle->sourceWrite = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE,
-          handle->desc, 0, queue);
-
-  dispatch_source_set_event_handler(handle->sourceRead, ^{
-      dispatch_suspend(handle->sourceRead);
-      CFRunLoopSourceSignal(handle->rlSourceRead);
- 
-      CFRunLoopWakeUp(handle->rl);
-  });
-
-  dispatch_source_set_event_handler(handle->sourceWrite, ^{
-      dispatch_suspend(handle->sourceWrite);
-      CFRunLoopSourceSignal(handle->rlSourceWrite);
- 
-      CFRunLoopWakeUp(handle->rl);
-  });
-
-  ctxt.version = 0;
-  ctxt.info = self;
-  ctxt.retain = CFRetain;
-  ctxt.release = CFRelease;
-  ctxt.copyDescription = NULL;
-  ctxt.equal = NULL;
-  ctxt.hash = NULL;
-
-  ctxt.perform = GSTcpHandlePerformRead;
-  handle->rlSourceRead = CFRunLoopSourceCreate(NULL, 0, &ctxt);
-
-  ctxt.perform = GSTcpHandlePerformWrite;
-  handle->rlSourceWrite = CFRunLoopSourceCreate(NULL, 0, &ctxt);
-  
 #if	defined(__MINGW__)
   ev = (WSAEVENT)CreateEvent(NULL,NO,NO,NULL);
   if (ev == WSA_INVALID_EVENT)
@@ -518,6 +462,7 @@ static void GSTcpHandlePerformWrite(void* p)
 {
   NSArray		*addrs;
   BOOL			gotAddr = NO;
+  NSRunLoop		*l;
 
   M_LOCK(myLock);
   NSDebugMLLog(@"GSTcpHandle",
@@ -615,20 +560,73 @@ static void GSTcpHandlePerformWrite(void* p)
     }
 
   state = GS_H_TRYCON;
-  CFRunLoopAddSource(rl, rlSourceRead, (CFStringRef) NSConnectionReplyMode);
-  CFRunLoopAddSource(rl, rlSourceWrite, (CFStringRef) NSConnectionReplyMode);
+  l = [NSRunLoop currentRunLoop];
+#if	defined(__MINGW__)
+  NSAssert(event != WSA_INVALID_EVENT, @"Socket without win32 event!");
+  [l addEvent: (void*)(uintptr_t)event
+	 type: ET_HANDLE
+      watcher: self
+      forMode: NSConnectionReplyMode];
+  [l addEvent: (void*)(uintptr_t)event
+	 type: ET_HANDLE
+      watcher: self
+      forMode: NSDefaultRunLoopMode];
+  inReplyMode = YES;
+#else
+  [l addEvent: (void*)(uintptr_t)desc
+	 type: ET_WDESC
+      watcher: self
+      forMode: NSConnectionReplyMode];
+  [l addEvent: (void*)(uintptr_t)desc
+	 type: ET_EDESC
+      watcher: self
+      forMode: NSConnectionReplyMode];
+  [l addEvent: (void*)(uintptr_t)desc
+	 type: ET_WDESC
+      watcher: self
+      forMode: NSDefaultRunLoopMode];
+  [l addEvent: (void*)(uintptr_t)desc
+	 type: ET_EDESC
+      watcher: self
+      forMode: NSDefaultRunLoopMode];
+#endif
 
   while (valid == YES && state == GS_H_TRYCON
     && [when timeIntervalSinceNow] > 0)
     {
       M_UNLOCK(myLock);
-      CFRunLoopRunInMode((CFStringRef) NSConnectionReplyMode,
-              [when timeIntervalSinceReferenceDate], YES);
+      [l runMode: NSConnectionReplyMode beforeDate: when];
       M_LOCK(myLock);
     }
 
-  CFRunLoopRemoveSource(rl, rlSourceRead, (CFStringRef) NSConnectionReplyMode);
-  CFRunLoopRemoveSource(rl, rlSourceWrite, (CFStringRef) NSConnectionReplyMode);
+#if	defined(__MINGW__)
+  [l removeEvent: (void*)(uintptr_t)event
+	    type: ET_HANDLE
+	 forMode: NSConnectionReplyMode
+	     all: NO];
+  [l removeEvent: (void*)(uintptr_t)event
+	    type: ET_HANDLE
+	 forMode: NSDefaultRunLoopMode
+	     all: NO];
+  inReplyMode = NO;
+#else
+  [l removeEvent: (void*)(uintptr_t)desc
+	    type: ET_WDESC
+	 forMode: NSConnectionReplyMode
+	     all: NO];
+  [l removeEvent: (void*)(uintptr_t)desc
+	    type: ET_EDESC
+	 forMode: NSConnectionReplyMode
+	     all: NO];
+  [l removeEvent: (void*)(uintptr_t)desc
+	    type: ET_WDESC
+	 forMode: NSDefaultRunLoopMode
+	     all: NO];
+  [l removeEvent: (void*)(uintptr_t)desc
+	    type: ET_EDESC
+	 forMode: NSDefaultRunLoopMode
+	     all: NO];
+#endif
 
   if (state == GS_H_TRYCON)
     {
@@ -713,12 +711,29 @@ static void GSTcpHandlePerformWrite(void* p)
       M_LOCK(myLock);
       if (valid == YES)
 	{
+	  NSRunLoop	*l;
 
 	  valid = NO;
-
-	  CFRunLoopRemoveSource(rl, kCFRunLoopDefaultMode, rlSourceRead);
-	  CFRunLoopRemoveSource(rl, kCFRunLoopDefaultMode, rlSourceWrite);
-
+	  l = [runLoopClass currentRunLoop];
+#if	defined(__MINGW__)
+	  [l removeEvent: (void*)(uintptr_t)event
+		    type: ET_HANDLE
+		 forMode: nil
+		     all: YES];
+#else
+	  [l removeEvent: (void*)(uintptr_t)desc
+		    type: ET_RDESC
+		 forMode: nil
+		     all: YES];
+	  [l removeEvent: (void*)(uintptr_t)desc
+		    type: ET_WDESC
+		 forMode: nil
+		     all: YES];
+	  [l removeEvent: (void*)(uintptr_t)desc
+		    type: ET_EDESC
+		 forMode: nil
+		     all: YES];
+#endif
 	  NSDebugMLLog(@"GSTcpHandle",
 	    @"invalidated 0x%"PRIxPTR, (NSUInteger)self);
 	  [[self recvPort] removeHandle: self];
@@ -1201,8 +1216,137 @@ static void GSTcpHandlePerformWrite(void* p)
     }
 }
 
+- (void) receivedEvent: (void*)data
+                  type: (RunLoopEventType)type
+		 extra: (void*)extra
+	       forMode: (NSString*)mode
+{
+#if	defined(__MINGW__)
+  WSANETWORKEVENTS ocurredEvents;
+
+  /* If we have been invalidated then we should ignore this
+   * event and remove ourself from the runloop.
+   */
+  if (NO == valid || desc == INVALID_SOCKET)
+    {
+      NSRunLoop	*l = [runLoopClass currentRunLoop];
+
+      [l removeEvent: data
+		type: ET_HANDLE
+	     forMode: mode
+		 all: YES];
+      return;
+    }
+
+  M_LOCK(myLock);
+
+  if (WSAEnumNetworkEvents(desc, event, &ocurredEvents)==SOCKET_ERROR)
+    {
+      NSLog(@"Error getting event type %d", WSAGetLastError());
+      abort();
+    }
+  if (ocurredEvents.lNetworkEvents & FD_CONNECT)
+    {
+      [self receivedEventWrite];
+      GSPrivateNotifyASAP(mode);
+      if (desc == INVALID_SOCKET)
+        {
+          M_UNLOCK(myLock);
+          return;
+        }
+      ocurredEvents.lNetworkEvents ^= FD_CONNECT;
+    }
+  if (ocurredEvents.lNetworkEvents & FD_READ)
+    {
+      [self receivedEventRead];
+      GSPrivateNotifyASAP(mode);
+      if (desc == INVALID_SOCKET)
+        {
+          M_UNLOCK(myLock);
+          return;
+        }
+      ocurredEvents.lNetworkEvents ^= FD_READ;
+    }
+  if (ocurredEvents.lNetworkEvents & FD_OOB)
+    {
+      [self receivedEventRead];
+      GSPrivateNotifyASAP(mode);
+      if (desc == INVALID_SOCKET)
+        {
+          M_UNLOCK(myLock);
+          return;
+        }
+      ocurredEvents.lNetworkEvents ^= FD_OOB;
+    }
+  if (ocurredEvents.lNetworkEvents & FD_WRITE)
+    {
+      readyToSend = YES;
+      [self receivedEventWrite];
+      GSPrivateNotifyASAP(mode);
+      if (desc == INVALID_SOCKET)
+        {
+          M_UNLOCK(myLock);
+          return;
+        }
+      ocurredEvents.lNetworkEvents ^= FD_WRITE;
+    }
+  if (ocurredEvents.lNetworkEvents & FD_CLOSE)
+    {
+      [self receivedEventRead];
+      GSPrivateNotifyASAP(mode);
+      if (desc == INVALID_SOCKET)
+        {
+          M_UNLOCK(myLock);
+          return;
+        }
+      ocurredEvents.lNetworkEvents ^= FD_CLOSE;
+    }
+  if (ocurredEvents.lNetworkEvents)
+    {
+      NSLog(@"Event not get %d", ocurredEvents.lNetworkEvents);
+      abort();
+    }
+
+  M_UNLOCK(myLock);
+
+#else
+
+  /* If we have been invalidated then we should ignore this
+   * event and remove ourself from the runloop.
+   */
+  if (NO == valid || desc < 0)
+    {
+      NSRunLoop	*l = [runLoopClass currentRunLoop];
+
+      [l removeEvent: data
+		type: ET_WDESC
+	     forMode: mode
+		 all: YES];
+      [l removeEvent: data
+		type: ET_EDESC
+	     forMode: mode
+		 all: YES];
+      return;
+    }
+
+  M_LOCK(myLock);
+
+  if (type != ET_WDESC)
+    {
+      [self receivedEventRead];
+    }
+  else
+    {
+      [self receivedEventWrite];
+    }
+
+  M_UNLOCK(myLock);
+#endif
+}
+
 - (BOOL) sendMessage: (NSArray*)components beforeDate: (NSDate*)when
 {
+  NSRunLoop	*l;
   BOOL		sent = NO;
 
   NSAssert([components count] > 0, NSInternalInconsistencyException);
@@ -1212,13 +1356,39 @@ static void GSTcpHandlePerformWrite(void* p)
   M_LOCK(myLock);
   [wMsgs addObject: components];
 
+  l = [runLoopClass currentRunLoop];
+
   IF_NO_GC(RETAIN(self);)
 
-  CFRunLoopAddSource(rl, rlSourceRead, (CFStringRef) NSConnectionReplyMode);
-  CFRunLoopAddSource(rl, rlSourceWrite, (CFStringRef) NSConnectionReplyMode);
-  
-  dispatch_resume(sourceRead);
-  dispatch_resume(sourceWrite);
+#if	defined(__MINGW__)
+  NSAssert(event != WSA_INVALID_EVENT, @"Socket without win32 event!");
+  [l addEvent: (void*)(uintptr_t)event
+	 type: ET_HANDLE
+      watcher: self
+      forMode: NSConnectionReplyMode];
+  [l addEvent: (void*)(uintptr_t)event
+	 type: ET_HANDLE
+      watcher: self
+      forMode: NSDefaultRunLoopMode];
+  inReplyMode = YES;
+#else
+  [l addEvent: (void*)(uintptr_t)desc
+	 type: ET_WDESC
+      watcher: self
+      forMode: NSConnectionReplyMode];
+  [l addEvent: (void*)(uintptr_t)desc
+	 type: ET_EDESC
+      watcher: self
+      forMode: NSConnectionReplyMode];
+  [l addEvent: (void*)(uintptr_t)desc
+	 type: ET_WDESC
+      watcher: self
+      forMode: NSDefaultRunLoopMode];
+  [l addEvent: (void*)(uintptr_t)desc
+	 type: ET_EDESC
+      watcher: self
+      forMode: NSDefaultRunLoopMode];
+#endif
 
   while (valid == YES
     && [wMsgs indexOfObjectIdenticalTo: components] != NSNotFound
@@ -1232,18 +1402,42 @@ static void GSTcpHandlePerformWrite(void* p)
         }
       else
         {
-          CFRunLoopRunInMode((CFStringRef) NSConnectionReplyMode,
-                  [when timeIntervalSinceReferenceDate], YES);
+          [l runMode: NSConnectionReplyMode beforeDate: when];
         }
 #else
-      CFRunLoopRunInMode((CFStringRef) NSConnectionReplyMode,
-              [when timeIntervalSinceReferenceDate], YES);
+      [l runMode: NSConnectionReplyMode beforeDate: when];
 #endif
       M_LOCK(myLock);
     }
 
-  CFRunLoopRemoveSource(rl, rlSourceRead, (CFStringRef) NSConnectionReplyMode);
-  CFRunLoopRemoveSource(rl, rlSourceWrite, (CFStringRef) NSConnectionReplyMode);
+#if	defined(__MINGW__)
+  [l removeEvent: (void*)(uintptr_t)event
+	    type: ET_HANDLE
+	 forMode: NSConnectionReplyMode
+	     all: NO];
+  [l removeEvent: (void*)(uintptr_t)event
+	    type: ET_HANDLE
+	 forMode: NSDefaultRunLoopMode
+	     all: NO];
+  inReplyMode = NO;
+#else
+  [l removeEvent: (void*)(uintptr_t)desc
+	    type: ET_WDESC
+	 forMode: NSConnectionReplyMode
+	     all: NO];
+  [l removeEvent: (void*)(uintptr_t)desc
+	    type: ET_EDESC
+	 forMode: NSConnectionReplyMode
+	     all: NO];
+  [l removeEvent: (void*)(uintptr_t)desc
+	    type: ET_WDESC
+	 forMode: NSDefaultRunLoopMode
+	     all: NO];
+  [l removeEvent: (void*)(uintptr_t)desc
+	    type: ET_EDESC
+	 forMode: NSDefaultRunLoopMode
+	     all: NO];
+#endif
 
   if ([wMsgs indexOfObjectIdenticalTo: components] == NSNotFound)
     {
@@ -1280,6 +1474,13 @@ static void GSTcpHandlePerformWrite(void* p)
 @end
 
 
+
+@interface NSSocketPort (RunLoop) <RunLoopEvents>
+- (void) receivedEvent: (void*)data
+                  type: (RunLoopEventType)type
+		 extra: (void*)extra
+	       forMode: (NSString*)mode;
+@end
 
 @implementation	NSSocketPort
 
@@ -1928,7 +2129,6 @@ static Class		tcpPortClass;
   return portNum;
 }
 
-#if 0
 - (void) receivedEvent: (void*)data
                   type: (RunLoopEventType)type
 		 extra: (void*)extra
@@ -2037,7 +2237,7 @@ static Class		tcpPortClass;
       M_UNLOCK(tcpPortLock);
     }
 }
-#endif
+
 
 /*
  * This is called when a tcp/ip socket connection is broken.  We remove the
