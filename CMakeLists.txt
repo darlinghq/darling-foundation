@@ -153,10 +153,10 @@ set(foundation_SRCS
 	Source/NSPipe.m
 	Source/NSNull.m
 	Source/NSLog.m
-	Source/NSSocketPortNameServer.m
+	# Source/NSSocketPortNameServer.m
 	Source/NSPathUtilities.m
 	Source/NSXMLDocument.m
-	Source/NSMessagePort.m
+	# Source/NSMessagePort.m
 	Source/unix/NSStream.m
 	Source/unix/GSRunLoopCtxt.m
 	Source/GSFormat.m

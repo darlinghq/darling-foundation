@@ -242,7 +242,7 @@ typedef enum {
   GS_H_CONNECTED	// Currently connected.
 } GSHandleState;
 
-@interface GSMessageHandle : NSObject
+@interface GSMessageHandle : NSObject <RunLoopEvents>
 {
   int			desc;		/* File descriptor for I/O.	*/
   unsigned		wItem;		/* Index of item being written.	*/
@@ -272,10 +272,10 @@ typedef enum {
 - (int) descriptor;
 - (void) invalidate;
 - (BOOL) isValid;
-/*- (void) receivedEvent: (void*)data
+- (void) receivedEvent: (void*)data
                   type: (RunLoopEventType)type
 		 extra: (void*)extra
-	       forMode: (NSString*)mode;*/
+	       forMode: (NSString*)mode;
 - (NSMessagePort*) recvPort;
 - (BOOL) sendMessage: (NSArray*)components beforeDate: (NSDate*)when;
 - (NSMessagePort*) sendPort;
@@ -347,7 +347,6 @@ static Class	runLoopClass;
 
 - (BOOL) connectToPort: (NSMessagePort*)aPort beforeDate: (NSDate*)when
 {
-#if 0
   NSRunLoop		*l;
   const unsigned char *name;
 
@@ -453,7 +452,6 @@ static Class	runLoopClass;
       M_UNLOCK(myLock);
       return YES;
     }
-#endif
 }
 
 - (void) dealloc
@@ -486,7 +484,6 @@ static Class	runLoopClass;
 
 - (void) invalidate
 {
-#if 0
   if (valid == YES)
     {
       M_LOCK(myLock);
@@ -511,7 +508,6 @@ static Class	runLoopClass;
 	}
       M_UNLOCK(myLock);
     }
-#endif
 }
 
 - (BOOL) isValid
@@ -527,7 +523,6 @@ static Class	runLoopClass;
     return GS_GC_UNHIDE(recvPort);
 }
 
-#if 0
 - (void) receivedEvent: (void*)data
                   type: (RunLoopEventType)type
 		 extra: (void*)extra
@@ -1060,7 +1055,6 @@ static Class	runLoopClass;
   RELEASE(self);
   return sent;
 }
-#endif
 
 - (NSMessagePort*) sendPort
 {
@@ -1086,14 +1080,13 @@ static Class	runLoopClass;
 
 
 
-#if 0
 @interface NSMessagePort (RunLoop) <RunLoopEvents>
 - (void) receivedEvent: (void*)data
                   type: (RunLoopEventType)type
 		 extra: (void*)extra
 	       forMode: (NSString*)mode;
 @end
-#endif
+
 
 @implementation	NSMessagePort
 
@@ -1664,7 +1657,6 @@ typedef	struct {
   return NO;
 }
 
-#if 0
 - (void) receivedEvent: (void*)data
                   type: (RunLoopEventType)type
 		 extra: (void*)extra
@@ -1728,7 +1720,6 @@ typedef	struct {
 	}
     }
 }
-#endif
 
 - (oneway void) release
 {
