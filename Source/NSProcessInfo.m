@@ -944,7 +944,7 @@ extern char **__libc_argv;
 }
 
 
-#else
+#elif GS_FAKE_MAIN
 + (void) initialize
 {
   if (nil == procLock) procLock = [NSRecursiveLock new];

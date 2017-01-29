@@ -36,6 +36,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Headers)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Source)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/Headers)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../corefoundation/Headers)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/../corefoundation/Headers)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../libobjc2)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../libdispatch)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../icu/icuSources/common)
@@ -153,10 +155,10 @@ set(foundation_SRCS
 	Source/NSPipe.m
 	Source/NSNull.m
 	Source/NSLog.m
-	# Source/NSSocketPortNameServer.m
+	Source/NSSocketPortNameServer.m
 	Source/NSPathUtilities.m
 	Source/NSXMLDocument.m
-	# Source/NSMessagePort.m
+	Source/NSMessagePort.m
 	Source/unix/NSStream.m
 	Source/unix/GSRunLoopCtxt.m
 	Source/GSFormat.m
@@ -356,3 +358,11 @@ add_library(Foundation OBJECT ${foundation_SRCS})
 # target_link_libraries(Foundation system icucore z ffi xml2 xslt)
 
 # install(TARGETS Foundation DESTINATION ${CMAKE_INSTALL_LIBDIR}/darling)
+
+
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -nostdlib -Wl,--version-script=${DARLING_TOP_DIRECTORY}/darwin.map")
+
+set_source_files_properties(Tools/gdnc.m LANGUAGE C)
+add_darling_executable(gdnc Tools/gdnc.m)
+target_link_libraries(gdnc CFF)
+install(TARGETS gdnc RUNTIME DESTINATION libexec/darling/usr/bin)

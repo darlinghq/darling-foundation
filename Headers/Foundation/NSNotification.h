@@ -101,6 +101,8 @@ DEFINE_BLOCK_TYPE(GSNotificationBlock, void, NSNotification *);
 
 @end
 
+typedef NSString *NSNotificationName;
+
 #if	defined(__cplusplus)
 }
 #endif
