@@ -338,6 +338,7 @@ static NSDistributedNotificationCenter	*netCenter = nil;
   [_centerLock lock];
   NS_DURING
     {
+    /*
       [self _connect];
       [(id<GDNCProtocol>)_remote addObserver: (uint64_t)(uintptr_t)anObserver
 				    selector: NSStringFromSelector(aSelector)
@@ -345,6 +346,7 @@ static NSDistributedNotificationCenter	*netCenter = nil;
 				      object: anObject
 			  suspensionBehavior: suspensionBehavior
 					 for: (id<GDNCClient>)self];
+	*/			 
     }
   NS_HANDLER
     {
@@ -424,7 +426,7 @@ static NSDistributedNotificationCenter	*netCenter = nil;
   NS_DURING
     {
       NSData	*d;
-
+      /*
       [self _connect];
       d = [NSArchiver archivedDataWithRootObject: userInfo];
       [(id<GDNCProtocol>)_remote postNotificationName: notificationName
@@ -432,6 +434,7 @@ static NSDistributedNotificationCenter	*netCenter = nil;
 					    userInfo: d
 				  deliverImmediately: deliverImmediately
 						 for: (id<GDNCClient>)self];
+	  */
     }
   NS_HANDLER
     {
@@ -464,11 +467,13 @@ static NSDistributedNotificationCenter	*netCenter = nil;
   [_centerLock lock];
   NS_DURING
     {
+      /*
       [self _connect];
       [(id<GDNCProtocol>)_remote removeObserver: (uint64_t)(uintptr_t)anObserver
 					   name: notificationName
 					 object: anObject
 					    for: (id<GDNCClient>)self];
+	  */
     }
   NS_HANDLER
     {
@@ -490,9 +495,11 @@ static NSDistributedNotificationCenter	*netCenter = nil;
   [_centerLock lock];
   NS_DURING
     {
+      /*
       [self _connect];
       _suspended = flag;
       [(id<GDNCProtocol>)_remote setSuspended: flag for: (id<GDNCClient>)self];
+      */
     }
   NS_HANDLER
     {
