@@ -832,13 +832,7 @@ typedef NSUInteger NSStringEncodingConversionOptions;
                   options: (NSStringCompareOptions)mask
                     range: (NSRange)searchRange
                    locale: (NSLocale *)locale;
-- (BOOL) getBytes: (void *)buffer
-        maxLength: (NSUInteger) maxBufferCount
-       usedLength: (NSUInteger *)usedBufferCount
-         encoding: (NSStringEncoding)encoding
-          options: (NSStringEncodingConversionOptions)options
-            range: (NSRange) range
-   remainingRange: (NSRange*) leftover;
+
 #endif
 
 #if OS_API_VERSION(GS_API_NONE, GS_API_NONE)

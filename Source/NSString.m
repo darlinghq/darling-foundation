@@ -77,7 +77,6 @@
 #import "GSPrivate.h"
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <unicode/ucnv.h>
 
 #if	defined(HAVE_SYS_FCNTL_H)
 #  include	<sys/fcntl.h>
@@ -1843,121 +1842,6 @@ GSICUCollatorOpen(NSStringCompareOptions mask, NSLocale *locale)
     {
       buffer[i] = (*caiImp)(self, caiSel, aRange.location + i);
     }
-}
-
-struct EncodingMap
-{
-  NSStringEncoding encoding;
-  const char* name;
-};
-static const struct EncodingMap encodingMap[] = {
-  { NSASCIIStringEncoding, "US-ASCII" },
-  { NSNEXTSTEPStringEncoding, "US-ASCII" },
-  { NSJapaneseEUCStringEncoding, "EUC-JP" },
-  { NSUTF8StringEncoding, "UTF-8" },
-  { NSISOLatin1StringEncoding, "ISO-8859-1" },
-  { NSSymbolStringEncoding, NULL },
-  { NSNonLossyASCIIStringEncoding, "US-ASCII" },
-  { NSShiftJISStringEncoding, "Shift_JIS" },
-  { NSISOLatin2StringEncoding, "ISO-8859-2" },
-  { NSUnicodeStringEncoding, "UTF-16" },
-  { NSWindowsCP1251StringEncoding, "cp1251" },
-  { NSWindowsCP1252StringEncoding, "cp1252" },
-  { NSWindowsCP1253StringEncoding, "cp1253" },
-  { NSWindowsCP1254StringEncoding, "cp1254" },
-  { NSWindowsCP1250StringEncoding, "cp1250" },
-  { NSISO2022JPStringEncoding, "ISO-2022-JP" },
-  { NSMacOSRomanStringEncoding, "macce" },
-  { NSUTF16BigEndianStringEncoding, "UTF-16BE" },
-  { NSUTF16LittleEndianStringEncoding, "UTF-16LE" },
-  { NSUTF32StringEncoding, "UTF-32" },
-  { NSUTF32BigEndianStringEncoding, "UTF-32BE" },
-  { NSUTF32LittleEndianStringEncoding, "UTF-32LE" },
-};
-
-- (BOOL) getBytes: (void *)buffer
-        maxLength: (NSUInteger) maxBufferCount
-       usedLength: (NSUInteger *)usedBufferCount
-         encoding: (NSStringEncoding)encoding
-          options: (NSStringEncodingConversionOptions)options
-            range: (NSRange) range
-   remainingRange: (NSRange*) leftover
-{
-  unichar *buf, *source;
-  char* target;
-  const char* encodingName = NULL;
-  int i;
-  UConverter* ucnv = NULL;
-  UErrorCode err = 0;
-
-  for (i = 0; i < sizeof(encodingMap)/sizeof(encodingMap[0]); i++)
-    {
-      if (encodingMap[i].encoding == encoding)
-        {
-          encodingName = encodingMap[i].name;
-          break;
-        }
-    }
-
-  if (encodingName != NULL)
-    {
-      ucnv = ucnv_open(encodingName, &err);
-    }
-
-  if (ucnv == NULL)
-    {
-      if (leftover)
-        *leftover = range;
-      if (usedBufferCount)
-        *usedBufferCount = 0;
-      return NO;
-    }
-
-  buf = (unichar*) malloc(sizeof(unichar) * range.length);
-  [self getCharacters: buf
-                range: range];
-
-  if (options & NSStringEncodingConversionAllowLossy)
-    {
-      char lossByte = '?';
-      ucnv_setSubstChars(ucnv, &lossByte, 1, &err);
-    }
-  else
-    {
-      ucnv_setToUCallBack(ucnv, UCNV_TO_U_CALLBACK_STOP, NULL, NULL, NULL,
-                                           &err);
-      ucnv_setFromUCallBack(ucnv, UCNV_FROM_U_CALLBACK_STOP, NULL, NULL, NULL,
-                                           &err);
-    }
-
-  // TODO: Add BOM
-
-  target = (char*) buffer;
-  source = buf;
-  ucnv_fromUnicode(ucnv, &target, target + maxBufferCount, &source, source + range.length,
-          NULL, YES, &err);
-
-  free(buf);
-  ucnv_close(ucnv);
-
-  if (err == U_BUFFER_OVERFLOW_ERROR)
-    {
-      if (leftover != NULL)
-        {
-          int processed = source - buf;
-          leftover->length = range.length - processed;
-          leftover->location = range.location + processed;
-        }
-    }
-  else if (err != U_ZERO_ERROR)
-    return NO;
-  else if (leftover != NULL)
-    leftover->length = 0;
-
-  if (usedBufferCount != NULL)
-    *usedBufferCount = target - ((char*) buffer);
-
-  return YES;
 }
 
 /**

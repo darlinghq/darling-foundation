@@ -36,7 +36,6 @@
 #import "Foundation/NSCompoundPredicate.h"
 #import "Foundation/NSExpression.h"
 #import "Foundation/NSPredicate.h"
-#import "Foundation/NSPropertyList.h"
 
 #import "Foundation/NSArray.h"
 #import "Foundation/NSDictionary.h"
@@ -60,6 +59,7 @@
  */
 static NSExpression	*evaluatedObjectExpression = nil;
 
+extern void     GSPropertyListMake(id,NSDictionary*,BOOL,BOOL,unsigned,id*);
 
 @interface GSPredicateScanner : NSScanner
 {
@@ -1277,19 +1277,12 @@ GSICUStringMatchesRegex(NSString *string, NSString *regex, NSStringCompareOption
 {
   if ([_obj isKindOfClass: [NSString class]])
     {
-      NSData	*data;
-      NSString* str;
-      
-      data = [NSPropertyListSerialization dataWithPropertyList: self
-                                                        format: NSPropertyListOpenStepFormat
-                                                       options: 0
-                                                         error: NULL];
+      NSMutableString	*result = nil;
 
-      str = [[NSString alloc] initWithData: data encoding: NSUTF8StringEncoding];
-
-      AUTORELEASE(str);
-
-      return str;
+      /* Quote the result string as necessary.
+       */
+      GSPropertyListMake(_obj, nil, NO, YES, 2, &result);
+      return result;
     }
   return [_obj description];
 }

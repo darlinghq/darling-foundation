@@ -83,7 +83,6 @@
 #import "Foundation/NSRange.h"
 #import "Foundation/NSURL.h"
 #import "Foundation/NSValue.h"
-#import "Foundation/NSPropertyList.h"
 #import "GSPrivate.h"
 #include <stdio.h>
 
@@ -966,19 +965,11 @@ failure:
  */
 - (NSString*) description
 {
-  NSData	*data;
-  NSString* str;
-  
-  data = [NSPropertyListSerialization dataWithPropertyList: self
-                                                    format: NSPropertyListOpenStepFormat
-                                                   options: 0
-                                                     error: NULL];
+  extern void     GSPropertyListMake(id,NSDictionary*,BOOL,BOOL,unsigned,id*);
+  NSMutableString       *result = nil;
 
-  str = [[NSString alloc] initWithData: data encoding: NSUTF8StringEncoding];
-
-  AUTORELEASE(str);
-
-  return str;
+  GSPropertyListMake(self, nil, NO, YES, 0, &result);
+  return result;
 }
 
 /**
