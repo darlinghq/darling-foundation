@@ -2178,6 +2178,7 @@ IF_NO_GC(
     }
   else
     {
+      addBundlePath(array, contents, primary, subPath, @"Base");
       /* This matches OS X behavior, which only searches languages that
        * are in the user's preference. Don't use -preferredLocalizations -
        * that would cause a recursive loop.
