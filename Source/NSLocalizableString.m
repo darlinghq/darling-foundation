@@ -78,6 +78,7 @@ static NSString *const NSDevKey = @"NSDev";
 
 - (id)awakeAfterUsingCoder:(NSCoder *)coder
 {
+    /*
     NSString *table = [[[NSBundle currentNibPath] lastPathComponent] stringByDeletingPathExtension];
     NSBundle *bundle = [NSBundle currentNibLoadingBundle];
     NSString *str = nil;
@@ -90,6 +91,8 @@ static NSString *const NSDevKey = @"NSDev";
     {
         str = _developmentLanguageString;
     }
+    */
+    NSString *str = _developmentLanguageString;
     
     str = [str retain];
     [self release];
