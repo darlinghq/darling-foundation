@@ -351,6 +351,7 @@ set(foundation_SRCS
 	Source/NSDistributedLock.m
 	Source/NSHost.m
 	Source/NSProtocolChecker.m
+	Source/NSLocalizableString.m
 )
 
 set_source_files_properties(${foundation_SRCS} PROPERTIES LANGUAGE C)
