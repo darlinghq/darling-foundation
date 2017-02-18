@@ -361,10 +361,16 @@ add_library(Foundation OBJECT ${foundation_SRCS})
 
 # install(TARGETS Foundation DESTINATION ${CMAKE_INSTALL_LIBDIR}/darling)
 
-
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -nostdlib -Wl,--version-script=${DARLING_TOP_DIRECTORY}/darwin.map")
+set(CMAKE_EXE_LINKER_FLAGS "-nodefaultlibs -nostdlib -Wl,--version-script=${DARLING_TOP_DIRECTORY}/darwin.map")
 
 set_source_files_properties(Tools/gdnc.m LANGUAGE C)
 add_darling_executable(gdnc Tools/gdnc.m)
 target_link_libraries(gdnc CFF)
-install(TARGETS gdnc RUNTIME DESTINATION libexec/darling/usr/bin)
+install(TARGETS gdnc DESTINATION libexec/darling/usr/bin)
+install(FILES Tools/gdnc.1 DESTINATION libexec/darling/usr/share/man/man1)
+
+set_source_files_properties(Tools/defaults.m LANGUAGE C)
+add_darling_executable(defaults Tools/defaults.m)
+target_link_libraries(defaults CFF)
+install(TARGETS defaults DESTINATION libexec/darling/usr/bin)
+install(FILES Tools/defaults.1 DESTINATION libexec/darling/usr/share/man/man1)
