@@ -7,7 +7,18 @@ FOUNDATION_EXPORT NSString * const NSArgumentDomain;
 FOUNDATION_EXPORT NSString * const NSRegistrationDomain;
 FOUNDATION_EXPORT NSString * const NSUserDefaultsDidChangeNotification;
 
+// Because this the real type is difficult to forward declare
+// without modifying CF
+#ifndef PREFS_TYPE
+#	define PREFS_TYPE void
+#endif
+
 @interface NSUserDefaults : NSObject
+{
+    PREFS_TYPE *_cfDataPtr;
+}
+
+#undef PREFS_TYPE
 
 + (NSUserDefaults *)standardUserDefaults;
 + (void)resetStandardUserDefaults;

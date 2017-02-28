@@ -1,6 +1,6 @@
 #import <Foundation/NSObject.h>
 
-@class NSNotification, NSNotificationCenter, NSArray;
+@class NSNotification, NSNotificationCenter, NSArray, NSMutableArray;
 
 typedef NS_ENUM(NSUInteger, NSPostingStyle) {
     NSPostWhenIdle = 1,
@@ -15,6 +15,13 @@ typedef NS_ENUM(NSUInteger, NSNotificationCoalescing) {
 };
 
 @interface NSNotificationQueue : NSObject
+{
+    NSNotificationCenter *_notificationCenter;
+    NSMutableArray *_asapQueue;
+    NSMutableArray *_asapObs;
+    NSMutableArray *_idleQueue;
+    NSMutableArray *_idleObs;
+}
 
 + (id)defaultQueue;
 - (id)initWithNotificationCenter:(NSNotificationCenter *)notificationCenter;

@@ -12,7 +12,7 @@
 #import <Foundation/NSDictionary.h>
 #import <Foundation/NSException.h>
 #import <objc/runtime.h>
-#import "wrap.h"
+//#import "wrap.h"
 
 extern void __CFInitialize();
 extern char ***_NSGetArgv(void);
@@ -27,11 +27,12 @@ static void NSPlatformInitialize()
 {
     __CFInitialize();
     @autoreleasepool {
+#if 0
         NSString* appName = [[[NSBundle mainBundle] infoDictionary] objectForKey:(id)kCFBundleExecutableKey];
         __printf_tag = strdup([appName UTF8String]);
         char ***argv = _NSGetArgv();
         snprintf((*argv)[0], PATH_MAX, "%s/%s", __virtual_prefix(virtual_bundle), __printf_tag);
-
+#endif
         objc_setEnumerationMutationHandler(_enumerationMutationHandler);
     }
 }

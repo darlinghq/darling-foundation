@@ -6,16 +6,14 @@
 //
 
 #import <Foundation/NSAutoreleasePool.h>
-#import "ForFoundationOnly.h"
+#import <objc/objc-internal.h>
 
-@implementation NSAutoreleasePool {
-    void *context;
-}
+@implementation NSAutoreleasePool
 
 + (id)allocWithZone:(NSZone *)zone
 {
     NSAutoreleasePool *pool = [super allocWithZone:zone];
-    pool->context = _CFAutoreleasePoolPush();
+    pool->context = _objc_autoreleasePoolPush();
     return pool;
 }
 
@@ -26,7 +24,7 @@
 
 - (void)addObject:(id)anObject
 {
-    CFAutorelease((CFTypeRef)anObject);
+    _objc_rootAutorelease(anObject);
 }
 
 - (id)retain
@@ -41,7 +39,7 @@
 
 - (void)drain
 {
-    _CFAutoreleasePoolPop(context);
+    _objc_autoreleasePoolPop(context);
     [self dealloc];
 }
 
@@ -52,7 +50,7 @@
 
 - (void)emptyPool
 {
-    _CFAutoreleasePoolPop(context);
+    _objc_autoreleasePoolPop(context);
 }
 
 @end

@@ -1,204 +1,272 @@
-//
-//  NSMapTable.m
-//  Foundation
-//
-//  Copyright (c) 2014 Apportable. All rights reserved.
-//
+/** NSMapTable implementation for GNUStep.
+ * Copyright (C) 2009  Free Software Foundation, Inc.
+ *
+ * Author: Richard Frith-Macdonald <rfm@gnu.org>
+ *
+ * This file is part of the GNUstep Base Library.
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Library General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free
+ * Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA 02111 USA.
+ *
+ * <title>NSMapTable class reference</title>
+ * $Date$ $Revision$
+ */
 
-#import <Foundation/NSMapTable.h>
-#import <Foundation/NSDictionary.h>
-#import "NSPointerFunctionsInternal.h"
+#import "common.h"
+#import "Foundation/NSArray.h"
+#import "Foundation/NSDictionary.h"
+#import "Foundation/NSException.h"
+#import "Foundation/NSPointerFunctions.h"
+#import "Foundation/NSMapTable.h"
+#import "NSCallBacks.h"
 
-CF_PRIVATE
-@interface NSConcreteMapTable : NSMapTable
+@interface	NSConcreteMapTable : NSMapTable
 @end
 
-@implementation NSMapTable
+@implementation	NSMapTable
 
-+ (id)allocWithZone:(NSZone *)zone
+static Class	abstractClass = 0;
+static Class	concreteClass = 0;
+
++ (id) allocWithZone: (NSZone*)aZone
 {
-    if (self == [NSMapTable class])
+  if (self == abstractClass)
     {
-        return [NSConcreteMapTable allocWithZone:zone];
+      return NSAllocateObject(concreteClass, 0, aZone);
     }
-    else
+  return NSAllocateObject(self, 0, aZone);
+}
+
++ (void) initialize
+{
+  if (abstractClass == 0)
     {
-        return [super allocWithZone:zone];
+      abstractClass = [NSMapTable class];
+      concreteClass = [NSConcreteMapTable class];
     }
 }
 
-+ (id)mapTableWithKeyOptions:(NSPointerFunctionsOptions)keyOptions valueOptions:(NSPointerFunctionsOptions)valueOptions
++ (id) mapTableWithKeyOptions: (NSPointerFunctionsOptions)keyOptions
+		 valueOptions: (NSPointerFunctionsOptions)valueOptions
 {
-    return [[[self alloc] initWithKeyOptions:keyOptions valueOptions:valueOptions capacity:0] autorelease];
+  NSMapTable	*t;
+
+  t = [self allocWithZone: NSDefaultMallocZone()];
+  t = [t initWithKeyOptions: keyOptions
+	       valueOptions: valueOptions
+		   capacity: 0];
+  return AUTORELEASE(t);
 }
 
-+ (id)strongToStrongObjectsMapTable
++ (id) mapTableWithStrongToStrongObjects
 {
-
-    return [[[self alloc] initWithKeyOptions:NSPointerFunctionsStrongMemory | NSPointerFunctionsObjectPersonality
-                                valueOptions:NSPointerFunctionsStrongMemory | NSPointerFunctionsObjectPersonality
-                                    capacity:0] autorelease];
+  return [self mapTableWithKeyOptions: NSPointerFunctionsObjectPersonality
+			 valueOptions: NSPointerFunctionsObjectPersonality];
 }
 
-+ (id)weakToStrongObjectsMapTable
++ (id) mapTableWithStrongToWeakObjects
 {
-
-    return [[[self alloc] initWithKeyOptions:NSPointerFunctionsWeakMemory | NSPointerFunctionsObjectPersonality
-                                valueOptions:NSPointerFunctionsStrongMemory | NSPointerFunctionsObjectPersonality
-                                    capacity:0] autorelease];
+  return [self mapTableWithKeyOptions: NSPointerFunctionsObjectPersonality
+			 valueOptions: NSPointerFunctionsObjectPersonality
+    | NSPointerFunctionsZeroingWeakMemory];
 }
 
-+ (id)strongToWeakObjectsMapTable
++ (id) mapTableWithWeakToStrongObjects
 {
-    return [[[self alloc] initWithKeyOptions:NSPointerFunctionsStrongMemory | NSPointerFunctionsObjectPersonality
-                                valueOptions:NSPointerFunctionsWeakMemory | NSPointerFunctionsObjectPersonality
-                                    capacity:0] autorelease];
+  return [self mapTableWithKeyOptions: NSPointerFunctionsObjectPersonality
+    | NSPointerFunctionsZeroingWeakMemory
+			 valueOptions: NSPointerFunctionsObjectPersonality];
 }
 
-+ (id)weakToWeakObjectsMapTable
++ (id) mapTableWithWeakToWeakObjects
 {
-    return [[[self alloc] initWithKeyOptions:NSPointerFunctionsWeakMemory | NSPointerFunctionsObjectPersonality
-                                valueOptions:NSPointerFunctionsWeakMemory | NSPointerFunctionsObjectPersonality
-                                    capacity:0] autorelease];
+  return [self mapTableWithKeyOptions: NSPointerFunctionsObjectPersonality
+    | NSPointerFunctionsZeroingWeakMemory
+			 valueOptions: NSPointerFunctionsObjectPersonality
+    | NSPointerFunctionsZeroingWeakMemory];
 }
 
-- (id)initWithKeyOptions:(NSPointerFunctionsOptions)keyOptions valueOptions:(NSPointerFunctionsOptions)valueOptions capacity:(NSUInteger)initialCapacity
++ (id) strongToStrongObjectsMapTable
 {
-    NSRequestConcreteImplementation();
-    [self release];
-    return nil;
+  return [self mapTableWithKeyOptions: NSMapTableObjectPointerPersonality
+                         valueOptions: NSMapTableObjectPointerPersonality];
 }
 
-- (id)initWithKeyPointerFunctions:(NSPointerFunctions *)keyFunctions valuePointerFunctions:(NSPointerFunctions *)valueFunctions capacity:(NSUInteger)initialCapacity
++ (id) strongToWeakObjectsMapTable
 {
-    NSRequestConcreteImplementation();
-    [self release];
-    return nil;
+  return [self mapTableWithKeyOptions: NSMapTableObjectPointerPersonality
+                         valueOptions: NSMapTableObjectPointerPersonality |
+                                         NSMapTableWeakMemory];
 }
 
-- (NSPointerFunctions *)keyPointerFunctions
++ (id) weakToStrongObjectsMapTable
 {
-    NSRequestConcreteImplementation();
-    return nil;
+  return [self mapTableWithKeyOptions: NSMapTableObjectPointerPersonality |
+                                         NSMapTableWeakMemory
+                         valueOptions: NSMapTableObjectPointerPersonality];
 }
 
-- (NSPointerFunctions *)valuePointerFunctions
++ (id) weakToWeakObjectsMapTable
 {
-    NSRequestConcreteImplementation();
-    return nil;
+  return [self mapTableWithKeyOptions: NSMapTableObjectPointerPersonality | 
+                                         NSMapTableWeakMemory
+                         valueOptions: NSMapTableObjectPointerPersonality |
+                                         NSMapTableWeakMemory];
 }
 
-- (id)objectForKey:(id)aKey
+- (id) initWithKeyOptions: (NSPointerFunctionsOptions)keyOptions
+	     valueOptions: (NSPointerFunctionsOptions)valueOptions
+	         capacity: (NSUInteger)initialCapacity
 {
-    NSRequestConcreteImplementation();
-    return nil;
+  NSPointerFunctions	*k;
+  NSPointerFunctions	*v;
+  id			o;
+
+  k = [[NSPointerFunctions alloc] initWithOptions: keyOptions];
+  v = [[NSPointerFunctions alloc] initWithOptions: valueOptions];
+  o = [self initWithKeyPointerFunctions: k
+		  valuePointerFunctions: v
+			       capacity: initialCapacity];
+  [k release];
+  [v release];
+  return o;
 }
 
-- (void)removeObjectForKey:(id)aKey
+- (id) initWithKeyPointerFunctions: (NSPointerFunctions*)keyFunctions
+	     valuePointerFunctions: (NSPointerFunctions*)valueFunctions
+			  capacity: (NSUInteger)initialCapacity
 {
-    NSRequestConcreteImplementation();
+  [self subclassResponsibility: _cmd];
+  return nil;
 }
 
-- (void)setObject:(id)anObject forKey:(id)aKey
+- (id) copyWithZone: (NSZone*)aZone
 {
-    NSRequestConcreteImplementation();
+  [self subclassResponsibility: _cmd];
+  return nil;
 }
 
-- (NSUInteger)count
+- (NSUInteger) count
 {
-    NSRequestConcreteImplementation();
-    return 0;
+  [self subclassResponsibility: _cmd];
+  return (NSUInteger)0;
 }
 
-- (NSEnumerator *)keyEnumerator
+- (NSUInteger) countByEnumeratingWithState: (NSFastEnumerationState*)state 	
+				   objects: (id*)stackbuf
+				     count: (NSUInteger)len
 {
-    NSRequestConcreteImplementation();
-    return nil;
+  [self subclassResponsibility: _cmd];
+  return (NSUInteger)0;
 }
 
-- (NSEnumerator *)objectEnumerator
+- (NSDictionary*) dictionaryRepresentation
 {
-    NSRequestConcreteImplementation();
-    return nil;
-}
+  NSEnumerator		*enumerator;
+  NSMutableDictionary	*dictionary;
+  id			key;
 
-- (void)removeAllObjects
-{
-    NSRequestConcreteImplementation();
-}
-
-- (NSUInteger)countByEnumeratingWithState:(NSFastEnumerationState *)state objects:(id __unsafe_unretained [])buffer count:(NSUInteger)len
-{
-    NSRequestConcreteImplementation();
-    return 0;
-}
-
-- (NSDictionary *)dictionaryRepresentation
-{
-    NSMutableDictionary *dictionary = [[NSMutableDictionary alloc] init];
-    for (id key in self)
+  dictionary = [NSMutableDictionary dictionaryWithCapacity: [self count]];
+  enumerator = [self keyEnumerator];
+  while ((key = [enumerator nextObject]) != nil)
     {
-        [dictionary setObject:[self objectForKey:key] forKey:key];
+      [dictionary setObject: [self objectForKey: key] forKey: key];
     }
-    return [dictionary autorelease];
+  return [[dictionary copy] autorelease];
 }
 
-/*!
-@bug    This is backwards on iOS...
-*/
-- (id)copyWithZone:(NSZone *)zone
+- (void) encodeWithCoder: (NSCoder*)aCoder
 {
-    return [self copy];
+  [self subclassResponsibility: _cmd];
 }
 
+- (NSUInteger) hash
+{
+  return [self count];
+}
+
+- (id) initWithCoder: (NSCoder*)aCoder
+{
+  [self subclassResponsibility: _cmd];
+  return nil;
+}
+
+- (BOOL) isEqual: (id)other
+{
+  if ([other isKindOfClass: abstractClass] == NO) return NO;
+  return NSCompareMapTables(self, other);
+}
+
+- (NSEnumerator*) keyEnumerator
+{
+  return [self subclassResponsibility: _cmd];
+}
+
+- (NSPointerFunctions*) keyPointerFunctions
+{
+  return [self subclassResponsibility: _cmd];
+}
+
+- (NSEnumerator*) objectEnumerator
+{
+  return [self subclassResponsibility: _cmd];
+}
+
+- (id) objectForKey: (id)aKey
+{
+  return [self subclassResponsibility: _cmd];
+}
+
+- (void) removeAllObjects
+{
+  NSUInteger	count = [self count];
+
+  if (count > 0)
+    {
+      NSEnumerator	*enumerator;
+      NSMutableArray	*array;
+      id		key;
+
+      array = [[NSMutableArray alloc] initWithCapacity: count];
+      enumerator = [self objectEnumerator];
+      while ((key = [enumerator nextObject]) != nil)
+	{
+	  [array addObject: key];
+	}
+      enumerator = [array objectEnumerator];
+      while ((key = [enumerator nextObject]) != nil)
+	{
+	  [self removeObjectForKey: key];
+	}
+      [array release];
+    }
+}
+
+- (void) removeObjectForKey: (id)aKey
+{
+  [self subclassResponsibility: _cmd];
+}
+
+- (void) setObject: (id)anObject forKey: (id)aKey
+{
+  [self subclassResponsibility: _cmd];
+}
+
+- (NSPointerFunctions*) valuePointerFunctions
+{
+  return [self subclassResponsibility: _cmd];
+}
 @end
 
-@implementation NSConcreteMapTable
-{
-    struct NSSlice keys;
-    struct NSSlice values;
-    NSUInteger count;
-    NSUInteger capacity;
-    NSPointerFunctionsOptions keyOptions;
-    NSPointerFunctionsOptions valueOptions;
-    NSUInteger mutations;
-    int32_t growLock;
-    BOOL shouldRehash;
-}
-
-- (id)initWithKeyOptions:(NSPointerFunctionsOptions)keyOpts valueOptions:(NSPointerFunctionsOptions)valOpts capacity:(NSUInteger)initialCapacity
-{
-    self = [super init];
-    if (self)
-    {
-        if (initialCapacity == 0)
-        {
-            capacity = 31;
-        }
-        else
-        {
-            capacity = initialCapacity;
-        }
-
-        count = 0;
-
-        keyOptions = keyOpts;
-        valueOptions = valOpts;
-
-        mutations = 0;
-
-        [NSConcretePointerFunctions initializeSlice:&keys withOptions:keyOpts];
-        [NSConcretePointerFunctions initializeSlice:&values withOptions:valOpts];
-
-        keys.items = keys.allocateFunction(keys.sizeFunction(NULL) * capacity);
-        if (keys.items == NULL)
-        {
-            // [NSException raise:]
-            [self release];
-            return nil;
-        }
-        values.items = values.allocateFunction(values.sizeFunction(NULL) * capacity);
-    }
-    return self;
-}
-@end

@@ -6,10 +6,28 @@
 //
 
 #import <Foundation/NSOrthography.h>
+#import <Foundation/NSArray.h>
+#import "NSObjectInternal.h"
 
 typedef NS_OPTIONS(NSUInteger, NSOrthographyFlags) {
-
+	__some_enum_elem_to_keep_compiler_happy
 };
+
+@interface NSComplexOrthography : NSOrthography
+{
+    NSString *_dominantScript;
+    NSDictionary *_languageMap;
+    NSOrthographyFlags _orthographyFlags;
+}
+
++ (void)initialize;
+- (id)initWithDominantScript:(NSString *)script languageMap:(NSDictionary *)map;
+- (NSOrthographyFlags)orthographyFlags;
+- (NSDictionary *)languageMap;
+- (NSString *)dominantScript;
+- (void)dealloc;
+
+@end
 
 @implementation NSOrthography
 
@@ -32,7 +50,7 @@ typedef NS_OPTIONS(NSUInteger, NSOrthographyFlags) {
 
 + (id)orthographyWithDominantScript:(NSString *)script languageMap:(NSDictionary *)map
 {
-    return [[[self alloc] initWithDominantScript:script languageMap:map] autorelase];
+    return [[[self alloc] initWithDominantScript:script languageMap:map] autorelease];
 }
 
 - (id)initWithDominantScript:(NSString *)script languageMap:(NSDictionary *)map
@@ -51,9 +69,9 @@ typedef NS_OPTIONS(NSUInteger, NSOrthographyFlags) {
         NSArray *scriptLangs = [self languagesForScript:script];
         for (NSString *language in scriptLangs)
         {
-            if (![langs containsObject:langauge])
+            if (![langs containsObject:language])
             {
-                [langs addObject:langauge];
+                [langs addObject:language];
             }
         }
     }
@@ -166,21 +184,6 @@ typedef NS_OPTIONS(NSUInteger, NSOrthographyFlags) {
 
 @end
 
-@interface NSComplexOrthography : NSOrthography
-{
-    NSString *_dominantScript;
-    NSDictionary *_languageMap;
-    NSOrthographyFlags _orthographyFlags;
-}
-
-+ (void)initialize;
-- (id)initWithDominantScript:(NSString *)script languageMap:(NSDictionary *)map;
-- (NSOrthographyFlags)orthographyFlags;
-- (NSDictionary *)languageMap;
-- (NSString *)dominantScript;
-- (void)dealloc;
-
-@end
 
 @implementation NSSimpleOrthography
 @end

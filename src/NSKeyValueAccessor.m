@@ -250,6 +250,20 @@ static void _NSSet ## INFIX ##ValueForKeyWithMethod(id obj, SEL cmd, id value, N
     } \
 }
 
+#define DEFINE_SET_WITH_METHOD2(INFIX, TYPE, GETTER, WRAPPER) \
+static void _NSSet ## INFIX ##ValueForKeyWithMethod(id obj, SEL cmd, id value, NSString *key, Method method) \
+{ \
+    if (value) \
+    { \
+        ((void(*)(id, Method, TYPE))method_invoke)(obj, method, WRAPPER([value GETTER])); \
+    } \
+    else \
+    { \
+        [obj setNilValueForKey:key]; \
+    } \
+}
+
+
 DEFINE_SET_WITH_METHOD(Char, char, charValue)
 DEFINE_SET_WITH_METHOD(UnsignedChar, unsigned char, unsignedCharValue)
 DEFINE_SET_WITH_METHOD(Short, short, shortValue)
@@ -264,9 +278,9 @@ DEFINE_SET_WITH_METHOD(Float, float, floatValue)
 DEFINE_SET_WITH_METHOD(Double, double, doubleValue)
 DEFINE_SET_WITH_METHOD(Bool, BOOL, boolValue)
 DEFINE_SET_WITH_METHOD(Range, NSRange, rangeValue)
-DEFINE_SET_WITH_METHOD(Point, CGPoint, pointValue)
-DEFINE_SET_WITH_METHOD(Size, CGSize, sizeValue)
-DEFINE_SET_WITH_METHOD(Rect, CGRect, rectValue)
+DEFINE_SET_WITH_METHOD2(Point, CGPoint, pointValue, NSPointToCGPoint)
+DEFINE_SET_WITH_METHOD2(Size, CGSize, sizeValue, NSSizeToCGSize)
+DEFINE_SET_WITH_METHOD2(Rect, CGRect, rectValue, NSRectToCGRect)
 
 #undef DEFINE_SET_WITH_METHOD
 
@@ -374,6 +388,19 @@ static void _NSSet ## INFIX ##ValueForKeyInIvar(id obj, SEL cmd, id value, NSStr
         [obj setNilValueForKey:key]; \
     } \
 }
+#define DEFINE_SET_IN_IVAR2(INFIX, TYPE, GETTER, WRAPPER) \
+static void _NSSet ## INFIX ##ValueForKeyInIvar(id obj, SEL cmd, id value, NSString *key, Ivar ivar) \
+{ \
+    if (value) \
+    { \
+        *(TYPE*)((char*)obj + ivar_getOffset(ivar)) = WRAPPER([value GETTER]); \
+    } \
+    else \
+    { \
+        [obj setNilValueForKey:key]; \
+    } \
+}
+
 
 DEFINE_SET_IN_IVAR(Char, char, charValue)
 DEFINE_SET_IN_IVAR(UnsignedChar, unsigned char, unsignedCharValue)
@@ -389,9 +416,9 @@ DEFINE_SET_IN_IVAR(Float, float, floatValue)
 DEFINE_SET_IN_IVAR(Double, double, doubleValue)
 DEFINE_SET_IN_IVAR(Bool, BOOL, boolValue)
 DEFINE_SET_IN_IVAR(Range, NSRange, rangeValue)
-DEFINE_SET_IN_IVAR(Point, CGPoint, pointValue)
-DEFINE_SET_IN_IVAR(Size, CGSize, sizeValue)
-DEFINE_SET_IN_IVAR(Rect, CGRect, rectValue)
+DEFINE_SET_IN_IVAR2(Point, CGPoint, pointValue, NSPointToCGPoint)
+DEFINE_SET_IN_IVAR2(Size, CGSize, sizeValue, NSSizeToCGSize)
+DEFINE_SET_IN_IVAR2(Rect, CGRect, rectValue, NSRectToCGRect)
 
 #undef DEFINE_SET_IN_IVAR
 

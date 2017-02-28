@@ -10,7 +10,8 @@
 #import <Foundation/NSIndexSet.h>
 #import <Foundation/NSException.h>
 #import <CoreFoundation/CFArray.h>
-#import <libv/utlist.h>
+#import <dispatch/dispatch.h>
+#import "utlist.h"
 
 typedef struct RangeList {
     NSRange range;
@@ -18,7 +19,7 @@ typedef struct RangeList {
     struct RangeList *prev;
 } RangeList;
 
-typedef struct {
+typedef struct NSIndexSetCache {
     CFArrayRef ranges;
     NSUInteger count;
     NSUInteger rangeCount;
@@ -79,25 +80,7 @@ SET_CACHE(set, NULL)
 })
 
 
-@implementation NSIndexSet {
-@package
-    struct {
-        unsigned int _isEmpty:1;
-        unsigned int _hasSingleRange:1;
-        unsigned int _cacheValid:1;
-        unsigned int _arrayBinderController:29;
-    } _indexSetFlags;
-    
-    union {
-        struct {
-            NSRange _range;
-        } _singleRange;
-        struct {
-            RangeList *_data;
-            NSIndexSetCache *_cache;
-        } _multipleRanges;
-    } _internal;
-}
+@implementation NSIndexSet
 
 static inline void NSIndexSetPurgeCache(NSIndexSetCache *cache)
 {

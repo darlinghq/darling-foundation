@@ -114,12 +114,7 @@ NSString *const NSPortDidBecomeInvalidNotification = @"NSPortDidBecomeInvalidNot
 @end
 
 
-@implementation NSMachPort {
-    id _delegate;
-    NSUInteger _flags;
-    uint32_t _machPort;
-    NSUInteger _reserved;
-}
+@implementation NSMachPort
 
 + (NSPort *)portWithMachPort:(uint32_t)machPort
 {

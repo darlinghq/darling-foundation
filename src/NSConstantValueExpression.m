@@ -14,9 +14,6 @@ static NSString * const NSConstantValueKey = @"NSConstantValue";
 static NSString * const NSConstantValueClassNameKey = @"NSConstantValueClassName";
 
 @implementation NSConstantValueExpression
-{
-    id constantValue;
-}
 
 + (BOOL)supportsSecureCoding
 {

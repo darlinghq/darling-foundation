@@ -11,11 +11,6 @@
 #import <Foundation/NSRegularExpression.h>
 #import "NSObjectInternal.h"
 
-typedef NS_ENUM(NSUInteger, NSRegularExpressionCheckingResultLimits) {
-    NSRegularExpressionCheckingResultSimpleLimit = 3,
-    NSRegularExpressionCheckingResultExtendedLimit = 7,
-};
-
 @implementation NSRegularExpressionCheckingResult
 
 - (id)initWithRangeArray:(NSArray *)ranges regularExpression:(NSRegularExpression *)expression
@@ -82,11 +77,7 @@ typedef NS_ENUM(NSUInteger, NSRegularExpressionCheckingResultLimits) {
 
 @end
 
-@implementation NSSimpleRegularExpressionCheckingResult {
-    NSRegularExpression *_regularExpression;
-    NSRange _ranges[NSRegularExpressionCheckingResultSimpleLimit];
-    NSUInteger _numberOfRanges;
-}
+@implementation NSSimpleRegularExpressionCheckingResult
 
 - (id)initWithRangeArray:(NSArray *)ranges regularExpression:(NSRegularExpression *)expression
 {
@@ -167,10 +158,7 @@ typedef NS_ENUM(NSUInteger, NSRegularExpressionCheckingResultLimits) {
 
 @end
 
-@implementation NSExtendedRegularExpressionCheckingResult {
-    NSRegularExpression *_regularExpression;
-    NSRange _ranges[NSRegularExpressionCheckingResultExtendedLimit];
-}
+@implementation NSExtendedRegularExpressionCheckingResult
 
 - (id)initWithRangeArray:(NSArray *)ranges regularExpression:(NSRegularExpression *)expression
 {

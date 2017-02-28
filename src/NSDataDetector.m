@@ -1,8 +1,6 @@
-#import "NSRegularExpression.h"
+#import "Foundation/NSRegularExpression.h"
 
-@implementation NSDataDetector {
-    NSTextCheckingTypes _checkingTypes;
-}
+@implementation NSDataDetector
 
 @synthesize checkingTypes = _checkingTypes;
 

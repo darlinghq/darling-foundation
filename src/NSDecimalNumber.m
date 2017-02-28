@@ -28,6 +28,9 @@ NSString *const NSDecimalNumberOverflowException = @"NSDecimalNumberOverflowExce
 NSString *const NSDecimalNumberUnderflowException = @"NSDecimalNumberUnderflowException";
 NSString *const NSDecimalNumberDivideByZeroException = @"NSDecimalNumberDivideByZeroException";
 
+#ifndef ULONG_LONG_MAX
+#	define ULONG_LONG_MAX 0xffffffffffffffffull
+#endif
 
 CF_PRIVATE
 @interface NSDecimalNumberPlaceholder : NSDecimalNumber

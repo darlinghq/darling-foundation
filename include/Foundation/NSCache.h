@@ -1,5 +1,6 @@
 #import <Foundation/NSObject.h>
 #import <Foundation/NSSet.h>
+#import <libkern/OSAtomic.h>
 
 @class NSString, NSCache;
 
@@ -7,6 +8,8 @@
 @optional
 - (void)cache:(NSCache *)cache willEvictObject:(id)obj;
 @end
+
+typedef struct __CFDictionary* CFMutableDictionaryRef;
 
 @interface NSCache : NSObject {
     CFMutableDictionaryRef _objects;

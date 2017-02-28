@@ -3,7 +3,15 @@
 #import <Foundation/NSSet.h>
 #import <Foundation/NSOrderedSet.h>
 
+typedef NS_OPTIONS(NSUInteger, NSPredicateEvaluationFlags) {
+    NSPredicateEvaluationBlocked = 1 << 0,
+};
+
 @interface NSPredicate : NSObject <NSCoding, NSCopying>
+{
+    NSPredicateEvaluationFlags _predicateFlags;
+    NSUInteger reserved;
+}
 
 + (NSPredicate *)predicateWithFormat:(NSString *)predicateFormat argumentArray:(NSArray *)arguments;
 + (NSPredicate *)predicateWithFormat:(NSString *)predicateFormat, ...;

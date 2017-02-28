@@ -10,16 +10,7 @@
 #import "NSObjectInternal.h"
 #import <Foundation/NSLocale.h>
 
-@implementation NSByteCountFormatter {
-    NSByteCountFormatterUnits _allowedUnits;
-    char _countStyle;
-    BOOL _allowsNonnumericFormatting;
-    BOOL _includesUnit;
-    BOOL _includesCount;
-    BOOL _includesActualByteCount;
-    BOOL _adaptive;
-    BOOL _zeroPadsFractionDigits;
-}
+@implementation NSByteCountFormatter
 
 static NSArray *_NSByteCountFormatterUnits;
 

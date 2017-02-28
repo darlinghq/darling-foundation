@@ -16,7 +16,12 @@ FOUNDATION_EXPORT NSString * const NSHTTPCookieDiscard;
 FOUNDATION_EXPORT NSString * const NSHTTPCookieMaximumAge;
 FOUNDATION_EXPORT NSString * const NSHTTPCookiePort;
 
+typedef struct __CFHTTPCookie *CFHTTPCookieRef;
+
 @interface NSHTTPCookie : NSObject
+{
+    CFHTTPCookieRef  _cookiePrivate;
+}
 
 + (id)cookieWithProperties:(NSDictionary *)properties;
 + (NSDictionary *)requestHeaderFieldsWithCookies:(NSArray *)cookies;

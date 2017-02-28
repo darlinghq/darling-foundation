@@ -19,10 +19,7 @@ NSString * const NSUbiquitousKeyValueStoreDidChangeExternallyNotification = @"NS
 NSString * const NSUbiquitousKeyValueStoreChangeReasonKey = @"NSUbiquitousKeyValueStoreChangeReasonKey";
 NSString * const NSUbiquitousKeyValueStoreChangedKeysKey = @"NSUbiquitousKeyValueStoreChangedKeysKey";
 
-@implementation NSUbiquitousKeyValueStore {
-    id<_NSUbiquitousKeyValueStoreProvider> _provider;
-    dispatch_queue_t _providerQueue;
-}
+@implementation NSUbiquitousKeyValueStore
 
 + (NSUbiquitousKeyValueStore *)defaultStore
 {

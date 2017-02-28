@@ -12,10 +12,19 @@
 
 #import <dispatch/dispatch.h>
 #import <objc/runtime.h>
-#import <libv/libv.h>
 #import <unistd.h>
 
+#define __is_being_debugged__ 0
+
+#if __OBJC2__
 extern void objc_setUncaughtExceptionHandler(void (*handler)(id, void *));
+#else
+#    import <CoreFoundation/FoundationExceptions.h>
+static void objc_setUncaughtExceptionHandler(void (*handler)(id, void *))
+{
+    _CFDoExceptionOperation(kCFDoExceptionOperationSetUncaughtHandler, handler);
+}
+#endif
 
 static NSUncaughtExceptionHandler *handler = nil;
 BOOL NSHangOnUncaughtException = NO;

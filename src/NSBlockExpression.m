@@ -10,10 +10,6 @@
 #import <Foundation/NSDictionary.h>
 
 @implementation NSBlockExpression
-{
-    id (^_block)(id, NSArray *, NSMutableDictionary *);
-    NSArray *_arguments;
-}
 
 - (id)initWithType:(NSExpressionType)type block:(id (^)(id, NSArray *, NSMutableDictionary *))block arguments:(NSArray *)arguments
 {

@@ -11,7 +11,13 @@ typedef NS_ENUM(NSUInteger, NSHTTPCookieAcceptPolicy) {
 FOUNDATION_EXPORT NSString * const NSHTTPCookieManagerAcceptPolicyChangedNotification;
 FOUNDATION_EXPORT NSString * const NSHTTPCookieManagerCookiesChangedNotification;
 
+typedef struct __CFHTTPCookieStorage *CFHTTPCookieStorageRef;
+
 @interface NSHTTPCookieStorage : NSObject
+{
+    CFHTTPCookieStorageRef _storage;
+    NSHTTPCookieAcceptPolicy _acceptPolicy;
+}
 
 + (NSHTTPCookieStorage *)sharedHTTPCookieStorage;
 

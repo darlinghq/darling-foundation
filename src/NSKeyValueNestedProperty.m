@@ -13,17 +13,14 @@
 #import <Foundation/NSKeyValueCoding.h>
 #import <Foundation/NSString.h>
 
-@interface NSKeyValueNestedProperty ()
-@property (copy, nonatomic) NSString *relationshipKey;
-@property (copy, nonatomic) NSString *keyPathFromRelatedObject;
-@property (retain, nonatomic) NSKeyValueProperty *relationshipProperty;
-@property (copy, nonatomic) NSString *keyPathWithoutOperatorComponents;
-@property (assign, nonatomic) BOOL isAllowedToResultInForwarding;
-@property (retain, nonatomic) id dependentValueKeyOrKeys; 
-@property (assign, nonatomic) BOOL dependentValueKeyOrKeysIsASet; // TODO: this is dumb. Make it always a set.
-@end
-
 @implementation NSKeyValueNestedProperty
+@synthesize relationshipKey = _relationshipKey;
+@synthesize keyPathFromRelatedObject = _keyPathFromRelatedObject;
+@synthesize relationshipProperty = _relationshipProperty;
+@synthesize keyPathWithoutOperatorComponents = _keyPathWithoutOperatorComponents;
+@synthesize isAllowedToResultInForwarding = _isAllowedToResultInForwarding;
+@synthesize dependentValueKeyOrKeys = _dependentValueKeyOrKeys; 
+@synthesize dependentValueKeyOrKeysIsASet = _dependentValueKeyOrKeysIsASet;
 
 - (BOOL)matchesWithoutOperatorComponentsKeyPath:(NSString *)keyPath
 {

@@ -13,11 +13,6 @@
 #import <Foundation/NSKeyedArchiver.h>
 
 @implementation NSTernaryExpression
-{
-    NSPredicate *_predicate;
-    NSExpression *_trueExpression;
-    NSExpression *_falseExpression;
-}
 
 static NSString * const NSPredicateKey = @"NSPredicate";
 static NSString * const NSTrueExpressionKey = @"NSTrueExpression";

@@ -14,6 +14,7 @@
 #import "NSObjectInternal.h"
 #import <stdlib.h>
 #import <Foundation/NSKeyedArchiver.h>
+#import "NSExternals.h"
 
 CF_EXPORT CFTypeRef _CFPropertyListCreateFromXMLData(CFAllocatorRef allocator, CFDataRef xmlData, CFOptionFlags option, CFStringRef *errorString, Boolean allNewTypes, CFPropertyListFormat *format);
 

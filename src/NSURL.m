@@ -42,11 +42,9 @@ OBJC_PROTOCOL_IMPL_PUSH
             [self release];
             return nil;
         }
-        else if (!_CFURLInitWithFileSystemPath([self _cfurl], (CFStringRef)path, kCFURLPOSIXPathStyle, isDirectory, NULL))
-        {
-            [self release];
-            return nil;
-        }
+
+        [self release];
+        self = (NSURL*) CFURLCreateWithFileSystemPath(kCFAllocatorDefault, (CFStringRef)path, kCFURLPOSIXPathStyle, isDirectory);
         return self;
     }
     else
@@ -67,11 +65,9 @@ OBJC_PROTOCOL_IMPL_PUSH
     BOOL isDir = NO;
     [[NSFileManager defaultManager] fileExistsAtPath:path isDirectory:&isDir];
     
-    if (!_CFURLInitWithFileSystemPath([self _cfurl], (CFStringRef)path, kCFURLPOSIXPathStyle, isDir, NULL))
-    {
-        [self release];
-        return nil;
-    }
+	[self release];
+	self = (NSURL*) CFURLCreateWithFileSystemPath(kCFAllocatorDefault, (CFStringRef)path, kCFURLPOSIXPathStyle, isDir);
+
     return self;
 }
 OBJC_PROTOCOL_IMPL_POP
@@ -80,11 +76,8 @@ OBJC_PROTOCOL_IMPL_POP
 {
     if ([self class] == [NSURL class])
     {
-        if (!_CFURLInitWithFileSystemRepresentation((CFURLRef)self, (const UInt8 *)path, strlen(path), isDir, (CFURLRef)baseURL))
-        {
-            [self release];
-            return nil;
-        }
+        [self release];
+        self = (NSURL*) CFURLCreateFromFileSystemRepresentationRelativeToBase(kCFAllocatorDefault, (const UInt8 *)path, strlen(path), isDir, (CFURLRef)baseURL);
     }
     else
     {
@@ -102,7 +95,7 @@ OBJC_PROTOCOL_IMPL_POP
 {
     if (self == [NSURL class])
     {
-        return (NSURL *)_CFURLAlloc(kCFAllocatorDefault);
+        return (NSURL *)CFURLCreateWithString(kCFAllocatorDefault, @"", NULL);
     }
     else
     {
@@ -562,11 +555,8 @@ OBJC_PROTOCOL_IMPL_PUSH
 {
     if ([self class] == [NSURL class])
     {
-        if (!_CFURLInitWithURLString([self _cfurl], (CFStringRef)string, true, [url _cfurl]))
-        {
-            [self release];
-            return nil;
-        }
+		[self release];
+        self = CFURLCreateWithString(kCFAllocatorDefault, (CFStringRef)string, [url _cfurl]);
     }
     else
     {

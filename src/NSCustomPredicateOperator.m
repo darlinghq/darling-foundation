@@ -12,9 +12,6 @@
 static NSString * const NSSelectorNameKey = @"NSSelectorName";
 
 @implementation NSCustomPredicateOperator
-{
-    SEL _selector;
-}
 
 + (BOOL)supportsSecureCoding
 {

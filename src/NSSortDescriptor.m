@@ -25,12 +25,7 @@ enum {
     NSSortDescriptorComparator = 0x2,
 };
 
-@implementation NSSortDescriptor {
-    NSUInteger _sortDescriptorFlags;
-    NSString *_key;
-    SEL _selector;
-    id _selectorOrBlock;
-}
+@implementation NSSortDescriptor
 
 + (id)sortDescriptorWithKey:(NSString *)key ascending:(BOOL)ascending
 {

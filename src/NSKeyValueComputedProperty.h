@@ -4,6 +4,16 @@
 
 CF_PRIVATE
 @interface NSKeyValueComputedProperty : NSKeyValueProperty
+{
+	NSKeyValueProperty* _operationArgumentProperty;
+	NSString* _operationArgumentKeyPath;
+	NSString* _operationName;
+}
+
+@property (nonatomic, retain) NSKeyValueProperty *operationArgumentProperty;
+@property (nonatomic, copy) NSString *operationArgumentKeyPath;
+@property (nonatomic, copy) NSString *operationName;
+
 - (NSString *)_keyPathIfAffectedByValueForMemberOfKeys:(NSSet *)keys;
 - (NSString *)_keyPathIfAffectedByValueForKey:(NSString *)key exactMatch:(BOOL *)exactMatch;
 - (Class)_isaForAutonotifying;

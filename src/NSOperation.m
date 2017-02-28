@@ -31,10 +31,7 @@ enum __NSOperationState {
 
 typedef NSUInteger _NSOperationState;
 
-@class _NSOperationInternal;
-@interface NSOperation() {
-    _NSOperationInternal *_internal;
-}
+@interface NSOperation()
 
 @property (nonatomic, readonly) _NSOperationInternal* _internal;
 
@@ -77,22 +74,7 @@ typedef NSUInteger _NSOperationState;
 
 static volatile int32_t _NSOperationQueueID = 0;
 
-@interface NSOperationQueue() {
-    BOOL _suspended;
-    NSString *_name;
-    NSInteger _maxConcurrentOperationCount;
-    pthread_mutex_t _queuelock;
-    pthread_mutexattr_t _mta;
-
-    NSMutableArray *_pendingOperations;
-    NSMutableArray *_operations;
-    NSMutableArray *_operationsToStart;
-
-    _NSOperationQueueInternal *_internal;
-
-    BOOL _isMainQueue;
-}
-
+@interface NSOperationQueue()
 
 - (void)_removeFinishedOperation:(_NSOperationInternal *)opi;
 - (void)_queueSchedulerRun;
@@ -1112,9 +1094,7 @@ static NSComparisonResult compareOperationEffectivePriorities(id obj1, id obj2, 
 }
 @end
 
-@implementation NSInvocationOperation {
-    NSInvocation *_inv;
-}
+@implementation NSInvocationOperation
 
 - (id)initWithTarget:(id)target selector:(SEL)sel object:(id)arg
 {
@@ -1175,10 +1155,7 @@ static NSComparisonResult compareOperationEffectivePriorities(id obj1, id obj2, 
 
 @end
 
-@implementation NSBlockOperation {
-    dispatch_block_t _block;
-    NSMutableArray *_blocks;
-}
+@implementation NSBlockOperation
 
 - (id)initWithBlock:(void (^)(void))block
 {

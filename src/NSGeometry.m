@@ -9,6 +9,7 @@
  */
 
 #import "NSGeometry.h"
+#import "NSScanner.h"
 
 /*
  *	Constant structs
@@ -58,7 +59,7 @@ BOOL NSIsEmptyRect(NSRect aRect)
 
 /** Returns the rectangle obtained by translating aRect
  * horizontally by dx and vertically by dy. */
-NSRect NSOffsetRect(NSRect aRect, float dx, float dy)
+NSRect NSOffsetRect(NSRect aRect, CGFloat dx, CGFloat dy)
 {
 	NSRect rect = aRect;
 	
@@ -70,7 +71,7 @@ NSRect NSOffsetRect(NSRect aRect, float dx, float dy)
 /** Returns the rectangle obtained by moving each of aRect's
  * horizontal sides inward by dy and each of aRect's vertical
  * sides inward by dx. */
-NSRect NSInsetRect(NSRect aRect, float dX, float dY)
+NSRect NSInsetRect(NSRect aRect, CGFloat dX, CGFloat dY)
 {
 	NSRect rect;
 	
@@ -257,7 +258,7 @@ NSRect NSIntegralRect(NSRect aRect)
 	return rect;
 }
 
-void NSDivideRect(NSRect aRect, NSRect *slice, NSRect *remainder, float amount, NSRectEdge edge)
+void NSDivideRect(NSRect aRect, NSRect *slice, NSRect *remainder, CGFloat amount, NSRectEdge edge)
 {
 	static NSRect sRect;
 	static NSRect	rRect;

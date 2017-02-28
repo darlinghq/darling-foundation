@@ -104,30 +104,13 @@ NSString *const NSInvalidUnarchiveOperationException = @"NSInvalidUnarchiveOpera
 
 @end
 
-typedef struct {
+typedef struct offsetDataStruct {
     CFBinaryPlistTrailer trailer;
     uint64_t offset;
     uint64_t valueOffset;
 } offsetDataStruct;
 
-@implementation NSKeyedUnarchiver {
-    id<NSKeyedUnarchiverDelegate> _delegate;
-    unsigned int _flags;
-    CFMutableDictionaryRef _objRefMap;
-    id _replacementMap;
-    CFMutableDictionaryRef _nameClassMap;
-    CFMutableDictionaryRef _tmpRefObjMap;
-    CFMutableDictionaryRef _refObjMap;
-    int _genericKey;
-    CFDataRef _data;
-    offsetDataStruct *_offsetData;  // trailer info
-    CFMutableArrayRef _containers;  // for xml unarchives
-    CFArrayRef _objects;            // for xml unarchives
-    const char *_bytes;
-    unsigned long long _len;
-    _NSKeyedUnarchiverHelper *_helper;
-    CFMutableDictionaryRef _reservedDictionary;
-}
+@implementation NSKeyedUnarchiver
 
 static NSString *unescapeKey(NSString *key)
 {

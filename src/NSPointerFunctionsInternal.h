@@ -1,4 +1,5 @@
 #import <Foundation/NSPointerFunctions.h>
+#import <Foundation/NSPointerArray.h>
 #import "NSObjectInternal.h"
 
 #define NSPointerFunctionsMemoryTypeMask 0xff
@@ -8,7 +9,6 @@
 #define NSPointerFunctionsPersonality(options) (options & NSPointerFunctionsPersonalityMask)
 
 #define NSPointerFunctionsOptionsInvalid (-1)
-#define NSPointerFunctionsZeroingWeakMemory (1UL << 0)
 
 CF_PRIVATE
 @interface NSWeakCallback : NSObject {
@@ -18,33 +18,6 @@ CF_PRIVATE
 }
 
 @end
-
-struct NSSlice {
-    void **items;
-    BOOL wantsStrong;
-    BOOL wantsWeak;
-    BOOL wantsARC;
-    BOOL shouldCopyIn;
-    BOOL usesStrong;
-    BOOL usesWeak;
-    BOOL usesARC;
-    BOOL usesSentinel;
-    BOOL pointerPersonality;
-    BOOL integerPersonality;
-    BOOL simpleReadClear;
-    NSWeakCallback *callback;
-    NSUInteger (*sizeFunction)(const void *item);
-    NSUInteger (*hashFunction)(const void *item, NSUInteger (*size)(const void *item));
-    BOOL (*isEqualFunction)(const void *item1, const void*item2, NSUInteger (*size)(const void *item));
-    NSString *(*describeFunction)(const void *item);
-    void *(*acquireFunction)(const void *src, NSUInteger (*size)(const void *item), BOOL shouldCopy);
-    void (*relinquishFunction)(const void *item, NSUInteger (*size)(const void *item));
-    void *(*allocateFunction)(size_t count);
-    void (*freeFunction)(void **buffer, NSUInteger size);
-    void *(*readAt)(void **ptr, BOOL *wasSentinel);
-    void (*clearAt)(void **ptr);
-    void (*storeAt)(void **buffer, void *item, NSUInteger index);
-};
 
 CF_PRIVATE
 extern void * const _NSPointerFunctionsSentinel;

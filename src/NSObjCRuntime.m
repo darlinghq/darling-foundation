@@ -8,6 +8,7 @@
 #import <Foundation/NSString.h>
 #import "ForFoundationOnly.h"
 #import <objc/runtime.h>
+#import <objc/objc-internal.h>
 
 extern Class NSClassFromObject(id object);
 Class NSClassFromObject(id object)
@@ -78,7 +79,6 @@ Protocol *NSProtocolFromString(NSString *namestr)
     }
 }
 
-extern CFTypeRef _CFAutoreleasePoolAddObject(CFTypeRef obj);
 
 
 #pragma clang diagnostic push
@@ -150,7 +150,7 @@ NSUInteger NSExtraRefCount(id object)
 extern id NSAutoreleaseObject(id obj);
 id NSAutoreleaseObject(id obj)
 {
-    return (id)_CFAutoreleasePoolAddObject((CFTypeRef)obj);
+    return _objc_rootAutorelease(obj);
 }
 
 __attribute__((visibility("default"))) extern NSString *_NSNewStringFromCString(const char *cString);

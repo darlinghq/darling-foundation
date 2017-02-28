@@ -10,6 +10,7 @@
 #import <Foundation/NSString.h>
 #import <Foundation/NSArray.h>
 #import <dispatch/dispatch.h>
+#import <CoreGraphics/CGBase.h>
 
 NSString *const NS_objects =  @"NS.objects";
 NSString *const NS_keys =  @"NS.keys";
@@ -33,20 +34,22 @@ NSString *const NS_offset_h =  @"NS.offset.h";
 NSString *const NS_offset_v =  @"NS.offset.v";
 NSString *const NS_time =  @"NS.time";
 
-NSString *NSStringFromPoint(CGPoint pt)
+#if 0
+NSString *NSStringFromPoint(NSPoint pt)
 {
     return [NSString stringWithFormat:@"{%.8g, %.8g}", pt.x, pt.y];
 }
 
-NSString *NSStringFromSize(CGSize sz)
+NSString *NSStringFromSize(NSSize sz)
 {
     return [NSString stringWithFormat:@"{%.8g, %.8g}", sz.width, sz.height];
 }
 
-NSString *NSStringFromRect(CGRect r)
+NSString *NSStringFromRect(NSRect r)
 {
     return [NSString stringWithFormat:@"{{%.8g, %.8g}, {%.8g, %.8g}}", r.origin.x, r.origin.y, r.size.width, r.size.height];
 }
+#endif
 
 static NSArray *CGFloatArrayFromString(NSString *string)
 {
@@ -70,9 +73,10 @@ static NSArray *CGFloatArrayFromString(NSString *string)
     return [result autorelease];
 }
 
-CGSize NSSizeFromString(NSString *string)
+#if 0
+NSSize NSSizeFromString(NSString *string)
 {
-    CGSize sz = {0, 0};
+    NSSize sz = {0, 0};
     NSArray *components = CGFloatArrayFromString(string);
     if ([components count] == 2)
     {
@@ -82,9 +86,9 @@ CGSize NSSizeFromString(NSString *string)
     return sz;
 }
 
-CGPoint NSPointFromString(NSString *string)
+NSPoint NSPointFromString(NSString *string)
 {
-    CGPoint pt = {0, 0};
+    NSPoint pt = {0, 0};
     NSArray *components = CGFloatArrayFromString(string);
     if ([components count] == 2)
     {
@@ -94,9 +98,9 @@ CGPoint NSPointFromString(NSString *string)
     return pt;
 }
 
-CGRect NSRectFromString(NSString *string)
+NSRect NSRectFromString(NSString *string)
 {
-    CGRect r = {{0, 0}, {0, 0}};
+    NSRect r = {{0, 0}, {0, 0}};
     NSArray *components = CGFloatArrayFromString(string);
     if ([components count] == 4)
     {
@@ -107,3 +111,5 @@ CGRect NSRectFromString(NSString *string)
     }
     return r;
 }
+#endif
+

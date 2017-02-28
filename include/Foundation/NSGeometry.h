@@ -2,8 +2,18 @@
 #import <Foundation/NSCoder.h>
 #import <Foundation/NSValue.h>
 
-#import <CoreGraphics/CGBase.h>
-#import <CoreGraphics/CGGeometry.h>
+#ifndef CGFLOAT_DEFINED
+#if __LP64__
+typedef double CGFloat;
+#else
+typedef float CGFloat;
+#endif
+#define CGFLOAT_DEFINED
+#endif
+
+typedef struct CGPoint CGPoint;
+typedef struct CGRect CGRect;
+typedef struct CGSize CGSize;
 
 #if __LP64__ || TARGET_OS_EMBEDDED || TARGET_OS_IPHONE || TARGET_OS_WIN32 || NS_BUILD_32_LIKE_64
 
@@ -21,6 +31,9 @@ typedef CGRect NSRect;
 
 typedef NSRect *NSRectPointer;
 typedef NSRect *NSRectArray;
+
+#import <CoreGraphics/CGBase.h>
+#import <CoreGraphics/CGGeometry.h>
 
 typedef NS_ENUM(NSUInteger, NSRectEdge) {
     NSRectEdgeMinX = CGRectMinXEdge,
@@ -61,6 +74,9 @@ typedef struct _NSRect {
 
 typedef NSRect *NSRectPointer;
 typedef NSRect *NSRectArray;
+
+#import <CoreGraphics/CGBase.h>
+#import <CoreGraphics/CGGeometry.h>
 
 typedef enum {
     NSRectEdgeMinX = 0,
@@ -239,6 +255,7 @@ FOUNDATION_EXPORT NSPoint NSPointFromString(NSString *aString);
 FOUNDATION_EXPORT NSSize NSSizeFromString(NSString *aString);
 FOUNDATION_EXPORT NSRect NSRectFromString(NSString *aString);
 
+#ifdef __OBJC__
 @interface NSValue (NSValueGeometryExtensions)
 
 + (NSValue *)valueWithPoint:(NSPoint)point;
@@ -277,4 +294,6 @@ FOUNDATION_EXPORT NSRect NSRectFromString(NSString *aString);
 - (NSRect)decodeRectForKey:(NSString *)key;
 
 @end
+
+#endif
 

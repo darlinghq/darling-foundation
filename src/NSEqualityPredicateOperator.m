@@ -12,10 +12,6 @@
 #import <objc/message.h>
 
 @implementation NSEqualityPredicateOperator
-{
-    BOOL _negate;
-    NSComparisonPredicateOptions _options;
-}
 
 static NSString * const NSNegateKey = @"NSNegate";
 static NSString * const NSOptionsKey = @"NSOptions";

@@ -18,17 +18,29 @@
 #import "NSBOMEncoding.h"
 
 @interface _NSJSONReader : NSObject
-@end
-
-@interface _NSJSONWriter : NSObject
-- (int)appendString:(NSString *)string range:(NSRange)range;
-@end
-
-@implementation _NSJSONReader {
+{
     id input;
     NSJSONReadingOptions kind;
     NSError *error;
 }
+@end
+
+@interface _NSJSONWriter : NSObject
+{
+    NSOutputStream *outputStream;
+    NSJSONWritingOptions kind;
+    char *dataBuffer;
+    NSUInteger dataBufferLen;
+    NSUInteger dataLen;
+    BOOL freeDataBuffer;
+    char *tempBuffer;
+    NSUInteger tempBufferLen;
+    NSInteger totalDataWritten;
+}
+- (int)appendString:(NSString *)string range:(NSRange)range;
+@end
+
+@implementation _NSJSONReader
 
 + (BOOL)validForJSON:(id)obj depth:(NSUInteger)depth allowFragments:(BOOL)frags
 {
@@ -1174,17 +1186,7 @@ static inline BOOL writeObject(_NSJSONWriter *writer, id object, NSJSONWritingOp
     }
 }
 
-@implementation _NSJSONWriter {
-    NSOutputStream *outputStream;
-    NSJSONWritingOptions kind;
-    char *dataBuffer;
-    NSUInteger dataBufferLen;
-    NSUInteger dataLen;
-    BOOL freeDataBuffer;
-    char *tempBuffer;
-    NSUInteger tempBufferLen;
-    NSInteger totalDataWritten;
-}
+@implementation _NSJSONWriter
 
 - (id)init
 {

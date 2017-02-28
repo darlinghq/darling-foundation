@@ -1,7 +1,10 @@
 #import <Foundation/NSCoder.h>
 #import <Foundation/NSPropertyList.h>
+#import <CoreFoundation/CFDictionary.h>
+#import <CoreFoundation/CFNumber.h>
+#import <CoreFoundation/CFSet.h>
 
-@class NSArray, NSMutableData, NSData, NSKeyedArchiver, NSKeyedUnarchiver;
+@class NSArray, NSMutableArray, NSMutableData, NSData, NSKeyedArchiver, NSKeyedUnarchiver;
 
 @protocol NSKeyedArchiverDelegate <NSObject>
 @optional
@@ -28,7 +31,26 @@
 FOUNDATION_EXPORT NSString * const NSInvalidArchiveOperationException;
 FOUNDATION_EXPORT NSString * const NSInvalidUnarchiveOperationException;
 
+typedef const struct __CFKeyedArchiverUID* CFKeyedArchiverUIDRef;
+
 @interface NSKeyedArchiver : NSCoder
+{
+    CFTypeRef _stream;
+    unsigned int _flags;
+    id<NSKeyedArchiverDelegate> _delegate;
+    NSMutableArray *_containers;
+    NSMutableArray *_objects;
+    CFMutableDictionaryRef _objRefMap;
+    CFMutableDictionaryRef _replacementMap;
+    id _classNameMap;
+    CFMutableDictionaryRef _conditionals;
+    id _classes;
+    NSUInteger _genericKey;
+    CFKeyedArchiverUIDRef *_cache;
+    unsigned int _cacheSize;
+    unsigned int _estimatedCount;
+    CFMutableSetRef _visited;
+}
 
 + (NSData *)archivedDataWithRootObject:(id)rootObject;
 + (BOOL)archiveRootObject:(id)rootObject toFile:(NSString *)path;
@@ -55,7 +77,28 @@ FOUNDATION_EXPORT NSString * const NSInvalidUnarchiveOperationException;
 
 @end
 
+typedef struct offsetDataStruct offsetDataStruct;
+@class _NSKeyedUnarchiverHelper;
+
 @interface NSKeyedUnarchiver : NSCoder
+{
+    id<NSKeyedUnarchiverDelegate> _delegate;
+    unsigned int _flags;
+    CFMutableDictionaryRef _objRefMap;
+    id _replacementMap;
+    CFMutableDictionaryRef _nameClassMap;
+    CFMutableDictionaryRef _tmpRefObjMap;
+    CFMutableDictionaryRef _refObjMap;
+    int _genericKey;
+    CFDataRef _data;
+    offsetDataStruct *_offsetData;  // trailer info
+    CFMutableArrayRef _containers;  // for xml unarchives
+    CFArrayRef _objects;            // for xml unarchives
+    const char *_bytes;
+    unsigned long long _len;
+    _NSKeyedUnarchiverHelper *_helper;
+    CFMutableDictionaryRef _reservedDictionary;
+}
 
 + (id)unarchiveObjectWithData:(NSData *)data;
 + (id)unarchiveObjectWithFile:(NSString *)path;

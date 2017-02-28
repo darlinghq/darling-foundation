@@ -72,11 +72,7 @@ CF_PRIVATE
 
 @end
 
-@implementation NSNetService {
-    CFNetServiceRef _netService;
-    id _delegate;
-    NSNetServicesInternal *_reserved;
-}
+@implementation NSNetService
 
 + (NSDictionary *)dictionaryFromTXTRecordData:(NSData *)txtData
 {
@@ -427,12 +423,7 @@ static void _netServiceDispatchCallbackForResolving(CFNetServiceRef theService, 
 
 @end
 
-@implementation NSNetServiceBrowser {
-    CFNetServiceBrowserRef _netServiceBrowser;
-    id _delegate;
-    void *_tbd;
-    BOOL _includesPeerToPeer;
-}
+@implementation NSNetServiceBrowser
 
 static void _netServiceBrowserDispatchCallBack(CFNetServiceBrowserRef browser, CFOptionFlags flags, CFTypeRef domainOrService, CFStreamError *error, void *info) {
     [(NSNetServiceBrowser *)info _dispatchCallBack:domainOrService flags:flags error:error];

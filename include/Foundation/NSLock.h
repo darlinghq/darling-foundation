@@ -1,4 +1,5 @@
 #import <Foundation/NSObject.h>
+#import <pthread.h>
 
 @class NSDate;
 
@@ -10,6 +11,12 @@
 @end
 
 @interface NSLock : NSObject <NSLocking>
+{
+    pthread_t _thread;
+    pthread_mutex_t _lock;
+    NSString *_name;
+    BOOL _isInitialized;
+}
 
 - (BOOL)tryLock;
 - (BOOL)lockBeforeDate:(NSDate *)limit;
@@ -18,7 +25,14 @@
 
 @end
 
+@class NSCondition;
 @interface NSConditionLock : NSObject <NSLocking>
+{
+    NSCondition *_cond;
+    NSInteger _value;
+    pthread_t _thread;
+    BOOL _locked;
+}
 
 - (id)initWithCondition:(NSInteger)condition;
 - (NSInteger)condition;
@@ -34,6 +48,15 @@
 @end
 
 @interface NSRecursiveLock : NSObject <NSLocking>
+{
+    pthread_mutex_t _lock;
+    pthread_mutexattr_t _attrs;
+    pthread_t _thread;
+    int _locks;
+    NSString *_name;
+    BOOL _lockIsInitialized;
+    BOOL _mutexAttrsInitialized;
+}
 
 - (BOOL)tryLock;
 - (BOOL)lockBeforeDate:(NSDate *)limit;
@@ -43,6 +66,15 @@
 @end
 
 @interface NSCondition : NSObject <NSLocking>
+{
+    pthread_mutex_t _lock;
+    pthread_mutexattr_t _attrs;
+    pthread_cond_t _cond;
+    pthread_condattr_t _condAttrs;
+    pthread_t _thread;
+    NSString *_name;
+    BOOL _isInitialized;
+}
 
 - (void)wait;
 - (BOOL)waitUntilDate:(NSDate *)limit;

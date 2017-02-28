@@ -14,14 +14,6 @@
 #import <CFNetwork/CFURLAuthChallenge.h>
 
 @implementation NSURLAuthenticationChallenge
-{
-    NSURLProtectionSpace *_protectionSpace;
-    NSURLCredential *_proposedCredential;
-    NSInteger _previousFailureCount;
-    NSURLResponse *_failureResponse;
-    NSError *_error;
-    id<NSURLAuthenticationChallengeSender> _sender;
-}
 
 + (BOOL)supportsSecureCoding
 {

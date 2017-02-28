@@ -31,6 +31,8 @@
 #import "Foundation/NSMapTable.h"
 #import "Foundation/NSNotification.h"
 
+#define IF_NO_GC(x) x
+NSString* const NSClassDescriptionNeededForClassNotification = @"NSClassDescriptionNeededForClassNotification";
 
 /**
  *  Each instance of this class provides descriptive information for an
@@ -87,9 +89,9 @@ static NSMapTable	*classMap;
     {
       classMap = NSCreateMapTable(NSObjectMapKeyCallBacks,
         NSObjectMapValueCallBacks, 100);
-      [[NSObject leakAt: &classMap] release];
+      // [[NSObject leakAt: &classMap] release];
       mapLock = [NSRecursiveLock new];
-      [[NSObject leakAt: &mapLock] release];
+      // [[NSObject leakAt: &mapLock] release];
     }
 }
 

@@ -12,9 +12,6 @@
 #import <Foundation/NSLocale.h>
 
 @implementation NSSubstringPredicateOperator
-{
-    NSSubstringPredicateOperatorPosition _position;
-}
 
 static NSString * const NSPositionKey = @"NSPosition";
 

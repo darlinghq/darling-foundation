@@ -2,6 +2,7 @@
 #import "CFInternal.h"
 #import "NSExternals.h"
 #import <CoreFoundation/CFNumber.h>
+#import <CoreGraphics/CGBase.h>
 
 CF_EXPORT Boolean _CFNumberGetValue(CFNumberRef number, CFNumberType type, void *valuePtr);
 CF_EXPORT CFNumberType _CFNumberGetType(CFNumberRef num);

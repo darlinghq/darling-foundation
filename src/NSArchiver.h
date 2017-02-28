@@ -1,8 +1,16 @@
 #import <Foundation/NSCoder.h>
 #import <Foundation/NSData.h>
 #import <Foundation/NSArray.h>
+#import <Foundation/NSDictionary.h>
+#import <CoreFoundation/CFDictionary.h>
 
 @interface NSArchiver : NSCoder
+{
+    NSMutableData *mdata;
+    void *ids;
+    NSMutableDictionary *map;
+    CFMutableDictionaryRef replacementTable;
+}
 
 + (BOOL)archiveRootObject:(id)object toFile:(NSString *)path;
 + (id)archivedDataWithRootObject:(id)object;

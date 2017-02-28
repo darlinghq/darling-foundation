@@ -12,10 +12,7 @@
 #import <Foundation/NSString.h>
 #import <Foundation/NSLocale.h>
 
-@implementation NSNumberFormatter {
-    NSMutableDictionary *_attributes;
-    CFNumberFormatterRef _formatter;
-}
+@implementation NSNumberFormatter
 
 + (NSString *)localizedStringFromNumber:(NSNumber *)num numberStyle:(NSNumberFormatterStyle)nstyle
 {

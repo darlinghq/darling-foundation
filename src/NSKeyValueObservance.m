@@ -11,6 +11,14 @@
 #import "NSKeyValueProperty.h"
 
 @implementation NSKeyValueObservance
+@synthesize observer = _observer;
+@synthesize keyPath = _keyPath;
+@synthesize property = _property;
+@synthesize originalObservable = _originalObservable;
+@synthesize context = _context;
+@synthesize setter = _setter;
+@synthesize options = _options;
+
 - (instancetype)initWithObserver:(NSObject *)observer forKeyPath:(NSString *)keyPath ofObject:(NSObject *)object withContext:(void *)context options:(NSKeyValueObservingOptions)options
 {
     self = [super init];

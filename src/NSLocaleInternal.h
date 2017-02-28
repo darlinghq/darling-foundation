@@ -26,9 +26,7 @@ __attribute__((visibility("hidden")))
 @end
 
 __attribute__((visibility("hidden")))
-@interface NSAutoLocale : NSLocale {
-    NSLocale *loc;
-}
+@interface NSAutoLocale : NSLocale
 
 + (BOOL)supportsSecureCoding;
 - (Class)classForCoder;

@@ -3,6 +3,21 @@
 
 CF_PRIVATE
 @interface NSFileAttributes : NSDictionary
+{
+    NSMutableDictionary *dict;
+    struct stat statInfo;
+    struct {
+        char extensionHidden;
+        NSDate *creationDate;
+        struct _fields {
+            unsigned int extensionHidden:1;
+            unsigned int creationDate:1;
+            unsigned int reserved:30;
+        } validFields;
+    } catInfo;
+    NSDictionary *extendedAttrs;
+    int fileProtectionClass;
+}
 
 + (id)attributesWithStat:(struct stat *)info;
 + (id)_attributesAtURL:(NSURL *)url partialReturn:(BOOL)partial filterResourceFork:(BOOL)filter error:(NSError **)error;

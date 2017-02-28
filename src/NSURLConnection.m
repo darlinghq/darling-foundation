@@ -524,9 +524,7 @@ static CFCachedURLResponseRef cache(const void *info, CFCachedURLResponseRef cac
 
 @end
 
-@implementation NSURLConnection {
-    NSURLConnectionInternal *_internal;
-}
+@implementation NSURLConnection
 
 + (NSURLConnection*)connectionWithRequest:(NSURLRequest *)request delegate:(id<NSURLConnectionDelegate>)delegate
 {

@@ -2,6 +2,12 @@
 #import <Foundation/NSSet.h>
 
 @interface NSSortDescriptor : NSObject <NSCoding, NSCopying>
+{
+    NSUInteger _sortDescriptorFlags;
+    NSString *_key;
+    SEL _selector;
+    id _selectorOrBlock;
+}
 
 + (id)sortDescriptorWithKey:(NSString *)key ascending:(BOOL)ascending;
 + (id)sortDescriptorWithKey:(NSString *)key ascending:(BOOL)ascending selector:(SEL)selector;

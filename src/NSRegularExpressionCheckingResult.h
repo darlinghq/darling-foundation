@@ -2,6 +2,11 @@
 
 @class NSArray, NSRegularExpression;
 
+typedef NS_ENUM(NSUInteger, NSRegularExpressionCheckingResultLimits) {
+    NSRegularExpressionCheckingResultSimpleLimit = 3,
+    NSRegularExpressionCheckingResultExtendedLimit = 7,
+};
+
 NS_REQUIRES_PROPERTY_DEFINITIONS
 @interface NSRegularExpressionCheckingResult : NSTextCheckingResult
 
@@ -19,6 +24,11 @@ NS_REQUIRES_PROPERTY_DEFINITIONS
 @end
 
 @interface NSSimpleRegularExpressionCheckingResult : NSRegularExpressionCheckingResult
+{
+    NSRegularExpression *_regularExpression;
+    NSRange _ranges[NSRegularExpressionCheckingResultSimpleLimit];
+    NSUInteger _numberOfRanges;
+}
 
 - (id)initWithRangeArray:(NSArray *)ranges regularExpression:(NSRegularExpression *)expression;
 - (id)initWithRanges:(NSRangePointer)ranges count:(NSUInteger)count regularExpression:(NSRegularExpression *)expression;
@@ -33,6 +43,10 @@ NS_REQUIRES_PROPERTY_DEFINITIONS
 @end
 
 @interface NSExtendedRegularExpressionCheckingResult : NSRegularExpressionCheckingResult
+{
+    NSRegularExpression *_regularExpression;
+    NSRange _ranges[NSRegularExpressionCheckingResultExtendedLimit];
+}
 
 - (id)initWithRangeArray:(NSArray *)ranges regularExpression:(NSRegularExpression *)expression;
 - (id)initWithRanges:(NSRangePointer)ranges count:(NSUInteger)count regularExpression:(NSRegularExpression *)expression;

@@ -19,7 +19,12 @@ FOUNDATION_EXPORT NSString * const NSURLAuthenticationMethodNegotiate;
 FOUNDATION_EXPORT NSString * const NSURLAuthenticationMethodClientCertificate;
 FOUNDATION_EXPORT NSString * const NSURLAuthenticationMethodServerTrust;
 
+@class NSURLProtectionSpaceInternal;
+
 @interface NSURLProtectionSpace : NSObject <NSCoding, NSCopying>
+{
+    NSURLProtectionSpaceInternal *_internal;
+}
 - (id)initWithHost:(NSString *)host port:(NSInteger)port protocol:(NSString *)protocol realm:(NSString *)realm authenticationMethod:(NSString *)authenticationMethod;
 - (id)initWithProxyHost:(NSString *)host port:(NSInteger)port type:(NSString *)type realm:(NSString *)realm  authenticationMethod:(NSString *)authenticationMethod;
 - (NSString *)realm;

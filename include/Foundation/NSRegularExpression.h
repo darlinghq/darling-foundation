@@ -71,6 +71,9 @@ typedef NS_OPTIONS(NSUInteger, NSMatchingFlags) {
 @end
 
 @interface NSDataDetector : NSRegularExpression
+{
+    NSTextCheckingTypes _checkingTypes;
+}
 
 @property (readonly) NSTextCheckingTypes checkingTypes;
 + (NSDataDetector *)dataDetectorWithTypes:(NSTextCheckingTypes)checkingTypes error:(NSError **)error;

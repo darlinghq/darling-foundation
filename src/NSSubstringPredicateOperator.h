@@ -7,6 +7,9 @@ typedef NS_ENUM(NSUInteger, NSSubstringPredicateOperatorPosition) {
 };
 
 @interface NSSubstringPredicateOperator : NSStringPredicateOperator
+{
+    NSSubstringPredicateOperatorPosition _position;
+}
 
 - (id)initWithOperatorType:(NSPredicateOperatorType)type modifier:(NSComparisonPredicateModifier)modifier variant:(NSUInteger)variant position:(NSSubstringPredicateOperatorPosition)position;
 - (NSSubstringPredicateOperatorPosition)position;

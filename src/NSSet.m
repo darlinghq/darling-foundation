@@ -18,6 +18,7 @@
 #import "NSFastEnumerationEnumerator.h"
 #import "NSKeyValueCodingInternal.h"
 #import "NSObjectInternal.h"
+#import "NSExternals.h"
 
 @interface NSSet ()
 - (NSUInteger)countForObject:(id)obj;
@@ -305,10 +306,7 @@ OBJC_PROTOCOL_IMPL_POP
 
 @end
 
-@implementation NSCountedSet {
-    CFMutableBagRef _table;
-    void *_reserved;
-}
+@implementation NSCountedSet
 
 + (BOOL)supportsSecureCoding
 {

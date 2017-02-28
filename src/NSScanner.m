@@ -14,6 +14,12 @@
 #import <Foundation/NSDecimal.h>
 #import <Foundation/NSDecimalNumber.h>
 
+#ifndef ULONG_LONG_MAX
+#	define ULONG_LONG_MAX 0xffffffffffffffffull
+#	define LONG_LONG_MAX 0x7fffffffffffffffll
+#	define LONG_LONG_MIN 0x8fffffffffffffffll
+#endif
+
 @interface NSScanner(Private)
 - (id)_invertedSkipSet;
 - (BOOL)_scanDecimal:(unsigned int)decimal into:(int *)addr;

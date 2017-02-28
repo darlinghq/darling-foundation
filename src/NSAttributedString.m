@@ -12,6 +12,9 @@
 
 CF_PRIVATE
 @interface NSMutableStringProxyForMutableAttributedString : NSMutableString
+{
+    NSMutableAttributedString *_owner;
+}
 - (id)initWithMutableAttributedString:(NSMutableAttributedString *)owner;
 @end
 
@@ -512,9 +515,6 @@ SINGLETON_RR()
 @end
 
 @implementation NSMutableStringProxyForMutableAttributedString
-{
-    NSMutableAttributedString *_owner;
-}
 
 - (id)initWithMutableAttributedString:(NSMutableAttributedString *)owner
 {

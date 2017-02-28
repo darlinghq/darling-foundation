@@ -21,7 +21,12 @@ typedef NS_ENUM(NSUInteger, NSURLRequestNetworkServiceType) {
     NSURLNetworkServiceTypeVoice      = 4
 };
 
+@class NSURLRequestInternal;
+
 @interface NSURLRequest : NSObject <NSCoding, NSCopying, NSMutableCopying>
+{
+    NSURLRequestInternal *_internal;
+}
 
 + (id)requestWithURL:(NSURL *)URL;
 + (id)requestWithURL:(NSURL *)URL cachePolicy:(NSURLRequestCachePolicy)cachePolicy timeoutInterval:(NSTimeInterval)timeoutInterval;

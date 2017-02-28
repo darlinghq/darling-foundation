@@ -7,9 +7,7 @@
 
 #import "NSPredicateInternal.h"
 
-@implementation NSBlockPredicate {
-    BOOL (^_block)(id evaluatedObject, NSDictionary *bindings);
-}
+@implementation NSBlockPredicate
 
 - (void)dealloc
 {

@@ -23,6 +23,16 @@ typedef NS_ENUM(NSInteger, NSByteCountFormatterCountStyle) {
 };
 
 @interface NSByteCountFormatter : NSFormatter
+{
+    NSByteCountFormatterUnits _allowedUnits;
+    char _countStyle;
+    BOOL _allowsNonnumericFormatting;
+    BOOL _includesUnit;
+    BOOL _includesCount;
+    BOOL _includesActualByteCount;
+    BOOL _adaptive;
+    BOOL _zeroPadsFractionDigits;
+}
 
 @property NSByteCountFormatterUnits allowedUnits;
 @property NSByteCountFormatterCountStyle countStyle;

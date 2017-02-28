@@ -46,6 +46,12 @@ FOUNDATION_EXPORT NSString * const NSPortDidBecomeInvalidNotification;
 NS_AUTOMATED_REFCOUNT_WEAK_UNAVAILABLE
 
 @interface NSMachPort : NSPort
+{
+    id _delegate;
+    NSUInteger _flags;
+    uint32_t _machPort;
+    NSUInteger _reserved;
+}
 
 + (NSPort *)portWithMachPort:(uint32_t)machPort;
 + (NSPort *)portWithMachPort:(uint32_t)machPort options:(NSUInteger)f;

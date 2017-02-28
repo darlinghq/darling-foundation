@@ -73,12 +73,7 @@ CF_PRIVATE
 @end
 
 
-@implementation NSXMLParser {
-    id <NSXMLParserDelegate> _delegate;
-    _NSXMLParserInfo *_info;
-    NSData *_data;
-    NSStream *_stream;
-}
+@implementation NSXMLParser
 
 static inline Boolean cStringEqual(const void *value1, const void *value2)
 {

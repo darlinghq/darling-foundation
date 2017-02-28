@@ -31,9 +31,7 @@ NSString * const NSHTTPCookieMaximumAge = @"Max-Age";
 NSString * const NSHTTPCookiePort = @"Port";
 
 
-@implementation NSHTTPCookie {
-    CFHTTPCookieRef  _cookiePrivate;
-}
+@implementation NSHTTPCookie
 
 + (id)cookieWithProperties:(NSDictionary *)properties
 {

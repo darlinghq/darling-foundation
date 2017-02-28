@@ -82,27 +82,7 @@ enum {
 - (NSArray *)directoryContentsAtPath:(NSString *)path matchingExtension:(NSString *)extension options:(NSDirectoryEnumerationOptions)options keepExtension:(BOOL)keepExtension error:(NSError **)error;
 @end
 
-@implementation NSFileManager {
-    id _delegate;
-    struct {
-        int shouldCopyItemAtPathToPath:1;
-        int shouldCopyItemAtURLToURL:1;
-        int shouldProceedAfterErrorCopyingItemAtPathToPath:1;
-        int shouldProceedAfterErrorCopyingItemAtURLToURL:1;
-        int shouldMoveItemAtPathToPath:1;
-        int shouldMoveItemAtURLToURL:1;
-        int shouldProceedAfterErrorMovingItemAtPathToPath:1;
-        int shouldProceedAfterErrorMovingItemAtURLToURL:1;
-        int shouldLinkItemAtPathToPath:1;
-        int shouldLinkItemAtURLToURL:1;
-        int shouldProceedAfterErrorLinkingItemAtPathToPath:1;
-        int shouldProceedAfterErrorLinkingItemAtURLToURL:1;
-        int shouldRemoveItemAtPath:1;
-        int shouldRemoveItemAtURL:1;
-        int shouldProceedAfterErrorRemovingItemAtPath:1;
-        int shouldProceedAfterErrorRemovingItemAtURL:1;
-    } _flags;
-}
+@implementation NSFileManager
 
 static void initializeDirectories(NSMutableSet *paths, NSSearchPathDirectory directory)
 {
@@ -441,6 +421,8 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
             {
 #ifdef ANDROID
                 value = [[NSDate alloc] initWithTimeIntervalSince1970:(NSTimeInterval)(s.st_ctime * NSEC_PER_SEC + s.st_ctime_nsec) / (NSTimeInterval)NSEC_PER_SEC];
+#elif defined(__APPLE__)
+                value = [[NSDate alloc] initWithTimeIntervalSince1970:(NSTimeInterval)(s.st_ctime * NSEC_PER_SEC + s.st_ctimespec.tv_nsec) / (NSTimeInterval)NSEC_PER_SEC];
 #else
 #error Implementation needed for file time specs
 #endif
@@ -449,6 +431,8 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
             {
 #ifdef ANDROID
                 value = [[NSDate alloc] initWithTimeIntervalSince1970:(NSTimeInterval)(s.st_atime * NSEC_PER_SEC + s.st_atime_nsec) / (NSTimeInterval)NSEC_PER_SEC];
+#elif defined(__APPLE__)
+                value = [[NSDate alloc] initWithTimeIntervalSince1970:(NSTimeInterval)(s.st_atime * NSEC_PER_SEC + s.st_atimespec.tv_nsec) / (NSTimeInterval)NSEC_PER_SEC];
 #else
 #error Implementation needed for file time specs
 #endif
@@ -457,6 +441,8 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
             {
 #ifdef ANDROID
                 value = [[NSDate alloc] initWithTimeIntervalSince1970:(NSTimeInterval)(s.st_mtime * NSEC_PER_SEC + s.st_mtime_nsec) / (NSTimeInterval)NSEC_PER_SEC];
+#elif defined(__APPLE__)
+                value = [[NSDate alloc] initWithTimeIntervalSince1970:(NSTimeInterval)(s.st_mtime * NSEC_PER_SEC + s.st_mtimespec.tv_nsec) / (NSTimeInterval)NSEC_PER_SEC];
 #else
 #error Implementation needed for file time specs
 #endif
@@ -465,6 +451,8 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
             {
 #ifdef ANDROID
                 value = [[NSDate alloc] initWithTimeIntervalSince1970:(NSTimeInterval)(s.st_mtime * NSEC_PER_SEC + s.st_mtime_nsec) / (NSTimeInterval)NSEC_PER_SEC];
+#elif defined(__APPLE__)
+                value = [[NSDate alloc] initWithTimeIntervalSince1970:(NSTimeInterval)(s.st_mtime * NSEC_PER_SEC + s.st_mtimespec.tv_nsec) / (NSTimeInterval)NSEC_PER_SEC];
 #else
 #error Implementation needed for file time specs
 #endif

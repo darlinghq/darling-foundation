@@ -4,6 +4,10 @@
 #import "NSPredicateInternal.h"
 
 @interface NSPredicateOperator : NSObject <NSSecureCoding, NSCopying>
+{
+    NSPredicateOperatorType _operatorType;
+    NSComparisonPredicateModifier _modifier;
+}
 
 + (id)operatorWithCustomSelector:(SEL)customSelector modifier:(NSComparisonPredicateModifier)modifier;
 + (id)_newOperatorWithType:(NSPredicateOperatorType)type modifier:(NSComparisonPredicateModifier)modifier options:(NSComparisonPredicateOptions)options;

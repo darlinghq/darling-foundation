@@ -66,11 +66,6 @@ static NSMutableArray *sRegisteredClasses = nil;
 @end
 
 @implementation NSURLProtocol
-{
-    NSCachedURLResponse *_cachedResponse;
-    NSURLRequest *_request;
-    id <NSURLProtocolClient> _client;
-}
 
 + (void)initialize
 {

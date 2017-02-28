@@ -9,6 +9,10 @@ struct regexContext {
 
 CF_PRIVATE
 @interface NSMatchingPredicateOperator : NSStringPredicateOperator
+{
+    OSSpinLock _contextLock;
+    struct regexContext *_regexContext;
+}
 
 - (BOOL)_shouldEscapeForLike;
 - (void)_clearContext;

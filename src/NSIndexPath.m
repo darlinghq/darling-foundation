@@ -9,11 +9,7 @@
 #import <Foundation/NSRange.h>
 #import <stdlib.h>
 
-@implementation NSIndexPath {
-    NSUInteger *_indexes;
-    NSUInteger _hash;
-    NSUInteger _length;
-}
+@implementation NSIndexPath
 
 + (id)indexPathWithIndex:(NSUInteger)index
 {

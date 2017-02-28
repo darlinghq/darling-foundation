@@ -1,9 +1,7 @@
 #import "NSObjectInternal.h"
 #import <objc/runtime.h>
 
-@implementation _NSWeakRef {
-    id _weakRef;
-}
+@implementation _NSWeakRef
 
 - (id)init
 {
@@ -37,3 +35,11 @@
 }
 
 @end
+
+@implementation NSObject (_AbstractClasses)
+- (void) subclassResponsibility: (SEL)aSelector
+{
+	_NSRequestConcreteImplementation([self class], aSelector);
+}
+@end
+

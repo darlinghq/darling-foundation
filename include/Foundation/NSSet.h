@@ -77,7 +77,12 @@
 
 @end
 
+typedef struct __CFBag* CFMutableBagRef;
 @interface NSCountedSet : NSMutableSet
+{
+    CFMutableBagRef _table;
+    void *_reserved;
+}
 
 - (instancetype)initWithCapacity:(NSUInteger)numItems;
 - (instancetype)initWithArray:(NSArray *)array;

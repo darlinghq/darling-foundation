@@ -10,9 +10,6 @@
 #import "_NSPredicateUtilities.h"
 
 @implementation NSKeyPathSpecifierExpression
-{
-    NSString *_value;
-}
 
 static NSString * const NSKeyPathKey = @"NSKeyPath";
 

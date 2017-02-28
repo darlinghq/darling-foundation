@@ -34,7 +34,13 @@ typedef NS_ENUM(NSUInteger, NSNumberFormatterRoundingMode) {
 
 @class NSLocale, NSError, NSMutableDictionary;
 
+typedef struct __CFNumberFormatter* CFNumberFormatterRef;
+
 @interface NSNumberFormatter : NSFormatter
+{
+    NSMutableDictionary *_attributes;
+    CFNumberFormatterRef _formatter;
+}
 
 + (NSString *)localizedStringFromNumber:(NSNumber *)num numberStyle:(NSNumberFormatterStyle)nstyle;
 + (NSNumberFormatterBehavior)defaultFormatterBehavior;

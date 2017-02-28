@@ -22,10 +22,6 @@
 #import <Foundation/NSNull.h>
 
 @implementation NSPredicateOperator
-{
-    NSPredicateOperatorType _operatorType;
-    NSComparisonPredicateModifier _modifier;
-}
 
 static NSString * const NSOperatorTypeKey = @"NSOperatorType";
 static NSString * const NSModifierKey = @"NSModifier";

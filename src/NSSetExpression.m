@@ -12,10 +12,6 @@
 #import <Foundation/NSKeyedArchiver.h>
 
 @implementation NSSetExpression
-{
-    NSExpression *_left;
-    NSExpression *_right;
-}
 
 static NSString * const NSLeftExpressionKey = @"NSLeftExpression";
 static NSString * const NSRightExpressionKey = @"NSRightExpression";

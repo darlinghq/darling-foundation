@@ -26,12 +26,7 @@
 
 @end
 
-@implementation NSArchiver {
-    NSMutableData *mdata;
-    void *ids;
-    NSMutableDictionary *map;
-    CFMutableDictionaryRef replacementTable;
-}
+@implementation NSArchiver
 
 + (BOOL)archiveRootObject:(id)object toFile:(NSString *)path
 {

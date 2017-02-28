@@ -5,6 +5,16 @@
 
 CF_PRIVATE
 @interface NSKeyValueObservance : NSObject
+{
+	NSObject* _observer;
+	NSString* _keyPath;
+	NSKeyValueProperty* _property;
+	NSObject* _originalObservable;
+	void* _context;
+	NSKeyValueSetter* _setter;
+	NSKeyValueObservingOptions _options;
+}
+
 @property (assign) NSObject *observer;
 @property (copy) NSString *keyPath;
 @property (retain) NSKeyValueProperty *property; //TODO: assign?

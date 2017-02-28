@@ -29,13 +29,7 @@ extern char ***_NSGetEnviron();
  guaranteed to be stable across all threads; ala setenv etc.
  */
 
-@implementation NSProcessInfo {
-    NSDictionary *environment; // not used it seems
-    NSArray *arguments; // is really mutable
-    NSString *hostName; // singly created
-    NSString *name; // singly created, but replaceable
-    NSInteger automaticTerminationOptOutCounter;
-}
+@implementation NSProcessInfo
 
 + (NSProcessInfo *)processInfo
 {

@@ -17,6 +17,10 @@ typedef NS_ENUM(NSUInteger, NSDateFormatterBehavior) {
 @class NSLocale, NSDate, NSCalendar, NSTimeZone, NSError, NSArray, NSMutableDictionary;
 
 @interface NSDateFormatter : NSFormatter
+{
+    NSMutableDictionary *_attributes;
+    struct __CFDateFormatter *_formatter;
+}
 
 + (NSString *)localizedStringFromDate:(NSDate *)date dateStyle:(NSDateFormatterStyle)dstyle timeStyle:(NSDateFormatterStyle)tstyle;
 + (NSString *)dateFormatFromTemplate:(NSString *)tmplate options:(NSUInteger)opts locale:(NSLocale *)locale;

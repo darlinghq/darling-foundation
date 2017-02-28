@@ -22,9 +22,7 @@
 @end
 
 
-@implementation NSURLRequest {
-    NSURLRequestInternal *_internal;
-}
+@implementation NSURLRequest
 
 static NSTimeInterval defaultTimeout = 60.0;
 

@@ -15,6 +15,7 @@
 #include <libkern/OSAtomic.h>
 #include <objc/runtime.h>
 #import "ForFoundationOnly.h"
+#import <CoreGraphics/CGAffineTransform.h>
 
 static NSValue *_NSNewValue(void *value, const char *type);
 
@@ -363,7 +364,11 @@ static id newDecodedValue(NSCoder *aCoder)
             }
             case NSEdgeInsetsType:
             case NSEdgeType: { // probably good enough
+#ifdef __arm__
                 UIEdgeInsets insets;
+#else
+                NSEdgeInsets insets;
+#endif
 #if __LP64__
                 insets.top = [aCoder decodeDoubleForKey:NS_edgeval_top];
                 insets.left = [aCoder decodeDoubleForKey:NS_edgeval_left];
@@ -375,8 +380,13 @@ static id newDecodedValue(NSCoder *aCoder)
                 insets.bottom = [aCoder decodeFloatForKey:NS_edgeval_bottom];
                 insets.right = [aCoder decodeFloatForKey:NS_edgeval_right];
 #endif
+#ifdef __arm__
                 return createValue((uint8_t *)&insets, @encode(UIEdgeInsets), sizeof(UIEdgeInsets), flags);
+#else
+                return createValue((uint8_t *)&insets, @encode(NSEdgeInsets), sizeof(NSEdgeInsets), flags);
+#endif
             }
+#ifdef __arm__
             case NSOffsetType: {
                 UIOffset offset;
 #if __LP64__
@@ -388,6 +398,7 @@ static id newDecodedValue(NSCoder *aCoder)
 #endif
                 return createValue((uint8_t *)&offset, @encode(UIOffset), sizeof(UIOffset), flags);
             }
+#endif
             default: {
                 [NSException raise:NSInternalInconsistencyException format:@"Incorrect special type encoding for value"];
                 return nil;
@@ -672,7 +683,11 @@ static id newDecodedValue(NSCoder *aCoder)
             }
             case NSEdgeInsetsType:
             case NSEdgeType: {
+#ifdef __arm__
                 UIEdgeInsets insets;
+#else
+                NSEdgeInsets insets;
+#endif
                 [self getValue:&insets];
 #if __LP64__
                 [aCoder encodeDouble:insets.top forKey:NS_edgeval_top];
@@ -687,6 +702,7 @@ static id newDecodedValue(NSCoder *aCoder)
 #endif
                 break;
             }
+#ifdef __arm__
             case NSOffsetType: {
                 UIOffset offset;
                 [self getValue:&offset];
@@ -699,6 +715,7 @@ static id newDecodedValue(NSCoder *aCoder)
 #endif
                 break;
             }
+#endif
         }
     }
 }

@@ -152,14 +152,7 @@ CF_PRIVATE
 
 @end
 
-@implementation NSConcretePointerArray {
-    struct NSSlice slice;
-    NSUInteger count;
-    NSUInteger capacity;
-    NSUInteger options;
-    NSUInteger mutations;
-    BOOL needsCompaction;
-}
+@implementation NSConcretePointerArray
 
 static inline BOOL NSPointerArrayRangeCheck(NSUInteger index, NSUInteger count, NSString * const exceptionName)
 {

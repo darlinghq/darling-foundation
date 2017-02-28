@@ -15,10 +15,6 @@
 static NSString * const NSVariableKey = @"NSVariable";
 
 @implementation NSVariableExpression
-{
-    NSString *_variable;
-}
-
 + (BOOL)supportsSecureCoding
 {
     return YES;

@@ -84,6 +84,27 @@ FOUNDATION_EXPORT NSString * const NSFileSystemFreeNodes;
 @end
 
 @interface NSFileManager : NSObject
+{
+    id _delegate;
+    struct {
+        int shouldCopyItemAtPathToPath:1;
+        int shouldCopyItemAtURLToURL:1;
+        int shouldProceedAfterErrorCopyingItemAtPathToPath:1;
+        int shouldProceedAfterErrorCopyingItemAtURLToURL:1;
+        int shouldMoveItemAtPathToPath:1;
+        int shouldMoveItemAtURLToURL:1;
+        int shouldProceedAfterErrorMovingItemAtPathToPath:1;
+        int shouldProceedAfterErrorMovingItemAtURLToURL:1;
+        int shouldLinkItemAtPathToPath:1;
+        int shouldLinkItemAtURLToURL:1;
+        int shouldProceedAfterErrorLinkingItemAtPathToPath:1;
+        int shouldProceedAfterErrorLinkingItemAtURLToURL:1;
+        int shouldRemoveItemAtPath:1;
+        int shouldRemoveItemAtURL:1;
+        int shouldProceedAfterErrorRemovingItemAtPath:1;
+        int shouldProceedAfterErrorRemovingItemAtURL:1;
+    } _flags;
+}
 
 + (NSFileManager *)defaultManager;
 - (NSArray *)mountedVolumeURLsIncludingResourceValuesForKeys:(NSArray *)propertyKeys options:(NSVolumeEnumerationOptions)options;

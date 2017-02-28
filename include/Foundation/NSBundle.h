@@ -6,10 +6,19 @@ enum {
     NSBundleExecutableArchitectureX86_64 = 0x01000007,
     NSBundleExecutableArchitecturePPC64  = 0x01000012
 };
+typedef enum {
+    NSBundleIsLoadedFlag = 0x01,
+} NSBundleFlags;
 
+typedef struct __CFBundle *CFBundleRef;
 @class NSArray, NSDictionary, NSString, NSURL, NSError;
 
 @interface NSBundle : NSObject
+{
+    NSBundleFlags _flags;
+    CFBundleRef _cfBundle;
+    Class _principalClass;
+}
 
 + (NSBundle *)mainBundle;
 + (NSBundle *)bundleWithPath:(NSString *)path;

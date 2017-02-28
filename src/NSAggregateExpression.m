@@ -17,9 +17,6 @@
 #import "_NSPredicateUtilities.h"
 
 @implementation NSAggregateExpression
-{
-    id _collection;
-}
 
 static NSString * const NSCollectionKey = @"NSCollection";
 

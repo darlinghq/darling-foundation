@@ -12,6 +12,7 @@
 #import <string.h>
 #import <sys/types.h>
 #import <pwd.h>
+#import <MacTypes.h>
 
 @implementation NSDictionary (NSFileAttributes)
 
@@ -107,21 +108,7 @@
 }
 
 @end
-@implementation NSFileAttributes {
-    NSMutableDictionary *dict;
-    struct stat statInfo;
-    struct {
-        char extensionHidden;
-        NSDate *creationDate;
-        struct _fields {
-            unsigned int extensionHidden:1;
-            unsigned int creationDate:1;
-            unsigned int reserved:30;
-        } validFields;
-    } catInfo;
-    NSDictionary *extendedAttrs;
-    int fileProtectionClass;
-}
+@implementation NSFileAttributes
 
 + (id)attributesWithStat:(struct stat *)info
 {
@@ -165,6 +152,9 @@
 #ifdef ANDROID
         dict[NSFileCreationDate] = [NSDate dateWithTimeIntervalSince1970:(NSTimeInterval)(info->st_ctime * NSEC_PER_SEC + info->st_ctime_nsec) / (NSTimeInterval)NSEC_PER_SEC];
         dict[NSFileModificationDate] = [NSDate dateWithTimeIntervalSince1970:(NSTimeInterval)(info->st_mtime * NSEC_PER_SEC + info->st_mtime_nsec) / (NSTimeInterval)NSEC_PER_SEC];
+#elif defined(__APPLE__)
+        dict[NSFileCreationDate] = [NSDate dateWithTimeIntervalSince1970:(NSTimeInterval)(info->st_ctime * NSEC_PER_SEC + info->st_ctimespec.tv_nsec) / (NSTimeInterval)NSEC_PER_SEC];
+        dict[NSFileModificationDate] = [NSDate dateWithTimeIntervalSince1970:(NSTimeInterval)(info->st_mtime * NSEC_PER_SEC + info->st_mtimespec.tv_nsec) / (NSTimeInterval)NSEC_PER_SEC];
 #else
 #error Implementation needed for file time specs
 #endif
@@ -252,6 +242,7 @@
     return kUnknownType;
 }
 
+// Lubos: struct stat's st_flags contains these two flags
 - (BOOL)fileIsImmutable
 {
     return NO; // where is this derived from?

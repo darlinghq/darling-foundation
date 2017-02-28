@@ -18,8 +18,6 @@
 #import <Foundation/NSURL.h>
 #import "NSTemporaryDirectory.h"
 #import "NSObjectInternal.h"
-#import <CoreFoundation/CFDictionary.h>
-#import <CoreFoundation/CFNumber.h>
 #import "ForFoundationOnly.h"
 #import <dispatch/dispatch.h>
 #import <objc/runtime.h>
@@ -58,23 +56,7 @@ NSString *const NSInvalidArchiveOperationException = @"NSInvalidArchiveOperation
 static dispatch_once_t archiverClassesOnce = 0L;
 static NSMutableDictionary *archiverClasses = nil;
 
-@implementation NSKeyedArchiver {
-    CFTypeRef _stream;
-    unsigned int _flags;
-    id<NSKeyedArchiverDelegate> _delegate;
-    NSMutableArray *_containers;
-    NSMutableArray *_objects;
-    CFMutableDictionaryRef _objRefMap;
-    CFMutableDictionaryRef _replacementMap;
-    id _classNameMap;
-    CFMutableDictionaryRef _conditionals;
-    id _classes;
-    NSUInteger _genericKey;
-    CFKeyedArchiverUIDRef *_cache;
-    unsigned int _cacheSize;
-    unsigned int _estimatedCount;
-    CFMutableSetRef _visited;
-}
+@implementation NSKeyedArchiver
 
 static NSString *escapeKey(NSString *key)
 {

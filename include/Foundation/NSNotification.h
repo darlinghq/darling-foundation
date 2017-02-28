@@ -1,6 +1,7 @@
 #import <Foundation/NSObject.h>
+#import <pthread.h>
 
-@class NSString, NSDictionary, NSOperationQueue;
+@class NSString, NSDictionary, NSOperationQueue, NSMutableArray;
 
 @interface NSNotification : NSObject <NSCopying, NSCoding>
 
@@ -18,6 +19,10 @@
 @end
 
 @interface NSNotificationCenter : NSObject
+{
+    NSMutableArray *_observers;
+    pthread_mutex_t _observersLock;
+}
 
 + (id)defaultCenter;
 - (void)addObserver:(id)observer selector:(SEL)aSelector name:(NSString *)aName object:(id)anObject;

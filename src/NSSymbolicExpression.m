@@ -8,9 +8,6 @@
 #import "NSExpressionInternal.h"
 
 @implementation NSSymbolicExpression
-{
-    NSString *_token;
-}
 
 static NSString * const NSTokenKey = @"NSToken";
 

@@ -21,12 +21,6 @@ static NSString * const NSRightExpressionKey = @"NSRightExpression";
 static NSString * const NSPredicateOperatorKey = @"NSPredicateOperator";
 
 @implementation NSComparisonPredicate
-{
-    void *_reserved2;
-    NSPredicateOperator *_predicateOperator;
-    NSExpression *_lhs;
-    NSExpression *_rhs;
-}
 
 + (BOOL)supportsSecureCoding
 {

@@ -16,10 +16,6 @@ static NSString * const NSAssignmentVariableKey = @"NSAssignmentVariable";
 static NSString * const NSSubexpressionKey = @"NSSubexpression";
 
 @implementation NSVariableAssignmentExpression
-{
-    NSVariableExpression *_assignmentVariable;
-    NSExpression *_subexpression;
-}
 
 + (BOOL)supportsSecureCoding
 {

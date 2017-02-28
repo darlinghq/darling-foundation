@@ -13,6 +13,9 @@
 
 CF_PRIVATE
 @interface NSAutoLocale : NSLocale
+{
+    NSLocale *loc;
+}
 - (id)_init;
 @end
 
@@ -36,9 +39,7 @@ CF_PRIVATE
 @end
 
 
-@implementation NSAutoLocale {
-    NSLocale *loc;
-}
+@implementation NSAutoLocale
 
 + (BOOL)supportsSecureCoding
 {

@@ -21,14 +21,7 @@ OBJC_PROTOCOL_IMPL_POP
 @end
 
 
-@implementation NSAutoCalendar {
-    NSCalendar *cal;
-    NSLocale *changedLocale;
-    NSTimeZone *changedTimeZone;
-    NSUInteger changedFirstWeekday;
-    NSUInteger changedMinimumDaysinFirstWeek;
-    NSDate *changedGregorianStartDate;
-}
+@implementation NSAutoCalendar
 
 - (id)init
 {

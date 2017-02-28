@@ -1,5 +1,5 @@
 #import <Foundation/NSCoder.h>
-#import "NSExternals.h"
+#import <CoreGraphics/CGBase.h>
 
 enum {
     NSKeyedArchiverKeyFlag = 0x01,
@@ -51,6 +51,13 @@ enum {
 
 CF_PRIVATE
 @interface _NSKeyedCoderOldStyleArray : NSObject
+{
+    void *_addr;
+    NSUInteger _count;
+    NSUInteger _size;
+    char _type;
+    BOOL _decoded;
+}
 - (id)initWithCoder:(NSCoder *)decoder;
 - (void)encodeWithCoder:(NSCoder *)coder;
 - (void)fillObjCType:(char)type count:(NSUInteger)count at:(void *)addr;

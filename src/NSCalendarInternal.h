@@ -41,6 +41,14 @@ CF_PRIVATE
 
 CF_PRIVATE
 @interface NSAutoCalendar : NSCalendar
+{
+    NSCalendar *cal;
+    NSLocale *changedLocale;
+    NSTimeZone *changedTimeZone;
+    NSUInteger changedFirstWeekday;
+    NSUInteger changedMinimumDaysinFirstWeek;
+    NSDate *changedGregorianStartDate;
+}
 
 - (id)init;
 - (id)initWithCalendarIdentifier:(NSString *)ident;

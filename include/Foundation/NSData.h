@@ -130,5 +130,24 @@ typedef NS_OPTIONS(NSUInteger, NSDataBase64DecodingOptions) {
 
 @end
 
+typedef enum {
+    NSPurgeableDataStorageMapped = 0x1,
+    NSPurgeableDataStorageAvailable = 0x2,
+    NSPurgeableDataStorageStored = 0x4,
+    NSPurgeableDataStorageNeedsFree = 0x8,
+} NSPurgeableDataBackingFlags;
+
+typedef struct {
+    void *data;
+    NSPurgeableDataBackingFlags flags;
+    NSUInteger capacity;
+} NSPurgeableDataStorage;
+
 @interface NSPurgeableData : NSMutableData <NSDiscardableContent>
+{
+    NSUInteger _length;
+    int32_t _accessCount;
+    uint8_t _private[32];
+    NSPurgeableDataStorage *_dataStorage;
+}
 @end

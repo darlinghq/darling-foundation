@@ -8,10 +8,6 @@
 #import <Foundation/NSCoder.h>
 #import <Foundation/NSException.h>
 
-typedef NS_OPTIONS(NSUInteger, NSPredicateEvaluationFlags) {
-    NSPredicateEvaluationBlocked = 1 << 0,
-};
-
 typedef NS_OPTIONS(NSUInteger, NSPredicateVisitorFlags) {
     NSPredicateVisitorVisitExpressions = 1 << 0,
     NSPredicateVisitorVisitOperators = 1 << 1,
@@ -37,6 +33,9 @@ typedef NS_OPTIONS(NSUInteger, NSPredicateVisitorFlags) {
 @end
 
 @interface NSBlockPredicate : NSPredicate
+{
+    BOOL (^_block)(id evaluatedObject, NSDictionary *bindings);
+}
 - (id)initWithBlock:(BOOL (^)(id evaluatedObject, NSDictionary *bindings))block;
 @end
 

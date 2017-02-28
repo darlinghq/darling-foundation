@@ -15,10 +15,7 @@
 static NSUInteger NSURLCacheDefaultMemoryCapacity = 512000;
 static NSUInteger NSURLCacheDefaultDiskCapacity = 10000000;
 
-@implementation NSCachedURLResponse {
-    NSURLResponse* _response;
-    CFCachedURLResponseRef _cachedResponseRef;
-}
+@implementation NSCachedURLResponse
 
 - (id)initWithResponse:(NSURLResponse*)response data:(NSData*)data
 {
@@ -125,9 +122,7 @@ static NSUInteger NSURLCacheDefaultDiskCapacity = 10000000;
 
 @end
 
-@implementation NSURLCache {
-    CFURLCacheRef _cacheRef;
-}
+@implementation NSURLCache
 
 static NSURLCache* sharedURLCache = nil;
 static Boolean sharedURLCacheSet = false;

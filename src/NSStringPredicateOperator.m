@@ -10,9 +10,6 @@
 static NSString * const NSFlagsKey = @"NSFlags";
 
 @implementation NSStringPredicateOperator
-{
-    NSComparisonPredicateOptions _flags;
-}
 
 + (BOOL)supportsSecureCoding
 {

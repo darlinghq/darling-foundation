@@ -18,11 +18,6 @@ static NSString * const NSSubpredicateKey = @"NSSubpredicate";
 static NSString * const NSVariableKey = @"NSVariable";
 
 @implementation NSSubqueryExpression
-{
-    NSExpression *_collection;
-    NSExpression *_variableExpression;
-    NSPredicate *_subpredicate;
-}
 
 + (BOOL)supportsSecureCoding
 {

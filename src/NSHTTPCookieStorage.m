@@ -14,10 +14,7 @@
 #import <CFNetwork/CFHTTPCookieStorage.h>
 #import "NSHTTPCookie+private.h"
 
-@implementation NSHTTPCookieStorage {
-    CFHTTPCookieStorageRef _storage;
-    NSHTTPCookieAcceptPolicy _acceptPolicy;
-}
+@implementation NSHTTPCookieStorage
 
 + (NSHTTPCookieStorage *)sharedHTTPCookieStorage
 {

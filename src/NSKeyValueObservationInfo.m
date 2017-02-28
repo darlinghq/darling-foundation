@@ -11,9 +11,6 @@
 #import "NSKeyValueObservance.h"
 
 @implementation NSKeyValueObservationInfo
-{
-    NSMutableArray *_observances;
-}
 - (instancetype)init
 {
     self = [super init];

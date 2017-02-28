@@ -23,6 +23,7 @@
 
 #import <stdio.h>
 #import <stdlib.h>
+#import "NSExternals.h"
 
 @implementation NSDictionary (NSDictionary)
 

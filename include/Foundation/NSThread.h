@@ -1,13 +1,35 @@
 #import <Foundation/NSObject.h>
 #import <Foundation/NSDate.h>
+#import <pthread.h>
 
-@class NSArray, NSMutableDictionary, NSDate;
+@class NSArray, NSMutableDictionary, NSDate, NSMutableArray;
 
 FOUNDATION_EXPORT NSString * const NSWillBecomeMultiThreadedNotification;
 FOUNDATION_EXPORT NSString * const NSDidBecomeSingleThreadedNotification;
 FOUNDATION_EXPORT NSString * const NSThreadWillExitNotification;
 
+typedef enum {
+    NSThreadCreated,
+    NSThreadStarted,
+    NSThreadRunning,
+    NSThreadCancelling,
+    NSThreadEnding,
+    NSThreadFinished
+} NSThreadState;
+
 @interface NSThread : NSObject
+{
+@package
+    pthread_t _thread;
+    pthread_attr_t _attr;
+    NSString *_name;
+    NSMutableDictionary *_threadDictionary;
+    NSThreadState _state;
+    NSMutableArray *_performers;
+    id _target;
+    SEL _selector;
+    id _argument;
+}
 
 + (NSThread *)currentThread;
 + (void)detachNewThreadSelector:(SEL)selector toTarget:(id)target withObject:(id)argument;

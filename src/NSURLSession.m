@@ -6,7 +6,8 @@
 //
 
 #import "NSURLSession.h"
-#import 
+#import <objc/runtime.h>
+
 const int64_t NSURLSessionTransferSizeUnknown = -1LL;
 
 @implementation NSURLSession
@@ -15,7 +16,7 @@ const int64_t NSURLSessionTransferSizeUnknown = -1LL;
 {
     static dispatch_once_t once = 0L;
     dispatch_once(&once, ^{
-        Class cls = objc_lookupClass("__NSCFURLSession");
+        Class cls = objc_lookUpClass("__NSCFURLSession");
         assert(cls != Nil);
         class_setSuperclass(self, cls);
     });

@@ -1,6 +1,11 @@
 #import <Foundation/NSObject.h>
 
 @interface NSIndexPath : NSObject <NSCopying, NSCoding>
+{
+    NSUInteger *_indexes;
+    NSUInteger _hash;
+    NSUInteger _length;
+}
 
 + (instancetype)indexPathWithIndex:(NSUInteger)index;
 + (instancetype)indexPathWithIndexes:(const NSUInteger [])indexes length:(NSUInteger)length;

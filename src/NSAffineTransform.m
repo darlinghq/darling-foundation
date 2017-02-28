@@ -40,6 +40,8 @@
 #import "Foundation/NSAffineTransform.h"
 #import "Foundation/NSCoder.h"
 
+#define NSDebugLLog(fmt, ...)
+
 /* Private definitions */
 #define A _matrix.m11
 #define B _matrix.m12

@@ -8,7 +8,13 @@ typedef NS_ENUM(NSUInteger, NSURLCacheStoragePolicy) {
 
 @class NSData, NSDictionary, NSURLRequest, NSURLResponse;
 
+typedef struct _CFCachedURLResponse* CFCachedURLResponseRef;
+
 @interface NSCachedURLResponse : NSObject <NSCoding, NSCopying>
+{
+    NSURLResponse* _response;
+    CFCachedURLResponseRef _cachedResponseRef;
+}
 
 - (id)initWithResponse:(NSURLResponse *)response data:(NSData *)data;
 - (id)initWithResponse:(NSURLResponse *)response data:(NSData *)data userInfo:(NSDictionary *)userInfo storagePolicy:(NSURLCacheStoragePolicy)storagePolicy;
@@ -19,7 +25,12 @@ typedef NS_ENUM(NSUInteger, NSURLCacheStoragePolicy) {
 
 @end
 
+typedef struct _CFURLCache* CFURLCacheRef;
+
 @interface NSURLCache : NSObject
+{
+    CFURLCacheRef _cacheRef;
+}
 
 + (NSURLCache *)sharedURLCache;
 + (void)setSharedURLCache:(NSURLCache *)cache;

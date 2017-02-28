@@ -27,15 +27,6 @@ NSString *const NSWillBecomeMultiThreadedNotification = @"NSWillBecomeMultiThrea
 NSString *const NSDidBecomeSingleThreadedNotification = @"NSDidBecomeSingleThreadedNotification";
 NSString *const NSThreadWillExitNotification = @"NSThreadWillExitNotification";
 
-typedef enum {
-    NSThreadCreated,
-    NSThreadStarted,
-    NSThreadRunning,
-    NSThreadCancelling,
-    NSThreadEnding,
-    NSThreadFinished
-} NSThreadState;
-
 static pthread_key_t NSThreadKey;
 
 static NSThread *NSMainThread = nil;
@@ -50,14 +41,20 @@ static void NSThreadInitialize()
     NSMainThread = [NSThread currentThread];
 }
 
+#ifdef APPORTABLE
 extern void __do_backtrace(int, int, int, int(*)(int, void *, char *, int, void *), void *);
+#endif
 
+#ifdef DARLING
+void __do_backtrace(int xxx, ...)
+{
+#	warning Missing __do_backtrace implementation
+}
+#endif
 
 CF_PRIVATE
 @interface _NSThreadPerformInfo : NSObject
-@end
-
-@implementation _NSThreadPerformInfo {
+{
 @package
     id target;
     SEL selector;
@@ -67,6 +64,9 @@ CF_PRIVATE
     BOOL *signalled;
     CFRunLoopSourceRef source;
 }
+@end
+
+@implementation _NSThreadPerformInfo
 
 - (void)dealloc
 {
@@ -93,18 +93,7 @@ CF_PRIVATE
 - (BOOL)_setThreadPriority:(double)p;
 @end
 
-@implementation NSThread {
-@package
-    pthread_t _thread;
-    pthread_attr_t _attr;
-    NSString *_name;
-    NSMutableDictionary *_threadDictionary;
-    NSThreadState _state;
-    NSMutableArray *_performers;
-    id _target;
-    SEL _selector;
-    id _argument;
-}
+@implementation NSThread
 
 static void NSThreadEnd(NSThread *thread)
 {

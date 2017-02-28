@@ -3,6 +3,13 @@
 
 CF_PRIVATE
 @interface NSFilesystemItemRemoveOperation : NSOperation
+{
+    NSFileManager *_delegate;
+    NSString *_removePath;
+    NSError *_error;
+    void *_state;
+    BOOL _filterUnderbars;
+}
 
 + (id)filesystemItemRemoveOperationWithPath:(NSString *)path;
 + (NSError *)_errorWithErrno:(int)err atPath:(NSString *)path;

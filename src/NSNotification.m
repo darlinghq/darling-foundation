@@ -124,12 +124,7 @@ static NSString * const NSUserInfoKey = @"NS.userinfo";
 
 @end
 
-@implementation NSConcreteNotification {
-    NSString *name;
-    id object;
-    NSDictionary *userInfo;
-    BOOL dyingObject;
-}
+@implementation NSConcreteNotification
 
 static OSSpinLock notificationPoolLock = OS_SPINLOCK_INIT;
 static NSMutableSet *notificationPool = nil;

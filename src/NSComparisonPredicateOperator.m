@@ -15,10 +15,6 @@ static NSString * const NSOptionsKey = @"NSOptions";
 static NSString * const NSVariantKey = @"NSVariant";
 
 @implementation NSComparisonPredicateOperator
-{
-    NSPredicateOperatorType _variant;
-    NSComparisonPredicateOptions _options;
-}
 
 + (BOOL)supportsSecureCoding
 {

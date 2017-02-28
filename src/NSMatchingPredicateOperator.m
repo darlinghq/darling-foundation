@@ -13,10 +13,6 @@
 #import <stdlib.h>
 
 @implementation NSMatchingPredicateOperator
-{
-    OSSpinLock _contextLock;
-    struct regexContext *_regexContext;
-}
 
 - (void)dealloc
 {

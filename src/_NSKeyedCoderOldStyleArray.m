@@ -11,13 +11,6 @@
 #import <stdlib.h>
 
 @implementation _NSKeyedCoderOldStyleArray
-{
-    void *_addr;
-    NSUInteger _count;
-    NSUInteger _size;
-    char _type;
-    BOOL _decoded;
-}
 
 - (id)initWithCoder:(NSCoder *)decoder
 {

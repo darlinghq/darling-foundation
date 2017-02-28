@@ -13,6 +13,7 @@
 #import <Foundation/NSDictionary.h>
 #import <Foundation/NSString.h>
 #import <Foundation/NSException.h>
+#import <Foundation/NSGeometry.h>
 #import "NSExternals.h"
 #import "NSObjectInternal.h"
 
@@ -482,32 +483,32 @@ static inline const char *nextType(const char *type)
 
 - (CGRect)decodeRectForKey:(NSString *)key
 {
-    return NSRectFromString([self decodeObjectForKey:key]);
+    return NSRectToCGRect(NSRectFromString([self decodeObjectForKey:key]));
 }
 
 - (CGSize)decodeSizeForKey:(NSString *)key
 {
-    return NSSizeFromString([self decodeObjectForKey:key]);
+    return NSSizeToCGSize(NSSizeFromString([self decodeObjectForKey:key]));
 }
 
 - (CGPoint)decodePointForKey:(NSString *)key
 {
-    return NSPointFromString([self decodeObjectForKey:key]);
+    return NSPointToCGPoint(NSPointFromString([self decodeObjectForKey:key]));
 }
 
 - (void)encodeRect:(CGRect)r forKey:(NSString *)key
 {
-    [self encodeObject:NSStringFromRect(r) forKey:key];
+    [self encodeObject:NSStringFromRect(NSRectFromCGRect(r)) forKey:key];
 }
 
 - (void)encodeSize:(CGSize)sz forKey:(NSString *)key
 {
-    [self encodeObject:NSStringFromSize(sz) forKey:key];
+    [self encodeObject:NSStringFromSize(NSSizeFromCGSize(sz)) forKey:key];
 }
 
 - (void)encodePoint:(CGPoint)pt forKey:(NSString *)key
 {
-    [self encodeObject:NSStringFromPoint(pt) forKey:key];
+    [self encodeObject:NSStringFromPoint(NSPointFromCGPoint(pt)) forKey:key];
 }
 
 @end

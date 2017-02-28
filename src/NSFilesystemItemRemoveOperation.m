@@ -13,13 +13,7 @@
 #import <stdio.h>
 #import <Foundation/NSError.h>
 
-@implementation NSFilesystemItemRemoveOperation {
-    NSFileManager *_delegate;
-    NSString *_removePath;
-    NSError *_error;
-    void *_state;
-    BOOL _filterUnderbars;
-}
+@implementation NSFilesystemItemRemoveOperation
 
 + (id)filesystemItemRemoveOperationWithPath:(NSString *)path
 {
@@ -59,7 +53,9 @@
     [super dealloc];
 }
 
-static int NSFilesystemItemRemoveOperationFunction(const char *path, const struct stat *stat_info, int flags, struct FTW *info, void *ctx)
+static _Thread_local void* ctx = NULL;
+
+static int NSFilesystemItemRemoveOperationFunction(const char *path, const struct stat *stat_info, int flags, struct FTW *info)
 {
     NSFilesystemItemRemoveOperation *op = (NSFilesystemItemRemoveOperation *)ctx;
     NSFileManager *fm = [op delegate];
@@ -100,8 +96,10 @@ static int NSFilesystemItemRemoveOperationFunction(const char *path, const struc
 {
     @autoreleasepool
     {
-        extern int _nftw_context(const char *path, int (*fn)(const char *, const struct stat *, int, struct FTW *, void *), int nfds, int ftwflags, void *ctx);
-        int err = _nftw_context([_removePath cString], NSFilesystemItemRemoveOperationFunction, 0, FTW_DEPTH, self);
+        // extern int _nftw_context(const char *path, int (*fn)(const char *, const struct stat *, int, struct FTW *, void *), int nfds, int ftwflags, void *ctx);
+        ctx = self;
+        int err = nftw([_removePath cString], NSFilesystemItemRemoveOperationFunction, 0, FTW_DEPTH);
+        ctx = NULL;
         if (_error == nil && err != 0)
         {
             NSError *error = [NSFilesystemItemRemoveOperation _errorWithErrno:errno atPath:_removePath];

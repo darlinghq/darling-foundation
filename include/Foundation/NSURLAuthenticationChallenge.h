@@ -17,6 +17,14 @@
 @end
 
 @interface NSURLAuthenticationChallenge : NSObject <NSCoding>
+{
+    NSURLProtectionSpace *_protectionSpace;
+    NSURLCredential *_proposedCredential;
+    NSInteger _previousFailureCount;
+    NSURLResponse *_failureResponse;
+    NSError *_error;
+    id<NSURLAuthenticationChallengeSender> _sender;
+}
 
 - (id)initWithProtectionSpace:(NSURLProtectionSpace *)space proposedCredential:(NSURLCredential *)credential previousFailureCount:(NSInteger)previousFailureCount failureResponse:(NSURLResponse *)response error:(NSError *)error sender:(id<NSURLAuthenticationChallengeSender>)sender;
 - (id)initWithAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge sender:(id<NSURLAuthenticationChallengeSender>)sender;

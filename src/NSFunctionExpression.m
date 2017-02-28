@@ -19,11 +19,6 @@ static NSString * const NSOperandKey = @"NSOperand";
 static NSString * const NSSelectorNameKey = @"NSSelectorName";
 
 @implementation NSFunctionExpression
-{
-    NSExpression *_operand;
-    SEL _selector;
-    NSArray *_arguments;
-}
 
 + (BOOL)supportsSecureCoding
 {

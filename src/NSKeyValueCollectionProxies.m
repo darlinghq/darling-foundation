@@ -25,33 +25,12 @@ static OSSpinLock _NSKeyValueProxySpinlock = OS_SPINLOCK_INIT;
 @end
 
 @implementation NSKeyValueNonmutatingArrayMethodSet
-{
-@public
-    Method count;
-    Method objectAtIndex;
-    Method getObjectsRange;
-    Method objectsAtIndexes;
-}
 @end
 
 @implementation NSKeyValueNonmutatingOrderedSetMethodSet
-{
-@public
-    Method count;
-    Method objectAtIndex;
-    Method indexOfObject;
-    Method getObjectsRange;
-    Method objectsAtIndexes;
-}
 @end
 
 @implementation NSKeyValueNonmutatingSetMethodSet
-{
-@public
-    Method count;
-    Method enumerator;
-    Method member;
-}
 @end
 
 @implementation NSKeyValueMutatingCollectionMethodSet
@@ -115,9 +94,6 @@ static OSSpinLock _NSKeyValueProxySpinlock = OS_SPINLOCK_INIT;
 @end
 
 @implementation NSKeyValueProxyGetter
-{
-    Class _proxyClass;
-}
 
 static id _NSGetProxyValueWithGetterNoLock(id obj, NSKeyValueProxyGetter* getter)
 {
@@ -176,9 +152,6 @@ static id _NSGetProxyValueWithGetter(id obj, SEL sel, NSKeyValueProxyGetter* get
 @end
 
 @implementation NSKeyValueCollectionGetter
-{
-    NSKeyValueNonmutatingCollectionMethodSet *_methods;
-}
 
 - (NSKeyValueNonmutatingCollectionMethodSet *)methods
 {
@@ -204,10 +177,6 @@ static id _NSGetProxyValueWithGetter(id obj, SEL sel, NSKeyValueProxyGetter* get
 @end
 
 @implementation NSKeyValueSlowMutableCollectionGetter
-{
-    NSKeyValueGetter *_baseGetter;
-    NSKeyValueSetter *_baseSetter;
-}
 
 - (void)dealloc
 {
@@ -266,10 +235,6 @@ static id _NSGetProxyValueWithGetter(id obj, SEL sel, NSKeyValueProxyGetter* get
 @end
 
 @implementation NSKeyValueFastMutableCollection1Getter
-{
-    NSKeyValueNonmutatingCollectionMethodSet *_nonmutatingMethods;
-    NSKeyValueMutatingCollectionMethodSet *_mutatingMethods;
-}
 
 - (void)dealloc
 {
@@ -302,10 +267,6 @@ static id _NSGetProxyValueWithGetter(id obj, SEL sel, NSKeyValueProxyGetter* get
 @end
 
 @implementation NSKeyValueFastMutableCollection2Getter
-{
-    NSKeyValueGetter *_baseGetter;
-    NSKeyValueMutatingCollectionMethodSet *_mutatingMethods;
-}
 
 - (void)dealloc
 {
@@ -338,9 +299,6 @@ static id _NSGetProxyValueWithGetter(id obj, SEL sel, NSKeyValueProxyGetter* get
 @end
 
 @implementation NSKeyValueIvarMutableCollectionGetter
-{
-    Ivar _ivar;
-}
 
 - (id)initWithContainerClassID:(Class)cls key:(NSString *)key containerIsa:(Class)containerIsa ivar:(Ivar)ivar proxyClass:(Class)proxyClass
 {
@@ -359,9 +317,6 @@ static id _NSGetProxyValueWithGetter(id obj, SEL sel, NSKeyValueProxyGetter* get
 @end
 
 @implementation NSKeyValueNotifyingMutableCollectionGetter
-{
-    NSKeyValueProxyGetter *_mutableCollectionGetter;
-}
 
 - (void)dealloc
 {
@@ -481,11 +436,6 @@ static BOOL _NSKeyValueProxyDeallocate(id <NSKeyValueProxyCaching>proxy)
 }
 
 @implementation NSKeyValueArray
-{
-    NSObject *_container;
-    NSString *_key;
-    NSKeyValueNonmutatingArrayMethodSet *_methods;
-}
 
 + (NSHashTable *)_proxyShare
 {
@@ -588,11 +538,6 @@ static BOOL _NSKeyValueProxyDeallocate(id <NSKeyValueProxyCaching>proxy)
 @end
 
 @implementation NSKeyValueOrderedSet
-{
-    NSObject *_container;
-    NSString *_key;
-    NSKeyValueNonmutatingOrderedSetMethodSet *_methods;
-}
 
 + (NSHashTable *)_proxyShare
 {
@@ -701,11 +646,6 @@ static BOOL _NSKeyValueProxyDeallocate(id <NSKeyValueProxyCaching>proxy)
 @end
 
 @implementation NSKeyValueSet
-{
-    NSObject *_container;
-    NSString *_key;
-    NSKeyValueNonmutatingSetMethodSet *_methods;
-}
 
 + (NSHashTable *)_proxyShare
 {
@@ -779,11 +719,6 @@ static BOOL _NSKeyValueProxyDeallocate(id <NSKeyValueProxyCaching>proxy)
 @end
 
 @implementation NSKeyValueMutableArray
-{
-@public
-    NSObject *_container;
-    NSString *_key;
-}
 
 + (NSHashTable *)_proxyShare
 {
@@ -848,11 +783,6 @@ static BOOL _NSKeyValueProxyDeallocate(id <NSKeyValueProxyCaching>proxy)
 @end
 
 @implementation NSKeyValueMutableOrderedSet
-{
-@public
-    NSObject *_container;
-    NSString *_key;
-}
 
 + (NSHashTable *)_proxyShare
 {
@@ -908,11 +838,6 @@ static BOOL _NSKeyValueProxyDeallocate(id <NSKeyValueProxyCaching>proxy)
 @end
 
 @implementation NSKeyValueMutableSet
-{
-@public
-    NSObject *_container;
-    NSString *_key;
-}
 
 + (NSHashTable *)_proxyShare
 {
@@ -968,12 +893,6 @@ static BOOL _NSKeyValueProxyDeallocate(id <NSKeyValueProxyCaching>proxy)
 @end
 
 @implementation NSKeyValueSlowMutableArray
-{
-    NSKeyValueGetter *_valueGetter;
-    NSKeyValueSetter *_valueSetter;
-    BOOL _treatNilValuesLikeEmptyArrays;
-    char _padding[3];
-}
 
 + (NSKeyValueProxyPool *)_proxyNonGCPoolPointer
 {
@@ -1185,12 +1104,6 @@ static BOOL _NSKeyValueProxyDeallocate(id <NSKeyValueProxyCaching>proxy)
 @end
 
 @implementation NSKeyValueSlowMutableOrderedSet
-{
-    NSKeyValueGetter *_valueGetter;
-    NSKeyValueSetter *_valueSetter;
-    BOOL _treatNilValuesLikeEmptyOrderedSets;
-    char _padding[3];
-}
 
 + (NSKeyValueProxyPool *)_proxyNonGCPoolPointer
 {
@@ -1379,12 +1292,6 @@ static BOOL _NSKeyValueProxyDeallocate(id <NSKeyValueProxyCaching>proxy)
 @end
 
 @implementation NSKeyValueSlowMutableSet
-{
-    NSKeyValueGetter *_valueGetter;
-    NSKeyValueSetter *_valueSetter;
-    BOOL _treatNilValuesLikeEmptySets;
-    char _padding[3];
-}
 
 + (NSKeyValueProxyPool *)_proxyNonGCPoolPointer
 {
@@ -1590,9 +1497,6 @@ static BOOL _NSKeyValueProxyDeallocate(id <NSKeyValueProxyCaching>proxy)
 @end
 
 @implementation NSKeyValueFastMutableArray
-{
-    NSKeyValueMutatingArrayMethodSet *_mutatingMethods;
-}
 
 - (id)_proxyInitWithContainer:(NSObject *)container getter:(NSKeyValueProxyGetter *)getter
 {
@@ -1715,9 +1619,6 @@ static BOOL _NSKeyValueProxyDeallocate(id <NSKeyValueProxyCaching>proxy)
 @end
 
 @implementation NSKeyValueFastMutableArray1
-{
-    NSKeyValueNonmutatingArrayMethodSet *_nonmutatingMethods;
-}
 
 + (NSKeyValueProxyPool *)_proxyNonGCPoolPointer
 {
@@ -1790,9 +1691,6 @@ static BOOL _NSKeyValueProxyDeallocate(id <NSKeyValueProxyCaching>proxy)
 @end
 
 @implementation NSKeyValueFastMutableArray2
-{
-    NSKeyValueGetter *_valueGetter;
-}
 
 + (NSKeyValueProxyPool *)_proxyNonGCPoolPointer
 {
@@ -1852,9 +1750,6 @@ static BOOL _NSKeyValueProxyDeallocate(id <NSKeyValueProxyCaching>proxy)
 @end
 
 @implementation NSKeyValueFastMutableOrderedSet
-{
-    NSKeyValueMutatingOrderedSetMethodSet *_mutatingMethods;
-}
 
 - (id)_proxyInitWithContainer:(NSObject *)container getter:(NSKeyValueProxyGetter *)getter
 {
@@ -1967,9 +1862,6 @@ static BOOL _NSKeyValueProxyDeallocate(id <NSKeyValueProxyCaching>proxy)
 @end
 
 @implementation NSKeyValueFastMutableOrderedSet1
-{
-    NSKeyValueNonmutatingOrderedSetMethodSet *_nonmutatingMethods;
-}
 
 + (NSKeyValueProxyPool *)_proxyNonGCPoolPointer
 {
@@ -2047,9 +1939,6 @@ static BOOL _NSKeyValueProxyDeallocate(id <NSKeyValueProxyCaching>proxy)
 @end
 
 @implementation NSKeyValueFastMutableOrderedSet2
-{
-    NSKeyValueGetter *_valueGetter;
-}
 
 + (NSKeyValueProxyPool *)_proxyNonGCPoolPointer
 {
@@ -2114,9 +2003,6 @@ static BOOL _NSKeyValueProxyDeallocate(id <NSKeyValueProxyCaching>proxy)
 @end
 
 @implementation NSKeyValueFastMutableSet
-{
-    NSKeyValueMutatingSetMethodSet *_mutatingMethods;
-}
 
 - (id)_proxyInitWithContainer:(NSObject *)container getter:(NSKeyValueProxyGetter *)getter
 {
@@ -2240,9 +2126,6 @@ static BOOL _NSKeyValueProxyDeallocate(id <NSKeyValueProxyCaching>proxy)
 @end
 
 @implementation NSKeyValueFastMutableSet1
-{
-    NSKeyValueNonmutatingSetMethodSet *_nonmutatingMethods;
-}
 
 + (NSKeyValueProxyPool *)_proxyNonGCPoolPointer
 {
@@ -2285,9 +2168,6 @@ static BOOL _NSKeyValueProxyDeallocate(id <NSKeyValueProxyCaching>proxy)
 @end
 
 @implementation NSKeyValueFastMutableSet2
-{
-    NSKeyValueGetter *_valueGetter;
-}
 
 + (NSKeyValueProxyPool *)_proxyNonGCPoolPointer
 {
@@ -2342,9 +2222,6 @@ static BOOL _NSKeyValueProxyDeallocate(id <NSKeyValueProxyCaching>proxy)
 @end
 
 @implementation NSKeyValueIvarMutableArray
-{
-    Ivar _ivar;
-}
 
 + (NSKeyValueProxyPool *)_proxyNonGCPoolPointer
 {
@@ -2500,9 +2377,6 @@ static BOOL _NSKeyValueProxyDeallocate(id <NSKeyValueProxyCaching>proxy)
 @end
 
 @implementation NSKeyValueIvarMutableOrderedSet
-{
-    Ivar _ivar;
-}
 
 + (NSKeyValueProxyPool *)_proxyNonGCPoolPointer
 {
@@ -2647,9 +2521,6 @@ static BOOL _NSKeyValueProxyDeallocate(id <NSKeyValueProxyCaching>proxy)
 @end
 
 @implementation NSKeyValueIvarMutableSet
-{
-    Ivar _ivar;
-}
 
 + (NSKeyValueProxyPool *)_proxyNonGCPoolPointer
 {
@@ -2784,9 +2655,6 @@ static BOOL _NSKeyValueProxyDeallocate(id <NSKeyValueProxyCaching>proxy)
 @end
 
 @implementation NSKeyValueNotifyingMutableArray
-{
-    NSMutableArray *_mutableArray;
-}
 
 + (NSKeyValueProxyPool *)_proxyNonGCPoolPointer
 {
@@ -2910,9 +2778,6 @@ static BOOL _NSKeyValueProxyDeallocate(id <NSKeyValueProxyCaching>proxy)
 @end
 
 @implementation NSKeyValueNotifyingMutableOrderedSet
-{
-    NSMutableOrderedSet *_mutableOrderedSet;
-}
 
 + (NSKeyValueProxyPool *)_proxyNonGCPoolPointer
 {
@@ -3018,9 +2883,6 @@ static BOOL _NSKeyValueProxyDeallocate(id <NSKeyValueProxyCaching>proxy)
 @end
 
 @implementation NSKeyValueNotifyingMutableSet
-{
-    NSMutableSet *_mutableSet;
-}
 
 + (NSKeyValueProxyPool *)_proxyNonGCPoolPointer
 {

@@ -29,14 +29,41 @@
 - (id)initWithBytes:(void *)bytes length:(NSUInteger)length copy:(BOOL)shouldCopy freeWhenDone:(BOOL)shouldFree bytesAreVM:(BOOL)vm;
 @end
 
+#define NSCONCRETEDATA_BUFFER_SIZE 12
 
 CF_PRIVATE
 @interface NSConcreteData : NSData
+{
+    // isa: 4 bytes
+    unsigned int _isInline:1;
+    unsigned int _retainCount:31;
+    // 8 bytes
+    NSUInteger  _length;
+    NSUInteger _capacity;
+    // 16 bytes
+    void *_bytes;
+    // 20 bytes
+    union {
+        unsigned char _space[NSCONCRETEDATA_BUFFER_SIZE];
+        /* 12 makes a full allocation size of 32 bytes */
+        void (^_deallocator)(void *buffer, NSUInteger size);
+    } _u;
+}
+
 @end
 
 
 CF_PRIVATE
 @interface NSConcreteMutableData : NSMutableData
+{
+    unsigned int _reserved:1;
+    unsigned int _bytesNotYetInitialized:1;
+    unsigned int _hasVM:1;
+    unsigned int _retainCount:29;
+    unsigned int _length;
+    unsigned int _capacity;
+    void *_bytes;
+}
 @end
 
 
@@ -52,6 +79,12 @@ CF_PRIVATE
 
 CF_PRIVATE
 @interface NSSubrangeData : NSData
+{
+    unsigned int _reserved:3;
+    unsigned int _retainCount:29;
+    NSRange _range;
+    NSData *_data;
+}
 - (id)initWithData:(NSData *)data range:(NSRange)range;
 @end
 
@@ -100,25 +133,8 @@ SINGLETON_RR()
 @end
 
 
-#define NSCONCRETEDATA_BUFFER_SIZE 12
 
-@implementation NSConcreteData {
-    // isa: 4 bytes
-    unsigned int _isInline:1;
-    unsigned int _retainCount:31;
-    // 8 bytes
-    NSUInteger  _length;
-    NSUInteger _capacity;
-    // 16 bytes
-    void *_bytes;
-    // 20 bytes
-    union {
-        unsigned char _space[NSCONCRETEDATA_BUFFER_SIZE];
-        /* 12 makes a full allocation size of 32 bytes */
-        void (^_deallocator)(void *buffer, NSUInteger size);
-    } _u;
-}
-
+@implementation NSConcreteData
 - (id)initWithBytes:(void *)bytes length:(NSUInteger)length copy:(BOOL)shouldCopy deallocator:(void (^)(void *, NSUInteger))deallocator
 {
     self = [super init];
@@ -1199,12 +1215,7 @@ static uint8_t base64EncodeLookup[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklm
 @end
 
 
-@implementation NSSubrangeData {
-    unsigned int _reserved:3;
-    unsigned int _retainCount:29;
-    NSRange _range;
-    NSData *_data;
-}
+@implementation NSSubrangeData
 
 - (id)initWithData:(NSData *)data range:(NSRange)range
 {
@@ -1272,15 +1283,7 @@ static uint8_t base64EncodeLookup[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklm
 @end
 
 
-@implementation NSConcreteMutableData {
-    unsigned int _reserved:1;
-    unsigned int _bytesNotYetInitialized:1;
-    unsigned int _hasVM:1;
-    unsigned int _retainCount:29;
-    unsigned int _length;
-    unsigned int _capacity;
-    void *_bytes;
-}
+@implementation NSConcreteMutableData
 
 - (id)initWithBytes:(void *)bytes length:(NSUInteger)length copy:(BOOL)shouldCopy deallocator:(void (^)(void *bytes, NSUInteger length))deallocator
 {
@@ -1515,18 +1518,6 @@ static uint8_t base64EncodeLookup[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklm
 @end
 
 
-typedef enum {
-    NSPurgeableDataStorageMapped = 0x1,
-    NSPurgeableDataStorageAvailable = 0x2,
-    NSPurgeableDataStorageStored = 0x4,
-    NSPurgeableDataStorageNeedsFree = 0x8,
-} NSPurgeableDataBackingFlags;
-
-typedef struct {
-    void *data;
-    NSPurgeableDataBackingFlags flags;
-    NSUInteger capacity;
-} NSPurgeableDataStorage;
 
 static void NSPurgeableDataStorageConvert(NSPurgeableDataStorage *storage, NSUInteger length)
 {
@@ -1559,12 +1550,7 @@ static void NSPurgeableDataStorageDiscard(NSPurgeableDataStorage *storage, NSUIn
     storage->flags &= ~NSPurgeableDataStorageAvailable;
 }
 
-@implementation NSPurgeableData {
-    NSUInteger _length;
-    int32_t _accessCount;
-    uint8_t _private[32];
-    NSPurgeableDataStorage *_dataStorage;
-}
+@implementation NSPurgeableData
 
 - (id)init
 {

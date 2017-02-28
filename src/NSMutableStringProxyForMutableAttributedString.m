@@ -8,9 +8,6 @@
 #import "NSMutableStringProxyForMutableAttributedStringInternal.h"
 
 @implementation NSMutableStringProxyForMutableAttributedString
-{
-    NSMutableAttributedString *_owner;
-}
 
 - (id)initWithMutableAttributedString:(NSMutableAttributedString *)owner
 {

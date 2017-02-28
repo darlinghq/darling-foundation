@@ -69,12 +69,7 @@ static inline void waitCheck(id lock, SEL cmd, pthread_t thread)
     }
 }
 
-@implementation NSLock {
-    pthread_t _thread;
-    pthread_mutex_t _lock;
-    NSString *_name;
-    BOOL _isInitialized;
-}
+@implementation NSLock
 
 - (id)init
 {
@@ -202,12 +197,7 @@ static inline void waitCheck(id lock, SEL cmd, pthread_t thread)
 // All reads or writes to _value, _thread, and _locked (outside of
 // init) must be guarded by the _cond lock.
 
-@implementation NSConditionLock {
-    NSCondition *_cond;
-    NSInteger _value;
-    pthread_t _thread;
-    BOOL _locked;
-}
+@implementation NSConditionLock
 
 - (id)init
 {
@@ -407,15 +397,7 @@ static inline void waitCheck(id lock, SEL cmd, pthread_t thread)
 
 @end
 
-@implementation NSRecursiveLock {
-    pthread_mutex_t _lock;
-    pthread_mutexattr_t _attrs;
-    pthread_t _thread;
-    int _locks;
-    NSString *_name;
-    BOOL _lockIsInitialized;
-    BOOL _mutexAttrsInitialized;
-}
+@implementation NSRecursiveLock
 
 - (id)init
 {
@@ -540,15 +522,7 @@ static inline void waitCheck(id lock, SEL cmd, pthread_t thread)
 
 @end
 
-@implementation NSCondition {
-    pthread_mutex_t _lock;
-    pthread_mutexattr_t _attrs;
-    pthread_cond_t _cond;
-    pthread_condattr_t _condAttrs;
-    pthread_t _thread;
-    NSString *_name;
-    BOOL _isInitialized;
-}
+@implementation NSCondition
 
 - (id)init
 {

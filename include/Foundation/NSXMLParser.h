@@ -126,7 +126,14 @@ FOUNDATION_EXPORT NSString * const NSXMLParserErrorDomain;
 
 @end
 
+@class _NSXMLParserInfo, NSStream;
 @interface NSXMLParser : NSObject
+{
+    id <NSXMLParserDelegate> _delegate;
+    _NSXMLParserInfo *_info;
+    NSData *_data;
+    NSStream *_stream;
+}
 
 - (id)initWithContentsOfURL:(NSURL *)url;
 - (id)initWithData:(NSData *)data;

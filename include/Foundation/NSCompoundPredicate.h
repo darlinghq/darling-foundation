@@ -10,6 +10,11 @@ typedef NS_ENUM(NSUInteger, NSCompoundPredicateType) {
 };
 
 @interface NSCompoundPredicate : NSPredicate
+{
+    void *_reserved2;
+    NSCompoundPredicateType _type;
+    NSArray *_subpredicates;
+}
 
 + (NSPredicate *)andPredicateWithSubpredicates:(NSArray *)subpredicates;
 + (NSPredicate *)orPredicateWithSubpredicates:(NSArray *)subpredicates;

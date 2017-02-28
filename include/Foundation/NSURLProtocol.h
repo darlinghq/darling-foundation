@@ -18,6 +18,11 @@
 @end
 
 @interface NSURLProtocol : NSObject
+{
+    NSCachedURLResponse *_cachedResponse;
+    NSURLRequest *_request;
+    id <NSURLProtocolClient> _client;
+}
 
 + (BOOL)canInitWithRequest:(NSURLRequest *)request;
 + (NSURLRequest *)canonicalRequestForRequest:(NSURLRequest *)request;

@@ -1,4 +1,6 @@
 #import <Foundation/NSObject.h>
+#import <pthread.h>
+#import <dispatch/dispatch.h>
 
 @class NSArray, NSSet;
 
@@ -17,7 +19,11 @@ enum {
 FOUNDATION_EXPORT NSString * const NSInvocationOperationVoidResultException;
 FOUNDATION_EXPORT NSString * const NSInvocationOperationCancelledException;
 
+@class _NSOperationInternal;
 @interface NSOperation : NSObject
+{
+    _NSOperationInternal *_internal;
+}
 
 - (id)init;
 - (void)start;
@@ -43,7 +49,12 @@ FOUNDATION_EXPORT NSString * const NSInvocationOperationCancelledException;
 
 @end
 
+@class NSMutableArray;
 @interface NSBlockOperation : NSOperation
+{
+    dispatch_block_t _block;
+    NSMutableArray *_blocks;
+}
 
 #if NS_BLOCKS_AVAILABLE
 + (id)blockOperationWithBlock:(void (^)(void))block;
@@ -54,6 +65,9 @@ FOUNDATION_EXPORT NSString * const NSInvocationOperationCancelledException;
 @end
 
 @interface NSInvocationOperation : NSOperation
+{
+    NSInvocation *_inv;
+}
 
 - (id)initWithTarget:(id)target selector:(SEL)sel object:(id)arg;
 - (id)initWithInvocation:(NSInvocation *)inv;
@@ -62,7 +76,24 @@ FOUNDATION_EXPORT NSString * const NSInvocationOperationCancelledException;
 
 @end
 
+@class NSMutableArray, _NSOperationQueueInternal;
+
 @interface NSOperationQueue : NSObject
+{
+    BOOL _suspended;
+    NSString *_name;
+    NSInteger _maxConcurrentOperationCount;
+    pthread_mutex_t _queuelock;
+    pthread_mutexattr_t _mta;
+
+    NSMutableArray *_pendingOperations;
+    NSMutableArray *_operations;
+    NSMutableArray *_operationsToStart;
+
+    _NSOperationQueueInternal *_internal;
+
+    BOOL _isMainQueue;
+}
 
 + (id)currentQueue;
 + (id)mainQueue;

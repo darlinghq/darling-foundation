@@ -18,15 +18,7 @@
 static NSMutableDictionary *loadedBundles = nil;
 static NSBundle *mainBundle = nil;
 
-typedef enum {
-    NSBundleIsLoadedFlag = 0x01,
-} NSBundleFlags;
-
-@implementation NSBundle {
-    NSBundleFlags _flags;
-    CFBundleRef _cfBundle;
-    Class _principalClass;
-}
+@implementation NSBundle
 
 + (void)initialize
 {

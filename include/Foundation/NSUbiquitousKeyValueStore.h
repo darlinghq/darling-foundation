@@ -1,4 +1,5 @@
 #import <Foundation/NSObject.h>
+#import <dispatch/dispatch.h>
 
 enum {
     NSUbiquitousKeyValueStoreServerChange NS_ENUM_AVAILABLE(10_7, 5_0),
@@ -13,7 +14,13 @@ FOUNDATION_EXPORT NSString * const NSUbiquitousKeyValueStoreDidChangeExternallyN
 FOUNDATION_EXPORT NSString * const NSUbiquitousKeyValueStoreChangeReasonKey;
 FOUNDATION_EXPORT NSString * const NSUbiquitousKeyValueStoreChangedKeysKey;
 
+@protocol _NSUbiquitousKeyValueStoreProvider;
+
 @interface NSUbiquitousKeyValueStore : NSObject
+{
+    id<_NSUbiquitousKeyValueStoreProvider> _provider;
+    dispatch_queue_t _providerQueue;
+}
 
 + (NSUbiquitousKeyValueStore *)defaultStore;
 - (id)objectForKey:(NSString *)aKey;

@@ -24,7 +24,6 @@
 #import "NSKeyValueObservationInfo.h"
 #import "NSKeyValueChangeDictionary.h"
 #import <Foundation/NSInvocation.h>
-#import "NSInvocationInternal.h"
 #import <Foundation/NSNull.h>
 #import <Foundation/NSString.h>
 #import "NSExternals.h"
@@ -34,6 +33,7 @@
 #import <Foundation/NSException.h>
 #import <Foundation/NSLock.h>
 #import <Foundation/NSIndexSet.h>
+#import <CoreGraphics/CGBase.h>
 
 static void NSKVOForwardInvocation(id self, SEL _cmd, NSInvocation *invocation);
 static void NSKVONotifyingSetMethodImplementation(NSKVONotifyingInfo *notifyingInfo, SEL selector, IMP newImplementation, NSString *optionalKey);
@@ -1008,7 +1008,8 @@ void _NSKVONotifyingEnableForInfoAndKey(NSKVONotifyingInfo *notifyingInfo, NSStr
                     }
                     else
                     {
-                        replacementSetter = (IMP)&_CF_forwarding_prep_0; // aha - this is how other structs work.
+                        // replacementSetter = (IMP)&_CF_forwarding_prep_0; // aha - this is how other structs work.
+                        replacementSetter = (IMP)NULL;
                     }
                 }
                 else
@@ -1059,15 +1060,9 @@ void _NSKVONotifyingEnableForInfoAndKey(NSKVONotifyingInfo *notifyingInfo, NSStr
                     }
                 }
                 free(argtype);
+
                 SEL selector = method_getName(m);
-                NSKVONotifyingSetMethodImplementation(notifyingInfo, selector, replacementSetter, key);
-
-                // Ensuring that the setValue:forKey: for the notifying object point to the correct
-                // method implementation
-                NSKeyValueSetter *notifyingSetter = [NSObject _createValueSetterWithContainerClassID:notifyingInfo->_notifyingClass key:key];
-                [notifyingSetter setMethod:class_getInstanceMethod(notifyingInfo->_notifyingClass, selector)];
-
-                if (replacementSetter == (IMP)&_CF_forwarding_prep_0)
+                if (replacementSetter == NULL)
                 {
                     NSKVONotifyingSetMethodImplementation(notifyingInfo, @selector(forwardInvocation:), (IMP)&NSKVOForwardInvocation, nil);
                     Class otherClass= notifyingInfo->_notifyingClass;
@@ -1082,6 +1077,14 @@ void _NSKVONotifyingEnableForInfoAndKey(NSKVONotifyingInfo *notifyingInfo, NSStr
                     const char *originalTypeEncoding = method_getTypeEncoding(m);
                     class_addMethod(otherClass, newForwardingSelector, originalIMP, originalTypeEncoding);
                 }
+				else
+	                NSKVONotifyingSetMethodImplementation(notifyingInfo, selector, replacementSetter, key);
+
+                // Ensuring that the setValue:forKey: for the notifying object point to the correct
+                // method implementation
+                NSKeyValueSetter *notifyingSetter = [NSObject _createValueSetterWithContainerClassID:notifyingInfo->_notifyingClass key:key];
+                [notifyingSetter setMethod:class_getInstanceMethod(notifyingInfo->_notifyingClass, selector)];
+
             }
         }
     }
@@ -1139,7 +1142,11 @@ static void NSKVOForwardInvocation(id self, SEL _cmd, NSInvocation *invocation)
     {
         struct objc_super super = {
             .receiver = self,
+#if !__OBJC2__
+            .class = class_getSuperclass(object_getClass(self))
+#else
             .super_class = class_getSuperclass(object_getClass(self))
+#endif
         };
         (void)(void (*)(id, SEL))objc_msgSendSuper(&super, _cmd);
     }

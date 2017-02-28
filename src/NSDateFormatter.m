@@ -16,10 +16,6 @@
 #import <Foundation/NSLocale.h>
 
 @implementation NSDateFormatter
-{
-    NSMutableDictionary *_attributes;
-    struct __CFDateFormatter *_formatter;
-}
 
 + (NSString *)localizedStringFromDate:(NSDate *)date dateStyle:(NSDateFormatterStyle)dateStyle timeStyle:(NSDateFormatterStyle)timeStyle
 {

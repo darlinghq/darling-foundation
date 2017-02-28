@@ -8,6 +8,7 @@
 #import <stdio.h>
 #import <sys/ioctl.h>
 #import <sys/socket.h>
+#import <sys/stat.h>
 #import <dispatch/dispatch.h>
 #import <CoreFoundation/CFRunLoop.h>
 #import <Foundation/NSFileHandle.h>
@@ -46,20 +47,7 @@ typedef NS_ENUM(unsigned int, NSFileHandleActivity) {
 
 CF_PRIVATE
 @interface NSConcreteFileHandle : NSFileHandle
-@end
-
-CF_PRIVATE
-@interface _NSStdIOFileHandle : NSConcreteFileHandle
-@end
-
-CF_PRIVATE
-@interface NSNullFileHandle : NSFileHandle
-@end
-
-@interface NSFileHandle ()
-@end
-
-@interface NSConcreteFileHandle () {
+{
   @public
     int _fd;
     unsigned short _flags;
@@ -80,7 +68,24 @@ CF_PRIVATE
 @end
 
 CF_PRIVATE
+@interface _NSStdIOFileHandle : NSConcreteFileHandle
+@end
+
+CF_PRIVATE
+@interface NSNullFileHandle : NSFileHandle
+@end
+
+@interface NSFileHandle ()
+@end
+
+@interface NSConcreteFileHandle ()
+@end
+
+CF_PRIVATE
 @interface NSConcreteFileHandleARCWeakRef : NSObject
+{
+    NSConcreteFileHandle *ref;
+}
 - (void)storeWeak:(NSConcreteFileHandle *)fh;
 - (id)loadWeak;
 @end
@@ -1389,9 +1394,6 @@ SINGLETON_RR()
 @end
 
 @implementation NSConcreteFileHandleARCWeakRef
-{
-    NSConcreteFileHandle *ref;
-}
 
 - (void)storeWeak:(NSConcreteFileHandle *)fh
 {

@@ -1,0 +1,226 @@
+project(foundation)
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -nostdinc -mmacosx-version-min=10.10 \
+	-include ${CMAKE_SOURCE_DIR}/src/external/corefoundation/CoreFoundation_Prefix.h \
+	-include ${CMAKE_SOURCE_DIR}/src/external/corefoundation/macros.h")
+
+include(darling_framework)
+
+include_directories(
+	${CMAKE_CURRENT_SOURCE_DIR}/include
+	${CMAKE_CURRENT_SOURCE_DIR}/include/Foundation
+	${CMAKE_CURRENT_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/src/external/corefoundation
+	${CMAKE_SOURCE_DIR}/src/external/objc4/runtime
+	${CMAKE_SOURCE_DIR}/src/external/libclosure
+	${CMAKE_SOURCE_DIR}/src/external/security/include
+	${CMAKE_SOURCE_DIR}/src/external/cfnetwork/include
+	${CMAKE_SOURCE_DIR}/src/external/cfnetwork/private_include
+	${CMAKE_SOURCE_DIR}/src/external/coregraphics/Headers
+	${CMAKE_SOURCE_DIR}/src/launchd/liblaunch
+	${CMAKE_SOURCE_DIR}/src/libmalloc/include
+	${CMAKE_SOURCE_DIR}/src/copyfile
+	${CMAKE_SOURCE_DIR}/src/libc/gen
+	${CMAKE_SOURCE_DIR}/src/external/icu/icuSources/i18n
+	${CMAKE_SOURCE_DIR}/src/external/icu/icuSources/common
+	${CMAKE_SOURCE_DIR}/src/external/libxml2/include
+	${CMAKE_BINARY_DIR}/src/external/libxml2/include
+)
+
+add_definitions(
+	-DNSBUILDINGFOUNDATION=1
+	-DINCLUDE_OBJC
+	-DDEPLOYMENT_TARGET_MACOSX=1
+	-D__CONSTANT_CFSTRINGS__=1
+	-D__CONSTANT_STRINGS__=1
+)
+
+set(foundation_sources
+	src/_DebugUtils.m
+	src/NSAddressCheckingResult.m
+	src/NSAffineTransform.m
+	src/NSAggregateExpression.m
+	src/NSAnyKeyExpression.m
+	src/NSArchiver.m
+	src/NSArray.m
+	src/NSAttributedString.m
+	src/NSAutoreleasePool.m
+	src/NSBetweenPredicateOperator.m
+	src/NSBlockExpression.m
+	src/NSBlockPredicate.m
+	src/NSBOMEncoding.m
+	src/NSBundle.m
+	src/NSByteCountFormatter.m
+	src/NSCalendar.m
+	src/NSClassDescription.m
+	src/NSCoder.m
+	src/NSComparisonPredicate.m
+	src/NSComparisonPredicateOperator.m
+	src/NSCompoundPredicate.m
+	src/NSCompoundPredicateOperator.m
+	src/NSConstantValueExpression.m
+	src/NSCustomPredicateOperator.m
+	src/NSDataDetector.m
+	src/NSData.m
+	src/NSDateFormatter.m
+	src/NSDateCheckingResult.m
+	src/NSDate.m
+	src/NSDecimal.m
+	src/NSDecimalNumber.m
+	src/NSDictionary.m
+	src/NSDirectoryEnumerator.m
+	src/NSEqualityPredicateOperator.m
+	src/NSException.m
+	src/NSExpression.m
+	src/NSExternals.m
+	src/NSFalsePredicate.m
+	src/NSFileAttributes.m
+	src/NSFileCoordinator.m
+	src/NSFileHandle.m
+	src/_NSFileIO.m
+	src/NSFileManager.m
+	src/NSFilesystemItemRemoveOperation.m
+	src/NSFormatter.m
+	src/NSFunctionExpression.m
+	src/NSGeometry.m
+	src/NSGrammarCheckingResult.m
+	src/NSHashTable.m
+	src/NSHost.m
+	#src/NSHTTPCookie.m
+	#src/NSHTTPCookieStorage.m
+	src/NSIndexPath.m
+	src/NSIndexSet.m
+	src/NSInPredicateOperator.m
+	src/NSJSONSerialization.m
+	src/NSKeyedArchiver.m
+	src/_NSKeyedCoderOldStyleArray.m
+	src/NSKeyedUnarchiver.m
+	src/NSKeyPathExpression.m
+	src/NSKeyPathSpecifierExpression.m
+	src/NSKeyValueAccessor.m
+	src/NSKeyValueCodingInternal.m
+	src/NSKeyValueCoding.m
+	src/NSKeyValueCollectionProxies.m
+	src/NSKeyValueComputedProperty.m
+	src/NSKeyValueContainerClass.m
+	src/NSKeyValueChangeDictionary.m
+	src/NSKeyValueNestedProperty.m
+	src/NSKeyValueObservance.m
+	src/NSKeyValueObservationInfo.m
+	src/NSKeyValueObserving.m
+	src/NSKeyValueProperty.m
+	src/NSKeyValueUnnestedProperty.m
+	src/NSLikePredicateOperator.m
+	src/NSLinkCheckingResult.m
+	src/NSLocale.m
+	src/NSLocalizableString.m
+	src/NSLock.m
+	src/NSLog.m
+	src/NSMapTable.m
+	src/NSMatchingPredicateOperator.m
+	#src/NSMutableStringProxyForMutableAttributedString.m # duplicate?!
+	src/NSNestedDictionary.m
+	#src/NSNetServices.m
+	src/NSNotificationCenter.m
+	src/NSNotification.m
+	src/NSNotificationQueue.m
+	src/NSNumberFormatter.m
+	src/NSNumber.m
+	src/NSObjCRuntime.m
+	src/NSObjectInternal.m
+	src/NSOperation.m
+	src/NSOrthographyCheckingResult.m
+	src/NSOrthography.m
+	src/NSPathStore.m
+	src/NSPathUtilities.m
+	src/NSPhoneNumberCheckingResult.m
+	src/NSPlatform.m
+	src/NSPointerArray.m
+	src/NSPointerFunctions.m
+	src/NSPort.m
+	src/NSPredicateLexer.m
+	src/NSPredicate.m
+	src/NSPredicateOperator.m
+	src/NSPredicateParser.tab.c
+	src/_NSPredicateOperatorUtilities.m
+	src/_NSPredicateUtilities.m
+	src/NSProcessInfo.m
+	src/NSProgress.m
+	src/NSProxy.m
+	src/NSRange.m
+	src/NSRegularExpressionCheckingResult.m
+	src/NSRegularExpression.m
+	src/NSRunLoop.m
+	src/NSRunLoopModes.m
+	src/NSScanner.m
+	src/NSSelfExpression.m
+	src/NSSetExpression.m
+	src/NSSet.m
+	src/NSSortDescriptor.m
+	src/NSSpellCheckingResult.m
+	src/NSString.m
+	src/NSStringPredicateOperator.m
+	src/NSSubqueryExpression.m
+	src/NSSubstitutionCheckingResult.m
+	src/NSSubstringPredicateOperator.m
+	src/NSSymbolicExpression.m
+	src/NSTernaryExpression.m
+	src/NSTextCheckingResult.m
+	src/NSThread.m
+	src/NSTimer.m
+	src/NSTimeZone.m
+	src/NSTokenMatchingPredicateOperator.m
+	src/NSTransitInformationCheckingResult.m
+	src/NSTruePredicate.m
+	src/NSUbiquitousKeyValueStore.m
+	#src/NSURLAuthenticationChallenge.m
+	#src/NSURLCache.m
+	#src/NSURLConnection.m
+	#src/NSURLCredential.m
+	#src/NSURLCredentialStorage.m
+	src/NSURLError.m
+	# src/NSURLHandle.m # deprecated since 10.4, from GNUstep
+	src/NSURL.m
+	#src/NSURLProtectionSpace.m
+	#src/NSURLProtocol.m
+	#src/NSURLRequest.m
+	#src/NSURLResponse.m
+	#src/NSURLSession.m
+	src/NSUserDefaults.m
+	src/NSUUID.m
+	src/NSValue.m
+	src/NSValueTransformer.m
+	src/NSVariableAssignmentExpression.m
+	src/NSVariableExpression.m
+	src/NSXMLDocument.m
+	src/NSXMLDTD.m
+	src/NSXMLDTDNode.m
+	src/NSXMLElement.m
+	src/NSXMLNode.m
+	src/NSXMLParser.m
+	src/NSXPCCoder.m
+	src/NSZone.m
+
+	src/NSConcreteHashTable.m
+	src/NSConcreteMapTable.m
+	src/NSCallBacks.m
+	src/stub.m
+)
+
+# Includes ObjC headers -> must be compiled as ObjC
+set_source_files_properties(src/NSPredicateParser.tab.c PROPERTIES COMPILE_FLAGS "-x objective-c -fblocks")
+
+add_framework(Foundation
+	FAT
+	CURRENT_VERSION
+	SOURCES
+		${foundation_sources}
+	VERSION "A"
+	DEPENDENCIES
+		objc
+		system
+		CoreFoundation
+		#CFNetwork
+		xml2
+)
+

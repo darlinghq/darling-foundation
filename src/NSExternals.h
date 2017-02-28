@@ -54,6 +54,7 @@ typedef float CGFloat;
 #define CGFLOAT_DEFINED
 #endif
 
+#if 0
 struct CGPoint {
     CGFloat x;
     CGFloat y;
@@ -92,6 +93,7 @@ typedef struct UIOffset {
     CGFloat horizontal;
     CGFloat vertical;
 } UIOffset;
+#endif
 
 extern NSString *const NS_objects CF_PRIVATE;
 extern NSString *const NS_keys CF_PRIVATE;
@@ -115,9 +117,12 @@ extern NSString *const NS_offset_h CF_PRIVATE;
 extern NSString *const NS_offset_v CF_PRIVATE;
 extern NSString *const NS_time CF_PRIVATE;
 
+#if 0
 NSString *NSStringFromPoint(CGPoint pt);
 NSString *NSStringFromSize(CGSize sz);
 NSString *NSStringFromRect(CGRect r);
 CGSize NSSizeFromString(NSString *string);
 CGPoint NSPointFromString(NSString *string);
 CGRect NSRectFromString(NSString *string);
+#endif
+

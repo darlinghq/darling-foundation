@@ -8,13 +8,12 @@
 #import "NSKeyValueComputedProperty.h"
 #import <Foundation/NSString.h>
 
-@interface NSKeyValueComputedProperty ()
-@property (nonatomic, retain) NSKeyValueProperty *operationArgumentProperty;
-@property (nonatomic, copy) NSString *operationArgumentKeyPath;
-@property (nonatomic, copy) NSString *operationName;
-@end
-
 @implementation NSKeyValueComputedProperty
+
+@synthesize operationArgumentProperty = _operationArgumentProperty;
+@synthesize operationArgumentKeyPath = _operationArgumentKeyPath;
+@synthesize operationName = _operationName;
+
 - (instancetype)_initWithContainerClass:(NSKeyValueContainerClass *)containerClass keyPath:(NSString *)keyPath propertiesBeingInitialized:(CFMutableSetRef)propertiesBeingInitialized
 {
     self = [super _initWithContainerClass:containerClass keyPath:keyPath propertiesBeingInitialized:propertiesBeingInitialized];

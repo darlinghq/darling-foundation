@@ -37,6 +37,10 @@
 #import "Foundation/NSNull.h"
 #import "Foundation/NSSet.h"
 #import "Foundation/NSCoder.h"
+#import "Foundation/NSString.h"
+#include <ctype.h>
+#include <stdio.h>
+#include <unistd.h>
 
 #if defined(_WIN32)
 #include <winsock2.h>
@@ -54,6 +58,8 @@ extern int inet_pton(int , const char *, void *);
 #ifndef	INADDR_NONE
 #define	INADDR_NONE	-1
 #endif
+
+#define IF_NO_GC(x) x
 
 static NSString			*localHostName = @"GNUstep local host";
 static Class			hostClass;
@@ -388,11 +394,11 @@ myHostName()
     {
       hostClass = self;
       null = [[NSNull null] retain];
-      [[NSObject leakAt: &null] release];
+      // [[NSObject leakAt: &null] release];
       _hostCacheLock = [[NSRecursiveLock alloc] init];
-      [[NSObject leakAt: &_hostCacheLock] release];
+      // [[NSObject leakAt: &_hostCacheLock] release];
       _hostCache = [NSMutableDictionary new];
-      [[NSObject leakAt: &_hostCache] release];
+      // [[NSObject leakAt: &_hostCache] release];
     }
 }
 
@@ -590,11 +596,12 @@ myHostName()
 }
 
 /* Methods for encoding/decoding*/
-
+#if 0
 - (id) replacementObjectForPortCoder: (NSPortCoder*)aCoder
 {
   return self;
 }
+#endif
 
 - (void) encodeWithCoder: (NSCoder*)aCoder
 {

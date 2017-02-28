@@ -5,15 +5,16 @@
 //  Copyright (c) 2014 Apportable. All rights reserved.
 //
 
+#import <CoreFoundation/CFPreferences.h>
+#include "ForFoundationOnly.h"
+#define PREFS_TYPE _CFApplicationPreferences
 #import <Foundation/NSUserDefaults.h>
 #import <Foundation/NSPathUtilities.h>
 #import <Foundation/NSNotification.h>
 #import <Foundation/NSURL.h>
 #import <Foundation/NSKeyedArchiver.h>
 #import "NSObjectInternal.h"
-#import <CoreFoundation/CFPreferences.h>
 #import <pthread.h>
-#include "ForFoundationOnly.h"
 
 NSString * const NSGlobalDomain = @"NSGlobalDomain";
 NSString * const NSArgumentDomain = @"NSArgumentDomain";
@@ -26,9 +27,7 @@ static dispatch_source_t synchronizeTimer;
 static dispatch_queue_t synchronizeQueue;
 #define SYNC_INTERVAL 30
 
-@implementation NSUserDefaults {
-    _CFApplicationPreferences *_cfDataPtr;
-}
+@implementation NSUserDefaults
 
 + (NSUserDefaults *)standardUserDefaults
 {

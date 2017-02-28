@@ -31,8 +31,15 @@ typedef NS_ENUM(NSUInteger, NSPredicateOperatorType) {
 };
 
 @class NSExpression;
+@class NSPredicateOperator;
 
 @interface NSComparisonPredicate : NSPredicate
+{
+    void *_reserved2;
+    NSPredicateOperator *_predicateOperator;
+    NSExpression *_lhs;
+    NSExpression *_rhs;
+}
 
 + (NSPredicate *)predicateWithLeftExpression:(NSExpression *)lhs rightExpression:(NSExpression *)rhs modifier:(NSComparisonPredicateModifier)modifier type:(NSPredicateOperatorType)type options:(NSComparisonPredicateOptions)options;
 + (NSPredicate *)predicateWithLeftExpression:(NSExpression *)lhs rightExpression:(NSExpression *)rhs customSelector:(SEL)selector;

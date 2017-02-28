@@ -6,7 +6,12 @@
 
 @protocol NSURLConnectionDelegate;
 
+@class NSURLConnectionInternal;
+
 @interface NSURLConnection : NSObject
+{
+    NSURLConnectionInternal *_internal;
+}
 
 + (NSURLConnection*)connectionWithRequest:(NSURLRequest *)request delegate:(id<NSURLConnectionDelegate>)delegate;
 + (BOOL)canHandleRequest:(NSURLRequest *)request;

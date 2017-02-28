@@ -29,6 +29,9 @@
 
 CF_PRIVATE
 @interface NSAggregateExpression : NSExpression
+{
+    id _collection;
+}
 - (id)initWithCollection:(id)collection;
 @end
 
@@ -37,14 +40,26 @@ CF_PRIVATE
 @end
 
 @interface NSBlockExpression : NSExpression
+{
+    id (^_block)(id, NSArray *, NSMutableDictionary *);
+    NSArray *_arguments;
+}
 - (id)initWithType:(NSExpressionType)type block:(id (^)(id, NSArray *, NSMutableDictionary *))block arguments:(NSArray *)arguments;
 @end
 
 @interface NSConstantValueExpression : NSExpression
+{
+    id constantValue;
+}
 - (id)initWithObject:(id)object;
 @end
 
 @interface NSFunctionExpression : NSExpression
+{
+    NSExpression *_operand;
+    SEL _selector;
+    NSArray *_arguments;
+}
 - (id)initWithSelector:(SEL)selector argumentArray:(NSArray *)argumentArray;
 - (id)initWithTarget:(id)target selectorName:(NSString *)selectorName arguments:(NSArray *)arguments;
 - (id)initWithExpressionType:(NSExpressionType)type operand:(id)operand selector:(SEL)selector argumentArray:(NSArray *)args;
@@ -55,6 +70,9 @@ CF_PRIVATE
 @end
 
 @interface NSKeyPathSpecifierExpression : NSExpression
+{
+    NSString *_value;
+}
 - (id)initWithObject:(id)object;
 @end
 
@@ -63,28 +81,55 @@ CF_PRIVATE
 @end
 
 @interface NSSetExpression : NSExpression
+{
+    NSExpression *_left;
+    NSExpression *_right;
+}
 - (id)initWithType:(NSExpressionType)type leftExpression:(NSExpression *)left rightExpression:(NSExpression *)right;
 @end
 
 @interface NSSubqueryExpression : NSExpression
+{
+    NSExpression *_collection;
+    NSExpression *_variableExpression;
+    NSPredicate *_subpredicate;
+}
 - (id)initWithExpression:(NSExpression *)expression usingIteratorVariable:(NSString *)variable predicate:(NSPredicate *)predicate;
 @end
 
 CF_PRIVATE
 @interface NSSymbolicExpression : NSExpression
+{
+    NSString *_token;
+}
 - (id)initWithString:(NSString *)string;
 @end
 
 @interface NSTernaryExpression : NSExpression
+{
+    NSPredicate *_predicate;
+    NSExpression *_trueExpression;
+    NSExpression *_falseExpression;
+}
 - (id)initWithPredicate:(NSPredicate *)predicate trueExpression:(NSExpression *)trueExpression falseExpression:(NSExpression *)falseExpression;
 @end
 
+@class NSVariableExpression;
+
 CF_PRIVATE
 @interface NSVariableAssignmentExpression : NSExpression
+{
+    NSVariableExpression *_assignmentVariable;
+    NSExpression *_subexpression;
+}
 - (id)initWithAssignmentVariable:(NSString *)variableName expression:(NSExpression *)expression;
 @end
 
 @interface NSVariableExpression : NSExpression
+{
+    NSString *_variable;
+}
+
 - (id)initWithObject:(id)object;
 @end
 

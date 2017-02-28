@@ -3,6 +3,9 @@
 
 __attribute__((visibility("hidden")))
 @interface NSMutableStringProxyForMutableAttributedString : NSMutableString
+{
+    NSMutableAttributedString *_owner;
+}
 
 - (void)replaceCharactersInRange:(NSRange)range withString:(NSString *)str;
 - (void)getCharacters:(unichar *)buffer range:(NSRange)aRange;

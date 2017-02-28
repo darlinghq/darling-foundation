@@ -20,11 +20,6 @@ static NSString * const NSSubpredicatesKey = @"NSSubpredicates";
 static NSString * const NSCompoundPredicateTypeKey = @"NSCompoundPredicateType";
 
 @implementation NSCompoundPredicate
-{
-    void *_reserved2;
-    NSCompoundPredicateType _type;
-    NSArray *_subpredicates;
-}
 
 + (BOOL)supportsSecureCoding
 {

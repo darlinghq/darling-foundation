@@ -50,7 +50,14 @@ FOUNDATION_EXPORT NSString * const NSNetServicesErrorDomain;
 
 @end
 
+@class NSNetServicesInternal;
+typedef struct __CFNetService* CFNetServiceRef;
 @interface NSNetService : NSObject
+{
+    CFNetServiceRef _netService;
+    id _delegate;
+    NSNetServicesInternal *_reserved;
+}
 
 + (NSDictionary *)dictionaryFromTXTRecordData:(NSData *)txtData;
 + (NSData *)dataFromTXTRecordDictionary:(NSDictionary *)txtDictionary;
@@ -79,7 +86,14 @@ FOUNDATION_EXPORT NSString * const NSNetServicesErrorDomain;
 
 @end
 
+typedef struct __CFNetServiceBrowser* CFNetServiceBrowserRef;
 @interface NSNetServiceBrowser : NSObject
+{
+    CFNetServiceBrowserRef _netServiceBrowser;
+    id _delegate;
+    void *_tbd;
+    BOOL _includesPeerToPeer;
+}
 
 - (id)init;
 - (id <NSNetServiceBrowserDelegate>)delegate;

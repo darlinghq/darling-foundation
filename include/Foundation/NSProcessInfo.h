@@ -15,6 +15,13 @@ enum {
 @class NSArray, NSString, NSDictionary;
 
 @interface NSProcessInfo : NSObject
+{
+    NSDictionary *environment; // not used it seems
+    NSArray *arguments; // is really mutable
+    NSString *hostName; // singly created
+    NSString *name; // singly created, but replaceable
+    NSInteger automaticTerminationOptOutCounter;
+}
 
 + (NSProcessInfo *)processInfo;
 

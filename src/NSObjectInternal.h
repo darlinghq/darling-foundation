@@ -48,6 +48,10 @@ extern NSString *_NSFullMethodName(id object, SEL selector);
 
 @end
 
+@interface NSObject (_AbstractClasses)
+- (void) subclassResponsibility: (SEL)aSelector;
+@end
+
 static inline BOOL NSIsPlistType(NSObject *object)
 {
     if ([object isNSString__] ||
@@ -113,6 +117,9 @@ _Pragma("clang diagnostic pop")
 
 __attribute__((visibility("hidden")))
 @interface _NSWeakRef: NSObject
+{
+    id _weakRef;
+}
 
 @property (nonatomic, retain) id object;
 

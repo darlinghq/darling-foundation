@@ -14,6 +14,14 @@
 #import <pthread.h>
 
 @interface _NSNotificationObserver : NSObject
+{
+	id _observer;
+	SEL _selector;
+	NSString* _name;
+	id _object;
+	NSOperationQueue* _queue;
+	void (^_block)(NSNotification *note);
+}
 
 @property (nonatomic, readonly) id observer;
 @property (nonatomic, readonly) SEL selector;
@@ -26,6 +34,13 @@
 @end
 
 @implementation _NSNotificationObserver
+
+@synthesize observer = _observer;
+@synthesize selector = _selector;
+@synthesize name = _name;
+@synthesize object = _object;
+@synthesize queue = _queue;
+@synthesize block = _block;
 
 - (id)initWithObserver:(id)observer selector:(SEL)selector name:(NSString *)name object:(id)object queue:(NSOperationQueue *)queue block:(void (^)(NSNotification *note))block
 {
@@ -74,10 +89,7 @@
 
 @end
 
-@implementation NSNotificationCenter {
-    NSMutableArray *_observers;
-    pthread_mutex_t _observersLock;
-}
+@implementation NSNotificationCenter
 
 + (id)defaultCenter
 {

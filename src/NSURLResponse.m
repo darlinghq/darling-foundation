@@ -29,9 +29,7 @@
 
 @end
 
-@implementation NSURLResponse {
-    NSURLResponseInternal *_internal;
-}
+@implementation NSURLResponse
 
 + (id)_responseWithCFURLResponse:(CFURLResponseRef)response
 {
@@ -159,9 +157,7 @@ static inline NSString *NSURLLocalizedString(NSString *key)
 
 @end
 
-@implementation NSHTTPURLResponse {
-    NSHTTPURLResponseInternal *_httpInternal;
-}
+@implementation NSHTTPURLResponse
 
 + (BOOL)isErrorStatusCode:(NSInteger)statusCode
 {

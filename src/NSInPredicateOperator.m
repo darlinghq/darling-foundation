@@ -15,11 +15,6 @@
 static NSString * NSFlagsKey = @"NSFlags";
 
 @implementation NSInPredicateOperator
-{
-    NSComparisonPredicateOptions _flags;
-    NSSubstringPredicateOperator * _stringVersion;
-    pthread_mutex_t _mutex;
-}
 
 + (BOOL)supportsSecureCoding
 {

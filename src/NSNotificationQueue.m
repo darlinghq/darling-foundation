@@ -15,13 +15,7 @@
 
 static NSString *NSDefaultNotificationQueue = @"NSDefaultNotificationQueue";
 
-@implementation NSNotificationQueue {
-    NSNotificationCenter *_notificationCenter;
-    NSMutableArray *_asapQueue;
-    NSMutableArray *_asapObs;
-    NSMutableArray *_idleQueue;
-    NSMutableArray *_idleObs;
-}
+@implementation NSNotificationQueue
 
 + (id)defaultQueue
 {

@@ -5,6 +5,7 @@
 
 enum {
     NSPointerFunctionsStrongMemory             = (0UL << 0),
+    NSPointerFunctionsZeroingWeakMemory        = (1UL << 0),
     NSPointerFunctionsOpaqueMemory             = (2UL << 0),
     NSPointerFunctionsMallocMemory             = (3UL << 0),
     NSPointerFunctionsMachVirtualMemory        = (4UL << 0),

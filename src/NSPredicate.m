@@ -18,10 +18,6 @@
 #import <CoreFoundation/CFLocale.h>
 
 @implementation NSPredicate
-{
-    NSPredicateEvaluationFlags _predicateFlags;
-    NSUInteger reserved;
-}
 
 + (NSPredicate *)predicateWithFormat:(NSString *)predicateFormat argumentArray:(NSArray *)arguments
 {

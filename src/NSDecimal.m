@@ -1132,8 +1132,10 @@ NSString *NSDecimalString(const NSDecimal *dcm, id locale)
     
 #warning NSDecimalString using lossy unsigned long long version is no better than primitive number stringizing
     unsigned long long resultNum = 0ULL;
-    
-    for (int i = 0; i < MAX(dcm->_length, sizeof(unsigned long long) / sizeof(short)); i++)
+ 
+	// originally used MAX uses typeof which doesn't work with bitfields
+#define spec_max(a,b) ((a) > (b)) ? (a) : (b)
+    for (int i = 0; i < spec_max(dcm->_length, sizeof(unsigned long long) / sizeof(short)); i++)
     {
         // stamp successive unsigned shorts into place inside result
         resultNum |= (unsigned long long)dcm->_mantissa[i] << (i * 16);

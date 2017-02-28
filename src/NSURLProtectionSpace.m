@@ -28,9 +28,7 @@ NSString * const NSURLAuthenticationMethodServerTrust = @"NSURLAuthenticationMet
 
 @class NSURLProtectionSpaceInternal;
 
-@implementation NSURLProtectionSpace {
-    NSURLProtectionSpaceInternal *_internal;
-}
+@implementation NSURLProtectionSpace
 
 static CFURLProtectionSpaceServerType protocolToCFServerType(NSString * const protocol)
 {
