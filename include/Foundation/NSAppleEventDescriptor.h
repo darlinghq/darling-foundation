@@ -3,7 +3,7 @@
 #include <Foundation/NSObject.h>
 #include <Foundation/NSData.h>
 #include <Foundation/NSString.h>
-#include <CoreServices/MacTypes.h>
+#include <MacTypes.h>
 
 typedef int AEEventClass;
 typedef int AEEventID;
