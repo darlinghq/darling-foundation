@@ -210,6 +210,9 @@ set(foundation_sources
 # Includes ObjC headers -> must be compiled as ObjC
 set_source_files_properties(src/NSPredicateParser.tab.c PROPERTIES COMPILE_FLAGS "-x objective-c -fblocks")
 
+set(DYLIB_COMPAT_VERSION "300.0.0")
+set(DYLIB_CURRENT_VERSION "1349.0.0")
+
 add_framework(Foundation
 	FAT
 	CURRENT_VERSION
