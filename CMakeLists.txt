@@ -218,7 +218,7 @@ add_framework(Foundation
 	CURRENT_VERSION
 	SOURCES
 		${foundation_sources}
-	VERSION "A"
+	VERSION "C"
 	DEPENDENCIES
 		objc
 		system
