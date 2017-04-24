@@ -15,6 +15,7 @@
 #import <Foundation/NSString.h>
 #import <Foundation/NSObjCRuntime.h>
 #import <Foundation/NSException.h>
+#import <Foundation/NSGeometry.h>
 #import <Foundation/NSInvocation.h>
 #import <Foundation/NSMethodSignature.h>
 #import "NSExternals.h"
