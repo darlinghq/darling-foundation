@@ -65,6 +65,7 @@ set(foundation_sources
 	src/NSDateFormatter.m
 	src/NSDateCheckingResult.m
 	src/NSDate.m
+	src/NSDebug.m
 	src/NSDecimal.m
 	src/NSDecimalNumber.m
 	src/NSDictionary.m
@@ -226,4 +227,3 @@ add_framework(Foundation
 		#CFNetwork
 		xml2
 )
-
