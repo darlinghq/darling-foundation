@@ -225,5 +225,7 @@ add_framework(Foundation
 		CoreFoundation
 		#CFNetwork
 		xml2
+	LINK_FLAGS " -Wl,-reexport_library,${CMAKE_BINARY_DIR}/src/external/corefoundation/CoreFoundation \
+				-Wl,-reexport_library,${CMAKE_BINARY_DIR}/src/external/objc4/runtime/libobjc.A.dylib"
 )
 
