@@ -7,24 +7,8 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -nostdinc -mmacosx-version-min=10.10 \
 include(darling_framework)
 
 include_directories(
-	${CMAKE_CURRENT_SOURCE_DIR}/include
 	${CMAKE_CURRENT_SOURCE_DIR}/include/Foundation
 	${CMAKE_CURRENT_SOURCE_DIR}/src
-	${CMAKE_SOURCE_DIR}/src/external/corefoundation
-	${CMAKE_SOURCE_DIR}/src/external/objc4/runtime
-	${CMAKE_SOURCE_DIR}/src/external/libclosure
-	${CMAKE_SOURCE_DIR}/src/external/security/include
-	${CMAKE_SOURCE_DIR}/src/external/cfnetwork/include
-	${CMAKE_SOURCE_DIR}/src/external/cfnetwork/private_include
-	${CMAKE_SOURCE_DIR}/src/external/coregraphics/Headers
-	${CMAKE_SOURCE_DIR}/src/launchd/liblaunch
-	${CMAKE_SOURCE_DIR}/src/libmalloc/include
-	${CMAKE_SOURCE_DIR}/src/copyfile
-	${CMAKE_SOURCE_DIR}/src/libc/gen
-	${CMAKE_SOURCE_DIR}/src/external/icu/icuSources/i18n
-	${CMAKE_SOURCE_DIR}/src/external/icu/icuSources/common
-	${CMAKE_SOURCE_DIR}/src/external/libxml2/include
-	${CMAKE_BINARY_DIR}/src/external/libxml2/include
 )
 
 add_definitions(
