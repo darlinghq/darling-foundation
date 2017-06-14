@@ -7,6 +7,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -nostdinc -mmacosx-version-min=10.10 \
 include(darling_framework)
 
 include_directories(
+	${CMAKE_SOURCE_DIR}/src/external/corefoundation
 	${CMAKE_CURRENT_SOURCE_DIR}/include/Foundation
 	${CMAKE_CURRENT_SOURCE_DIR}/src
 )
