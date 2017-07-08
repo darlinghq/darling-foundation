@@ -1229,6 +1229,21 @@ SINGLETON_RR()
     return self;
 }
 
+- (NSString *)stringByResolvingSymlinksInPath
+{
+    NSString* rv;
+    const char* path = [self UTF8String];
+    char* resolved = realpath(path, NULL);
+
+    if (resolved == NULL)
+        return self;
+
+    rv = [NSString stringWithUTF8String: resolved];
+    free(resolved);
+
+    return rv;
+}
+
 - (NSString *)stringByAppendingString:(NSString *)str
 {
     NSUInteger len1 = [self length];
