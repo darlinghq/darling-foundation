@@ -191,6 +191,9 @@ set(foundation_sources
 	src/NSConcreteMapTable.m
 	src/NSCallBacks.m
 	src/stub.m
+
+	src/NSSpellServer.m
+	src/NSSpellEngine.m
 )
 
 # Includes ObjC headers -> must be compiled as ObjC
