@@ -159,6 +159,8 @@ set(foundation_sources
 	src/NSTransitInformationCheckingResult.m
 	src/NSTruePredicate.m
 	src/NSUbiquitousKeyValueStore.m
+	src/NSUndoGroup.m
+	src/NSUndoManager.m
 	#src/NSURLAuthenticationChallenge.m
 	#src/NSURLCache.m
 	#src/NSURLConnection.m
