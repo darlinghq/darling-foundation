@@ -4,6 +4,10 @@
 
 @class NSArray, NSMutableDictionary, NSDate, NSMutableArray;
 
+#ifdef DARLING
+@class NSLock;
+#endif
+
 FOUNDATION_EXPORT NSString * const NSWillBecomeMultiThreadedNotification;
 FOUNDATION_EXPORT NSString * const NSDidBecomeSingleThreadedNotification;
 FOUNDATION_EXPORT NSString * const NSThreadWillExitNotification;
@@ -29,6 +33,11 @@ typedef enum {
     id _target;
     SEL _selector;
     id _argument;
+#ifdef DARLING
+    // for Cocotron additions (see below)
+    NSMutableDictionary *_sharedObjects;
+    NSLock *_sharedObjectLock;
+#endif
 }
 
 + (NSThread *)currentThread;
@@ -71,3 +80,17 @@ typedef enum {
 - (void)performSelectorInBackground:(SEL)aSelector withObject:(id)arg;
 
 @end
+
+#ifdef DARLING
+
+@interface NSThread (CocotronAdditions)
+- (NSMutableDictionary *)sharedDictionary;
+- (id) sharedObjectForClassName:(NSString *)className;
+- (void)setSharedObject:object forClassName:(NSString *)className;
+@end
+
+FOUNDATION_EXPORT NSThread *NSCurrentThread(void);
+FOUNDATION_EXPORT id NSThreadSharedInstance(NSString *className);
+FOUNDATION_EXPORT id NSThreadSharedInstanceDoNotCreate(NSString *className);
+
+#endif

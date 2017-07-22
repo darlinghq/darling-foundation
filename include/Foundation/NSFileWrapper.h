@@ -1,3 +1,6 @@
+#ifndef DARLING
+// defined in cocotron/AppKit/NSFileWrapper.h
+
 #import <Foundation/NSObject.h>
 
 @class NSData, NSDictionary, NSError, NSURL;
@@ -41,3 +44,4 @@ typedef NS_OPTIONS(NSUInteger, NSFileWrapperWritingOptions) {
 - (NSURL *)symbolicLinkDestinationURL;
 
 @end
+#endif

@@ -210,6 +210,11 @@ static int array_add_backtrace_step(int depth, void *pc, char *cfname, int offse
         // this is what iOS/Mac OS X seem to do, is this right for other operating systems?
         pthread_attr_setscope(&_attr, PTHREAD_SCOPE_SYSTEM);
         pthread_attr_setdetachstate(&_attr, PTHREAD_CREATE_DETACHED);
+#ifdef DARLING
+        _sharedObjects=[NSMutableDictionary new];
+        if(_NSIsMultiThreaded)
+            _sharedObjectLock=[NSLock new];
+#endif
     }
     return self;
 }
@@ -233,6 +238,12 @@ static int array_add_backtrace_step(int depth, void *pc, char *cfname, int offse
     [_threadDictionary release];
     [_name release];
     pthread_attr_destroy(&_attr);
+#ifdef DARLING
+   id oldSharedObjects=_sharedObjects;
+   _sharedObjects=nil;
+   [oldSharedObjects release];
+   [_sharedObjectLock release];
+#endif
     [super dealloc];
 }
 
@@ -521,3 +532,63 @@ static void NSThreadPerform(id self, SEL aSelector, NSThread *thr, id arg, BOOL 
 }
 
 @end
+
+#ifdef DARLING
+
+static inline id _NSThreadSharedInstance(NSThread *thread,NSString *className,BOOL create) {
+   NSMutableDictionary *shared=thread->_sharedObjects;
+   if(!shared)
+      return nil;
+   id result=nil;
+   [thread->_sharedObjectLock lock];
+   result=[shared objectForKey:className];
+   [thread->_sharedObjectLock unlock];
+
+   if(result==nil && create){
+      // do not hold lock during object allocation
+      result=[NSClassFromString(className) new];
+      [thread->_sharedObjectLock lock];
+      [shared setObject:result forKey:className];
+      [thread->_sharedObjectLock unlock];
+      [result release];
+   }
+
+   return result;
+}
+
+
+FOUNDATION_EXPORT NSThread *NSCurrentThread(void) {
+   return [NSThread currentThread];
+}
+
+
+FOUNDATION_EXPORT id NSThreadSharedInstance(NSString *className) {
+   return _NSThreadSharedInstance(NSCurrentThread(),className,YES);
+}
+
+FOUNDATION_EXPORT id NSThreadSharedInstanceDoNotCreate(NSString *className) {
+   return _NSThreadSharedInstance(NSCurrentThread(),className,NO);
+}
+
+
+@implementation NSThread (CocotronAdditions)
+
+-(NSMutableDictionary *)sharedDictionary {
+   return _sharedObjects;
+}
+
+- (id) sharedObjectForClassName:(NSString *)className {
+   return _NSThreadSharedInstance(self,className,YES);
+}
+
+-(void)setSharedObject:object forClassName:(NSString *)className {
+   [_sharedObjectLock lock];
+   if(object==nil)
+    [_sharedObjects removeObjectForKey:className];
+   else
+    [_sharedObjects setObject:object forKey:className];
+   [_sharedObjectLock unlock];
+}
+@end
+
+#endif

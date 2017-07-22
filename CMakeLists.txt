@@ -51,6 +51,7 @@ set(foundation_sources
 	src/NSDateFormatter.m
 	src/NSDateCheckingResult.m
 	src/NSDate.m
+	src/NSDebug.m
 	src/NSDecimal.m
 	src/NSDecimalNumber.m
 	src/NSDictionary.m
@@ -120,7 +121,12 @@ set(foundation_sources
 	src/NSPathStore.m
 	src/NSPathUtilities.m
 	src/NSPhoneNumberCheckingResult.m
+
+	src/NSPlatform_Apportable.m  # unrelated
 	src/NSPlatform.m
+	src/NSPlatform_posix.m
+	src/NSPlatform_darwin.m
+
 	src/NSPointerArray.m
 	src/NSPointerFunctions.m
 	src/NSPort.m
@@ -134,6 +140,8 @@ set(foundation_sources
 	src/NSProgress.m
 	src/NSProxy.m
 	src/NSRange.m
+	src/NSRangeEntries.m
+	src/NSRaise.m
 	src/NSRegularExpressionCheckingResult.m
 	src/NSRegularExpression.m
 	src/NSRunLoop.m
@@ -159,6 +167,8 @@ set(foundation_sources
 	src/NSTransitInformationCheckingResult.m
 	src/NSTruePredicate.m
 	src/NSUbiquitousKeyValueStore.m
+	src/NSUndoGroup.m
+	src/NSUndoManager.m
 	#src/NSURLAuthenticationChallenge.m
 	#src/NSURLCache.m
 	#src/NSURLConnection.m
@@ -191,6 +201,9 @@ set(foundation_sources
 	src/NSConcreteMapTable.m
 	src/NSCallBacks.m
 	src/stub.m
+
+	src/NSSpellServer.m
+	src/NSSpellEngine.m
 )
 
 # Includes ObjC headers -> must be compiled as ObjC
@@ -214,4 +227,3 @@ add_framework(Foundation
 	LINK_FLAGS " -Wl,-reexport_library,${CMAKE_BINARY_DIR}/src/external/corefoundation/CoreFoundation \
 				-Wl,-reexport_library,${CMAKE_BINARY_DIR}/src/external/objc4/runtime/libobjc.A.dylib"
 )
-
