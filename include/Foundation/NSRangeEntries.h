@@ -1,0 +1,1 @@
+../../../cocotron/Foundation/NSAttributedString/NSRangeEntries.h

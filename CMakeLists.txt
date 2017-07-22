@@ -120,7 +120,12 @@ set(foundation_sources
 	src/NSPathStore.m
 	src/NSPathUtilities.m
 	src/NSPhoneNumberCheckingResult.m
+
+	src/NSPlatform_Apportable.m  # unrelated
 	src/NSPlatform.m
+	src/NSPlatform_posix.m
+	src/NSPlatform_darwin.m
+
 	src/NSPointerArray.m
 	src/NSPointerFunctions.m
 	src/NSPort.m
@@ -134,6 +139,8 @@ set(foundation_sources
 	src/NSProgress.m
 	src/NSProxy.m
 	src/NSRange.m
+	src/NSRangeEntries.m
+	src/NSRaise.m
 	src/NSRegularExpressionCheckingResult.m
 	src/NSRegularExpression.m
 	src/NSRunLoop.m
