@@ -41,3 +41,7 @@ enum {
 - (NSTimeInterval)systemUptime;
 
 @end
+
+#ifdef DARLING
+FOUNDATION_EXPORT void __NSInitializeProcess(int argc,const char *argv[]);
+#endif

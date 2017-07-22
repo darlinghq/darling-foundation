@@ -291,3 +291,9 @@ SINGLETON_RR()
 }
 
 @end
+
+#ifdef DARLING
+FOUNDATION_EXPORT void __NSInitializeProcess(int argc,const char *argv[]) {
+    // This is a Cocotron addition, we do nothing
+}
+#endif
