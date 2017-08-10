@@ -158,6 +158,7 @@ set(foundation_sources
 	src/NSSubstitutionCheckingResult.m
 	src/NSSubstringPredicateOperator.m
 	src/NSSymbolicExpression.m
+	src/NSTask.m
 	src/NSTernaryExpression.m
 	src/NSTextCheckingResult.m
 	src/NSThread.m

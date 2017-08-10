@@ -1,6 +1,8 @@
 #import <Foundation/NSObject.h>
 #import <pthread.h>
 
+typedef NSString *NSNotificationName NS_EXTENSIBLE_STRING_ENUM;
+
 @class NSString, NSDictionary, NSOperationQueue, NSMutableArray;
 
 @interface NSNotification : NSObject <NSCopying, NSCoding>

@@ -209,6 +209,20 @@
 #define NS_ENUM_DEPRECATED_IOS(_iosIntro, _iosDep)
 #endif
 
+#define NS_SWIFT_UNAVAILABLE(_msg) CF_SWIFT_UNAVAILABLE(_msg)
+
+#define NS_ASSUME_NONNULL_BEGIN _Pragma("clang assume_nonnull begin")
+#define NS_ASSUME_NONNULL_END   _Pragma("clang assume_nonnull end")
+
+#if __has_attribute(swift_wrapper)
+#define _CF_TYPED_EXTENSIBLE_ENUM __attribute__((swift_wrapper(struct)))
+#else
+#define _CF_TYPED_EXTENSIBLE_ENUM
+#endif
+
+#define _NS_TYPED_EXTENSIBLE_ENUM _CF_TYPED_EXTENSIBLE_ENUM
+#define NS_EXTENSIBLE_STRING_ENUM _NS_TYPED_EXTENSIBLE_ENUM
+
 #if (__cplusplus && __cplusplus >= 201103L && (__has_extension(cxx_strong_enums) || __has_feature(objc_fixed_enum))) || (!__cplusplus && __has_feature(objc_fixed_enum))
 #define NS_ENUM(_type, _name) enum _name : _type _name; enum _name : _type
 #if (__cplusplus)

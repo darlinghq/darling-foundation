@@ -1412,3 +1412,11 @@ SINGLETON_RR()
 }
 
 @end
+
+@implementation NSPipe
+
++ (NSPipe *)pipe {
+	return [[NSPipe alloc] init];
+}
+
+@end
