@@ -222,7 +222,7 @@ add_framework(Foundation
 	DEPENDENCIES
 		objc
 		system
-		CoreFoundation
+		${CoreFoundation}
 		#CFNetwork
 		xml2
 	LINK_FLAGS " -Wl,-reexport_library,${CMAKE_BINARY_DIR}/src/external/corefoundation/CoreFoundation \
