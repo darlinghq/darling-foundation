@@ -14,6 +14,7 @@
 #import <Foundation/NSDecimal.h>
 #import <Foundation/NSDecimalNumber.h>
 #import <Foundation/NSDictionary.h>
+#import <Foundation/NSDistributedNotificationCenter.h>
 #import <Foundation/NSEnumerator.h>
 #import <Foundation/NSError.h>
 #import <Foundation/NSException.h>
