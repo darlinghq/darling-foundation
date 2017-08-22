@@ -56,6 +56,7 @@ set(foundation_sources
 	src/NSDecimalNumber.m
 	src/NSDictionary.m
 	src/NSDirectoryEnumerator.m
+    src/NSDistributedNotificationCenter.m
 	src/NSEqualityPredicateOperator.m
 	src/NSException.m
 	src/NSExpression.m
@@ -183,7 +184,6 @@ set(foundation_sources
 	#src/NSURLRequest.m
 	#src/NSURLResponse.m
 	#src/NSURLSession.m
-	src/NSUserDefaults.m
 	src/NSUUID.m
 	src/NSValue.m
 	src/NSValueTransformer.m
@@ -214,7 +214,7 @@ set(DYLIB_COMPAT_VERSION "300.0.0")
 set(DYLIB_CURRENT_VERSION "1349.0.0")
 
 add_framework(Foundation
-	FAT
+    FAT
 	CURRENT_VERSION
 	SOURCES
 		${foundation_sources}
@@ -222,8 +222,8 @@ add_framework(Foundation
 	DEPENDENCIES
 		objc
 		system
-		${CoreFoundation}
-		#CFNetwork
+		CoreFoundation
+		CFNetwork
 		xml2
 	LINK_FLAGS " -Wl,-reexport_library,${CMAKE_BINARY_DIR}/src/external/corefoundation/CoreFoundation \
 				-Wl,-reexport_library,${CMAKE_BINARY_DIR}/src/external/objc4/runtime/libobjc.A.dylib"
