@@ -60,12 +60,12 @@ enum {
 
 typedef NSUInteger NSMapTableOptions;
 
-@interface NSMapTable : NSObject <NSCopying, NSCoding, NSFastEnumeration>
+@interface NSMapTable<KeyType, ObjectType> : NSObject <NSCopying, NSCoding, NSFastEnumeration>
 
 /** Return a map table initialised using the specified options for
  * keys and values.
  */
-+ (id) mapTableWithKeyOptions: (NSPointerFunctionsOptions)keyOptions
++ (NSMapTable<KeyType, ObjectType> *) mapTableWithKeyOptions: (NSPointerFunctionsOptions)keyOptions
 		 valueOptions: (NSPointerFunctionsOptions)valueOptions;
 
 /** Convenience method for creating a map table to store object values
@@ -141,7 +141,7 @@ typedef NSUInteger NSMapTableOptions;
 
 /** Return an enumerator able to enumerate the values in the receiver.
  */
-- (NSEnumerator*) objectEnumerator;
+- (nullable NSEnumerator<ObjectType> *) objectEnumerator;
 
 /** Return the object stored under the specified key.
  */

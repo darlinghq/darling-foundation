@@ -3,7 +3,9 @@
 
 @class NSArray, NSSet, NSString, NSURL;
 
-@interface NSDictionary : NSObject <NSCopying, NSMutableCopying, NSSecureCoding, NSFastEnumeration>
+NS_ASSUME_NONNULL_BEGIN
+
+@interface NSDictionary<__covariant KeyType, __covariant ObjectType> : NSObject <NSCopying, NSMutableCopying, NSSecureCoding, NSFastEnumeration>
 
 - (NSUInteger)count;
 - (id)objectForKey:(id)aKey;
@@ -11,7 +13,7 @@
 
 @end
 
-@interface NSDictionary (NSExtendedDictionary)
+@interface NSDictionary<KeyType, ObjectType> (NSExtendedDictionary)
 
 - (NSArray *)allKeys;
 - (NSArray *)allKeysForObject:(id)anObject;
@@ -27,7 +29,7 @@
 - (BOOL)writeToFile:(NSString *)path atomically:(BOOL)useAuxiliaryFile;
 - (BOOL)writeToURL:(NSURL *)url atomically:(BOOL)atomically;
 - (NSArray *)keysSortedByValueUsingSelector:(SEL)comparator;
-- (void)getObjects:(id __unsafe_unretained [])objects andKeys:(id __unsafe_unretained [])keys;
+- (void)getObjects:(id __unsafe_unretained _Nonnull [])objects andKeys:(id __unsafe_unretained _Nonnull [])keys;
 - (id)objectForKeyedSubscript:(id)key;
 #if NS_BLOCKS_AVAILABLE
 - (void)enumerateKeysAndObjectsUsingBlock:(void (^)(id key, id obj, BOOL *stop))block;
@@ -40,17 +42,17 @@
 
 @end
 
-@interface NSDictionary (NSDictionaryCreation)
+@interface NSDictionary<KeyType, ObjectType> (NSDictionaryCreation)
 
 + (instancetype)dictionary;
 + (instancetype)dictionaryWithObject:(id)object forKey:(id <NSCopying>)key;
-+ (instancetype)dictionaryWithObjects:(const id [])objects forKeys:(const id <NSCopying> [])keys count:(NSUInteger)cnt;
++ (instancetype)dictionaryWithObjects:(const id _Nonnull [])objects forKeys:(const id <NSCopying> _Nonnull [])keys count:(NSUInteger)cnt;
 + (instancetype)dictionaryWithObjectsAndKeys:(id)firstObject, ... NS_REQUIRES_NIL_TERMINATION;
 + (instancetype)dictionaryWithDictionary:(NSDictionary *)dict;
 + (instancetype)dictionaryWithObjects:(NSArray *)objects forKeys:(NSArray *)keys;
 + (instancetype)dictionaryWithContentsOfFile:(NSString *)path;
 + (instancetype)dictionaryWithContentsOfURL:(NSURL *)url;
-- (instancetype)initWithObjects:(const id [])objects forKeys:(const id <NSCopying> [])keys count:(NSUInteger)cnt;
+- (instancetype)initWithObjects:(const id _Nonnull [])objects forKeys:(const id <NSCopying> _Nonnull [])keys count:(NSUInteger)cnt;
 - (instancetype)initWithObjectsAndKeys:(id)firstObject, ... NS_REQUIRES_NIL_TERMINATION;
 - (instancetype)initWithDictionary:(NSDictionary *)otherDictionary;
 - (instancetype)initWithDictionary:(NSDictionary *)otherDictionary copyItems:(BOOL)flag;
@@ -60,14 +62,14 @@
 
 @end
 
-@interface NSMutableDictionary : NSDictionary
+@interface NSMutableDictionary<KeyType, ObjectType> : NSDictionary
 
 - (void)removeObjectForKey:(id)aKey;
 - (void)setObject:(id)anObject forKey:(id <NSCopying>)aKey;
 
 @end
 
-@interface NSMutableDictionary (NSExtendedMutableDictionary)
+@interface NSMutableDictionary<KeyType, ObjectType> (NSExtendedMutableDictionary)
 
 - (void)addEntriesFromDictionary:(NSDictionary *)otherDictionary;
 - (void)removeAllObjects;
@@ -77,21 +79,23 @@
 
 @end
 
-@interface NSMutableDictionary (NSMutableDictionaryCreation)
+@interface NSMutableDictionary<KeyType, ObjectType> (NSMutableDictionaryCreation)
 
 + (id)dictionaryWithCapacity:(NSUInteger)numItems;
 - (id)initWithCapacity:(NSUInteger)numItems;
 
 @end
 
-@interface NSDictionary (NSSharedKeySetDictionary)
+@interface NSDictionary<KeyType, ObjectType> (NSSharedKeySetDictionary)
 
 + (id)sharedKeySetForKeys:(NSArray *)keys;
 
 @end
 
-@interface NSMutableDictionary (NSSharedKeySetDictionary)
+@interface NSMutableDictionary<KeyType, ObjectType> (NSSharedKeySetDictionary)
 
 + (id)dictionaryWithSharedKeySet:(id)keyset;
 
 @end
+
+NS_ASSUME_NONNULL_END

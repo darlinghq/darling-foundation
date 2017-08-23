@@ -17,6 +17,18 @@
 #endif
 #endif
 
+#ifndef NS_DESIGNATED_INITIALIZER
+#if __has_attribute(objc_designated_initializer)
+#define NS_DESIGNATED_INITIALIZER __attribute__((objc_designated_initializer))
+#else
+#define NS_DESIGNATED_INITIALIZER
+#endif
+#endif
+
+#if !defined(NS_UNAVAILABLE)
+#define NS_UNAVAILABLE UNAVAILABLE_ATTRIBUTE
+#endif
+
 #if !defined(FOUNDATION_STATIC_INLINE)
 #define FOUNDATION_STATIC_INLINE static __inline__
 #endif
@@ -150,6 +162,7 @@
 #endif
 #endif
 
+#define NS_DEPRECATED_MAC(_macIntro, _macDep, ...) CF_DEPRECATED_MAC(_macIntro, _macDep, __VA_ARGS__)
 
 #if !__has_feature(objc_instancetype)
 #undef instancetype
@@ -175,7 +188,6 @@
 #define NS_AVAILABLE_MAC(_mac) __OSX_AVAILABLE_STARTING(__MAC_##_mac, __IPHONE_NA)
 #define NS_AVAILABLE_IOS(_ios) __OSX_AVAILABLE_STARTING(__MAC_NA, __IPHONE_##_ios)
 #define NS_DEPRECATED(_macIntro, _macDep, _iosIntro, _iosDep) __OSX_AVAILABLE_BUT_DEPRECATED(__MAC_##_macIntro, __MAC_##_macDep, __IPHONE_##_iosIntro, __IPHONE_##_iosDep)
-#define NS_DEPRECATED_MAC(_macIntro, _macDep) __OSX_AVAILABLE_BUT_DEPRECATED(__MAC_##_macIntro, __MAC_##_macDep, __IPHONE_NA, __IPHONE_NA)
 #define NS_DEPRECATED_IOS(_iosIntro, _iosDep) __OSX_AVAILABLE_BUT_DEPRECATED(__MAC_NA, __MAC_NA, __IPHONE_##_iosIntro, __IPHONE_##_iosDep)
 
 #define NS_AVAILABLE_IPHONE(_ios) NS_AVAILABLE_IOS(_ios)
@@ -208,6 +220,8 @@
 #define NS_ENUM_DEPRECATED_MAC(_macIntro, _macDep)
 #define NS_ENUM_DEPRECATED_IOS(_iosIntro, _iosDep)
 #endif
+
+#define NS_NOESCAPE CF_NOESCAPE
 
 #define NS_SWIFT_UNAVAILABLE(_msg) CF_SWIFT_UNAVAILABLE(_msg)
 
