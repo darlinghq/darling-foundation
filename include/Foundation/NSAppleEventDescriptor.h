@@ -5,6 +5,10 @@
 #include <Foundation/NSString.h>
 #include <MacTypes.h>
 
+#include <AE/AE.h>
+
+// We have proper headers for AppleEvents now
+/*
 typedef int AEEventClass;
 typedef int AEEventID;
 typedef int AEReturnID;
@@ -13,6 +17,7 @@ typedef int AETransactionID;
 typedef int DescType;
 
 struct AEDesc;
+*/
 
 @interface NSAppleEventDescriptor : NSObject
 

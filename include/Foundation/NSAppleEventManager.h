@@ -3,7 +3,6 @@
 #include "NSAppleEventDescriptor.h"
 
 typedef const struct __NSAppleEventManagerSuspension *NSAppleEventManagerSuspensionID;
-struct AppleEvent;
 
 @interface NSAppleEventManager : NSObject
 
@@ -13,8 +12,8 @@ struct AppleEvent;
 - (NSAppleEventDescriptor *)currentAppleEvent;
 - (NSAppleEventDescriptor *)currentReplyAppleEvent;
 
-- (OSErr)dispatchRawAppleEvent:(const struct AppleEvent *)theAppleEvent
-                  withRawReply:(struct AppleEvent *)theReply
+- (OSErr)dispatchRawAppleEvent:(const AppleEvent *)theAppleEvent
+                  withRawReply:(AppleEvent *)theReply
                  handlerRefCon:(UInt32)handlerRefcon;
 - (void)removeEventHandlerForEventClass:(AEEventClass)eventClass
                              andEventID:(AEEventID)eventID;
