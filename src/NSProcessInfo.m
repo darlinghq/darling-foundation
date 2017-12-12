@@ -21,6 +21,8 @@
 #import <sys/sysctl.h>
 #import <mach/mach_time.h>
 #import <stdio.h>
+#import <stdlib.h>
+#import <objc/objc-internal.h>
 
 extern char ***_NSGetEnviron();
 
@@ -294,6 +296,19 @@ SINGLETON_RR()
 
 #ifdef DARLING
 FOUNDATION_EXPORT void __NSInitializeProcess(int argc,const char *argv[]) {
-    // This is a Cocotron addition, we do nothing
+    // This is a Cocotron addition that they use to save the argc/argv of the
+    // current process to be later retrieved using NSProcessInfo. Our
+    // Foundation instead uses _NSGetArgc/_NSGetArgv directly, so we don't
+    // need to do anything here.
+
+    // Instead, we use this function to otherwise initialize Foundation. In
+    // particular, we process the NSObjCMessageLoggingEnabled env variable. See
+    // http://www.dribin.org/dave/blog/archives/2006/04/22/tracing_objc/
+    // for some more details.
+
+    char *loggingEnabled = getenv("NSObjCMessageLoggingEnabled");
+    if (loggingEnabled != NULL && strcmp(loggingEnabled, "YES") == 0) {
+        instrumentObjcMessageSends(YES);
+    }
 }
 #endif
