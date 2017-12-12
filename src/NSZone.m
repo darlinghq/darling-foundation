@@ -44,21 +44,41 @@ NSZone *NSZoneFromPointer(void *ptr)
 
 void *NSZoneMalloc(NSZone *zone, NSUInteger size)
 {
+#ifdef DARLING
+    if (zone == nil) {
+        return malloc(size);
+    }
+#endif
     return malloc_zone_malloc((malloc_zone_t *)zone, size);
 }
 
 void *NSZoneCalloc(NSZone *zone, NSUInteger numElems, NSUInteger byteSize)
 {
+#ifdef DARLING
+    if (zone == nil) {
+        return calloc(numElems, byteSize);
+    }
+#endif
     return malloc_zone_calloc((malloc_zone_t *)zone, numElems, byteSize);
 }
 
 void *NSZoneRealloc(NSZone *zone, void *ptr, NSUInteger size)
 {
+#ifdef DARLING
+    if (zone == nil) {
+        return realloc(ptr, size);
+    }
+#endif
     return malloc_zone_realloc((malloc_zone_t *)zone, ptr, size);
 }
 
 void NSZoneFree(NSZone *zone, void *ptr)
 {
+#ifdef DARLING
+    if (zone == nil) {
+        free(ptr);
+    } else
+#endif
     malloc_zone_free((malloc_zone_t *)zone, ptr);
 }
 
