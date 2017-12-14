@@ -27,6 +27,7 @@
 #import <Foundation/NSNull.h>
 #import <Foundation/NSString.h>
 #import "NSExternals.h"
+#import "CFInternal.h"
 #import <pthread.h>
 #import <dispatch/dispatch.h>
 #import <libkern/OSAtomic.h>
@@ -328,6 +329,14 @@ Class _NSKVONotifyingNotifyingClassForIsa(Class isa)
     return ret;
 }
 
+static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
+    0,
+    &_NSCFRetain2,
+    &_NSCFRelease2,
+    &_NSCFCopyDescription,
+    &_NSCFEqual
+};
+
 static NSKeyValueContainerClass *__NSKeyValueContainerClassForIsa(Class isa)
 {
     static Class isaCacheKey = NULL;
@@ -341,7 +350,7 @@ static NSKeyValueContainerClass *__NSKeyValueContainerClassForIsa(Class isa)
     static CFMutableDictionaryRef NSKeyValueContainerClassPerOriginalClass = NULL;
     if (NSKeyValueContainerClassPerOriginalClass == NULL)
     {
-        NSKeyValueContainerClassPerOriginalClass = CFDictionaryCreateMutable(NULL, 0, NULL, &kCFTypeDictionaryValueCallBacks);
+        NSKeyValueContainerClassPerOriginalClass = CFDictionaryCreateMutable(NULL, 0, NULL, &sNSCFDictionaryValueCallBacks);
     }
     kvcon = CFDictionaryGetValue(NSKeyValueContainerClassPerOriginalClass, originalClass);
     if (kvcon == nil)
@@ -898,7 +907,7 @@ static CFMutableDictionaryRef _NSKeyValueGlobalObservationInfo = NULL;
     {
         dispatch_once(&once, 
         ^{
-            _NSKeyValueGlobalObservationInfo = CFDictionaryCreateMutable(NULL, 0, NULL, &kCFTypeDictionaryValueCallBacks);
+            _NSKeyValueGlobalObservationInfo = CFDictionaryCreateMutable(NULL, 0, NULL, &sNSCFDictionaryValueCallBacks);
         });        
     }
     NSKeyValueObservationInfo *realInfoPtr = (NSKeyValueObservationInfo *)observationInfo;

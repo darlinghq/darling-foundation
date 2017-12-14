@@ -9,6 +9,7 @@
 #import "NSArchiver.h"
 #import <Foundation/NSArray.h>
 #import "NSCoderInternal.h"
+#import "CFInternal.h"
 #import <Foundation/NSDictionary.h>
 #import <Foundation/NSFileManager.h>
 #import <Foundation/NSException.h>
@@ -889,12 +890,20 @@ static void setClassForClassName(Class cls, NSString *codedName)
     return self;
 }
 
+static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
+    0,
+    &_NSCFRetain2,
+    &_NSCFRelease2,
+    &_NSCFCopyDescription,
+    &_NSCFEqual
+};
+
 - (id)_initWithStream:(CFReadStreamRef)stream data:(NSData *)data topDict:(CFDictionaryRef)masterDictionary
 {
-    _nameClassMap = CFDictionaryCreateMutable(kCFAllocatorSystemDefault, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+    _nameClassMap = CFDictionaryCreateMutable(kCFAllocatorSystemDefault, 0, &kCFTypeDictionaryKeyCallBacks, &sNSCFDictionaryValueCallBacks);
     _objRefMap = CFDictionaryCreateMutable(NULL, 0, NULL, NULL);
     _tmpRefObjMap = CFDictionaryCreateMutable(kCFAllocatorSystemDefault, 0, NULL, NULL);
-    _refObjMap = CFDictionaryCreateMutable(NULL, 0, NULL, &kCFTypeDictionaryValueCallBacks);
+    _refObjMap = CFDictionaryCreateMutable(NULL, 0, NULL, &sNSCFDictionaryValueCallBacks);
     return self;
 }
 
@@ -1016,11 +1025,11 @@ static void setClassForClassName(Class cls, NSString *codedName)
             _bytes = bytePtr;
             _len = len;
 
-            _nameClassMap = CFDictionaryCreateMutable(kCFAllocatorSystemDefault, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+            _nameClassMap = CFDictionaryCreateMutable(kCFAllocatorSystemDefault, 0, &kCFTypeDictionaryKeyCallBacks, &sNSCFDictionaryValueCallBacks);
             _objRefMap = CFDictionaryCreateMutable(NULL, 0, NULL, NULL);
             _tmpRefObjMap = CFDictionaryCreateMutable(kCFAllocatorSystemDefault, 0, NULL, NULL);
-            _refObjMap = CFDictionaryCreateMutable(NULL, 0, NULL, &kCFTypeDictionaryValueCallBacks);
-            _reservedDictionary = CFDictionaryCreateMutable(NULL, 0, NULL, &kCFTypeDictionaryValueCallBacks);
+            _refObjMap = CFDictionaryCreateMutable(NULL, 0, NULL, &sNSCFDictionaryValueCallBacks);
+            _reservedDictionary = CFDictionaryCreateMutable(NULL, 0, NULL, &sNSCFDictionaryValueCallBacks);
         }
     }
     return self;
