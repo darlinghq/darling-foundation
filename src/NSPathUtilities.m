@@ -418,6 +418,7 @@ NSString *NSOpenStepRootDirectory(void)
 
 typedef unsigned int NSSearchPathEnumerationState;
 
+// implemented in NSSystemDirectories.c from libSystem
 extern NSSearchPathEnumerationState NSStartSearchPathEnumeration(NSSearchPathDirectory dir, NSSearchPathDomainMask domainMask);
 extern NSSearchPathEnumerationState NSGetNextSearchPathEnumeration(NSSearchPathEnumerationState state, char *path);
 
