@@ -408,7 +408,9 @@ NSPoint NSPointFromString(NSString* string)
 	NSPoint	point;
 
 	SEL scanStringSel = @selector(scanString:intoString:);
-	SEL scanFloatSel = @selector(scanFloat:);
+	SEL scanFloatSel = sizeof(CGFloat) == sizeof(float)
+		? @selector(scanFloat:)
+		: @selector(scanDouble:);
 	IMP scanStringImp = [scanner methodForSelector: scanStringSel];
 	IMP scanFloatImp = [scanner methodForSelector: scanFloatSel];
 
@@ -448,7 +450,9 @@ NSSize NSSizeFromString(NSString* string)
 	NSSize	size;
 	
 	SEL scanStringSel = @selector(scanString:intoString:);
-	SEL scanFloatSel = @selector(scanFloat:);
+	SEL scanFloatSel = sizeof(CGFloat) == sizeof(float)
+		? @selector(scanFloat:)
+		: @selector(scanDouble:);
 	IMP scanStringImp = [scanner methodForSelector: scanStringSel];
 	IMP scanFloatImp = [scanner methodForSelector: scanFloatSel];
 	
@@ -487,7 +491,9 @@ NSRect NSRectFromString(NSString* string)
 	NSRect	rect;
 	
 	SEL scanStringSel = @selector(scanString:intoString:);
-	SEL scanFloatSel = @selector(scanFloat:);
+	SEL scanFloatSel = sizeof(CGFloat) == sizeof(float)
+		? @selector(scanFloat:)
+		: @selector(scanDouble:);
 	IMP scanStringImp = [scanner methodForSelector: scanStringSel];
 	IMP scanFloatImp = [scanner methodForSelector: scanFloatSel];
 	
