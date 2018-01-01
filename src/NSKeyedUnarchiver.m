@@ -568,7 +568,9 @@ static id _decodeObjectBinary(NSKeyedUnarchiver *unarchiver, NSUInteger uid1) NS
         unarchiver->_offsetData->offset = nestOffset;
 
         id allocated = [class allocWithZone:nil];
+        // save the allocated object into the temp map, because we don't want to retain it yet
         CFDictionarySetValue(unarchiver->_tmpRefObjMap, (const void *)uid1, allocated);
+        CFDictionarySetValue(unarchiver->_objRefMap, (const void *)allocated, (const void *)uid1);
         id instance = [allocated initWithCoder:unarchiver];
         if (instance != nil)
         {
@@ -585,10 +587,16 @@ static id _decodeObjectBinary(NSKeyedUnarchiver *unarchiver, NSUInteger uid1) NS
 #warning TODO implement _replaceObject https://code.google.com/p/apportable/issues/detail?id=153
             //        [unarchiver _replaceObject:instance withObject:instance];  // TODO
 
+            // now that we have the actual instance, retain it by putting it into the proper map
             CFDictionarySetValue(unarchiver->_objRefMap, (const void *)instance, (const void *)uid1);
             CFDictionarySetValue(unarchiver->_refObjMap, (const void *)uid1, instance);
         }
         CFDictionaryRemoveValue(unarchiver->_tmpRefObjMap, (const void *)uid1);
+        // if `instance` is a different object and nothing else has been allocated at `allocated` yet,
+        // remove it from the map to save some memory
+        if (allocated != instance && CFDictionaryGetValue(unarchiver->_objRefMap, (const void*)allocated) == (const void *)uid1) {
+            CFDictionaryRemoveValue(unarchiver->_objRefMap, (const void*)allocated);
+        }
         return instance;
     }
 }
@@ -701,6 +709,7 @@ static id _decodeObjectXML(NSKeyedUnarchiver *unarchiver, NSString *key)
 
     id allocated = [class allocWithZone:nil];
     CFDictionarySetValue(unarchiver->_tmpRefObjMap, (const void *)uid, allocated);
+    CFDictionarySetValue(unarchiver->_objRefMap, (const void *)allocated, (const void *)uid);
     id instance = [allocated initWithCoder:unarchiver];
     if (instance != nil)
     {
@@ -729,6 +738,9 @@ static id _decodeObjectXML(NSKeyedUnarchiver *unarchiver, NSString *key)
     }
 
     CFDictionaryRemoveValue(unarchiver->_tmpRefObjMap, (const void *)uid);
+    if (allocated != instance && CFDictionaryGetValue(unarchiver->_objRefMap, (const void*)allocated) == (const void*)uid) {
+        CFDictionaryRemoveValue(unarchiver->_objRefMap, (const void*)allocated);
+    }
     return instance;
 }
 
@@ -1639,53 +1651,10 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 {
     if (obj != replacement)
     {
-        [self _temporaryMapReplaceObject:obj withObject:replacement];
-    }
-}
-
-- (void)_temporaryMapReplaceObject:(id)obj withObject:(id)replacement
-{
-#define BUFFER_SIZE 128
-    CFIndex count = CFDictionaryGetCount(_tmpRefObjMap);
-    if (count == 0)
-    {
-        return;
-    }
-
-    id stack_objects[BUFFER_SIZE] = {nil};
-    void *stack_keys[BUFFER_SIZE] = {nil};
-    id *objects = &stack_objects[0];
-    void **keys = &stack_keys[0];
-    if (count > BUFFER_SIZE)
-    {
-        objects = malloc(sizeof(id) * count);
-        if (objects == NULL) {
-            return;
-        }
-        keys = malloc(sizeof(void *) * count);
-        if (keys == NULL) {
-            free(objects);
-            return;
-        }
-    }
-
-    CFDictionaryGetKeysAndValues(_tmpRefObjMap, (const void **)keys, (const void **)objects);
-    for (CFIndex idx = 0; idx < count; idx++)
-    {
-        if (objects[idx] == obj)
-        {
-            CFDictionarySetValue(_tmpRefObjMap, keys[idx], replacement);
-            break;
-        }
-    }
-
-    if (keys != NULL && keys != &stack_keys[0])
-    {
-        free(keys);
-    }
-    if (objects != NULL && objects != &stack_objects[0])
-    {
-        free(objects);
+        void *uid = CFDictionaryGetValue(_objRefMap, obj);
+        CFDictionaryRemoveValue(_tmpRefObjMap, (const void *)uid);
+        CFDictionarySetValue(_refObjMap, uid, replacement);
+        CFDictionarySetValue(_objRefMap, replacement, uid);
     }
 }
 
