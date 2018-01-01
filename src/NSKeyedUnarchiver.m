@@ -438,7 +438,8 @@ static id _decodeObjectBinary(NSKeyedUnarchiver *unarchiver, NSUInteger uid1) NS
     uint64_t voffset = unarchiver->_offsetData->valueOffset;
     @autoreleasepool {
         id mapObject = nil;
-        if (CFDictionaryGetValueIfPresent(unarchiver->_refObjMap, (const void *)uid1, (const void **)&mapObject))
+        if (CFDictionaryGetValueIfPresent(unarchiver->_refObjMap, (const void *)uid1, (const void **)&mapObject) ||
+            CFDictionaryGetValueIfPresent(unarchiver->_tmpRefObjMap, (const void *)uid1, (const void **)&mapObject))
         {
             // break infinite recursion
             return [mapObject retain];
@@ -567,7 +568,7 @@ static id _decodeObjectBinary(NSKeyedUnarchiver *unarchiver, NSUInteger uid1) NS
         unarchiver->_offsetData->offset = nestOffset;
 
         id allocated = [class allocWithZone:nil];
-        CFDictionarySetValue(unarchiver->_refObjMap, (const void *)uid1, allocated);
+        CFDictionarySetValue(unarchiver->_tmpRefObjMap, (const void *)uid1, allocated);
         id instance = [allocated initWithCoder:unarchiver];
         if (instance != nil)
         {
@@ -587,6 +588,7 @@ static id _decodeObjectBinary(NSKeyedUnarchiver *unarchiver, NSUInteger uid1) NS
             CFDictionarySetValue(unarchiver->_objRefMap, (const void *)instance, (const void *)uid1);
             CFDictionarySetValue(unarchiver->_refObjMap, (const void *)uid1, instance);
         }
+        CFDictionaryRemoveValue(unarchiver->_tmpRefObjMap, (const void *)uid1);
         return instance;
     }
 }
@@ -619,7 +621,8 @@ static id _decodeObjectXML(NSKeyedUnarchiver *unarchiver, NSString *key)
     }
 
     id mapObject;
-    if (CFDictionaryGetValueIfPresent(unarchiver->_refObjMap, (const void *)uid, (const void **)&mapObject))
+    if (CFDictionaryGetValueIfPresent(unarchiver->_refObjMap, (const void *)uid, (const void **)&mapObject) ||
+        CFDictionaryGetValueIfPresent(unarchiver->_tmpRefObjMap, (const void *)uid, (const void **)&mapObject))
     {
         // break infinite recursion
         return [mapObject retain];
@@ -697,7 +700,7 @@ static id _decodeObjectXML(NSKeyedUnarchiver *unarchiver, NSString *key)
     }
 
     id allocated = [class allocWithZone:nil];
-    CFDictionarySetValue(unarchiver->_refObjMap, (const void *)uid, allocated);
+    CFDictionarySetValue(unarchiver->_tmpRefObjMap, (const void *)uid, allocated);
     id instance = [allocated initWithCoder:unarchiver];
     if (instance != nil)
     {
@@ -725,6 +728,7 @@ static id _decodeObjectXML(NSKeyedUnarchiver *unarchiver, NSString *key)
         CFDictionarySetValue(unarchiver->_refObjMap, (const void *)uid, instance);
     }
 
+    CFDictionaryRemoveValue(unarchiver->_tmpRefObjMap, (const void *)uid);
     return instance;
 }
 
@@ -898,6 +902,7 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 {
     _nameClassMap = CFDictionaryCreateMutable(kCFAllocatorSystemDefault, 0, &kCFTypeDictionaryKeyCallBacks, &sNSCFDictionaryValueCallBacks);
     _objRefMap = CFDictionaryCreateMutable(NULL, 0, NULL, NULL);
+    _tmpRefObjMap = CFDictionaryCreateMutable(kCFAllocatorSystemDefault, 0, NULL, NULL);
     _refObjMap = CFDictionaryCreateMutable(NULL, 0, NULL, &sNSCFDictionaryValueCallBacks);
     return self;
 }
@@ -1022,6 +1027,7 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 
             _nameClassMap = CFDictionaryCreateMutable(kCFAllocatorSystemDefault, 0, &kCFTypeDictionaryKeyCallBacks, &sNSCFDictionaryValueCallBacks);
             _objRefMap = CFDictionaryCreateMutable(NULL, 0, NULL, NULL);
+            _tmpRefObjMap = CFDictionaryCreateMutable(kCFAllocatorSystemDefault, 0, NULL, NULL);
             _refObjMap = CFDictionaryCreateMutable(NULL, 0, NULL, &sNSCFDictionaryValueCallBacks);
             _reservedDictionary = CFDictionaryCreateMutable(NULL, 0, NULL, &sNSCFDictionaryValueCallBacks);
         }
@@ -1050,6 +1056,9 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
     }
     if (_objRefMap) {
         CFRelease(_objRefMap);
+    }
+    if (_tmpRefObjMap) {
+        CFRelease(_tmpRefObjMap);
     }
     if (_reservedDictionary) {
         CFRelease(_reservedDictionary);
@@ -1630,9 +1639,53 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 {
     if (obj != replacement)
     {
-        void *uid = CFDictionaryGetValue(_objRefMap, obj);
-        CFDictionarySetValue(_refObjMap, uid, replacement);
-        CFDictionarySetValue(_objRefMap, replacement, uid);
+        [self _temporaryMapReplaceObject:obj withObject:replacement];
+    }
+}
+
+- (void)_temporaryMapReplaceObject:(id)obj withObject:(id)replacement
+{
+#define BUFFER_SIZE 128
+    CFIndex count = CFDictionaryGetCount(_tmpRefObjMap);
+    if (count == 0)
+    {
+        return;
+    }
+
+    id stack_objects[BUFFER_SIZE] = {nil};
+    void *stack_keys[BUFFER_SIZE] = {nil};
+    id *objects = &stack_objects[0];
+    void **keys = &stack_keys[0];
+    if (count > BUFFER_SIZE)
+    {
+        objects = malloc(sizeof(id) * count);
+        if (objects == NULL) {
+            return;
+        }
+        keys = malloc(sizeof(void *) * count);
+        if (keys == NULL) {
+            free(objects);
+            return;
+        }
+    }
+
+    CFDictionaryGetKeysAndValues(_tmpRefObjMap, (const void **)keys, (const void **)objects);
+    for (CFIndex idx = 0; idx < count; idx++)
+    {
+        if (objects[idx] == obj)
+        {
+            CFDictionarySetValue(_tmpRefObjMap, keys[idx], replacement);
+            break;
+        }
+    }
+
+    if (keys != NULL && keys != &stack_keys[0])
+    {
+        free(keys);
+    }
+    if (objects != NULL && objects != &stack_objects[0])
+    {
+        free(objects);
     }
 }
 

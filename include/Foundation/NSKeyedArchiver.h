@@ -87,6 +87,7 @@ typedef struct offsetDataStruct offsetDataStruct;
     CFMutableDictionaryRef _objRefMap;
     id _replacementMap;
     CFMutableDictionaryRef _nameClassMap;
+    CFMutableDictionaryRef _tmpRefObjMap;
     CFMutableDictionaryRef _refObjMap;
     int _genericKey;
     CFDataRef _data;
