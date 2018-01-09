@@ -578,8 +578,6 @@ static id _decodeObjectBinary(NSKeyedUnarchiver *unarchiver, NSUInteger uid1) NS
 
             NSCAssert(instance != nil, @"object was replaced as nil from awakeAfterUsingCoder:");
 
-            unarchiver->_offsetData->offset = pushOldOffset; // pop it back to handle multiple nested objects
-
             if (unarchiver->_delegate)
             {
 #warning TODO implement delegate https://code.google.com/p/apportable/issues/detail?id=153
@@ -591,6 +589,9 @@ static id _decodeObjectBinary(NSKeyedUnarchiver *unarchiver, NSUInteger uid1) NS
             CFDictionarySetValue(unarchiver->_objRefMap, (const void *)instance, (const void *)uid1);
             CFDictionarySetValue(unarchiver->_refObjMap, (const void *)uid1, instance);
         }
+
+        unarchiver->_offsetData->offset = pushOldOffset; // pop it back to handle multiple nested objects
+
         CFDictionaryRemoveValue(unarchiver->_tmpRefObjMap, (const void *)uid1);
         // if `instance` is a different object and nothing else has been allocated at `allocated` yet,
         // remove it from the map to save some memory
