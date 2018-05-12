@@ -541,6 +541,7 @@ static id _decodeObjectBinary(NSKeyedUnarchiver *unarchiver, NSUInteger uid1) NS
         }
         if (class == nil)
         {
+            NSLog(@"Failed to decode an instance of class %@: class not found", className);
             return nil;
         }
 #warning TODO implement classNameAllowed https://code.google.com/p/apportable/issues/detail?id=153
