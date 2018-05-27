@@ -499,7 +499,7 @@ static inline NSUInteger skipSkipSet(NSScanner *self, NSString *s)
                             explicitExponentSign = -1;
                         }
                     }
-                    else if (*ptr >= '0' || *ptr <= '9')
+                    else if (*ptr >= '0' && *ptr <= '9')
                     {
                         sawExponentValue = YES;
                         // Collect exponent magnitude
