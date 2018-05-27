@@ -579,12 +579,11 @@ static id _decodeObjectBinary(NSKeyedUnarchiver *unarchiver, NSUInteger uid1) NS
 
             NSCAssert(instance != nil, @"object was replaced as nil from awakeAfterUsingCoder:");
 
-            if (unarchiver->_delegate)
+            id delegateRes = [unarchiver->_delegate unarchiver: unarchiver didDecodeObject: instance];
+            if (delegateRes != nil)
             {
-#warning TODO implement delegate https://code.google.com/p/apportable/issues/detail?id=153
+                instance = delegateRes;
             }
-#warning TODO implement _replaceObject https://code.google.com/p/apportable/issues/detail?id=153
-            //        [unarchiver _replaceObject:instance withObject:instance];  // TODO
 
             // now that we have the actual instance, retain it by putting it into the proper map
             CFDictionarySetValue(unarchiver->_objRefMap, (const void *)instance, (const void *)uid1);
@@ -729,12 +728,12 @@ static id _decodeObjectXML(NSKeyedUnarchiver *unarchiver, NSString *key)
         //         // Do something to _replacementMap
         //     }
         // }
-        if (unarchiver->_delegate)
+
+        id delegateRes = [unarchiver->_delegate unarchiver: unarchiver didDecodeObject: instance];
+        if (delegateRes != nil)
         {
-#warning TODO implement delegate https://code.google.com/p/apportable/issues/detail?id=153
+            instance = delegateRes;
         }
-#warning TODO implement _replaceObject https://code.google.com/p/apportable/issues/detail?id=153
-    //        [unarchiver _replaceObject:instance withObject:instance];  // TODO
         CFDictionarySetValue(unarchiver->_objRefMap, (const void *)instance, (const void *)uid);
         CFDictionarySetValue(unarchiver->_refObjMap, (const void *)uid, instance);
     }
@@ -1651,6 +1650,7 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 
 - (void)replaceObject:(id)obj withObject:(id)replacement
 {
+    [_delegate unarchiver: self willReplaceObject: obj withObject: replacement];
     if (obj != replacement)
     {
         void *uid = CFDictionaryGetValue(_objRefMap, obj);
