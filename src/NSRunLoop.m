@@ -26,6 +26,7 @@ typedef struct {
     CFRunLoopTimerRef timer;
     NSArray *modes;
     int retainCount;
+    NSMutableArray *all_timers;
 } NSDelayedPerformer;
 
 static const void *NSDelayedPerformerRetain(const void *info)
@@ -42,6 +43,9 @@ static void NSDelayedPerformerRelease(const void *info)
         [performer->modes release];
         [performer->object release];
         [performer->argument release];
+        @synchronized(performer->all_timers) {
+            [performer->all_timers removeObject: performer->timer];
+        }
         free(performer);
     }
 }
@@ -376,7 +380,6 @@ static void __NSFireDelayedPerform(CFRunLoopTimerRef timer, void *info)
     }
     NSRunLoop *rl = [NSRunLoop currentRunLoop];
     @synchronized(rl->_perft) {
-        [rl->_perft removeObject:(id)performer->timer];
         for (NSString *mode in performer->modes)
         {
             CFRunLoopRemoveTimer(CFRunLoopGetCurrent(), performer->timer, (CFStringRef)mode);
@@ -386,12 +389,16 @@ static void __NSFireDelayedPerform(CFRunLoopTimerRef timer, void *info)
 
 - (void)performSelector:(SEL)aSelector withObject:(id)anArgument afterDelay:(NSTimeInterval)delay inModes:(NSArray *)modes
 {
+    NSRunLoop *rl = [NSRunLoop currentRunLoop];
+    CFRunLoopRef loop = [rl getCFRunLoop];
+
     NSDelayedPerformer *performer = malloc(sizeof(NSDelayedPerformer));
     performer->object = [self retain];
     performer->selector = aSelector;
     performer->argument = [anArgument retain];
     performer->modes = [modes copy];
     performer->retainCount = 1;
+    performer->all_timers = rl->_perft;
 
     CFRunLoopTimerContext ctx = {
         0,
@@ -402,8 +409,7 @@ static void __NSFireDelayedPerform(CFRunLoopTimerRef timer, void *info)
     };
 
     performer->timer= CFRunLoopTimerCreate(kCFAllocatorDefault, CFAbsoluteTimeGetCurrent() + delay, delay, 0, 0, &__NSFireDelayedPerform, &ctx);
-    NSRunLoop *rl = [NSRunLoop currentRunLoop];
-    CFRunLoopRef loop = [rl getCFRunLoop];
+
     @synchronized(rl->_perft) {
         [rl->_perft addObject:(id)performer->timer];
         for (NSString *mode in modes)
@@ -430,10 +436,9 @@ static void __NSFireDelayedPerform(CFRunLoopTimerRef timer, void *info)
             CFRunLoopTimerContext ctx;
             CFRunLoopTimerGetContext((CFRunLoopTimerRef)timer, &ctx);
             NSDelayedPerformer *performer = (NSDelayedPerformer *)ctx.info;
-            if (performer->object == aTarget && performer->selector == aSelector && (performer->argument == anArgument || [performer->argument isEqual:anArgument]))
+            if (performer != NULL && performer->object == aTarget && performer->selector == aSelector && (performer->argument == anArgument || [performer->argument isEqual:anArgument]))
             {
                 CFRunLoopTimerInvalidate((CFRunLoopTimerRef)timer);
-                [rl->_perft removeObject:timer];
             }
         }
         [perfomerList release];
@@ -450,10 +455,9 @@ static void __NSFireDelayedPerform(CFRunLoopTimerRef timer, void *info)
             CFRunLoopTimerContext ctx;
             CFRunLoopTimerGetContext((CFRunLoopTimerRef)timer, &ctx);
             NSDelayedPerformer *performer = (NSDelayedPerformer *)ctx.info;
-            if (performer->object == aTarget)
+            if (performer != NULL && performer->object == aTarget)
             {
                 CFRunLoopTimerInvalidate((CFRunLoopTimerRef)timer);
-                [rl->_perft removeObject:timer];
             }
         }
         [perfomerList release];
@@ -466,12 +470,16 @@ static void __NSFireDelayedPerform(CFRunLoopTimerRef timer, void *info)
 
 - (void)performSelector:(SEL)aSelector target:(id)target argument:(id)arg order:(NSUInteger)order modes:(NSArray *)modes
 {
+    NSRunLoop *rl = [NSRunLoop currentRunLoop];
+    CFRunLoopRef loop = [rl getCFRunLoop];
+
     NSDelayedPerformer *performer = malloc(sizeof(NSDelayedPerformer));
     performer->object = [target retain];
     performer->selector = aSelector;
     performer->argument = [arg retain];
     performer->modes = [modes copy];
     performer->retainCount = 1;
+    performer->all_timers = rl->_dperf;
 
     CFRunLoopTimerContext ctx = {
         .version = 0,
@@ -482,8 +490,7 @@ static void __NSFireDelayedPerform(CFRunLoopTimerRef timer, void *info)
     };
 
     performer->timer= CFRunLoopTimerCreate(kCFAllocatorDefault, CFAbsoluteTimeGetCurrent(), 0.0, 0, order, &__NSFireDelayedPerform, &ctx);
-    NSRunLoop *rl = [NSRunLoop currentRunLoop];
-    CFRunLoopRef loop = [rl getCFRunLoop];
+
     @synchronized(rl->_dperf) {
         [rl->_dperf addObject:(id)performer->timer];
         for (NSString *mode in modes)
@@ -505,10 +512,9 @@ static void __NSFireDelayedPerform(CFRunLoopTimerRef timer, void *info)
             CFRunLoopTimerContext ctx;
             CFRunLoopTimerGetContext((CFRunLoopTimerRef)timer, &ctx);
             NSDelayedPerformer *performer = (NSDelayedPerformer *)ctx.info;
-            if (performer->object == target && performer->selector == aSelector && performer->argument == arg)
+            if (performer != NULL && performer->object == target && performer->selector == aSelector && performer->argument == arg)
             {
                 CFRunLoopTimerInvalidate((CFRunLoopTimerRef)timer);
-                [rl->_dperf removeObject:timer];
             }
         }
         [perfomerList release];
@@ -525,10 +531,9 @@ static void __NSFireDelayedPerform(CFRunLoopTimerRef timer, void *info)
             CFRunLoopTimerContext ctx;
             CFRunLoopTimerGetContext((CFRunLoopTimerRef)timer, &ctx);
             NSDelayedPerformer *performer = (NSDelayedPerformer *)ctx.info;
-            if (performer->object == target)
+            if (performer != NULL && performer->object == target)
             {
                 CFRunLoopTimerInvalidate((CFRunLoopTimerRef)timer);
-                [rl->_dperf removeObject:timer];
             }
         }
         [perfomerList release];
