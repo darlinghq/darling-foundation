@@ -7,6 +7,7 @@
 
 #import <dispatch/dispatch.h>
 #import <CoreFoundation/CFBundle.h>
+#import <CoreFoundation/CFBundlePriv.h>
 #import <objc/runtime.h>
 #import <Foundation/NSArray.h>
 #import <Foundation/NSString.h>
@@ -17,6 +18,7 @@
 
 static NSMutableDictionary *loadedBundles = nil;
 static NSBundle *mainBundle = nil;
+static NSMutableDictionary *classToBundle = nil;
 
 @implementation NSBundle
 
@@ -25,6 +27,7 @@ static NSBundle *mainBundle = nil;
     static dispatch_once_t once = 0L;
     dispatch_once(&once, ^{
         loadedBundles = [[NSMutableDictionary alloc] init];
+        classToBundle = [[NSMutableDictionary alloc] init];
     });
 }
 
@@ -52,7 +55,38 @@ static NSBundle *mainBundle = nil;
 
 + (NSBundle *)bundleForClass:(Class)aClass
 {
-    return [NSBundle mainBundle]; // this is technically incorrect
+    if ([aClass respondsToSelector: @selector(bundleForClass)]) {
+        return [aClass bundleForClass];
+    }
+
+    @synchronized (classToBundle) {
+        NSBundle *bundle = classToBundle[aClass];
+        if (bundle != nil) {
+            return bundle;
+        }
+    }
+
+    const char *fileName = class_getImageName(aClass);
+    if (fileName == NULL) {
+        // according to Cocotron's implementation,
+        // this is correct behaviour for Nil class
+        return [self mainBundle];
+    }
+
+    NSString *filePath = [NSString stringWithUTF8String: fileName];
+    NSURL *fileURL = [NSURL fileURLWithPath: filePath isDirectory: NO];
+
+    NSURL* bundleURL = _CFBundleCopyBundleURLForExecutableURL(fileURL);
+
+    NSBundle *bundle = [self bundleWithURL: bundleURL];
+
+    [bundleURL release];
+
+    @synchronized (classToBundle) {
+        classToBundle[aClass] = bundle;
+    }
+
+    return bundle;
 }
 
 + (NSBundle *)bundleWithIdentifier:(NSString *)identifier
