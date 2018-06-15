@@ -517,7 +517,7 @@ static inline NSUInteger skipSkipSet(NSScanner *self, NSString *s)
                     if (tmpExponent < MIN_EXPONENT || tmpExponent > MAX_EXPONENT)
                     {
                         // FIXME exponent overflow should produce NaN
-                        break;
+                        // break;
                     }
                 }
                 
@@ -591,11 +591,24 @@ static inline NSUInteger skipSkipSet(NSScanner *self, NSString *s)
             }
             // adjust for the decimal place as scanned
             // on the first pass.
-            dcm->_exponent += exponent;
+            int tmpExponent = dcm->_exponent + exponent;
+            // Clamp the exponent in order not to overflow the field.
+            // Per comment above, this should actually produce a NaN, but
+            // real existing NIBs use values like 1.79769e+308 (for positive
+            // infinity), so just parse it as a positive infinity of our own.
+            if (tmpExponent < MIN_EXPONENT)
+            {
+                tmpExponent = MIN_EXPONENT;
+            }
+            if (tmpExponent > MAX_EXPONENT)
+            {
+                tmpExponent = MAX_EXPONENT;
+            }
+            dcm->_exponent = tmpExponent;
             dcm->_isNegative = (valueIsNonZero && isNegative);
         }
     }
-    
+
     free(buf);
     return sawValue;
 }
