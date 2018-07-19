@@ -228,3 +228,9 @@ add_framework(Foundation
 	LINK_FLAGS " -Wl,-reexport_library,${CMAKE_BINARY_DIR}/src/external/corefoundation/CoreFoundation \
 				-Wl,-reexport_library,${CMAKE_BINARY_DIR}/src/external/objc4/runtime/libobjc.A.dylib"
 )
+
+add_darling_executable(defaults tools/defaults.m)
+target_link_libraries(defaults Foundation)
+install(TARGETS defaults DESTINATION libexec/darling/usr/bin)
+install(FILES tools/defaults.1 DESTINATION libexec/darling/usr/share/man/man1)
+
