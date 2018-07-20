@@ -12,6 +12,14 @@ enum {
     NSAndroidOperatingSystem,
 };
 
+typedef struct
+{
+	NSInteger majorVersion;
+	NSInteger minorVersion;
+	NSInteger patchVersion;
+}
+NSOperatingSystemVersion;
+
 @class NSArray, NSString, NSDictionary;
 
 @interface NSProcessInfo : NSObject
@@ -39,6 +47,8 @@ enum {
 - (NSUInteger)activeProcessorCount;
 - (unsigned long long)physicalMemory;
 - (NSTimeInterval)systemUptime;
+- (NSOperatingSystemVersion)operatingSystemVersion;
+- (BOOL)isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion)version;
 
 @end
 

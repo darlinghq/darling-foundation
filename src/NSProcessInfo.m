@@ -3,6 +3,7 @@
 //  Foundation
 //
 //  Copyright (c) 2014 Apportable. All rights reserved.
+//  Copyright (c) 2018 Lubos Dolezel
 //
 
 #import <Foundation/NSProcessInfo.h>
@@ -11,6 +12,7 @@
 #import <Foundation/NSDictionary.h>
 #import <Foundation/NSPathUtilities.h>
 #import <Foundation/NSUUID.h>
+#import <CoreFoundation/CFPriv.h>
 #import "NSObjectInternal.h"
 #import <dispatch/dispatch.h>
 #import <crt_externs.h>
@@ -236,6 +238,7 @@ SINGLETON_RR()
 
 - (NSString *)operatingSystemVersionString
 {
+#ifndef __APPLE__
     struct utsname n;
     if (uname(&n) == 0)
     {
@@ -245,6 +248,15 @@ SINGLETON_RR()
     {
         return @"Unknown";
     }
+#else
+	NSDictionary* dict = (NSDictionary*) _CFCopySystemVersionDictionary();
+	NSString* string = [dict objectForKey: @"ProductVersion"];
+
+	[string retain];
+	[dict release];
+
+	return [string autorelease];
+#endif
 }
 
 - (NSUInteger)processorCount
@@ -290,6 +302,53 @@ SINGLETON_RR()
         return 0.0;
     }
     return t.tv_sec + t.tv_usec / (NSTimeInterval)USEC_PER_SEC;
+}
+
+- (NSOperatingSystemVersion)operatingSystemVersion
+{
+	NSOperatingSystemVersion version = { 0, 0, 0 };
+
+	NSString* string = [self operatingSystemVersionString];
+	NSArray* arr = [string componentsSeparatedByString:@"."];
+
+	if ([arr count] >= 1)
+	{
+		version.majorVersion = [[arr objectAtIndex: 0] integerValue];
+		if ([arr count] >= 2)
+		{
+			version.minorVersion = [[arr objectAtIndex: 1] integerValue];
+
+			if ([arr count] >= 3)
+			{
+				version.patchVersion = [[arr objectAtIndex: 2] integerValue];
+			}
+		}
+	}
+
+	return version;
+}
+
+- (BOOL)isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion)version
+{
+	NSOperatingSystemVersion curver = [self operatingSystemVersion];
+	if (curver.majorVersion < version.majorVersion)
+		return FALSE;
+	else if (curver.majorVersion > version.majorVersion)
+		return TRUE;
+	else
+	{
+		if (curver.minorVersion < version.minorVersion)
+			return FALSE;
+		else if (curver.minorVersion > version.minorVersion)
+			return TRUE;
+		else
+		{
+			if (curver.patchVersion < version.patchVersion)
+				return FALSE;
+			else
+				return TRUE;
+		}
+	}
 }
 
 @end
