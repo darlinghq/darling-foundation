@@ -29,6 +29,17 @@ static void objc_setUncaughtExceptionHandler(void (*handler)(id, void *))
 static NSUncaughtExceptionHandler *handler = nil;
 BOOL NSHangOnUncaughtException = NO;
 
+static void printExceptionInformation(id exception, void* context)
+{
+    NSLog(@"Terminating app due to uncaught exception '%@', reason: '%@'", NSStringFromClass([exception class]), [exception reason]);
+}
+
+__attribute__((constructor))
+static void initializeDefaultUncaughtExceptionHandler(void)
+{
+    NSSetUncaughtExceptionHandler(printExceptionInformation);
+}
+
 NSUncaughtExceptionHandler *NSGetUncaughtExceptionHandler(void)
 {
     return handler;
