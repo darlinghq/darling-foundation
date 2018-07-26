@@ -1,5 +1,5 @@
 #import <Foundation/NSCoder.h>
-#import <CoreGraphics/CGBase.h>
+#import <CoreGraphics/CoreGraphics.h>
 
 enum {
     NSKeyedArchiverKeyFlag = 0x01,

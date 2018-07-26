@@ -34,7 +34,7 @@
 #import <Foundation/NSException.h>
 #import <Foundation/NSLock.h>
 #import <Foundation/NSIndexSet.h>
-#import <CoreGraphics/CGBase.h>
+#import <CoreGraphics/CoreGraphics.h>
 
 static void NSKVOForwardInvocation(id self, SEL _cmd, NSInvocation *invocation);
 static void NSKVONotifyingSetMethodImplementation(NSKVONotifyingInfo *notifyingInfo, SEL selector, IMP newImplementation, NSString *optionalKey);
