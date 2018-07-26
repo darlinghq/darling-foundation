@@ -2,14 +2,7 @@
 #import <Foundation/NSCoder.h>
 #import <Foundation/NSValue.h>
 
-#ifndef CGFLOAT_DEFINED
-#if __LP64__
-typedef double CGFloat;
-#else
-typedef float CGFloat;
-#endif
-#define CGFLOAT_DEFINED
-#endif
+#include <CoreGraphics/CoreGraphics.h>
 
 typedef struct CGPoint CGPoint;
 typedef struct CGRect CGRect;
