@@ -30,6 +30,7 @@
 
 FOUNDATION_EXPORT NSString * const NSInvalidArchiveOperationException;
 FOUNDATION_EXPORT NSString * const NSInvalidUnarchiveOperationException;
+FOUNDATION_EXPORT NSString * const NSKeyedArchiveRootObjectKey;
 
 typedef const struct __CFKeyedArchiverUID* CFKeyedArchiverUIDRef;
 

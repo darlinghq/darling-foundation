@@ -1,16 +1,6 @@
-#import <Foundation/NSURLResponse.h>
-#import <Foundation/NSURLConnection.h>
-#import <Foundation/NSURLRequest.h>
+#import <Foundation/NSURLSessionConfiguration.h>
 
-@implementation NSURLResponse
+@implementation NSURLSessionConfiguration
 @end
 
-@implementation NSHTTPURLResponse
-@end
-
-@implementation NSURLConnection
-@end
-
-@implementation NSURLRequest
-@end
 

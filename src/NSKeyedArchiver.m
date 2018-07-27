@@ -24,6 +24,7 @@
 #import <stdlib.h>
 
 NSString *const NSInvalidArchiveOperationException = @"NSInvalidArchiveOperationException";
+NSString *const NSKeyedArchiveRootObjectKey = @"root";
 
 @implementation NSObject (NSKeyedArchiverObjectSubstitution)
 
@@ -411,7 +412,7 @@ static void encodeDouble(NSKeyedArchiver *archiver, double d, NSString *key)
             if (CFWriteStreamOpen(writeStream))
             {
                 NSKeyedArchiver *archiver = [[NSKeyedArchiver alloc] _initWithOutput:(NSOutputStream *)writeStream];
-                [archiver encodeObject:rootObject forKey:@"root"];
+                [archiver encodeObject:rootObject forKey:NSKeyedArchiveRootObjectKey];
                 [archiver finishEncoding];
                 CFWriteStreamClose(writeStream);
                 [archiver release];
@@ -429,7 +430,7 @@ static void encodeDouble(NSKeyedArchiver *archiver, double d, NSString *key)
     NSMutableData *data = [[NSMutableData alloc] initWithLength:0];
     @autoreleasepool {
         NSKeyedArchiver *archiver = [[[NSKeyedArchiver alloc] initForWritingWithMutableData:data] autorelease];
-        [archiver encodeObject:rootObject forKey:@"root"];
+        [archiver encodeObject:rootObject forKey:NSKeyedArchiveRootObjectKey];
         [archiver finishEncoding];
     }
     return [data autorelease];
