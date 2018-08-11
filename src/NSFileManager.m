@@ -198,7 +198,7 @@ static void initializeDirectories(NSMutableSet *paths, NSSearchPathDirectory dir
     BOOL exists = NO;
     BOOL isDir = NO;
     struct stat s;
-    int err = lstat([path UTF8String], &s); // this should use the fileSystemRep
+    int err = stat([path UTF8String], &s); // this should use the fileSystemRep
     if (err == 0)
     {
         exists = YES;
@@ -363,7 +363,7 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
     for (NSURL *url in urls)
     {
         struct stat s;
-        int err = lstat([[url path] UTF8String], &s);
+        int err = stat([[url path] UTF8String], &s);
         if (err != 0)
         {
             if (error)
