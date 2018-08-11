@@ -406,7 +406,12 @@ NSString *NSTemporaryDirectory(void)
     static dispatch_once_t once = 0L;
     static NSString *path = nil;
     dispatch_once(&once, ^{
-        path = [[NSString alloc] initWithUTF8String:getenv("TEMPDIR")];
+        const char *cpath = getenv("TEMPDIR");
+        if (cpath == NULL) cpath = getenv("TMPDIR");
+        if (cpath == NULL) cpath = getenv("TEMP");
+        if (cpath == NULL) cpath = getenv("TMP");
+        if (cpath == NULL) cpath = "/tmp";
+        path = [[NSString alloc] initWithUTF8String: cpath];
     });
     return path;
 }
