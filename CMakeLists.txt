@@ -171,6 +171,7 @@ set(foundation_sources
 	src/NSUbiquitousKeyValueStore.m
 	src/NSUndoGroup.m
 	src/NSUndoManager.m
+	src/NSUserDefaults.m
 	src/NSURLAuthenticationChallenge.m
 	src/NSURLCache.m
 	src/NSURLConnection.m

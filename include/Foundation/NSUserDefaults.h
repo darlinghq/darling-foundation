@@ -13,12 +13,21 @@ FOUNDATION_EXPORT NSString * const NSUserDefaultsDidChangeNotification;
 #	define PREFS_TYPE void
 #endif
 
+// The type resides in CF
+
 @interface NSUserDefaults : NSObject
 {
     PREFS_TYPE *_cfDataPtr;
 }
 
 #undef PREFS_TYPE
+
+@end
+
+// The actual methods are defined in a category and
+// implemented inside Foundation
+
+@interface NSUserDefaults (NSUserDefaults)
 
 + (NSUserDefaults *)standardUserDefaults;
 + (void)resetStandardUserDefaults;
