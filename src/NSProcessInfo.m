@@ -354,7 +354,10 @@ SINGLETON_RR()
 @end
 
 #ifdef DARLING
-FOUNDATION_EXPORT void __NSInitializeProcess(int argc,const char *argv[]) {
+
+FOUNDATION_EXPORT
+__attribute__((constructor))
+void __NSInitializeProcess(int argc,const char *argv[]) {
     // This is a Cocotron addition that they use to save the argc/argv of the
     // current process to be later retrieved using NSProcessInfo. Our
     // Foundation instead uses _NSGetArgc/_NSGetArgv directly, so we don't
@@ -364,6 +367,11 @@ FOUNDATION_EXPORT void __NSInitializeProcess(int argc,const char *argv[]) {
     // particular, we process the NSObjCMessageLoggingEnabled env variable. See
     // http://www.dribin.org/dave/blog/archives/2006/04/22/tracing_objc/
     // for some more details.
+
+    // Note that the upstream Cocotron calls this function from NSApplicationMain();
+    // we patch that out and make this function a constructor instead, because
+    // there are apps and programs that don't call NSApplicationMain(), but we
+    // still want to initialize Foundation properly for them.
 
     char *loggingEnabled = getenv("NSObjCMessageLoggingEnabled");
     if (loggingEnabled != NULL && strcmp(loggingEnabled, "YES") == 0) {
