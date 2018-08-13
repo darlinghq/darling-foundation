@@ -23,9 +23,26 @@
 #import <stdlib.h>
 #import <sys/mman.h>
 
+typedef void (^NSDataDeallocator)(void *bytes, NSUInteger length);
+
+FOUNDATION_EXPORT const NSDataDeallocator NSDataDeallocatorVM = ^(void *bytes, NSUInteger length) {
+    // TODO
+};
+
+FOUNDATION_EXPORT const NSDataDeallocator NSDataDeallocatorUnmap = ^(void *bytes, NSUInteger length) {
+    munmap(bytes, length);
+};
+
+FOUNDATION_EXPORT const NSDataDeallocator NSDataDeallocatorFree = ^(void *bytes, NSUInteger length) {
+    free(bytes);
+};
+
+FOUNDATION_EXPORT const NSDataDeallocator NSDataDeallocatorNone = ^(void *bytes, NSUInteger length) {
+    // do nothing
+};
 
 @interface NSData (NSData)
-- (id)initWithBytes:(void *)bytes length:(NSUInteger)length copy:(BOOL)shouldCopy deallocator:(void (^)(void *bytes, NSUInteger length))deallocator;
+- (id)initWithBytes:(void *)bytes length:(NSUInteger)length copy:(BOOL)shouldCopy deallocator:(NSDataDeallocator)deallocator;
 - (id)initWithBytes:(void *)bytes length:(NSUInteger)length copy:(BOOL)shouldCopy freeWhenDone:(BOOL)shouldFree bytesAreVM:(BOOL)vm;
 @end
 
@@ -46,7 +63,7 @@ CF_PRIVATE
     union {
         unsigned char _space[NSCONCRETEDATA_BUFFER_SIZE];
         /* 12 makes a full allocation size of 32 bytes */
-        void (^_deallocator)(void *buffer, NSUInteger size);
+        NSDataDeallocator _deallocator;
     } _u;
 }
 
@@ -113,7 +130,7 @@ CF_PRIVATE
     }
 }
 
-- (id)initWithBytes:(void *)bytes length:(NSUInteger)length copy:(BOOL)shouldCopy deallocator:(void (^)(void *, NSUInteger))deallocator
+- (id)initWithBytes:(void *)bytes length:(NSUInteger)length copy:(BOOL)shouldCopy deallocator:(NSDataDeallocator)deallocator
 {
     if (length == 0)
     {
@@ -135,7 +152,7 @@ SINGLETON_RR()
 
 
 @implementation NSConcreteData
-- (id)initWithBytes:(void *)bytes length:(NSUInteger)length copy:(BOOL)shouldCopy deallocator:(void (^)(void *, NSUInteger))deallocator
+- (id)initWithBytes:(void *)bytes length:(NSUInteger)length copy:(BOOL)shouldCopy deallocator:(NSDataDeallocator)deallocator
 {
     self = [super init];
 
@@ -174,9 +191,7 @@ SINGLETON_RR()
                 [NSException raise:NSInvalidArgumentException format:@"Length too great for NSData"];
                 return nil;
             }
-            _u._deallocator = [^(void *buffer, NSUInteger size) {
-                free(buffer);
-            } copy];
+            _u._deallocator = NSDataDeallocatorFree;
         }
         memcpy(_bytes, bytes, length);
     }
@@ -1010,7 +1025,7 @@ OBJC_PROTOCOL_IMPL_PUSH
 }
 OBJC_PROTOCOL_IMPL_POP
 
-- (id)initWithBytes:(void *)bytes length:(NSUInteger)length copy:(BOOL)shouldCopy deallocator:(void (^)(void *bytes, NSUInteger length))deallocator
+- (id)initWithBytes:(void *)bytes length:(NSUInteger)length copy:(BOOL)shouldCopy deallocator:(NSDataDeallocator)deallocator
 {
     NSRequestConcreteImplementation();
     [self release];
@@ -1019,20 +1034,16 @@ OBJC_PROTOCOL_IMPL_POP
 
 - (id)initWithBytes:(void *)bytes length:(NSUInteger)length copy:(BOOL)shouldCopy freeWhenDone:(BOOL)shouldFree bytesAreVM:(BOOL)vm
 {
-    void (^deallocator)(void *bytes, NSUInteger length) = nil;
+    NSDataDeallocator deallocator;
     if (shouldFree)
     {
         if (vm)
         {
-            deallocator = ^void(void *bytesToDealloc, NSUInteger lengthToDealloc) {
-                munmap(bytesToDealloc, lengthToDealloc);
-            };
+            deallocator = NSDataDeallocatorUnmap;
         }
         else
         {
-            deallocator = ^void(void *bytesToDealloc, NSUInteger lengthToDealloc) {
-                free(bytesToDealloc);
-            };
+            deallocator = NSDataDeallocatorFree;
         }
     }
     return [self initWithBytes:bytes length:length copy:shouldCopy deallocator:deallocator];
@@ -1285,7 +1296,7 @@ static uint8_t base64EncodeLookup[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklm
 
 @implementation NSConcreteMutableData
 
-- (id)initWithBytes:(void *)bytes length:(NSUInteger)length copy:(BOOL)shouldCopy deallocator:(void (^)(void *bytes, NSUInteger length))deallocator
+- (id)initWithBytes:(void *)bytes length:(NSUInteger)length copy:(BOOL)shouldCopy deallocator:(NSDataDeallocator)deallocator
 {
     NSCapacityCheck(length, 0x80000000, @"Too huge of data length");
 
@@ -1593,7 +1604,7 @@ static void NSPurgeableDataStorageDiscard(NSPurgeableDataStorage *storage, NSUIn
     return self;
 }
 
-- (id)initWithBytes:(void *)bytes length:(NSUInteger)length copy:(BOOL)shouldCopy deallocator:(void (^)(void *bytes, NSUInteger length))deallocator
+- (id)initWithBytes:(void *)bytes length:(NSUInteger)length copy:(BOOL)shouldCopy deallocator:(NSDataDeallocator)deallocator
 {
     NSCapacityCheck(length, 0x80000000, @"absurd capacity: %llu", (unsigned long long)length);
 

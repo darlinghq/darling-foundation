@@ -21,6 +21,24 @@ OBJC_PROTOCOL_IMPL_POP
 @end
 
 
+const NSCalendarIdentifier NSCalendarIdentifierGregorian = @"NSCalendarIdentifierGregorian";
+const NSCalendarIdentifier NSCalendarIdentifierISO8601 = @"NSCalendarIdentifierISO8601";
+const NSCalendarIdentifier NSCalendarIdentifierBuddhist = @"NSCalendarIdentifierBuddhist";
+const NSCalendarIdentifier NSCalendarIdentifierChinese = @"NSCalendarIdentifierChinese";
+const NSCalendarIdentifier NSCalendarIdentifierCoptic = @"NSCalendarIdentifierCoptic";
+const NSCalendarIdentifier NSCalendarIdentifierEthiopicAmeteAlem = @"NSCalendarIdentifierEthiopicAmeteAlem";
+const NSCalendarIdentifier NSCalendarIdentifierEthiopicAmeteMihret = @"NSCalendarIdentifierEthiopicAmeteMihret";
+const NSCalendarIdentifier NSCalendarIdentifierHebrew = @"NSCalendarIdentifierHebrew";
+const NSCalendarIdentifier NSCalendarIdentifierIndian = @"NSCalendarIdentifierIndian";
+const NSCalendarIdentifier NSCalendarIdentifierIslamic = @"NSCalendarIdentifierIslamic";
+const NSCalendarIdentifier NSCalendarIdentifierIslamicCivil = @"NSCalendarIdentifierIslamicCivil";
+const NSCalendarIdentifier NSCalendarIdentifierIslamicTabular = @"NSCalendarIdentifierIslamicTabular";
+const NSCalendarIdentifier NSCalendarIdentifierIslamicUmmAlQura = @"NSCalendarIdentifierIslamicUmmAlQura";
+const NSCalendarIdentifier NSCalendarIdentifierJapanese = @"NSCalendarIdentifierJapanese";
+const NSCalendarIdentifier NSCalendarIdentifierPersian = @"NSCalendarIdentifierPersian";
+const NSCalendarIdentifier NSCalendarIdentifierRepublicOfChina = @"NSCalendarIdentifierRepublicOfChina";
+
+
 @implementation NSAutoCalendar
 
 - (id)init
@@ -36,7 +54,7 @@ OBJC_PROTOCOL_IMPL_POP
     return self;
 }
 
-- (id)initWithCalendarIdentifier:(NSString *)ident
+- (id)initWithCalendarIdentifier:(NSCalendarIdentifier)ident
 {
     return [self init];
 }
@@ -48,7 +66,7 @@ OBJC_PROTOCOL_IMPL_POP
     [super dealloc];
 }
 
-- (NSString *)calendarIdentifier
+- (NSCalendarIdentifier)calendarIdentifier
 {
     return [cal calendarIdentifier];
 }

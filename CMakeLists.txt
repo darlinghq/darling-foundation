@@ -99,6 +99,7 @@ set(foundation_sources
 	src/NSKeyValueProperty.m
 	src/NSKeyValueUnnestedProperty.m
 	src/NSLikePredicateOperator.m
+	src/NSLinguisticTagger.m
 	src/NSLinkCheckingResult.m
 	src/NSLocale.m
 	src/NSLocalizableString.m
@@ -174,6 +175,7 @@ set(foundation_sources
 	src/NSUserDefaults.m
 	src/NSURLAuthenticationChallenge.m
 	src/NSURLCache.m
+	src/NSURLComponents.m
 	src/NSURLConnection.m
 	src/NSURLCredential.m
 	src/NSURLCredentialStorage.m

@@ -49,13 +49,32 @@ enum {
     NSUndefinedDateComponent = NSIntegerMax
 };
 
+typedef NSString *NSCalendarIdentifier;
+
+const NSCalendarIdentifier NSCalendarIdentifierGregorian;
+const NSCalendarIdentifier NSCalendarIdentifierISO8601;
+const NSCalendarIdentifier NSCalendarIdentifierBuddhist;
+const NSCalendarIdentifier NSCalendarIdentifierChinese;
+const NSCalendarIdentifier NSCalendarIdentifierCoptic;
+const NSCalendarIdentifier NSCalendarIdentifierEthiopicAmeteAlem;
+const NSCalendarIdentifier NSCalendarIdentifierEthiopicAmeteMihret;
+const NSCalendarIdentifier NSCalendarIdentifierHebrew;
+const NSCalendarIdentifier NSCalendarIdentifierIndian;
+const NSCalendarIdentifier NSCalendarIdentifierIslamic;
+const NSCalendarIdentifier NSCalendarIdentifierIslamicCivil;
+const NSCalendarIdentifier NSCalendarIdentifierIslamicTabular;
+const NSCalendarIdentifier NSCalendarIdentifierIslamicUmmAlQura;
+const NSCalendarIdentifier NSCalendarIdentifierJapanese;
+const NSCalendarIdentifier NSCalendarIdentifierPersian;
+const NSCalendarIdentifier NSCalendarIdentifierRepublicOfChina;
+
 @interface NSCalendar : NSObject <NSCopying, NSSecureCoding>
 
 + (id)currentCalendar;
 + (id)autoupdatingCurrentCalendar;
 
-- (id)initWithCalendarIdentifier:(NSString *)ident;
-- (NSString *)calendarIdentifier;
+- (id)initWithCalendarIdentifier:(NSCalendarIdentifier)ident;
+- (NSCalendarIdentifier)calendarIdentifier;
 - (void)setLocale:(NSLocale *)locale;
 - (NSLocale *)locale;
 - (void)setTimeZone:(NSTimeZone *)tz;
