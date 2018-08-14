@@ -381,3 +381,5 @@ enum {NSNotFound = NSIntegerMax};
 #ifndef NS_UNIMPLEMENTED
 #define NS_UNIMPLEMENTED CF_UNIMPLEMENTED
 #endif
+
+typedef NSString* NSExceptionName;
