@@ -7,8 +7,8 @@
 FOUNDATION_EXPORT NSString * const NSDefaultRunLoopMode;
 FOUNDATION_EXPORT NSString * const NSRunLoopCommonModes;
 
-@interface NSRunLoop : NSObject{
-@package
+@interface NSRunLoop : NSObject {
+@public
     CFRunLoopRef _rl;
     id _dperf;
     id _perft;
@@ -16,6 +16,10 @@ FOUNDATION_EXPORT NSString * const NSRunLoopCommonModes;
     id _ports;
     void *_reserved[6];
 }
+
+@end
+
+@interface NSRunLoop (NSRunLoop)
 
 + (NSRunLoop *)currentRunLoop;
 + (NSRunLoop *)mainRunLoop;

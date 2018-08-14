@@ -71,7 +71,7 @@ static CFStringRef NSDelayedPerformerCopyDescription(const void *info)
 
 @end
 
-@implementation NSRunLoop
+@implementation NSRunLoop (NSRunLoop)
 
 static CFTypeRef NSRunLoopProvider(CFRunLoopRef rl)
 {
