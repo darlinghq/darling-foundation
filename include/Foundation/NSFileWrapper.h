@@ -1,9 +1,6 @@
-#ifndef DARLING
-// defined in cocotron/AppKit/NSFileWrapper.h
-
 #import <Foundation/NSObject.h>
 
-@class NSData, NSDictionary, NSError, NSURL;
+@class NSData, NSMutableDictionary, NSDictionary, NSError, NSURL;
 
 typedef NS_OPTIONS(NSUInteger, NSFileWrapperReadingOptions) {
     NSFileWrapperReadingImmediate = 1 << 0,
@@ -15,7 +12,14 @@ typedef NS_OPTIONS(NSUInteger, NSFileWrapperWritingOptions) {
     NSFileWrapperWritingWithNameUpdating = 1 << 1
 };
 
-@interface NSFileWrapper : NSObject<NSCoding>
+@interface NSFileWrapper : NSObject<NSCoding> {
+    @protected
+    NSString *_path;
+    NSMutableDictionary *_fileAttributes;
+    NSString *_filename;
+    NSString *_preferredFilename;
+    id *_icon;
+}
 
 - (id)initWithURL:(NSURL *)url options:(NSFileWrapperReadingOptions)options error:(NSError **)outError;
 - (id)initDirectoryWithFileWrappers:(NSDictionary *)childrenByPreferredName;
@@ -44,4 +48,3 @@ typedef NS_OPTIONS(NSUInteger, NSFileWrapperWritingOptions) {
 - (NSURL *)symbolicLinkDestinationURL;
 
 @end
-#endif

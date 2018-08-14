@@ -208,6 +208,7 @@ set(foundation_sources
 	src/NSSpellServer.m
 	src/NSSpellEngine.m
 	src/stub.m
+	src/NSFileWrapper.m
 )
 
 # Includes ObjC headers -> must be compiled as ObjC
