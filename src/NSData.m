@@ -1034,7 +1034,7 @@ OBJC_PROTOCOL_IMPL_POP
 
 - (id)initWithBytes:(void *)bytes length:(NSUInteger)length copy:(BOOL)shouldCopy freeWhenDone:(BOOL)shouldFree bytesAreVM:(BOOL)vm
 {
-    NSDataDeallocator deallocator;
+    NSDataDeallocator deallocator = nil;
     if (shouldFree)
     {
         if (vm)
