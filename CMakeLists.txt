@@ -147,7 +147,6 @@ set(foundation_sources
 	src/NSRegularExpressionCheckingResult.m
 	src/NSRegularExpression.m
 	src/NSRunLoop.m
-	src/NSRunLoopModes.m
 	src/NSScanner.m
 	src/NSSelfExpression.m
 	src/NSSetExpression.m
