@@ -36,6 +36,10 @@ CF_PRIVATE
     return [[[NSAutoLocale alloc] _init] autorelease];
 }
 
+- (NSString *) languageCode {
+    return [self objectForKey: NSLocaleLanguageCode];
+}
+
 @end
 
 
