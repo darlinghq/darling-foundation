@@ -209,6 +209,7 @@ set(foundation_sources
 	src/NSSpellEngine.m
 	src/stub.m
 	src/NSFileWrapper.m
+	src/NSAppleEventDescriptor.m
 )
 
 # Includes ObjC headers -> must be compiled as ObjC
