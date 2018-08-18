@@ -412,6 +412,10 @@ NSString *NSTemporaryDirectory(void)
         if (cpath == NULL) cpath = getenv("TMP");
         if (cpath == NULL) cpath = "/tmp";
         path = [[NSString alloc] initWithUTF8String: cpath];
+        // Ensure it ends in a trailing slash
+        if ([path characterAtIndex: [path length] - 1] != PATH_SEP) {
+            path = [[NSString alloc] initWithFormat: @"%@%c", [path autorelease], PATH_SEP];
+        }
     });
     return path;
 }
