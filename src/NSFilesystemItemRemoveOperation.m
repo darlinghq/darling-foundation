@@ -98,7 +98,15 @@ static int NSFilesystemItemRemoveOperationFunction(const char *path, const struc
     {
         // extern int _nftw_context(const char *path, int (*fn)(const char *, const struct stat *, int, struct FTW *, void *), int nfds, int ftwflags, void *ctx);
         ctx = self;
-        int err = nftw([_removePath cString], NSFilesystemItemRemoveOperationFunction, 0, FTW_DEPTH);
+
+        int err = nftw(
+            [_removePath cString],
+            NSFilesystemItemRemoveOperationFunction,
+            1, // ignored by the implementation, but values less than 1 and
+               // more than OPEN_MAX result in EINVAL
+            FTW_DEPTH
+        );
+
         ctx = NULL;
         if (_error == nil && err != 0)
         {
