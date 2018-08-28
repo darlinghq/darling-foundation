@@ -209,6 +209,7 @@ set(foundation_sources
 	src/stub.m
 	src/NSFileWrapper.m
 	src/NSAppleEventDescriptor.m
+	src/NSXPCInterface.m
 )
 
 # Includes ObjC headers -> must be compiled as ObjC
