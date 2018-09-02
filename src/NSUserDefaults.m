@@ -7,7 +7,6 @@
 
 #import <CoreFoundation/CFPreferences.h>
 #include "ForFoundationOnly.h"
-#define PREFS_TYPE _CFApplicationPreferences
 #import <Foundation/NSUserDefaults.h>
 #import <Foundation/NSPathUtilities.h>
 #import <Foundation/NSNotification.h>
@@ -27,6 +26,8 @@ static dispatch_source_t synchronizeTimer;
 static dispatch_queue_t synchronizeQueue;
 #define SYNC_INTERVAL 30
 
+#define APP_NAME (self->_suiteName != nil ? (CFStringRef) self->_suiteName : kCFPreferencesCurrentApplication)
+
 @implementation NSUserDefaults (NSUserDefaults)
 
 + (NSUserDefaults *)standardUserDefaults
@@ -34,7 +35,7 @@ static dispatch_queue_t synchronizeQueue;
     pthread_mutex_lock(&defaultsLock);
     if (standardDefaults == nil)
     {
-        standardDefaults = [[NSUserDefaults alloc] initWithUser:NSUserName()];
+        standardDefaults = [[NSUserDefaults alloc] init];
         _startSynchronizeTimer(standardDefaults);
         [standardDefaults setObject:[NSLocale preferredLanguages] forKey:@"AppleLanguages"];
         [standardDefaults setObject:[[NSLocale systemLocale] languageCode] forKey:@"AppleLocale"];
@@ -58,38 +59,29 @@ static dispatch_queue_t synchronizeQueue;
 
 - (id)init
 {
-    return [self initWithUser:NSUserName()];
+    return [self initWithSuiteName: nil];
+}
+
+- (id) initWithSuiteName: (NSString *) name {
+    _suiteName = [name copy];
+    // TODO: parse args
+    return self;
 }
 
 - (id)initWithUser:(NSString *)user
 {
-    self = [super init];
-    if (self)
-    {
-        NSString *name = nil;
-        const char *pkgName = getenv("PACKAGE_NAME");
-        if (pkgName)
-        {
-            name = [NSString stringWithUTF8String:pkgName];
-        }
-        else
-        {
-            name = @"android";
-        }
-        _cfDataPtr = _CFApplicationPreferencesCreateWithUser((CFStringRef)user, (CFStringRef)name);
-
-    }
-    return self;
+    // Ignore the user; just init a regular defaults instance.
+    return [self init];
 }
 
 - (void)dealloc
 {
-    _CFDeallocateApplicationPreferences(_cfDataPtr);
+    [_suiteName release];
     [super dealloc];
 }
 
 
-void static _startSynchronizeTimer(NSUserDefaults *ud)
+void static _startSynchronizeTimer(NSUserDefaults *self)
 {
     synchronizeQueue = dispatch_queue_create("com.apportable.synchronize.userdefaults", NULL);
 
@@ -102,9 +94,8 @@ void static _startSynchronizeTimer(NSUserDefaults *ud)
     dispatch_source_set_timer(synchronizeTimer,
            dispatch_time(DISPATCH_TIME_NOW, SYNC_INTERVAL * NSEC_PER_SEC), SYNC_INTERVAL * NSEC_PER_SEC, 0);
 
-    // Do something when timer fires
     dispatch_source_set_event_handler(synchronizeTimer, ^{
-        CFPreferencesAppSynchronize(kCFPreferencesCurrentApplication);
+        CFPreferencesAppSynchronize(APP_NAME);
     });
 
     // now that the timer is set up, start it up
@@ -114,11 +105,13 @@ void static _startSynchronizeTimer(NSUserDefaults *ud)
 - (id)objectForKey:(NSString *)key
 {
     __block id value = nil;
+    // TODO: args...
     dispatch_sync(synchronizeQueue, ^{
 #warning TODO: verify that this does not cause an actual leak https://code.google.com/p/apportable/issues/detail?id=537
         // This likely is a leak however this prevents a crash...
-        value = [(id)CFPreferencesCopyAppValue((CFStringRef)key, kCFPreferencesCurrentApplication) retain];
+        value = [(id)CFPreferencesCopyAppValue((CFStringRef)key, APP_NAME) retain];
     });
+    // TODO: registered
     return [value autorelease];
 }
 
@@ -143,7 +136,7 @@ void static _startSynchronizeTimer(NSUserDefaults *ud)
     // asynchronously to avoid blocking on observers of the notification itself.
     [self willChangeValueForKey:key];
     dispatch_sync(synchronizeQueue, ^{
-        CFPreferencesSetAppValue((CFStringRef)key, (CFTypeRef)value, kCFPreferencesCurrentApplication);
+        CFPreferencesSetAppValue((CFStringRef)key, (CFTypeRef)value, APP_NAME);
         dispatch_async(synchronizeQueue, ^{
             [[NSNotificationCenter defaultCenter] postNotificationName:NSUserDefaultsDidChangeNotification object:self userInfo:nil];
         });
@@ -344,7 +337,7 @@ void static _startSynchronizeTimer(NSUserDefaults *ud)
 {
     __block BOOL synced = NO;
     dispatch_sync(synchronizeQueue, ^{
-        synced = CFPreferencesAppSynchronize(kCFPreferencesCurrentApplication);
+        synced = CFPreferencesAppSynchronize(APP_NAME);
     });
     return YES;
 }
@@ -352,20 +345,53 @@ void static _startSynchronizeTimer(NSUserDefaults *ud)
 - (NSDictionary *)dictionaryRepresentation
 {
     __block NSDictionary *rep = nil;
+    // TODO: args, registered
     dispatch_sync(synchronizeQueue, ^{
-        rep = (NSDictionary *)_CFPrefsCopyAppDictionary(_cfDataPtr);
+        rep = (NSDictionary *)CFPreferencesCopyMultiple(
+            /* fetch all keys */ nil,
+            APP_NAME,
+            kCFPreferencesCurrentUser,
+            kCFPreferencesAnyHost
+        );
     });
     return [rep autorelease];
 }
 
-- (void)removePersistentDomainForName:(NSString *)domainName
+- (NSArray *) volatileDomainNames {
+    // TODO
+    return @[];
+}
+
+- (NSDictionary *) volatileDomainForName: (NSString *) domainName {
+    // TODO
+    return nil;
+}
+
+// - (void) setVolatileDomain: (NSDictionary *) domain forName: (NSString *) domainName;
+// - (void) removeVolatileDomainForName: (NSString *) domainName;
+
+- (NSArray *) persistentDomainNames {
+    CFStringRef userName = (CFStringRef) NSUserName();
+    NSArray *domains = (NSArray *) _CFPreferencesCreateDomainList(userName, kCFPreferencesAnyHost);
+    return [domains autorelease];
+}
+
+- (NSDictionary *) persistentDomainForName: (NSString *) domainName {
+    CFStringRef userName = (CFStringRef) NSUserName();
+    CFPreferencesDomainRef domain = _CFPreferencesStandardDomain(domainName, userName, kCFPreferencesAnyHost);
+    NSDictionary *res = (NSDictionary *) _CFPreferencesDomainDeepCopyDictionary(domain);
+    return [res autorelease];
+}
+
+//- (void) setPersistentDomain: (NSDictionary *) domain forName: (NSString *) domainName;
+
+- (void) removePersistentDomainForName: (NSString *) domainName
 {
     NSDictionary *defaultsDictionary = [self dictionaryRepresentation];
     for (NSString *key in [defaultsDictionary allKeys]) {
         [self removeObjectForKey:key];
     }
     [self synchronize];
-//    _CFApplicationPreferencesRemove(_cfDataPtr, (CFStringRef)domainName);
 }
 @end
 
