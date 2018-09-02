@@ -2552,7 +2552,7 @@ static BOOL _NSScanStringValue(NSString *self, NSNumericValueType type, NSNumeri
     }
 }
 
-- (unichar)characterAtIndex:(unsigned int)index
+- (unichar)characterAtIndex:(NSUInteger)index
 {
     return bytes[index];
 }

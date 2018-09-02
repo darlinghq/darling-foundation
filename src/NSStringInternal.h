@@ -45,7 +45,7 @@ CF_EXPORT Boolean (*__CFCharToUniCharFunc)(UInt32 flags, UInt8 ch, UniChar *unic
 - (id)init;
 - (void)dealloc;
 - (oneway void)release;
-- (unsigned int)retainCount;
+- (NSUInteger)retainCount;
 - (id)retain;
 
 @end
@@ -70,7 +70,7 @@ CF_EXPORT Boolean (*__CFCharToUniCharFunc)(UInt32 flags, UInt8 ch, UniChar *unic
 - (BOOL)_tryRetain;
 - (BOOL)_isDeallocating;
 - (oneway void)release;
-- (unsigned int)retainCount;
+- (NSUInteger)retainCount;
 - (id)retain;
 - (id)autorelease;
 
