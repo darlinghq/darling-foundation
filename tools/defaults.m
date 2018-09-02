@@ -113,6 +113,29 @@ static void output(const char *ptr)
     }
 }
 
+static const char *objectDescriptionCStr(id object, id locale, NSUInteger indent) {
+  NSString *res;
+
+  if ([object isKindOfClass: [NSString class]])
+    {
+        res = object;
+    }
+  else if ([object respondsToSelector: @selector(descriptionWithLocale:indent:)])
+    {
+      res = [object descriptionWithLocale: locale indent: indent];
+    }
+  else if ([object respondsToSelector: @selector(descriptionWithLocale:)])
+    {
+      res = [object descriptionWithLocale: locale];
+    }
+  else
+    {
+      res = [object description];
+    }
+
+  return [res UTF8String];
+}
+
 /** <p>This tool mimics the OPENSTEP command line tool for handling defaults.
        Please see the man page for more information.
  </p>*/
@@ -370,8 +393,7 @@ main(int argc, char** argv, char **env)
 			  output(ptr);
 			  putchar(' ');
 
-			  ptr = [[obj descriptionWithLocale: locale
-			    indent: 0] UTF8String];
+			  ptr = objectDescriptionCStr(obj, locale, 0);
 			  output(ptr);
 			  putchar('\n');
 			}
@@ -390,8 +412,7 @@ main(int argc, char** argv, char **env)
 			  ptr = [name UTF8String];
 			  output(ptr);
 			  putchar(' ');
-			  ptr = [[obj descriptionWithLocale: locale indent: 0]
-			    UTF8String];
+			  ptr = objectDescriptionCStr(obj, locale, 0);
 			  output(ptr);
 			  putchar('\n');
 			  found = YES;
@@ -436,8 +457,7 @@ main(int argc, char** argv, char **env)
 			  output(ptr);
 			  putchar(' ');
 
-			  ptr = [[obj descriptionWithLocale: locale
-			    indent: 0] UTF8String];
+			  ptr = objectDescriptionCStr(obj, locale, 0);
 			  output(ptr);
 			  putchar('\n');
 			}
@@ -456,8 +476,7 @@ main(int argc, char** argv, char **env)
 			  ptr = [name UTF8String];
 			  output(ptr);
 			  putchar(' ');
-			  ptr = [[obj descriptionWithLocale: locale indent: 0]
-			    UTF8String];
+			  ptr = objectDescriptionCStr(obj, locale, 0);
 			  output(ptr);
 			  putchar('\n');
 			  found = YES;
