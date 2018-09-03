@@ -383,7 +383,20 @@ void static _startSynchronizeTimer(NSUserDefaults *self)
     return [res autorelease];
 }
 
-//- (void) setPersistentDomain: (NSDictionary *) domain forName: (NSString *) domainName;
+- (void) setPersistentDomain: (NSDictionary *) domain forName: (NSString *) domainName {
+    // Create a different defaults object.
+    NSUserDefaults *defaults = [[NSUserDefaults alloc] initWithSuiteName: domainName];
+
+    for (id key in [[defaults dictionaryRepresentation] allKeys]) {
+        [defaults removeObjectForKey: key];
+    }
+
+    [defaults registerDefaults: domain];
+    [defaults synchronize];
+
+    // Post a notification on self.
+    [[NSNotificationCenter defaultCenter] postNotificationName:NSUserDefaultsDidChangeNotification object:self userInfo:nil];
+}
 
 - (void) removePersistentDomainForName: (NSString *) domainName
 {
