@@ -26,7 +26,7 @@ typedef struct {
     CFRunLoopTimerRef timer;
     NSArray *modes;
     int retainCount;
-    NSMutableArray *all_timers;
+    NSMutableArray *allTimers;
 } NSDelayedPerformer;
 
 static const void *NSDelayedPerformerRetain(const void *info)
@@ -43,9 +43,10 @@ static void NSDelayedPerformerRelease(const void *info)
         [performer->modes release];
         [performer->object release];
         [performer->argument release];
-        @synchronized(performer->all_timers) {
-            [performer->all_timers removeObject: performer->timer];
+        @synchronized(performer->allTimers) {
+            [performer->allTimers removeObject: performer->timer];
         }
+        [performer->allTimers release];
         free(performer);
     }
 }
@@ -398,7 +399,7 @@ static void __NSFireDelayedPerform(CFRunLoopTimerRef timer, void *info)
     performer->argument = [anArgument retain];
     performer->modes = [modes copy];
     performer->retainCount = 1;
-    performer->all_timers = rl->_perft;
+    performer->allTimers = [rl->_perft retain];
 
     CFRunLoopTimerContext ctx = {
         0,
@@ -479,7 +480,7 @@ static void __NSFireDelayedPerform(CFRunLoopTimerRef timer, void *info)
     performer->argument = [arg retain];
     performer->modes = [modes copy];
     performer->retainCount = 1;
-    performer->all_timers = rl->_dperf;
+    performer->allTimers = [rl->_dperf retain];
 
     CFRunLoopTimerContext ctx = {
         .version = 0,
