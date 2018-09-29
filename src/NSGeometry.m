@@ -10,6 +10,8 @@
 
 #import "NSGeometry.h"
 #import "NSScanner.h"
+#import "NSConcreteScanner.h"
+#import "NSString.h"
 
 /*
  *	Constant structs
@@ -244,6 +246,41 @@ BOOL NSIntersectsRect(NSRect aRect, NSRect bRect)
 	 $Date: 2008-06-09 05:05:01 +0100 (Mon, 09 Jun 2008) $ $Revision: 26607 $
 	 */
 
+static Class	NSStringClass = 0;
+static Class	NSScannerClass = 0;
+static SEL	scanFloatSel;
+static SEL	scanStringSel;
+static SEL	scannerSel;
+static BOOL	(*scanFloatImp)(NSScanner*, SEL, CGFloat*);
+static BOOL	(*scanStringImp)(NSScanner*, SEL, NSString*, NSString**);
+static id 	(*scannerImp)(Class, SEL, NSString*);
+
+static inline void
+setupCache(void)
+{
+  if (NSStringClass == 0)
+    {
+      NSStringClass = [NSString class];
+      NSScannerClass = [NSScanner class];
+      if (sizeof(CGFloat) == sizeof(double))
+        {
+          scanFloatSel = @selector(scanDouble:);
+        }
+      else
+        {
+          scanFloatSel = @selector(scanFloat:);
+        }
+      scanStringSel = @selector(scanString:intoString:);
+      scannerSel = @selector(scannerWithString:);
+      scanFloatImp = (BOOL (*)(NSScanner*, SEL, CGFloat*))
+	[NSConcreteScanner instanceMethodForSelector: scanFloatSel];
+      scanStringImp = (BOOL (*)(NSScanner*, SEL, NSString*, NSString**))
+	[NSConcreteScanner instanceMethodForSelector: scanStringSel];
+      scannerImp = (id (*)(Class, SEL, NSString*))
+	[NSConcreteScanner methodForSelector: scannerSel];
+    }
+}
+
 NSRect NSIntegralRect(NSRect aRect)
 {
 	NSRect	rect;
@@ -373,7 +410,7 @@ void NSDivideRect(NSRect aRect, NSRect *slice, NSRect *remainder, CGFloat amount
 
 NSString* NSStringFromPoint(NSPoint aPoint)
 {
-	//setupCache();
+	setupCache();
 	//if (GSMacOSXCompatibleGeometry() == YES)
 		return [NSString stringWithFormat: @"{%g, %g}", aPoint.x, aPoint.y];
 	//else
@@ -383,7 +420,7 @@ NSString* NSStringFromPoint(NSPoint aPoint)
 
 NSString* NSStringFromRect(NSRect aRect)
 {
-	//setupCache();
+	setupCache();
 	//if (GSMacOSXCompatibleGeometry() == YES)
 		return [NSString stringWithFormat: @"{{%g, %g}, {%g, %g}}", aRect.origin.x, aRect.origin.y, aRect.size.width, aRect.size.height];
 	//else
@@ -394,7 +431,7 @@ NSString* NSStringFromRect(NSRect aRect)
 
 NSString* NSStringFromSize(NSSize aSize)
 {
-	//setupCache();
+	setupCache();
 	//if (GSMacOSXCompatibleGeometry() == YES)
 		return [NSString stringWithFormat: @"{%g, %g}", aSize.width, aSize.height];
 	//else
@@ -404,17 +441,11 @@ NSString* NSStringFromSize(NSSize aSize)
 
 NSPoint NSPointFromString(NSString* string)
 {
-	NSScanner *scanner = [NSScanner scannerWithString: string];
-	NSPoint	point;
+	NSScanner	*scanner;
+	NSPoint		point;
 
-	SEL scanStringSel = @selector(scanString:intoString:);
-	SEL scanFloatSel = sizeof(CGFloat) == sizeof(float)
-		? @selector(scanFloat:)
-		: @selector(scanDouble:);
-	IMP scanStringImp = [scanner methodForSelector: scanStringSel];
-	IMP scanFloatImp = [scanner methodForSelector: scanFloatSel];
-
-	//setupCache();
+	setupCache();
+	scanner = (*scannerImp)(NSScannerClass, scannerSel, string);
 	if ((*scanStringImp)(scanner, scanStringSel, @"{", NULL)
 		&& (*scanFloatImp)(scanner, scanFloatSel, &point.x)
 		&& (*scanStringImp)(scanner, scanStringSel, @",", NULL)
@@ -446,17 +477,11 @@ NSPoint NSPointFromString(NSString* string)
 
 NSSize NSSizeFromString(NSString* string)
 {
-	NSScanner *scanner = [NSScanner scannerWithString: string];
-	NSSize	size;
-	
-	SEL scanStringSel = @selector(scanString:intoString:);
-	SEL scanFloatSel = sizeof(CGFloat) == sizeof(float)
-		? @selector(scanFloat:)
-		: @selector(scanDouble:);
-	IMP scanStringImp = [scanner methodForSelector: scanStringSel];
-	IMP scanFloatImp = [scanner methodForSelector: scanFloatSel];
-	
-	//setupCache();
+	NSScanner	*scanner;
+	NSSize		size;
+
+	setupCache();
+	scanner = (*scannerImp)(NSScannerClass, scannerSel, string);
 	if ((*scanStringImp)(scanner, scanStringSel, @"{", NULL)
 		&& (*scanFloatImp)(scanner, scanFloatSel, &size.width)
 		&& (*scanStringImp)(scanner, scanStringSel, @",", NULL)
@@ -487,17 +512,11 @@ NSSize NSSizeFromString(NSString* string)
 
 NSRect NSRectFromString(NSString* string)
 {
-	NSScanner *scanner = [NSScanner scannerWithString: string];
-	NSRect	rect;
-	
-	SEL scanStringSel = @selector(scanString:intoString:);
-	SEL scanFloatSel = sizeof(CGFloat) == sizeof(float)
-		? @selector(scanFloat:)
-		: @selector(scanDouble:);
-	IMP scanStringImp = [scanner methodForSelector: scanStringSel];
-	IMP scanFloatImp = [scanner methodForSelector: scanFloatSel];
-	
-	//setupCache();
+	NSScanner	*scanner;
+	NSRect		rect;
+
+	setupCache();
+	scanner = (*scannerImp)(NSScannerClass, scannerSel, string);
 	if ((*scanStringImp)(scanner, scanStringSel, @"{", NULL)
 		&& (*scanStringImp)(scanner, scanStringSel, @"{", NULL)
 		&& (*scanFloatImp)(scanner, scanFloatSel, &rect.origin.x)
