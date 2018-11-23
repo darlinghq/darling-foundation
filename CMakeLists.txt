@@ -211,6 +211,8 @@ set(foundation_sources
 	src/NSFileWrapper.m
 	src/NSAppleEventDescriptor.m
 	src/NSXPCInterface.m
+
+	src/NSURLDownload.m
 )
 
 # Includes ObjC headers -> must be compiled as ObjC
