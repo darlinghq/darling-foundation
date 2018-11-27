@@ -35,9 +35,12 @@ static NSMutableDictionary *classToBundle = nil;
 {
     static dispatch_once_t once = 0L;
     dispatch_once(&once, ^{
-        mainBundle = [[NSBundle alloc] init];
-        mainBundle->_cfBundle = (CFBundleRef)CFRetain(CFBundleGetMainBundle());
-        [mainBundle load];
+        CFBundleRef cfBundle = CFBundleGetMainBundle();
+        if (cfBundle != NULL) {
+            mainBundle = [[NSBundle alloc] init];
+            mainBundle->_cfBundle = (CFBundleRef) CFRetain(cfBundle);
+            [mainBundle load];
+        }
     });
 
     return mainBundle;
@@ -509,7 +512,10 @@ static void __NSBundleMainBundleDealloc()
             loaded = CFBundleLoadExecutableAndReturnError(_cfBundle, (CFErrorRef *)error);
             if (loaded)
             {
-                loadedBundles[identifier] = self;
+                if (identifier != nil)
+                {
+                    loadedBundles[identifier] = self;
+                }
                 _flags |= NSBundleIsLoadedFlag;
             }
         }
