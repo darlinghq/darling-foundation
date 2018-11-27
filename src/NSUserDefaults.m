@@ -24,6 +24,7 @@ static pthread_mutex_t defaultsLock = PTHREAD_MUTEX_INITIALIZER;
 static NSUserDefaults *standardDefaults = nil;
 static dispatch_source_t synchronizeTimer;
 static dispatch_queue_t synchronizeQueue;
+static dispatch_queue_t notificationQueue;
 #define SYNC_INTERVAL 30
 
 #define APP_NAME (self->_suiteName != nil ? (CFStringRef) self->_suiteName : kCFPreferencesCurrentApplication)
@@ -84,6 +85,7 @@ static dispatch_queue_t synchronizeQueue;
 void static _startSynchronizeTimer(NSUserDefaults *self)
 {
     synchronizeQueue = dispatch_queue_create("com.apportable.synchronize.userdefaults", NULL);
+    notificationQueue = dispatch_queue_create("com.apportable.notify.userdefaults", NULL);
 
     // create the timer source
     synchronizeTimer = dispatch_source_create(
@@ -137,7 +139,7 @@ void static _startSynchronizeTimer(NSUserDefaults *self)
     [self willChangeValueForKey:key];
     dispatch_sync(synchronizeQueue, ^{
         CFPreferencesSetAppValue((CFStringRef)key, (CFTypeRef)value, APP_NAME);
-        dispatch_async(synchronizeQueue, ^{
+        dispatch_async(notificationQueue, ^{
             [[NSNotificationCenter defaultCenter] postNotificationName:NSUserDefaultsDidChangeNotification object:self userInfo:nil];
         });
     });
