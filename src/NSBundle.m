@@ -71,15 +71,15 @@ static NSMutableDictionary *classToBundle = nil;
 
     const char *fileName = class_getImageName(aClass);
     if (fileName == NULL) {
-        // according to Cocotron's implementation,
-        // this is correct behaviour for Nil class
+        // According to Cocotron's implementation,
+        // this is correct behaviour for Nil class.
         return [self mainBundle];
     }
 
     NSString *filePath = [NSString stringWithUTF8String: fileName];
     NSURL *fileURL = [NSURL fileURLWithPath: filePath isDirectory: NO];
 
-    NSURL* bundleURL = _CFBundleCopyBundleURLForExecutableURL(fileURL);
+    NSURL *bundleURL = (NSURL *) _CFBundleCopyBundleURLForExecutableURL((CFURLRef) fileURL);
 
     NSBundle *bundle = [self bundleWithURL: bundleURL];
 
@@ -120,7 +120,7 @@ static NSMutableDictionary *classToBundle = nil;
 - (id)initWithPath:(NSString *)path
 {
     NSURL *url = [[NSURL alloc] initFileURLWithPath:path isDirectory:YES];
-    self = [self initWithURL:url];    
+    self = [self initWithURL:url];
     [url release];
     return self;
 }
@@ -164,6 +164,10 @@ static void __NSBundleMainBundleDealloc()
     return _cfBundle;
 }
 
+- (NSString *) description {
+    return  [[super description] stringByAppendingFormat: @" <%@>%@", [self bundlePath], [self isLoaded] ? @" (loaded)":@""];
+}
+
 - (NSURL *)URLForResource:(NSString *)name withExtension:(NSString *)ext
 {
     return [self URLForResource:name withExtension:ext subdirectory:nil];
@@ -176,7 +180,7 @@ static void __NSBundleMainBundleDealloc()
 
 - (NSURL *)URLForResource:(NSString *)name withExtension:(NSString *)ext subdirectory:(NSString *)subpath localization:(NSString *)localizationName
 {
-    return [(NSURL *)CFBundleCopyResourceURLForLocalization(_cfBundle, (CFStringRef)name, (CFStringRef)ext, (CFStringRef)subpath, (CFStringRef)localizationName) autorelease];  
+    return [(NSURL *)CFBundleCopyResourceURLForLocalization(_cfBundle, (CFStringRef)name, (CFStringRef)ext, (CFStringRef)subpath, (CFStringRef)localizationName) autorelease];
 }
 
 - (NSString *)pathForResource:(NSString *)name ofType:(NSString *)ext
@@ -543,7 +547,7 @@ static void __NSBundleMainBundleDealloc()
         // ensure an initialize is triggered and the class is reasonable
         if (cls != Nil && class_respondsToSelector(object_getClass(cls), @selector(self)))
         {
-            _principalClass = [cls self];    
+            _principalClass = [cls self];
         }
     }
     return _principalClass;
