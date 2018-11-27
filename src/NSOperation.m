@@ -101,6 +101,8 @@ static pthread_mutex_t _NSOperationLock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER;
         _hasExecuted = NO;
         _state = NSOperationStateReady; //every operation starts ready until you add a depedency to make it not ready
         _cancelled = NO;
+        pthread_mutex_init(&_waitlock, NULL);
+        pthread_cond_init(&_waitcondition, NULL);
         _completionBlock = NULL;
         _threadPriority = 0.5;
         _queuePriority = NSOperationQueuePriorityNormal;
