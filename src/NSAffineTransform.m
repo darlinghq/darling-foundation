@@ -34,11 +34,12 @@
 
 #define	EXPOSE_NSAffineTransform_IVARS	1
 
-#import "Foundation/NSArray.h"
-#import "Foundation/NSData.h"
-#import "Foundation/NSException.h"
-#import "Foundation/NSAffineTransform.h"
-#import "Foundation/NSCoder.h"
+#import <Foundation/NSArray.h>
+#import <Foundation/NSData.h>
+#import <Foundation/NSException.h>
+#import <Foundation/NSAffineTransform.h>
+#import <Foundation/NSCoder.h>
+#import <Foundation/NSSerialization.h>
 
 #define NSDebugLLog(fmt, ...)
 
@@ -606,7 +607,7 @@ static NSAffineTransformStruct identityTransform = {
 	  NSUInteger length;
 	  const uint8_t *data;
           NSData *d;
-          unsigned int cursor = 0;
+          NSUInteger cursor = 0;
 
           data = [aCoder decodeBytesForKey: @"NSTransformStruct"
                               returnedLength: &length]; 
@@ -640,7 +641,8 @@ static NSAffineTransformStruct identityTransform = {
                 {
                   // FIXME
                   NSLog(@"Got type %d for affine transform", data[0]);
-                  return [self notImplemented: _cmd];
+		  NSLog(@"NOT IMPLEMENTED: NSAffineTransform");
+		  return nil;
                 }
             }
           else if (16 == length)
@@ -675,7 +677,7 @@ static NSAffineTransformStruct identityTransform = {
             {
               // FIXME
               NSLog(@"Got data %@ len %d for affine transform", d, (int)length);
-              return [self notImplemented: _cmd];
+	      return nil;
             }
         }
       else

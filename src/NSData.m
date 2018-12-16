@@ -12,6 +12,8 @@
 #import <Foundation/NSURL.h>
 #import <Foundation/NSURLConnection.h>
 #import <Foundation/NSURLRequest.h>
+
+#import <Foundation/NSSerialization.h>
 #import "CFInternal.h"
 #import "NSCoderInternal.h"
 #import "NSKeyedArchiver.h"
@@ -1813,6 +1815,14 @@ static inline BOOL NSPurgeableDataCheckAccessCount(NSPurgeableData *d)
 - (const void *)bytes
 {
     return NULL;
+}
+
+- (void) deserializeDataAt: (void*)data
+	        ofObjCType: (const char*)type
+		  atCursor: (unsigned int*)cursor
+		   context: (id <NSObjCTypeSerializationCallBack>)callback
+{
+	NSLog(@"STUB NSData deserializeDataAt");
 }
 
 SINGLETON_RR()

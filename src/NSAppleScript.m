@@ -1,4 +1,6 @@
 #import <Foundation/NSObject.h>
+#import <Foundation/NSMethodSignature.h>
+#import <Foundation/NSInvocation.h>
 
 // DUMMY
 
