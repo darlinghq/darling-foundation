@@ -12,6 +12,7 @@ FOUNDATION_EXPORT NSString * const NSUserDefaultsDidChangeNotification;
 @interface NSUserDefaults : NSObject
 {
     NSString *_suiteName;
+    NSMutableDictionary *_volatileDomains;
 }
 
 #undef PREFS_TYPE

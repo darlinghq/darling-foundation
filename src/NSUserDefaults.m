@@ -20,11 +20,13 @@ NSString * const NSArgumentDomain = @"NSArgumentDomain";
 NSString * const NSRegistrationDomain = @"NSRegistrationDomain";
 NSString * const NSUserDefaultsDidChangeNotification = @"NSUserDefaultsDidChangeNotification";
 
-static pthread_mutex_t defaultsLock = PTHREAD_MUTEX_INITIALIZER;
 static NSUserDefaults *standardDefaults = nil;
+
+static pthread_mutex_t defaultsLock = PTHREAD_MUTEX_INITIALIZER;
 static dispatch_source_t synchronizeTimer;
 static dispatch_queue_t synchronizeQueue;
 static dispatch_queue_t notificationQueue;
+
 #define SYNC_INTERVAL 30
 
 #define APP_NAME (self->_suiteName != nil ? (CFStringRef) self->_suiteName : kCFPreferencesCurrentApplication)
@@ -65,6 +67,7 @@ static dispatch_queue_t notificationQueue;
 
 - (id) initWithSuiteName: (NSString *) name {
     _suiteName = [name copy];
+    _volatileDomains = [[NSMutableDictionary alloc] init];
     // TODO: parse args
     return self;
 }
@@ -78,6 +81,7 @@ static dispatch_queue_t notificationQueue;
 - (void)dealloc
 {
     [_suiteName release];
+    [_volatileDomains release];
     [super dealloc];
 }
 
@@ -107,14 +111,21 @@ void static _startSynchronizeTimer(NSUserDefaults *self)
 - (id)objectForKey:(NSString *)key
 {
     __block id value = nil;
-    // TODO: args...
+
+    value = [self volatileDomainForName: NSArgumentDomain][key];
+    if (value != nil) {
+        return value;
+    }
+
     dispatch_sync(synchronizeQueue, ^{
-#warning TODO: verify that this does not cause an actual leak https://code.google.com/p/apportable/issues/detail?id=537
-        // This likely is a leak however this prevents a crash...
-        value = [(id)CFPreferencesCopyAppValue((CFStringRef)key, APP_NAME) retain];
+        value = [[(id)CFPreferencesCopyAppValue((CFStringRef)key, APP_NAME) retain] autorelease];
     });
-    // TODO: registered
-    return [value autorelease];
+    if (value != nil) {
+        return value;
+    }
+
+    value = [self volatileDomainForName: NSRegistrationDomain][key];
+    return value;
 }
 
 - (void)setObject:(id)value forKey:(NSString *)key
@@ -131,7 +142,7 @@ void static _startSynchronizeTimer(NSUserDefaults *self)
     {
         return;
     }
-    
+
     // For KVO to work, we must synchronize on the value setter; otherwise the
     // "will" and "did" set notifications will lie and wrong values will be
     // received by observers. We additionally dispatch the notification
@@ -148,12 +159,7 @@ void static _startSynchronizeTimer(NSUserDefaults *self)
 
 - (void)registerDefaults:(NSDictionary *)dictionary
 {
-    [dictionary enumerateKeysAndObjectsUsingBlock: ^(id key, id obj, BOOL *stop) {
-        if ([self objectForKey:key] == nil)
-        {
-            [self setObject:obj forKey:key];
-        }
-    }];
+   [self setVolatileDomain: dictionary forName: NSRegistrationDomain];
 }
 
 - (void)removeObjectForKey:(NSString *)key
@@ -341,36 +347,84 @@ void static _startSynchronizeTimer(NSUserDefaults *self)
     dispatch_sync(synchronizeQueue, ^{
         synced = CFPreferencesAppSynchronize(APP_NAME);
     });
-    return YES;
+    return synced;
 }
 
 - (NSDictionary *)dictionaryRepresentation
 {
-    __block NSDictionary *rep = nil;
-    // TODO: args, registered
+    __block NSDictionary *cfPrefs = nil;
+
     dispatch_sync(synchronizeQueue, ^{
-        rep = (NSDictionary *)CFPreferencesCopyMultiple(
+        cfPrefs = (NSDictionary *) CFPreferencesCopyMultiple(
             /* fetch all keys */ nil,
             APP_NAME,
             kCFPreferencesCurrentUser,
             kCFPreferencesAnyHost
         );
     });
-    return [rep autorelease];
+
+    NSMutableDictionary *res = [[cfPrefs autorelease] mutableCopy];
+
+    NSDictionary *domain = [self volatileDomainForName: NSArgumentDomain];
+    for (NSString *key in domain) {
+        if (res[key] == nil) {
+            res[key] = domain[key];
+        }
+    }
+
+    domain = [self volatileDomainForName: NSRegistrationDomain];
+    for (NSString *key in domain) {
+        if (res[key] == nil) {
+            res[key] = domain[key];
+        }
+    }
+
+    return [res autorelease];
 }
 
 - (NSArray *) volatileDomainNames {
-    // TODO
-    return @[];
+    NSArray *res = nil;
+
+    @synchronized (_volatileDomains) {
+        res = [[_volatileDomains allKeys] copy];
+    }
+
+    return [res autorelease];
 }
 
 - (NSDictionary *) volatileDomainForName: (NSString *) domainName {
-    // TODO
-    return nil;
+    NSDictionary<NSString *, id> *res = nil;
+
+    @synchronized (_volatileDomains) {
+        res = [_volatileDomains[domainName] copy];
+    }
+
+    return [res autorelease];
 }
 
-// - (void) setVolatileDomain: (NSDictionary *) domain forName: (NSString *) domainName;
-// - (void) removeVolatileDomainForName: (NSString *) domainName;
+- (void) setVolatileDomain: (NSDictionary *) domain forName: (NSString *) domainName {
+    if (!NSIsPlistType(domain)) {
+        NSLog(@"%@ is not a valid type to set in NSUserDefaults", domain);
+        return;
+    }
+
+    @synchronized (_volatileDomains) {
+        NSMutableDictionary<NSString *, id> *existing = _volatileDomains[domainName];
+        if (existing == nil) {
+            existing = [[[NSMutableDictionary alloc] init] autorelease];
+        }
+        for (NSString *key in [domain allKeys]) {
+            existing[key] = domain[key];
+        }
+        _volatileDomains[domainName] = existing;
+    }
+}
+
+- (void) removeVolatileDomainForName: (NSString *) domainName {
+    @synchronized (_volatileDomains) {
+        [_volatileDomains removeValueForKey: domainName];
+    }
+}
 
 - (NSArray *) persistentDomainNames {
     CFStringRef userName = (CFStringRef) NSUserName();
