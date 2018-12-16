@@ -68,7 +68,7 @@ static dispatch_queue_t notificationQueue;
 - (id) initWithSuiteName: (NSString *) name {
     _suiteName = [name copy];
     _volatileDomains = [[NSMutableDictionary alloc] init];
-    // TODO: parse args
+    [self setVolatileDomain: [self parseArguments] forName: NSArgumentDomain];
     return self;
 }
 
@@ -85,6 +85,35 @@ static dispatch_queue_t notificationQueue;
     [super dealloc];
 }
 
+- (id) parseArgumentValue: (NSString *) value {
+    // TODO: NSPropertyListSerialization
+    return value;
+}
+
+- (NSDictionary *) parseArguments {
+    NSArray *args = [[NSProcessInfo processInfo] arguments];
+    NSMutableDictionary *res = [[NSMutableDictionary alloc] init];
+
+    NSUInteger count = [args count];
+
+    for (int i = 1; i + 1 < count; i++) {
+        NSString *key = args[i];
+        NSString *value = args[i + 1];
+
+        if (![key hasPrefix: @"-"] || [value hasPrefix: @"-"]) continue;
+        key = [key substringFromIndex: 1];
+        key = [key stringByTrimmingCharactersInSet: [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        if ([key length] == 0) continue;
+
+        value = [value stringByTrimmingCharactersInSet: [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        res[key] = [self parseArgumentValue: value];
+
+        // Skip the just parsed value and move to the next pair.
+        i++;
+    }
+
+    return [res autorelease];
+}
 
 void static _startSynchronizeTimer(NSUserDefaults *self)
 {
