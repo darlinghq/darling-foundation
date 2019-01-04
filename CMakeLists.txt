@@ -213,6 +213,7 @@ set(foundation_sources
 	src/NSXPCInterface.m
 
 	src/NSURLDownload.m
+	src/NSXPCConnection.m
 )
 
 # Includes ObjC headers -> must be compiled as ObjC

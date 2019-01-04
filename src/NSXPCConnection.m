@@ -17,8 +17,18 @@
  along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#import <Foundation/NSObject.h>
+#import <Foundation/NSXPCConnection.h>
+#import <Foundation/NSMethodSignature.h>
+#import <Foundation/NSInvocation.h>
 
-@interface NSXPCConnection : NSObject
+@implementation NSXPCConnection
+
+- (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector {
+    return [NSMethodSignature signatureWithObjCTypes: "v@:"];
+}
+
+- (void)forwardInvocation:(NSInvocation *)anInvocation {
+    NSLog(@"Stub called: %@ in %@", NSStringFromSelector([anInvocation selector]), [self class]);
+}
 
 @end
