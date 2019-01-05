@@ -214,6 +214,8 @@ set(foundation_sources
 
 	src/NSURLDownload.m
 	src/NSXPCConnection.m
+	src/NSAppleEventManager.m
+	src/NSUserNotificationCenter.m
 )
 
 # Includes ObjC headers -> must be compiled as ObjC

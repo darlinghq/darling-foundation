@@ -16,6 +16,9 @@
 #import <Foundation/NSURL.h>
 #import <Foundation/NSDictionary.h>
 
+NSString *const NSBundleDidLoadNotification = @"NSBundleDidLoadNotification";
+NSString *const NSLoadedClasses = @"NSLoadedClasses";
+
 static NSMutableDictionary *loadedBundles = nil;
 static NSBundle *mainBundle = nil;
 static NSMutableDictionary *classToBundle = nil;
