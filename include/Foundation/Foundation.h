@@ -11,6 +11,7 @@
 #import <Foundation/NSData.h>
 #import <Foundation/NSDate.h>
 #import <Foundation/NSDateFormatter.h>
+#import <Foundation/NSDateComponentsFormatter.h>
 #import <Foundation/NSDecimal.h>
 #import <Foundation/NSDecimalNumber.h>
 #import <Foundation/NSDictionary.h>
@@ -34,6 +35,7 @@
 #import <Foundation/NSLocale.h>
 #import <Foundation/NSLock.h>
 #import <Foundation/NSMapTable.h>
+#import <Foundation/NSMeasurementFormatter.h>
 #import <Foundation/NSMethodSignature.h>
 #import <Foundation/NSNotification.h>
 #import <Foundation/NSNotificationQueue.h>

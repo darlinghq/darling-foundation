@@ -22,3 +22,7 @@
 @interface NSXPCConnection : NSObject
 
 @end
+
+@interface NSXPCListener : NSObject
+
+@end

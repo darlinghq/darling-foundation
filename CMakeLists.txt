@@ -216,6 +216,8 @@ set(foundation_sources
 	src/NSXPCConnection.m
 	src/NSAppleEventManager.m
 	src/NSUserNotificationCenter.m
+	src/NSDateComponentsFormatter.m
+	src/NSMeasurementFormatter.m
 )
 
 # Includes ObjC headers -> must be compiled as ObjC
