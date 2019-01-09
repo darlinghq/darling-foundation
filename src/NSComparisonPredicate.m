@@ -73,7 +73,7 @@ static NSString * const NSPredicateOperatorKey = @"NSPredicateOperator";
 - (id)initWithPredicateOperator:(NSPredicateOperator *)predicateOperator leftKeyPath:(NSExpression *)lhs rightValue:(NSExpression *)rhs
 {
     NSKeyPathExpression *left = [[[NSKeyPathExpression alloc] initWithKeyPath:lhs] autorelease];
-    NSConstantValueExpression *right = [[[NSConstantValueExpression alloc] initWithObject:lhs] autorelease];
+    NSConstantValueExpression *right = [[[NSConstantValueExpression alloc] initWithObject:rhs] autorelease];
 
     return [self initWithPredicateOperator:predicateOperator leftExpression:left rightExpression:right];
 }
