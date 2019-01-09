@@ -109,7 +109,7 @@ set(foundation_sources
 	src/NSMatchingPredicateOperator.m
 	#src/NSMutableStringProxyForMutableAttributedString.m # duplicate?!
 	src/NSNestedDictionary.m
-	#src/NSNetServices.m
+	src/NSNetServices.m
 	src/NSNotificationCenter.m
 	src/NSNotification.m
 	src/NSNotificationQueue.m
