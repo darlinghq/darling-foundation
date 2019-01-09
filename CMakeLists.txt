@@ -56,7 +56,7 @@ set(foundation_sources
 	src/NSDecimalNumber.m
 	src/NSDictionary.m
 	src/NSDirectoryEnumerator.m
-    src/NSDistributedNotificationCenter.m
+	src/NSDistributedNotificationCenter.m
 	src/NSEqualityPredicateOperator.m
 	src/NSException.m
 	src/NSExpression.m
@@ -218,6 +218,9 @@ set(foundation_sources
 	src/NSUserNotificationCenter.m
 	src/NSDateComponentsFormatter.m
 	src/NSMeasurementFormatter.m
+	src/NSAppleScript.m
+	src/NSMetadata.m
+	src/NSLayoutConstraint.m
 )
 
 # Includes ObjC headers -> must be compiled as ObjC

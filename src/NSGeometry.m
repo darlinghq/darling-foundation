@@ -8,10 +8,10 @@
  *	LGPL'd. See LICENCE.txt for copyright information.
  */
 
-#import "NSGeometry.h"
-#import "NSScanner.h"
+#import <Foundation/NSGeometry.h>
+#import <Foundation/NSScanner.h>
 #import "NSConcreteScanner.h"
-#import "NSString.h"
+#import <Foundation/NSString.h>
 
 /*
  *	Constant structs
@@ -20,6 +20,7 @@ const NSPoint NSZeroPoint = { 0.0, 0.0 };
 const NSSize NSZeroSize = { 0.0, 0.0 };
 const NSRect NSZeroRect = { { 0.0, 0.0 }, { 0.0, 0.0 } };
 
+const NSEdgeInsets NSEdgeInsetsZero = { 0.0, 0.0, 0.0, 0.0 };
 
 /*
  *	Geometry-examining functions.

@@ -17,23 +17,16 @@
  along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#import <Foundation/NSAppleScript.h>
+#import <Foundation/NSObject.h>
 #import <Foundation/NSMethodSignature.h>
 #import <Foundation/NSInvocation.h>
 
-NSString *const NSAppleScriptErrorMessage = @"NSAppleScriptErrorMessage";
-NSString *const NSAppleScriptErrorNumber = @"NSAppleScriptErrorNumber";
-NSString *const NSAppleScriptErrorAppName = @"NSAppleScriptErrorAppName";
-NSString *const NSAppleScriptErrorBriefMessage = @"NSAppleScriptErrorBriefMessage";
-NSString *const NSAppleScriptErrorRange = @"NSAppleScriptErrorRange";
+@interface NSLayoutConstraint : NSObject
+@end
 
-@implementation NSAppleScript
+#warning TODO: $ld$hide$os 10.4 through 10.7, also METACLASS
 
-- (id)copyWithZone:(NSZone *)zone
-{
-	NSLog(@"NSAppleScript copyWithZone:");
-	return nil;
-}
+@implementation NSLayoutConstraint
 
 - (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector {
     return [NSMethodSignature signatureWithObjCTypes: "v@:"];

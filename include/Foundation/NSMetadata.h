@@ -26,6 +26,7 @@ FOUNDATION_EXPORT NSString * const NSMetadataUbiquitousItemIsUploadedKey;
 FOUNDATION_EXPORT NSString * const NSMetadataUbiquitousItemIsUploadingKey;
 FOUNDATION_EXPORT NSString * const NSMetadataUbiquitousItemPercentDownloadedKey;
 FOUNDATION_EXPORT NSString * const NSMetadataUbiquitousItemPercentUploadedKey;
+FOUNDATION_EXPORT NSString * const NSMetadataQueryLocalComputerScope;
 
 @protocol NSMetadataQueryDelegate <NSObject>
 @optional
