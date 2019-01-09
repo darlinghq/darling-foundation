@@ -1513,7 +1513,7 @@ CF_INLINE Boolean isALineSeparatorTypeCharacter(UniChar ch, Boolean includeLineE
                     start = 0;
                     break;
                 }
-                else if (isALineSeparatorTypeCharacter([self characterAtIndex:idx] , stopOnLines))
+                else if (isALineSeparatorTypeCharacter([self characterAtIndex:idx], stopOnLines))
                 {
                     start = idx + 1;
                     break;
@@ -1533,12 +1533,11 @@ CF_INLINE Boolean isALineSeparatorTypeCharacter(UniChar ch, Boolean includeLineE
 
         NSInteger idx = range.location + range.length - (range.length ? 1 : 0);
 
-        ch = [self characterAtIndex:idx];
-        if (ch == NewLine)
+        if ((idx >= len) || ((ch = [self characterAtIndex:idx]) == NewLine))
         {
             endOfContents = idx;
             idx--;
-            if ([self characterAtIndex:idx] == CarriageReturn)
+            if ((idx >= 0) && ([self characterAtIndex:idx] == CarriageReturn))
             {
                 lineSeparatorLength = 2;
                 endOfContents--;
@@ -1552,7 +1551,7 @@ CF_INLINE Boolean isALineSeparatorTypeCharacter(UniChar ch, Boolean includeLineE
                 {
                     endOfContents = idx;
                     idx++;
-                    if ((ch == CarriageReturn) && ([self characterAtIndex:idx] == NewLine))
+                    if ((ch == CarriageReturn) && (idx < len) && ([self characterAtIndex:idx] == NewLine))
                     {
                         lineSeparatorLength = 2;
                     }
