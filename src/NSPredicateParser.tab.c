@@ -193,7 +193,7 @@
     #import "NSPredicateParser.tab.h"
     #import "NSPredicateLexer.h"
 
-    typedef NSExpression *(^argBlock)(NSString *formatType);
+    typedef id (^argBlock)(NSString *formatType);
 
     CF_PRIVATE int predicate_parse(yyscan_t lexer, argBlock args, NSPredicate **predicate);
 
@@ -2340,10 +2340,11 @@ NSPredicate *_parsePredicateArray(NSString *format, NSArray *args)
 
 NSPredicate *_parsePredicateVarArgs(NSString *format, va_list originalArgs)
 {
-    __block va_list* args = &originalArgs;
+    __block struct { va_list va_list; } args;
+    va_copy(args.va_list, originalArgs);
     __block BOOL done = NO;
 
-    return parsePredicate(format, ^NSExpression *(NSString *formatType) {
+    NSPredicate *res = parsePredicate(format, ^ id (NSString *formatType) {
         if (done)
         {
             return nil;
@@ -2352,15 +2353,15 @@ NSPredicate *_parsePredicateVarArgs(NSString *format, va_list originalArgs)
         if ([formatType isEqualToString:@"@"] ||
             [formatType isEqualToString:@"K"])
         {
-            object = va_arg(*args, id);
+            object = va_arg(args.va_list, id);
         }
         else if ([formatType isEqualToString:@"d"])
         {
-            object = [NSNumber numberWithInt:va_arg(*args, int)];
+            object = [NSNumber numberWithInt:va_arg(args.va_list, int)];
         }
         else if ([formatType isEqualToString:@"f"])
         {
-            object = [NSNumber numberWithDouble:va_arg(*args, double)];
+            object = [NSNumber numberWithDouble:va_arg(args.va_list, double)];
         }
         if (object == nil)
         {
@@ -2368,5 +2369,8 @@ NSPredicate *_parsePredicateVarArgs(NSString *format, va_list originalArgs)
         }
         return object;
     });
+
+    va_end(args.va_list);
+    return res;
 }
 
