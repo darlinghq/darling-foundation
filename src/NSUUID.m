@@ -10,12 +10,9 @@
 #import <Foundation/NSCoder.h>
 #import <dispatch/dispatch.h>
 #import "NSObjectInternal.h"
+#import "NSUUIDInternal.h"
 
 static NSString * const NSUUIDBytesKey = @"NS.uuidbytes";
-
-CF_PRIVATE
-@interface __NSConcreteUUID : NSUUID
-@end
 
 @implementation NSUUID
 
@@ -152,7 +149,7 @@ CF_PRIVATE
 
 - (CFUUIDBytes)_cfUUIDBytes
 {
-    return CFUUIDGetUUIDBytes((CFUUIDRef)self);
+    return CFUUIDGetUUIDBytes(_cfUUID);
 }
 
 - (void)getUUIDBytes:(uuid_t)bytes
@@ -163,7 +160,7 @@ CF_PRIVATE
 
 - (NSString *)UUIDString
 {
-    CFStringRef uuidString = CFUUIDCreateString(NULL, (CFUUIDRef)self);
+    CFStringRef uuidString = CFUUIDCreateString(NULL, _cfUUID);
     return [(NSString *)uuidString autorelease];
 }
 
@@ -182,51 +179,35 @@ CF_PRIVATE
 
 - (id)initWithUUIDBytes:(const uuid_t)bytes
 {
-    return (id)CFUUIDCreateWithBytes(kCFAllocatorDefault,
-                                      bytes[0],  bytes[1],  bytes[2],  bytes[3],
-                                      bytes[4],  bytes[5],  bytes[6],  bytes[7],
-                                      bytes[8],  bytes[9], bytes[10], bytes[11],
-                                     bytes[12], bytes[13], bytes[14], bytes[15]);
+    _cfUUID = CFUUIDCreateWithBytes(kCFAllocatorDefault,
+                                    bytes[0],  bytes[1],  bytes[2],  bytes[3],
+                                    bytes[4],  bytes[5],  bytes[6],  bytes[7],
+                                    bytes[8],  bytes[9], bytes[10], bytes[11],
+                                   bytes[12], bytes[13], bytes[14], bytes[15]);
+    return self;
 }
 
 - (id)initWithUUIDString:(NSString *)string
 {
-    return (id)CFUUIDCreateFromString(kCFAllocatorDefault, (CFStringRef)string);
+    _cfUUID = CFUUIDCreateFromString(kCFAllocatorDefault, (CFStringRef)string);
+    return self;
 }
 
 - (id)init
 {
-    return (id)CFUUIDCreate(kCFAllocatorDefault);
+    _cfUUID = CFUUIDCreate(kCFAllocatorDefault);
+    return self;
 }
 
-- (NSUInteger)retainCount
+- (void)dealloc
 {
-    return CFGetRetainCount((CFTypeRef)self);
-}
-
-- (BOOL)_isDeallocating
-{
-    return _CFIsDeallocating((CFTypeRef)self);
-}
-
-- (BOOL)_tryRetain
-{
-    return _CFTryRetain((CFTypeRef)self) != NULL;
-}
-
-- (oneway void)release
-{
-    CFRelease((CFTypeRef)self);
-}
-
-- (id)retain
-{
-    return (id)CFRetain((CFTypeRef)self);
+    CFRelease(_cfUUID);
+    [super dealloc];
 }
 
 - (NSUInteger)hash
 {
-    return CFHash((CFTypeRef)self);
+    return CFHash(_cfUUID);
 }
 
 @end

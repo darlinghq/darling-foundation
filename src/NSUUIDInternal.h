@@ -2,7 +2,9 @@
 #import "NSObjectInternal.h"
 
 __attribute__((visibility("hidden")))
-@interface __NSConcreteUUID : NSUUID
+@interface __NSConcreteUUID : NSUUID {
+    CFUUIDRef _cfUUID;
+}
 
 + (BOOL)automaticallyNotifiesObserversForKey:(NSString *)key;
 - (id)copyWithZone:(NSZone *)zone;
