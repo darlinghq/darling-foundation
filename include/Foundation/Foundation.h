@@ -81,6 +81,7 @@
 #import <Foundation/NSXMLParser.h>
 #import <Foundation/NSZone.h>
 #import <Foundation/NSAppleScript.h>
+#import <Foundation/NSExtensionContext.h>
 
 #import <Foundation/FoundationErrors.h>
 

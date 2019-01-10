@@ -221,6 +221,7 @@ set(foundation_sources
 	src/NSAppleScript.m
 	src/NSMetadata.m
 	src/NSLayoutConstraint.m
+	src/NSExtensionContext.m
 )
 
 # Includes ObjC headers -> must be compiled as ObjC
