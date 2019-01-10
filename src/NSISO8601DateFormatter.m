@@ -17,17 +17,11 @@
  along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#import <Foundation/NSExtensionContext.h>
+#import <Foundation/NSISO8601DateFormatter.h>
 #import <Foundation/NSMethodSignature.h>
 #import <Foundation/NSInvocation.h>
 
-NSString * const NSExtensionItemsAndErrorsKey = @"NSExtensionItemsAndErrorsKey";
-
-/* Undocumented */
-NSString * const NSExtensionPointName = @"NSExtensionPointName";
-/* End undocumented */
-
-@implementation NSExtensionContext
+@implementation NSISO8601DateFormatter
 
 - (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector {
     return [NSMethodSignature signatureWithObjCTypes: "v@:"];
@@ -37,16 +31,20 @@ NSString * const NSExtensionPointName = @"NSExtensionPointName";
     NSLog(@"Stub called: %@ in %@", NSStringFromSelector([anInvocation selector]), [self class]);
 }
 
-@end
-
-@implementation NSExtension
-
-- (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector {
-    return [NSMethodSignature signatureWithObjCTypes: "v@:"];
+- (instancetype)initWithCoder:(NSCoder *)aDecoder
+{
+	NSLog(@"[NSISO8601DateFormatter initWithCoder:]");
+	return [self init];
 }
 
-- (void)forwardInvocation:(NSInvocation *)anInvocation {
-    NSLog(@"Stub called: %@ in %@", NSStringFromSelector([anInvocation selector]), [self class]);
+- (void)encodeWithCoder:(NSCoder *)aCoder
+{
+	NSLog(@"[NSISO8601DateFormatter encodeWithCoder:");
+}
+
+- (BOOL)supportsSecureCoding
+{
+	return YES;
 }
 
 @end

@@ -17,23 +17,8 @@
  along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#import <Foundation/NSObject.h>
-#import <Foundation/NSString.h>
+#import <Foundation/NSFormatter.h>
 
-FOUNDATION_EXPORT NSString * const NSExtensionItemsAndErrorsKey;
-
-/* Undocumented */
-FOUNDATION_EXPORT NSString * const NSExtensionPointName;
-/* End undocumented */
-
-/* Theres more constants but they are only for iOS */
-
-@interface NSExtensionContext : NSObject
+@interface NSISO8601DateFormatter : NSFormatter <NSSecureCoding>
 
 @end
-
-/* Undocumented */
-@interface NSExtension : NSObject
-
-@end
-/* End undocumented */

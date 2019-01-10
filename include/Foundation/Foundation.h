@@ -82,6 +82,8 @@
 #import <Foundation/NSZone.h>
 #import <Foundation/NSAppleScript.h>
 #import <Foundation/NSExtensionContext.h>
+#import <Foundation/NSISO8601DateFormatter.h>
+#import <Foundation/NSScriptObjectSpecifiers.h>
 
 #import <Foundation/FoundationErrors.h>
 

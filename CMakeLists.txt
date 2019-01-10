@@ -222,6 +222,8 @@ set(foundation_sources
 	src/NSMetadata.m
 	src/NSLayoutConstraint.m
 	src/NSExtensionContext.m
+	src/NSISO8601DateFormatter.m
+	src/NSScriptObjectSpecifiers.m
 )
 
 # Includes ObjC headers -> must be compiled as ObjC
