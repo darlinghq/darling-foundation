@@ -23,3 +23,12 @@ const int64_t NSURLSessionTransferSizeUnknown = -1LL;
 }
 
 @end
+
+@implementation NSURLSessionTask
+@end
+
+@implementation NSURLSessionDataTask
+@end
+
+@implementation NSURLSessionUploadTask
+@end
