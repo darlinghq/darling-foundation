@@ -215,7 +215,6 @@ set(foundation_sources
 	src/NSURLDownload.m
 	src/NSXPCConnection.m
 	src/NSAppleEventManager.m
-	src/NSUserNotificationCenter.m
 	src/NSDateComponentsFormatter.m
 	src/NSMeasurementFormatter.m
 	src/NSAppleScript.m
@@ -226,6 +225,7 @@ set(foundation_sources
 	src/NSScriptObjectSpecifiers.m
 	src/NSScriptCommand.m
 	src/NSScriptCommandDescription.m
+	src/NSUserNotification.m
 )
 
 # Includes ObjC headers -> must be compiled as ObjC

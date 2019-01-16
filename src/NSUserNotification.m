@@ -17,18 +17,29 @@
  along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#import <Foundation/NSString.h>
+#import <Foundation/NSUserNotification.h>
 
-@interface NSUserNotification : NSObject <NSCopying>
+@implementation NSUserNotification
+
+- (id)copyWithZone:(NSZone *)zone
+{
+	NSLog(@"[NSUserNotification copyWithZone:]");
+	return nil;
+}
+
 @end
 
-@interface NSUserNotificationAction : NSObject <NSCopying>
+@implementation NSUserNotificationAction
+
+- (id)copyWithZone:(NSZone *)zone
+{
+	NSLog(@"[NSUserNotificationAction copyWithZone:]");
+	return nil;
+}
+
 @end
 
-@interface NSUserNotificationCenter : NSObject
+@implementation NSUserNotificationCenter
 @end
 
-@protocol NSUserNotificationCenterDelegate <NSObject>
-@end
-
-FOUNDATION_EXPORT NSString * const NSUserNotificationDefaultSoundName;
+NSString * const NSUserNotificationDefaultSoundName = @"DefaultSoundName";
