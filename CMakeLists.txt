@@ -224,6 +224,8 @@ set(foundation_sources
 	src/NSExtensionContext.m
 	src/NSISO8601DateFormatter.m
 	src/NSScriptObjectSpecifiers.m
+	src/NSScriptCommand.m
+	src/NSScriptCommandDescription.m
 )
 
 # Includes ObjC headers -> must be compiled as ObjC
