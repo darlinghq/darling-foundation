@@ -492,6 +492,15 @@ void static _startSynchronizeTimer(NSUserDefaults *self)
     }
     [self synchronize];
 }
+
+- (void) addSuiteNamed: (NSString *) suiteName {
+    CFPreferencesAddSuitePreferencesToApp(kCFPreferencesCurrentApplication, (CFStringRef) suiteName);
+}
+
+- (void) removeSuiteNamed: (NSString *) suiteName {
+    CFPreferencesRemoveSuitePreferencesFromApp(kCFPreferencesCurrentApplication, (CFStringRef) suiteName);
+}
+
 @end
 
 
