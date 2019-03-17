@@ -9,6 +9,7 @@
 #include "ForFoundationOnly.h"
 #import <Foundation/NSUserDefaults.h>
 #import <Foundation/NSPathUtilities.h>
+#import <Foundation/NSDictionary.h>
 #import <Foundation/NSNotification.h>
 #import <Foundation/NSURL.h>
 #import <Foundation/NSKeyedArchiver.h>
@@ -451,7 +452,7 @@ void static _startSynchronizeTimer(NSUserDefaults *self)
 
 - (void) removeVolatileDomainForName: (NSString *) domainName {
     @synchronized (_volatileDomains) {
-        [_volatileDomains removeValueForKey: domainName];
+        [_volatileDomains removeObjectForKey: domainName];
     }
 }
 
@@ -463,7 +464,7 @@ void static _startSynchronizeTimer(NSUserDefaults *self)
 
 - (NSDictionary *) persistentDomainForName: (NSString *) domainName {
     CFStringRef userName = (CFStringRef) NSUserName();
-    CFPreferencesDomainRef domain = _CFPreferencesStandardDomain(domainName, userName, kCFPreferencesAnyHost);
+    CFPreferencesDomainRef domain = _CFPreferencesStandardDomain((CFStringRef) domainName, userName, kCFPreferencesAnyHost);
     NSDictionary *res = (NSDictionary *) _CFPreferencesDomainDeepCopyDictionary(domain);
     return [res autorelease];
 }
