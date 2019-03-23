@@ -23,6 +23,60 @@ static NSMutableDictionary *loadedBundles = nil;
 static NSBundle *mainBundle = nil;
 static NSMutableDictionary *classToBundle = nil;
 
+NSString * __NSFrameworkPathFromLibraryPath(NSString *path)
+{
+	path = [path stringByResolvingSymlinksInPath];
+	path = [path stringByDeletingLastPathComponent];
+	NSString *extension = [path pathExtension];
+	if ([extension compare:@"framework"] != NSOrderedSame)
+	{
+		path = [path stringByDeletingLastPathComponent];
+		NSString *last = [path lastPathComponent];
+		if ([last compare:@"Versions"] != NSOrderedSame)
+		{
+			return nil;
+		}
+		path = [path stringByDeletingLastPathComponent];
+		NSString *extension = [path pathExtension];
+		if ([extension compare:@"framework"] != NSOrderedSame)
+		{
+			return nil;
+		}
+		return path;
+	}
+	else
+	{
+		return path;
+	}
+}
+
+NSString * __NSBundlePathFromExecutablePath(NSString *path)
+{
+	// Follow symlinks
+	path = [path stringByResolvingSymlinksInPath];
+
+	// Go up two levels
+	NSString *oneGone = [path stringByDeletingLastPathComponent];
+	path = [oneGone stringByDeletingLastPathComponent];
+
+	NSString *last = [path lastPathComponent];
+
+	while ([last compare:@"Contents"] != NSOrderedSame)
+	{
+		if ([path compare:@"Executables"] == NSOrderedSame)
+		{
+			return oneGone;
+		}
+		path = [path stringByDeletingLastPathComponent];
+		last = [path lastPathComponent];
+		if ([last compare:@"Support Files"] != NSOrderedSame)
+		{
+			return oneGone;
+		}
+	}
+	return [path stringByDeletingLastPathComponent];
+}
+
 @implementation NSBundle
 
 + (void)initialize
@@ -80,13 +134,20 @@ static NSMutableDictionary *classToBundle = nil;
     }
 
     NSString *filePath = [NSString stringWithUTF8String: fileName];
-    NSURL *fileURL = [NSURL fileURLWithPath: filePath isDirectory: NO];
+    
+    NSString *frameworkPath = __NSFrameworkPathFromLibraryPath(filePath);
+    if (frameworkPath)
+    {
+	filePath = frameworkPath;
+    }
+    else
+    {
+	NSString *executablePath = __NSBundlePathFromExecutablePath(filePath);
+	if (!executablePath) return nil;
+	filePath = executablePath;
+    }
 
-    NSURL *bundleURL = (NSURL *) _CFBundleCopyBundleURLForExecutableURL((CFURLRef) fileURL);
-
-    NSBundle *bundle = [self bundleWithURL: bundleURL];
-
-    [bundleURL release];
+    NSBundle *bundle = [self bundleWithPath:filePath];
 
     @synchronized (classToBundle) {
         classToBundle[aClass] = bundle;
