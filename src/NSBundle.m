@@ -23,7 +23,8 @@ static NSMutableDictionary *loadedBundles = nil;
 static NSBundle *mainBundle = nil;
 static NSMutableDictionary *classToBundle = nil;
 
-NSString * __NSFrameworkPathFromLibraryPath(NSString *path)
+__attribute__((visibility("hidden")))
+NSString * _NSFrameworkPathFromLibraryPath(NSString *path)
 {
 	path = [path stringByResolvingSymlinksInPath];
 	path = [path stringByDeletingLastPathComponent];
@@ -50,7 +51,8 @@ NSString * __NSFrameworkPathFromLibraryPath(NSString *path)
 	}
 }
 
-NSString * __NSBundlePathFromExecutablePath(NSString *path)
+__attribute__((visibility("hidden")))
+NSString * _NSBundlePathFromExecutablePath(NSString *path)
 {
 	// Follow symlinks
 	path = [path stringByResolvingSymlinksInPath];
@@ -135,14 +137,14 @@ NSString * __NSBundlePathFromExecutablePath(NSString *path)
 
     NSString *filePath = [NSString stringWithUTF8String: fileName];
     
-    NSString *frameworkPath = __NSFrameworkPathFromLibraryPath(filePath);
+    NSString *frameworkPath = _NSFrameworkPathFromLibraryPath(filePath);
     if (frameworkPath)
     {
 	filePath = frameworkPath;
     }
     else
     {
-	NSString *executablePath = __NSBundlePathFromExecutablePath(filePath);
+	NSString *executablePath = _NSBundlePathFromExecutablePath(filePath);
 	if (!executablePath) return nil;
 	filePath = executablePath;
     }
