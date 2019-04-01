@@ -17,7 +17,7 @@
  along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#import <Foundation/NSObject.h>
+#import <Foundation/NSConnection.h>
 
-@interface NSConnection : NSObject
+@implementation NSConnection
 @end

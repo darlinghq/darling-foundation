@@ -227,6 +227,7 @@ set(foundation_sources
 	src/NSScriptCommand.m
 	src/NSScriptCommandDescription.m
 	src/NSUserNotification.m
+	src/NSConnection.m
 )
 
 # Includes ObjC headers -> must be compiled as ObjC
