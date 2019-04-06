@@ -3,8 +3,6 @@
 
 @class NSString, NSArray<ObjectType>, NSDictionary<KeyType, ObjectType>, NSURL;
 
-NS_ASSUME_NONNULL_BEGIN
-
 FOUNDATION_EXPORT NSNotificationName const NSTaskDidTerminateNotification;
 
 typedef NS_ENUM(NSInteger, NSTaskTerminationReason) {
@@ -75,5 +73,3 @@ typedef NS_ENUM(NSInteger, NSTaskTerminationReason) {
 + (NSTask *)launchedTaskWithLaunchPath:(NSString *)path arguments:(NSArray<NSString *> *)arguments;
 
 @end
-
-NS_ASSUME_NONNULL_END

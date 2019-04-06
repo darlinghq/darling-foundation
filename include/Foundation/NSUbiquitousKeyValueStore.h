@@ -2,10 +2,10 @@
 #import <dispatch/dispatch.h>
 
 enum {
-    NSUbiquitousKeyValueStoreServerChange NS_ENUM_AVAILABLE(10_7, 5_0),
-    NSUbiquitousKeyValueStoreInitialSyncChange NS_ENUM_AVAILABLE(10_7, 5_0),
-    NSUbiquitousKeyValueStoreQuotaViolationChange NS_ENUM_AVAILABLE(10_7, 5_0),
-    NSUbiquitousKeyValueStoreAccountChange NS_ENUM_AVAILABLE(10_8, 6_0)
+    NSUbiquitousKeyValueStoreServerChange,
+    NSUbiquitousKeyValueStoreInitialSyncChange,
+    NSUbiquitousKeyValueStoreQuotaViolationChange,
+    NSUbiquitousKeyValueStoreAccountChange
 };
 
 @class NSArray, NSDictionary, NSData, NSString;

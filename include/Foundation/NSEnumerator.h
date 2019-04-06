@@ -2,18 +2,16 @@
 
 @class NSArray<ObjectType>;
 
-NS_ASSUME_NONNULL_BEGIN
-
 typedef struct {
     unsigned long state;
-    id __unsafe_unretained * _Nullable itemsPtr;
-    unsigned long * _Nullable mutationsPtr;
+    id __unsafe_unretained *itemsPtr;
+    unsigned long *mutationsPtr;
     unsigned long extra[5];
 } NSFastEnumerationState;
 
 @protocol NSFastEnumeration
 
-- (NSUInteger)countByEnumeratingWithState:(NSFastEnumerationState *)state objects:(id __unsafe_unretained _Nullable[_Nonnull])buffer count:(NSUInteger)len;
+- (NSUInteger)countByEnumeratingWithState:(NSFastEnumerationState *)state objects:(id __unsafe_unretained [])buffer count:(NSUInteger)len;
 
 @end
 
@@ -28,5 +26,3 @@ typedef struct {
 @property (readonly, copy) NSArray<ObjectType> *allObjects;
 
 @end
-
-NS_ASSUME_NONNULL_END

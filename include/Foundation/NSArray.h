@@ -11,8 +11,6 @@ typedef NS_OPTIONS(NSUInteger, NSBinarySearchingOptions) {
 
 @class NSData, NSIndexSet, NSString, NSURL;
 
-NS_ASSUME_NONNULL_BEGIN
-
 @interface NSArray<__covariant ObjectType> : NSObject <NSCopying, NSMutableCopying, NSSecureCoding, NSFastEnumeration>
 
 - (NSUInteger)count;
@@ -27,10 +25,10 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSString *)componentsJoinedByString:(NSString *)sep;
 - (BOOL)containsObject:(ObjectType)obj;
 - (NSString *)description;
-- (NSString *)descriptionWithLocale:(nullable id)locale;
-- (NSString *)descriptionWithLocale:(nullable id)locale indent:(NSUInteger)level;
+- (NSString *)descriptionWithLocale:(id)locale;
+- (NSString *)descriptionWithLocale:(id)locale indent:(NSUInteger)level;
 - (id)firstObjectCommonWithArray:(NSArray<ObjectType> *)other;
-- (void)getObjects:(ObjectType __unsafe_unretained _Nonnull [])objects range:(NSRange)range;
+- (void)getObjects:(ObjectType [])objects range:(NSRange)range;
 - (NSUInteger)indexOfObject:(ObjectType)obj;
 - (NSUInteger)indexOfObject:(ObjectType)obj inRange:(NSRange)range;
 - (NSUInteger)indexOfObjectIdenticalTo:(ObjectType)obj;
@@ -41,8 +39,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSEnumerator<ObjectType> *)objectEnumerator;
 - (NSEnumerator<ObjectType> *)reverseObjectEnumerator;
 - (NSData *)sortedArrayHint;
-- (NSArray<ObjectType> *)sortedArrayUsingFunction:(NSInteger (NS_NOESCAPE *)(ObjectType, ObjectType, void * _Nullable))comparator context:(nullable void *)context;
-- (NSArray<ObjectType> *)sortedArrayUsingFunction:(NSInteger (NS_NOESCAPE *)(ObjectType, ObjectType, void * _Nullable))comparator context:(nullable void *)context hint:(nullable NSData *)hint;
+- (NSArray<ObjectType> *)sortedArrayUsingFunction:(NSInteger (*)(ObjectType, ObjectType, void *))comparator context:(void *)context;
+- (NSArray<ObjectType> *)sortedArrayUsingFunction:(NSInteger (*)(ObjectType, ObjectType, void *))comparator context:(void *)context hint:(NSData *)hint;
 - (NSArray<ObjectType> *)sortedArrayUsingSelector:(SEL)comparator;
 - (NSArray<ObjectType> *)subarrayWithRange:(NSRange)range;
 - (BOOL)writeToFile:(NSString *)path atomically:(BOOL)atomically;
@@ -52,18 +50,18 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSArray<ObjectType> *)objectsAtIndexes:(NSIndexSet *)indices;
 - (ObjectType)objectAtIndexedSubscript:(NSUInteger)idx;
 #if NS_BLOCKS_AVAILABLE
-- (void)enumerateObjectsUsingBlock:(void (NS_NOESCAPE ^)(ObjectType obj, NSUInteger idx, BOOL *stop))block;
-- (void)enumerateObjectsWithOptions:(NSEnumerationOptions)opts usingBlock:(void (NS_NOESCAPE ^)(ObjectType obj, NSUInteger idx, BOOL *stop))block;
-- (void)enumerateObjectsAtIndexes:(NSIndexSet *)s options:(NSEnumerationOptions)opts usingBlock:(void (NS_NOESCAPE ^)(ObjectType obj, NSUInteger idx, BOOL *stop))block;
-- (NSUInteger)indexOfObjectPassingTest:(BOOL (NS_NOESCAPE ^)(ObjectType obj, NSUInteger idx, BOOL *stop))predicate;
-- (NSUInteger)indexOfObjectWithOptions:(NSEnumerationOptions)opts passingTest:(BOOL (NS_NOESCAPE ^)(ObjectType obj, NSUInteger idx, BOOL *stop))predicate;
-- (NSUInteger)indexOfObjectAtIndexes:(NSIndexSet *)s options:(NSEnumerationOptions)opts passingTest:(BOOL (NS_NOESCAPE ^)(ObjectType obj, NSUInteger idx, BOOL *stop))predicate;
-- (NSIndexSet *)indexesOfObjectsPassingTest:(BOOL (NS_NOESCAPE ^)(ObjectType obj, NSUInteger idx, BOOL *stop))predicate;
-- (NSIndexSet *)indexesOfObjectsWithOptions:(NSEnumerationOptions)opts passingTest:(BOOL (NS_NOESCAPE ^)(ObjectType obj, NSUInteger idx, BOOL *stop))predicate;
-- (NSIndexSet *)indexesOfObjectsAtIndexes:(NSIndexSet *)s options:(NSEnumerationOptions)opts passingTest:(BOOL (NS_NOESCAPE ^)(ObjectType obj, NSUInteger idx, BOOL *stop))predicate;
-- (NSArray<ObjectType> *)sortedArrayUsingComparator:(NSComparator NS_NOESCAPE)comparator;
-- (NSArray<ObjectType> *)sortedArrayWithOptions:(NSSortOptions)opts usingComparator:(NSComparator NS_NOESCAPE)comparator;
-- (NSUInteger)indexOfObject:(ObjectType)obj inSortedRange:(NSRange)r options:(NSBinarySearchingOptions)opts usingComparator:(NSComparator NS_NOESCAPE)comparator;
+- (void)enumerateObjectsUsingBlock:(void (^)(ObjectType obj, NSUInteger idx, BOOL *stop))block;
+- (void)enumerateObjectsWithOptions:(NSEnumerationOptions)opts usingBlock:(void (^)(ObjectType obj, NSUInteger idx, BOOL *stop))block;
+- (void)enumerateObjectsAtIndexes:(NSIndexSet *)s options:(NSEnumerationOptions)opts usingBlock:(void (^)(ObjectType obj, NSUInteger idx, BOOL *stop))block;
+- (NSUInteger)indexOfObjectPassingTest:(BOOL (^)(ObjectType obj, NSUInteger idx, BOOL *stop))predicate;
+- (NSUInteger)indexOfObjectWithOptions:(NSEnumerationOptions)opts passingTest:(BOOL (^)(ObjectType obj, NSUInteger idx, BOOL *stop))predicate;
+- (NSUInteger)indexOfObjectAtIndexes:(NSIndexSet *)s options:(NSEnumerationOptions)opts passingTest:(BOOL (^)(ObjectType obj, NSUInteger idx, BOOL *stop))predicate;
+- (NSIndexSet *)indexesOfObjectsPassingTest:(BOOL (^)(ObjectType obj, NSUInteger idx, BOOL *stop))predicate;
+- (NSIndexSet *)indexesOfObjectsWithOptions:(NSEnumerationOptions)opts passingTest:(BOOL (^)(ObjectType obj, NSUInteger idx, BOOL *stop))predicate;
+- (NSIndexSet *)indexesOfObjectsAtIndexes:(NSIndexSet *)s options:(NSEnumerationOptions)opts passingTest:(BOOL (^)(ObjectType obj, NSUInteger idx, BOOL *stop))predicate;
+- (NSArray<ObjectType> *)sortedArrayUsingComparator:(NSComparator)comparator;
+- (NSArray<ObjectType> *)sortedArrayWithOptions:(NSSortOptions)opts usingComparator:(NSComparator)comparator;
+- (NSUInteger)indexOfObject:(ObjectType)obj inSortedRange:(NSRange)r options:(NSBinarySearchingOptions)opts usingComparator:(NSComparator)comparator;
 #endif
 
 @end
@@ -72,11 +70,11 @@ NS_ASSUME_NONNULL_BEGIN
 
 + (instancetype)array;
 + (instancetype)arrayWithObject:(ObjectType)obj;
-+ (instancetype)arrayWithObjects:(const ObjectType _Nonnull [])objects count:(NSUInteger)cnt;
++ (instancetype)arrayWithObjects:(const ObjectType [])objects count:(NSUInteger)cnt;
 + (instancetype)arrayWithObjects:(ObjectType)firstObj, ... NS_REQUIRES_NIL_TERMINATION;
 + (instancetype)arrayWithArray:(NSArray<ObjectType> *)array;
 
-- (instancetype)initWithObjects:(const ObjectType _Nonnull [])objects count:(NSUInteger)cnt;
+- (instancetype)initWithObjects:(const ObjectType [])objects count:(NSUInteger)cnt;
 - (instancetype)initWithObjects:(ObjectType)firstObj, ... NS_REQUIRES_NIL_TERMINATION;
 - (instancetype)initWithArray:(NSArray<ObjectType> *)array;
 - (instancetype)initWithArray:(NSArray<ObjectType> *)array copyItems:(BOOL)flag;
@@ -89,7 +87,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface NSArray<ObjectType> (NSDeprecated)
 
-- (void)getObjects:(ObjectType __unsafe_unretained _Nonnull [])objects;
+- (void)getObjects:(ObjectType [])objects;
 
 @end
 
@@ -120,15 +118,15 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)replaceObjectsInRange:(NSRange)range withObjectsFromArray:(NSArray<ObjectType> *)other range:(NSRange)otherRange;
 - (void)replaceObjectsInRange:(NSRange)range withObjectsFromArray:(NSArray<ObjectType> *)other;
 - (void)setArray:(NSArray<ObjectType> *)other;
-- (void)sortUsingFunction:(NSInteger (NS_NOESCAPE *)(ObjectType, ObjectType, void * _Nullable))compare context:(nullable void *)context;
+- (void)sortUsingFunction:(NSInteger (*)(ObjectType, ObjectType, void *))compare context:(void *)context;
 - (void)sortUsingSelector:(SEL)comparator;
 - (void)insertObjects:(NSArray<ObjectType> *)objects atIndexes:(NSIndexSet *)indices;
 - (void)removeObjectsAtIndexes:(NSIndexSet *)indices;
 - (void)replaceObjectsAtIndexes:(NSIndexSet *)indices withObjects:(NSArray<ObjectType> *)objects;
 - (void)setObject:(ObjectType)obj atIndexedSubscript:(NSUInteger)idx;
 #if NS_BLOCKS_AVAILABLE
-- (void)sortUsingComparator:(NSComparator NS_NOESCAPE)comparator;
-- (void)sortWithOptions:(NSSortOptions)opts usingComparator:(NSComparator NS_NOESCAPE)comparator;
+- (void)sortUsingComparator:(NSComparator)comparator;
+- (void)sortWithOptions:(NSSortOptions)opts usingComparator:(NSComparator)comparator;
 #endif
 
 @end
@@ -137,11 +135,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 + (instancetype)arrayWithCapacity:(NSUInteger)numItems;
 
-+ (nullable NSMutableArray<ObjectType> *)arrayWithContentsOfFile:(NSString *)path;
-+ (nullable NSMutableArray<ObjectType> *)arrayWithContentsOfURL:(NSURL *)url;
-- (nullable NSMutableArray<ObjectType> *)initWithContentsOfFile:(NSString *)path;
-- (nullable NSMutableArray<ObjectType> *)initWithContentsOfURL:(NSURL *)url;
++ (NSMutableArray<ObjectType> *)arrayWithContentsOfFile:(NSString *)path;
++ (NSMutableArray<ObjectType> *)arrayWithContentsOfURL:(NSURL *)url;
+- (NSMutableArray<ObjectType> *)initWithContentsOfFile:(NSString *)path;
+- (NSMutableArray<ObjectType> *)initWithContentsOfURL:(NSURL *)url;
 
 @end
-
-NS_ASSUME_NONNULL_END
