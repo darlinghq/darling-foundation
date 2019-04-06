@@ -124,7 +124,6 @@ const NSNotificationName NSTaskDidTerminateNotification = @"NSTaskDidTerminateNo
 			free(*to_free++);
 		free(argv);
 		free(path);
-		[argumentInvalid release];
 	}
 	else
 	{
