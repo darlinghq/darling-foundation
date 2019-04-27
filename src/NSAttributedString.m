@@ -10,6 +10,13 @@
 #import "NSStringInternal.h"
 #import <dispatch/dispatch.h>
 
+@implementation NSAttributedString
+
+@end
+
+@implementation NSMutableAttributedString
+
+@end
 CF_PRIVATE
 @interface NSMutableStringProxyForMutableAttributedString : NSMutableString
 {
