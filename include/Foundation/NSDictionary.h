@@ -3,8 +3,6 @@
 
 @class NSArray, NSSet, NSString, NSURL;
 
-NS_ASSUME_NONNULL_BEGIN
-
 @interface NSDictionary<__covariant KeyType, __covariant ObjectType> : NSObject <NSCopying, NSMutableCopying, NSSecureCoding, NSFastEnumeration>
 
 - (NSUInteger)count;
@@ -29,7 +27,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)writeToFile:(NSString *)path atomically:(BOOL)useAuxiliaryFile;
 - (BOOL)writeToURL:(NSURL *)url atomically:(BOOL)atomically;
 - (NSArray *)keysSortedByValueUsingSelector:(SEL)comparator;
-- (void)getObjects:(id __unsafe_unretained _Nonnull [])objects andKeys:(id __unsafe_unretained _Nonnull [])keys;
+- (void)getObjects:(id __unsafe_unretained [])objects andKeys:(id __unsafe_unretained [])keys;
 - (id)objectForKeyedSubscript:(id)key;
 #if NS_BLOCKS_AVAILABLE
 - (void)enumerateKeysAndObjectsUsingBlock:(void (^)(id key, id obj, BOOL *stop))block;
@@ -46,13 +44,13 @@ NS_ASSUME_NONNULL_BEGIN
 
 + (instancetype)dictionary;
 + (instancetype)dictionaryWithObject:(id)object forKey:(id <NSCopying>)key;
-+ (instancetype)dictionaryWithObjects:(const id _Nonnull [])objects forKeys:(const id <NSCopying> _Nonnull [])keys count:(NSUInteger)cnt;
++ (instancetype)dictionaryWithObjects:(const id [])objects forKeys:(const id <NSCopying> [])keys count:(NSUInteger)cnt;
 + (instancetype)dictionaryWithObjectsAndKeys:(id)firstObject, ... NS_REQUIRES_NIL_TERMINATION;
 + (instancetype)dictionaryWithDictionary:(NSDictionary *)dict;
 + (instancetype)dictionaryWithObjects:(NSArray *)objects forKeys:(NSArray *)keys;
 + (instancetype)dictionaryWithContentsOfFile:(NSString *)path;
 + (instancetype)dictionaryWithContentsOfURL:(NSURL *)url;
-- (instancetype)initWithObjects:(const id _Nonnull [])objects forKeys:(const id <NSCopying> _Nonnull [])keys count:(NSUInteger)cnt;
+- (instancetype)initWithObjects:(const id [])objects forKeys:(const id <NSCopying> [])keys count:(NSUInteger)cnt;
 - (instancetype)initWithObjectsAndKeys:(id)firstObject, ... NS_REQUIRES_NIL_TERMINATION;
 - (instancetype)initWithDictionary:(NSDictionary *)otherDictionary;
 - (instancetype)initWithDictionary:(NSDictionary *)otherDictionary copyItems:(BOOL)flag;
@@ -62,7 +60,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
-@interface NSMutableDictionary<KeyType, ObjectType> : NSDictionary
+@interface NSMutableDictionary<KeyType, ObjectType> : NSDictionary<KeyType, ObjectType>
 
 - (void)removeObjectForKey:(id)aKey;
 - (void)setObject:(id)anObject forKey:(id <NSCopying>)aKey;
@@ -98,4 +96,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
-NS_ASSUME_NONNULL_END
+@interface NSDictionary<K, V> (NSGenericFastEnumeraiton) <NSFastEnumeration>
+- (NSUInteger)countByEnumeratingWithState:(NSFastEnumerationState *)state objects:(K __unsafe_unretained [])buffer count:(NSUInteger)len;
+@end
