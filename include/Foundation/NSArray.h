@@ -28,7 +28,7 @@ typedef NS_OPTIONS(NSUInteger, NSBinarySearchingOptions) {
 - (NSString *)descriptionWithLocale:(id)locale;
 - (NSString *)descriptionWithLocale:(id)locale indent:(NSUInteger)level;
 - (id)firstObjectCommonWithArray:(NSArray<ObjectType> *)other;
-- (void)getObjects:(ObjectType [])objects range:(NSRange)range;
+- (void)getObjects:(ObjectType __unsafe_unretained [])objects range:(NSRange)range;
 - (NSUInteger)indexOfObject:(ObjectType)obj;
 - (NSUInteger)indexOfObject:(ObjectType)obj inRange:(NSRange)range;
 - (NSUInteger)indexOfObjectIdenticalTo:(ObjectType)obj;
@@ -87,7 +87,7 @@ typedef NS_OPTIONS(NSUInteger, NSBinarySearchingOptions) {
 
 @interface NSArray<ObjectType> (NSDeprecated)
 
-- (void)getObjects:(ObjectType [])objects;
+- (void)getObjects:(ObjectType __unsafe_unretained [])objects;
 
 @end
 
