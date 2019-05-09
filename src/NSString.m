@@ -1533,7 +1533,12 @@ CF_INLINE Boolean isALineSeparatorTypeCharacter(UniChar ch, Boolean includeLineE
 
         NSInteger idx = range.location + range.length - (range.length ? 1 : 0);
 
-        if ((idx >= len) || ((ch = [self characterAtIndex:idx]) == NewLine))
+        if (idx >= len)
+        {
+            endOfContents = idx;
+            lineSeparatorLength = 0;
+        }
+        else if ((ch = [self characterAtIndex:idx]) == NewLine)
         {
             endOfContents = idx;
             idx--;
