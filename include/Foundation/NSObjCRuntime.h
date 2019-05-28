@@ -46,7 +46,11 @@
 #endif
 
 #if !defined(NS_NONATOMIC_IOSONLY)
-#define NS_NONATOMIC_IOSONLY nonatomic
+    #if TARGET_OS_OSX
+        #define NS_NONATOMIC_IOSONLY atomic
+    #else
+        #define NS_NONATOMIC_IOSONLY nonatomic
+    #endif
 #endif
 
 #if !defined(NS_NONATOMIC_IPHONEONLY)
