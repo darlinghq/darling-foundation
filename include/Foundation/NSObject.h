@@ -41,6 +41,13 @@
 
 @end
 
+@interface NSObject (NSScriptClassDescription)
+
+// @property(readonly) FourCharCode classCode;
+@property(readonly, copy) NSString *className;
+
+@end 
+
 @protocol NSDiscardableContent
 @required
 

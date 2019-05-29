@@ -119,6 +119,7 @@ set(foundation_sources
 	src/NSObjCRuntime.m
 	src/NSObjectInternal.m
 	src/NSObject+NSComparisonMethods.m
+	src/NSObject+NSScriptClassDescription.m
 	src/NSOperation.m
 	src/NSOrthographyCheckingResult.m
 	src/NSOrthography.m
