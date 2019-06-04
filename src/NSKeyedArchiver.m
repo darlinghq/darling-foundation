@@ -12,6 +12,7 @@
 #import "NSCoderInternal.h"
 #import <Foundation/NSDictionary.h>
 #import <Foundation/NSFileManager.h>
+#import <Foundation/NSError.h>
 #import <Foundation/NSException.h>
 #import <Foundation/NSNull.h>
 #import <Foundation/NSSet.h>
@@ -423,6 +424,68 @@ static void encodeDouble(NSKeyedArchiver *archiver, double d, NSString *key)
         }
     }
     return success;
+}
+
++ (NSData *)archivedDataWithRootObject:(id)object requiringSecureCoding:(BOOL)requiresSecureCoding error:(NSError * _Nullable *)error {
+    NSMutableDictionary<NSErrorUserInfoKey,id> *child_info = [[[NSMutableDictionary alloc] init] autorelease];
+    BOOL data_invalid = NO;
+    
+    // If the users requires secure coding, there will need to be a few checks. However if the
+    // object is nil, the secure coding checking will not occur.
+    
+    if (requiresSecureCoding && object) {
+        if (![object conformsToProtocol:@protocol(NSSecureCoding)]) {
+            [child_info
+                setObject: [NSString stringWithFormat:@"%@ %@ %@",
+                    @"This decoder requires the class to conform to NSSecuringCoding.",
+                    [object className],
+                    @"does not conform to it."]
+                forKey:NSDebugDescriptionErrorKey];
+            data_invalid = YES;
+        }
+        
+        else if (![[object class] supportsSecureCoding]) {
+            [child_info
+             setObject: [NSString stringWithFormat:@"%@ %@ %@",
+                         [object className],
+                         @"does not return YES for the property supportsSecureCoding.",
+                         @"NSSecureCoding requires YES to be returned."]
+             forKey:NSDebugDescriptionErrorKey];
+            data_invalid = YES;
+        }
+    }
+    
+    // There may be a situation where an exception does occur during the archiving process.
+    // If so, we much store that exception into a NSError.
+    
+    if (!data_invalid) {
+        @try {
+            return [NSKeyedArchiver archivedDataWithRootObject:object];
+        }
+        
+        @catch (NSException *exception) {
+            [child_info
+             setObject: [NSString stringWithFormat:@"%@ '%@': %@\n%@",
+                         @"Exception occured while archiving",
+                         [object className],
+                         [exception reason],
+                         [NSThread callStackSymbols]]
+             forKey:NSDebugDescriptionErrorKey];
+        }
+    }
+    
+    // The following code below will execute if either 'data_invalid' is 'YES' or if an exception
+    // has occured. Under normal circumstances, this section should not be reached.
+    
+    if (error != nil) {
+        NSMutableDictionary<NSErrorUserInfoKey,id> *parent_info = [[[NSMutableDictionary alloc] init] autorelease];
+        
+        NSError *child_error = [NSError errorWithDomain:NSCocoaErrorDomain code:4864 userInfo:child_info];
+        [parent_info setObject:child_error forKey:NSUnderlyingErrorKey];
+        *error = [NSError errorWithDomain:NSCocoaErrorDomain code:4866 userInfo:parent_info];
+    }
+
+    return nil;
 }
 
 + (NSData *)archivedDataWithRootObject:(id)rootObject
