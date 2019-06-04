@@ -19,6 +19,8 @@ FOUNDATION_EXPORT NSString *const NSFilePathErrorKey;
 FOUNDATION_EXPORT NSString *const NSDebugDescriptionErrorKey;
 FOUNDATION_EXPORT NSString *const NSLocalizedFailureErrorKey;
 
+typedef NSString *NSErrorUserInfoKey;
+
 @interface NSError : NSObject <NSCopying, NSSecureCoding> {
 // NOTE: This is brittle - the ivar layout MUST be the same as CFErrorRef
     void *_reserved;
