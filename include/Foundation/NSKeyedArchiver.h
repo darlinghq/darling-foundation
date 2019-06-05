@@ -1,3 +1,4 @@
+#import <Foundation/NSError.h>
 #import <Foundation/NSCoder.h>
 #import <Foundation/NSPropertyList.h>
 #import <CoreFoundation/CFDictionary.h>
@@ -53,6 +54,7 @@ typedef const struct __CFKeyedArchiverUID* CFKeyedArchiverUIDRef;
     CFMutableSetRef _visited;
 }
 
++ (NSData *)archivedDataWithRootObject:(id)object requiringSecureCoding:(BOOL)requiresSecureCoding error:(NSError **)error;
 + (NSData *)archivedDataWithRootObject:(id)rootObject;
 + (BOOL)archiveRootObject:(id)rootObject toFile:(NSString *)path;
 + (void)setClassName:(NSString *)codedName forClass:(Class)cls;
@@ -101,6 +103,7 @@ typedef struct offsetDataStruct offsetDataStruct;
     CFMutableDictionaryRef _reservedDictionary;
 }
 
++ (id)unarchivedObjectOfClass:(Class)cls fromData:(NSData *)data error:(NSError **)error;
 + (id)unarchiveObjectWithData:(NSData *)data;
 + (id)unarchiveObjectWithFile:(NSString *)path;
 - (id)initForReadingWithData:(NSData *)data;
