@@ -237,3 +237,37 @@ _NS_int_p_describe(void *table, int *p)
   /* Is this useful? */
   return [NSString stringWithFormat: @"%d(%#"PRIxPTR")", *p, (NSUInteger)p];
 }
+
+/** For owned Objective-C objects **/
+
+NSUInteger
+_NS_owned_id_hash(void *table, id <NSObject> o)
+{
+  /* P may be aligned, so we need to compensate. */
+  return [o hash];
+}
+
+BOOL
+_NS_owned_id_is_equal(void *table, id <NSObject> p)
+{
+  return [o isEqual: p];;
+}
+
+void
+_NS_owned_id_retain(void *table, id <NSObject> o)
+{
+  IF_NO_GC(RETAIN(o));
+  return;
+}
+
+void
+_NS_owned_id_release(void *table, id <NSObject> o)
+{
+  RELEASE(o);
+}
+
+NSString *
+_NS_owned_id_describe(void *table, id <NSObject> o)
+{
+  return [o describe];
+}

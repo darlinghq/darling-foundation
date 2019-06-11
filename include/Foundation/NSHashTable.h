@@ -201,6 +201,7 @@ GS_EXPORT const NSHashTableCallBacks NSNonRetainedObjectHashCallBacks;
 GS_EXPORT const NSHashTableCallBacks NSObjectHashCallBacks;
 GS_EXPORT const NSHashTableCallBacks NSOwnedPointerHashCallBacks;
 GS_EXPORT const NSHashTableCallBacks NSPointerToStructHashCallBacks;
+GS_EXPORT const NSHashTableCallBacks NSOwnedObjectIdentityHashCallBacks;
 
 GS_EXPORT NSHashTable *
 NSCreateHashTable(NSHashTableCallBacks callBacks,

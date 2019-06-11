@@ -806,6 +806,14 @@ const NSHashTableCallBacks NSPointerToStructHashCallBacks =
   (NSHT_describe_func_t) _NS_int_p_describe
 };
 
+const NSHashTableCallBacks NSOwnedObjectIdentityHashCallBacks =
+{
+    (NSHT_hash_func_t) _NS_owned_id_hash,
+    (NSHT_isEqual_func_t) _NS_owned_id_is_equal,
+    (NSHT_retain_func_t) _NS_owned_id_retain,
+    (NSHT_release_func_t) _NS_owned_id_release,
+    (NSHT_describe_func_t) _NS_owned_id_describe
+};
 
 
 @interface NSConcreteHashTableEnumerator : NSEnumerator
