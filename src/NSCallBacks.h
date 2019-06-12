@@ -92,7 +92,7 @@ NSString *_NS_int_p_describe(void *table, int *p) GS_HIDDEN;
 
 /** For owned Objective-C objects **/
 NSUInteger _NS_owned_id_hash(void *table, id <NSObject> o) GS_HIDDEN;
-BOOL _NS_owned_id_is_equal(void *table, id <NSObject> p) GS_HIDDEN;
+BOOL _NS_owned_id_is_equal(void *table, id <NSObject> o, id <NSObject> p) GS_HIDDEN;
 void _NS_owned_id_retain(void *table, id <NSObject> o) GS_HIDDEN;
 void _NS_owned_id_release(void *table, id <NSObject> o) GS_HIDDEN;
 NSString *_NS_owned_id_describe(void *table, id <NSObject> o) GS_HIDDEN;
