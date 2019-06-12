@@ -248,9 +248,9 @@ _NS_owned_id_hash(void *table, id <NSObject> o)
 }
 
 BOOL
-_NS_owned_id_is_equal(void *table, id <NSObject> p)
+_NS_owned_id_is_equal(void *table, id <NSObject> o, id <NSObject> p)
 {
-  return [o isEqual: p];;
+  return [o isEqual: p];
 }
 
 void

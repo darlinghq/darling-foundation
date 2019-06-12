@@ -227,6 +227,7 @@ set(foundation_sources
 	src/NSScriptObjectSpecifiers.m
 	src/NSScriptCommand.m
 	src/NSScriptCommandDescription.m
+	src/NSScriptClassDescription.m
 	src/NSUserNotification.m
 	src/NSConnection.m
 )
