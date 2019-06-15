@@ -931,6 +931,7 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
     self = [super init];
     if (self)
     {
+        [self setRequiresSecureCoding:NO];
         _helper = [[_NSKeyedUnarchiverHelper alloc] init];
 
         const uint8_t *bytePtr = CFDataGetBytePtr((CFDataRef)data);
