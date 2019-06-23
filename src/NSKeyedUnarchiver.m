@@ -555,14 +555,22 @@ static id _decodeObjectBinary(NSKeyedUnarchiver *unarchiver, NSUInteger uid1) NS
             @throw [NSException exceptionWithName:NSInvalidUnarchiveOperationException reason:[NSString stringWithFormat:@"No classForKeyedUnarchiver class:%@", className] userInfo:nil];
             return nil;
         }
+        NSException *exception = nil;
+        if ([unarchiver requiresSecureCoding])
+        {
+            NSSet *allowed_class_list = [unarchiver allowedClasses];
+            if (![allowed_class_list containsObject:class]) {
+                exception = [NSException exceptionWithName:NSInvalidUnarchiveOperationException
+                                        reason:[NSString stringWithFormat:@"%@ was unexpected. The expected classes are %@", className, allowed_class_list]
+                                      userInfo: @{@"__NSCoderInternalErrorCode" : @4864}];
+            }
+        }
         if (className != nil)
         {
             CFRelease(className); 
         }
-        if ([unarchiver requiresSecureCoding])
-        {
-            DEBUG_BREAK();
-            // TODO https://code.google.com/p/apportable/issues/detail?id=153
+        if (exception != nil) {
+            [exception raise];
         }
 
         uint64_t pushOldOffset = unarchiver->_offsetData->offset;
@@ -704,8 +712,12 @@ static id _decodeObjectXML(NSKeyedUnarchiver *unarchiver, NSString *key)
 
     if ([unarchiver requiresSecureCoding])
     {
-        DEBUG_BREAK();
-#warning TODO requiresSecureCoding https://code.google.com/p/apportable/issues/detail?id=153
+        NSSet *allowed_class_list = [unarchiver allowedClasses];
+        if (![allowed_class_list containsObject:class]) {
+            [[NSException exceptionWithName:NSInvalidUnarchiveOperationException
+                                    reason:[NSString stringWithFormat:@"%@ was unexpected. The expected classes are %@", className, allowed_class_list]
+                                    userInfo: @{@"__NSCoderInternalErrorCode" : @4864} ] raise];
+        }
     }
 
     id allocated = [class allocWithZone:nil];
