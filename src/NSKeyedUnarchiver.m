@@ -558,10 +558,10 @@ static id _decodeObjectBinary(NSKeyedUnarchiver *unarchiver, NSUInteger uid1) NS
         NSException *exception = nil;
         if ([unarchiver requiresSecureCoding])
         {
-            NSSet *allowedClassList = [unarchiver allowedClasses];
-            if (![allowedClassList containsObject:class]) {
+            NSSet *allowedClassSet = [unarchiver allowedClasses];
+            if (![allowedClassSet containsObject:class]) {
                 exception = [NSException exceptionWithName:NSInvalidUnarchiveOperationException
-                                        reason:[NSString stringWithFormat:@"%@ was unexpected. The expected classes are %@", className, allowedClassList]
+                                        reason:[NSString stringWithFormat:@"%@ was unexpected. The expected classes are %@", className, allowedClassSet]
                                       userInfo: @{@"__NSCoderInternalErrorCode" : @4864}];
             }
         }
@@ -712,10 +712,10 @@ static id _decodeObjectXML(NSKeyedUnarchiver *unarchiver, NSString *key)
 
     if ([unarchiver requiresSecureCoding])
     {
-        NSSet *allowedClassList = [unarchiver allowedClasses];
-        if (![allowedClassList containsObject:class]) {
+        NSSet *allowedClassSet = [unarchiver allowedClasses];
+        if (![allowedClassSet containsObject:class]) {
             [[NSException exceptionWithName:NSInvalidUnarchiveOperationException
-                                    reason:[NSString stringWithFormat:@"%@ was unexpected. The expected classes are %@", className, allowedClassList]
+                                    reason:[NSString stringWithFormat:@"%@ was unexpected. The expected classes are %@", className, allowedClassSet]
                                     userInfo: @{@"__NSCoderInternalErrorCode" : @4864} ] raise];
         }
     }
