@@ -2,10 +2,10 @@
 #import <CoreGraphics/CoreGraphics.h>
 
 enum {
-    NSKeyedArchiverKeyFlag = 0x01,
-    NSArchiverFinished = 0x02,
-    NSSecureCodingFlag = 0x04,
-    NSKeyedArchivingStarted = 0x08
+    NSKeyedArchiverKeyFlag  = 1 << 0,
+    NSArchiverFinished      = 1 << 1,
+    NSSecureCodingFlag      = 1 << 2,
+    NSKeyedArchivingStarted = 1 << 3
 };
 
 #define NSCoderSystemVersion 1000
