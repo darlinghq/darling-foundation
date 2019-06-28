@@ -1365,6 +1365,8 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 
 - (const uint8_t *)decodeBytesForKey:(NSString *)key returnedLength:(NSUInteger *)len
 {
+    _flags |= NSKeyedArchivingStarted;
+
     if (raiseIfFinished(self))
     {
         return NULL;
@@ -1374,6 +1376,8 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 
 - (double)decodeDoubleForKey:(NSString *)key
 {
+    _flags |= NSKeyedArchivingStarted;
+
     if (raiseIfFinished(self))
     {
         return 0.0;
@@ -1384,6 +1388,8 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 
 - (float)decodeFloatForKey:(NSString *)key
 {
+    _flags |= NSKeyedArchivingStarted;
+
     if (raiseIfFinished(self))
     {
         return 0.0f;
@@ -1394,6 +1400,8 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 
 - (long long)decodeInt64ForKey:(NSString *)key
 {
+    _flags |= NSKeyedArchivingStarted;
+
     if (raiseIfFinished(self))
     {
         return 0ll;
@@ -1404,6 +1412,8 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 
 - (int)decodeInt32ForKey:(NSString *)key
 {
+    _flags |= NSKeyedArchivingStarted;
+
     if (raiseIfFinished(self))
     {
         return 0;
@@ -1414,6 +1424,8 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 
 - (int)decodeIntForKey:(NSString *)key
 {
+    _flags |= NSKeyedArchivingStarted;
+
     if (raiseIfFinished(self))
     {
         return 0;
@@ -1424,6 +1436,8 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 
 - (BOOL)decodeBoolForKey:(NSString *)key
 {
+    _flags |= NSKeyedArchivingStarted;
+
     if (raiseIfFinished(self))
     {
         return NO;
@@ -1573,6 +1587,14 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 
 - (void)setRequiresSecureCoding:(BOOL)secured
 {
+    if (_flags & NSKeyedArchivingStarted) {
+        [NSException raise:NSInvalidUnarchiveOperationException
+                    format:@"%s: %@, %@",
+                    __PRETTY_FUNCTION__,
+                    @"The unarchiver process has started",
+                    @"you can no longer set the secure coding."];
+    }
+    
     if (secured)
     {
         _flags |= NSSecureCodingFlag;
@@ -1624,6 +1646,8 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 
 - (id)decodeObjectOfClass:(Class)cls forKey:(NSString *)key
 {
+    _flags |= NSKeyedArchivingStarted;
+
     if ([self requiresSecureCoding])
     {
         NSSet *classSet = nil;
@@ -1641,6 +1665,8 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 
 - (id)decodeObjectForKey:(NSString *)key
 {
+    _flags |= NSKeyedArchivingStarted;
+
     return _decodeObject(self, unescapeKey(key));
 }
 

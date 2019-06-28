@@ -5,6 +5,7 @@ enum {
     NSKeyedArchiverKeyFlag = 0x01,
     NSArchiverFinished = 0x02,
     NSSecureCodingFlag = 0x04,
+    NSKeyedArchivingStarted = 0x08
 };
 
 #define NSCoderSystemVersion 1000
