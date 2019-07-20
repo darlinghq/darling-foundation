@@ -555,14 +555,22 @@ static id _decodeObjectBinary(NSKeyedUnarchiver *unarchiver, NSUInteger uid1) NS
             @throw [NSException exceptionWithName:NSInvalidUnarchiveOperationException reason:[NSString stringWithFormat:@"No classForKeyedUnarchiver class:%@", className] userInfo:nil];
             return nil;
         }
+        NSException *exception = nil;
+        if ([unarchiver requiresSecureCoding])
+        {
+            NSSet *allowedClassSet = [unarchiver allowedClasses];
+            if (![allowedClassSet containsObject:class]) {
+                exception = [NSException exceptionWithName:NSInvalidUnarchiveOperationException
+                                        reason:[NSString stringWithFormat:@"%@ was unexpected. The expected classes are %@", className, allowedClassSet]
+                                      userInfo: @{@"__NSCoderInternalErrorCode" : @4864}];
+            }
+        }
         if (className != nil)
         {
             CFRelease(className); 
         }
-        if ([unarchiver requiresSecureCoding])
-        {
-            DEBUG_BREAK();
-            // TODO https://code.google.com/p/apportable/issues/detail?id=153
+        if (exception != nil) {
+            [exception raise];
         }
 
         uint64_t pushOldOffset = unarchiver->_offsetData->offset;
@@ -704,8 +712,12 @@ static id _decodeObjectXML(NSKeyedUnarchiver *unarchiver, NSString *key)
 
     if ([unarchiver requiresSecureCoding])
     {
-        DEBUG_BREAK();
-#warning TODO requiresSecureCoding https://code.google.com/p/apportable/issues/detail?id=153
+        NSSet *allowedClassSet = [unarchiver allowedClasses];
+        if (![allowedClassSet containsObject:class]) {
+            [[NSException exceptionWithName:NSInvalidUnarchiveOperationException
+                                    reason:[NSString stringWithFormat:@"%@ was unexpected. The expected classes are %@", className, allowedClassSet]
+                                    userInfo: @{@"__NSCoderInternalErrorCode" : @4864} ] raise];
+        }
     }
 
     id allocated = [class allocWithZone:nil];
@@ -931,6 +943,7 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
     self = [super init];
     if (self)
     {
+        [self setRequiresSecureCoding:NO];
         _helper = [[_NSKeyedUnarchiverHelper alloc] init];
 
         const uint8_t *bytePtr = CFDataGetBytePtr((CFDataRef)data);
@@ -1352,6 +1365,8 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 
 - (const uint8_t *)decodeBytesForKey:(NSString *)key returnedLength:(NSUInteger *)len
 {
+    _flags |= NSKeyedArchivingStarted;
+
     if (raiseIfFinished(self))
     {
         return NULL;
@@ -1361,6 +1376,8 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 
 - (double)decodeDoubleForKey:(NSString *)key
 {
+    _flags |= NSKeyedArchivingStarted;
+
     if (raiseIfFinished(self))
     {
         return 0.0;
@@ -1371,6 +1388,8 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 
 - (float)decodeFloatForKey:(NSString *)key
 {
+    _flags |= NSKeyedArchivingStarted;
+
     if (raiseIfFinished(self))
     {
         return 0.0f;
@@ -1381,6 +1400,8 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 
 - (long long)decodeInt64ForKey:(NSString *)key
 {
+    _flags |= NSKeyedArchivingStarted;
+
     if (raiseIfFinished(self))
     {
         return 0ll;
@@ -1391,6 +1412,8 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 
 - (int)decodeInt32ForKey:(NSString *)key
 {
+    _flags |= NSKeyedArchivingStarted;
+
     if (raiseIfFinished(self))
     {
         return 0;
@@ -1401,6 +1424,8 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 
 - (int)decodeIntForKey:(NSString *)key
 {
+    _flags |= NSKeyedArchivingStarted;
+
     if (raiseIfFinished(self))
     {
         return 0;
@@ -1411,6 +1436,8 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 
 - (BOOL)decodeBoolForKey:(NSString *)key
 {
+    _flags |= NSKeyedArchivingStarted;
+
     if (raiseIfFinished(self))
     {
         return NO;
@@ -1560,6 +1587,14 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 
 - (void)setRequiresSecureCoding:(BOOL)secured
 {
+    if (_flags & NSKeyedArchivingStarted) {
+        [NSException raise:NSInvalidUnarchiveOperationException
+                    format:@"%s: %@, %@",
+                    __PRETTY_FUNCTION__,
+                    @"The unarchiver process has started",
+                    @"you can no longer set the secure coding."];
+    }
+    
     if (secured)
     {
         _flags |= NSSecureCodingFlag;
@@ -1611,6 +1646,8 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 
 - (id)decodeObjectOfClass:(Class)cls forKey:(NSString *)key
 {
+    _flags |= NSKeyedArchivingStarted;
+
     if ([self requiresSecureCoding])
     {
         NSSet *classSet = nil;
@@ -1628,6 +1665,8 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 
 - (id)decodeObjectForKey:(NSString *)key
 {
+    _flags |= NSKeyedArchivingStarted;
+
     return _decodeObject(self, unescapeKey(key));
 }
 
