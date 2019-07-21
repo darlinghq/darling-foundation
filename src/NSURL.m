@@ -784,3 +784,6 @@ OBJC_PROTOCOL_IMPL_PUSH
 OBJC_PROTOCOL_IMPL_POP
 
 @end
+
+@implementation NSURLQueryItem
+@end

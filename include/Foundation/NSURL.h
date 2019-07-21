@@ -191,3 +191,7 @@ typedef NSUInteger NSURLBookmarkFileCreationOptions;
 @interface NSFileSecurity : NSObject <NSCopying, NSCoding>
 
 @end
+
+@interface NSURLQueryItem : NSObject <NSSecureCoding, NSCopying>
+
+@end
