@@ -17,8 +17,19 @@
  along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#import <Foundation/NSProxy.h>
+#import <Foundation/NSDistantObject.h>
 
-@interface NSDistantObject : NSProxy <NSCoding>
+@implementation NSDistantObject
+
+- (instancetype)initWithCoder:(NSCoder *)coder
+{
+	NSLog(@"-[NSDistantObject initWithCoder:]");
+	return [super init];
+}
+
+- (void)encodeWithCoder:(NSCoder *)coder
+{
+	NSLog(@"-[NSDistantObject encodeWithCoder:]");
+}
 
 @end

@@ -17,8 +17,7 @@
  along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#import <Foundation/NSProxy.h>
+#import <Foundation/NSObject.h>
 
-@interface NSDistantObject : NSProxy <NSCoding>
-
+@interface NSDateInterval : NSObject <NSCopying, NSSecureCoding>
 @end

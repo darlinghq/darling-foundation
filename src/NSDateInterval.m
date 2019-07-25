@@ -17,8 +17,30 @@
  along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#import <Foundation/NSProxy.h>
+#import <Foundation/NSDateInterval.h>
 
-@interface NSDistantObject : NSProxy <NSCoding>
+@implementation NSDateInterval
+
+- (instancetype)initWithCoder:(NSCoder *)coder
+{
+	NSLog(@"-[NSDateInterval initWithCoder:]");
+	return [super init];
+}
+
+- (void)encodeWithCoder:(NSCoder *)coder
+{
+	NSLog(@"-[NSDateInterval encodeWithCoder:]");
+}
+
++ (BOOL)supportsSecureCoding {
+	NSLog(@"+[NSDateInterval supportsSecureCoding]");
+	return NO;
+}
+
+- (id)copyWithZone:(NSZone *)zone
+{
+	NSLog(@"-[NSDateInterval copyWithZone:]");
+	return nil;
+}
 
 @end

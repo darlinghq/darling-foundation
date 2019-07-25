@@ -230,6 +230,8 @@ set(foundation_sources
 	src/NSScriptClassDescription.m
 	src/NSUserNotification.m
 	src/NSConnection.m
+	src/NSDistantObject.m
+	src/NSDateInterval.m
 )
 
 # Includes ObjC headers -> must be compiled as ObjC
