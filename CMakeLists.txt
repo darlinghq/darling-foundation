@@ -135,6 +135,7 @@ set(foundation_sources
 	src/NSPointerArray.m
 	src/NSPointerFunctions.m
 	src/NSPort.m
+	src/NSPortMessage.m
 	src/NSPredicateLexer.m
 	src/NSPredicate.m
 	src/NSPredicateOperator.m
