@@ -21,6 +21,7 @@ extern CFMachPortContext *_CFMachPortGetContext(CFMachPortRef mp);
 
 @interface NSMachPort ()
 - (BOOL)sendBeforeTime:(NSTimeInterval)time streamData:(void *)data components:(NSMutableArray *)components from:(NSPort *)receivePort msgid:(NSUInteger)msgID;
++ (BOOL)sendBeforeTime:(NSTimeInterval)time streamData:(void *)data components:(NSMutableArray *)components to:(NSPort*) sendPort from:(NSPort *)receivePort msgid:(NSUInteger)msgID;
 @end
 
 NSString *const NSPortDidBecomeInvalidNotification = @"NSPortDidBecomeInvalidNotification";
@@ -53,7 +54,7 @@ NSString *const NSPortDidBecomeInvalidNotification = @"NSPortDidBecomeInvalidNot
  {
     NSRequestConcreteImplementation();
     [self release];
-    return nil;   
+    return nil;
  }
 
 - (void)invalidate
@@ -129,8 +130,9 @@ NSString *const NSPortDidBecomeInvalidNotification = @"NSPortDidBecomeInvalidNot
 - (id)init
 {
     mach_port_name_t port;
-    if (mach_port_allocate(0, MACH_PORT_RIGHT_RECEIVE, &port) != KERN_SUCCESS) {
-        [self release];
+    if (mach_port_allocate(mach_task_self(), MACH_PORT_RIGHT_RECEIVE, &port) != KERN_SUCCESS) {
+        // Cannot call [self release], as self is not TFBed at this point.
+        [super release];
         return nil;
     }
     return [self initWithMachPort:port options:0];
@@ -143,7 +145,7 @@ NSString *const NSPortDidBecomeInvalidNotification = @"NSPortDidBecomeInvalidNot
 
 - (void)setDelegate:(id <NSMachPortDelegate>)anObject
 {
-    if ([self class] == [NSMachPort class])
+    if ([self class] != [NSMachPort class])
     {
         _delegate = anObject;
     }
@@ -157,7 +159,7 @@ NSString *const NSPortDidBecomeInvalidNotification = @"NSPortDidBecomeInvalidNot
 
 - (id <NSMachPortDelegate>)delegate
 {
-    if ([self class] == [NSMachPort class])
+    if ([self class] != [NSMachPort class])
     {
         return _delegate;
     }
@@ -172,11 +174,61 @@ NSString *const NSPortDidBecomeInvalidNotification = @"NSPortDidBecomeInvalidNot
 
 static void mach_port_callback(CFMachPortRef port, void *msg, CFIndex size, void *info)
 {
-    id<NSMachPortDelegate> delegate = *(id<NSMachPortDelegate> *)info;
-    if ([delegate respondsToSelector:@selector(handleMachMessage:)])
+    id<NSMachPortDelegate> delegate = *(id<NSMachPortDelegate> *) info;
+
+    if ([delegate respondsToSelector: @selector(handleMachMessage:)])
     {
-        [delegate handleMachMessage:msg];
+        [delegate handleMachMessage: msg];
+        return;
     }
+    if (![delegate respondsToSelector: @selector(handlePortMessage:)])
+    {
+        return;
+    }
+
+    struct {
+	mach_msg_header_t header;
+        mach_msg_body_t body;
+        // mach_msg_descriptor_t descriptors[];
+    } *message = msg;
+
+    NSMachPort *receivePort = [NSMachPort portWithMachPort: message->header.msgh_local_port];
+    NSMachPort *sendPort = [NSMachPort portWithMachPort: message->header.msgh_remote_port];
+    uint32_t msgid = message->header.msgh_id;
+
+    NSUInteger count = message->body.msgh_descriptor_count;
+    NSMutableArray *components = [NSMutableArray arrayWithCapacity: count];
+
+    char *descriptor = (char *) (message + 1);
+    for (NSUInteger i = 0; i < count; i++) {
+        mach_msg_type_descriptor_t *type_descriptor = (mach_msg_type_descriptor_t *) descriptor;
+        if (type_descriptor->type == MACH_MSG_PORT_DESCRIPTOR) {
+            mach_msg_port_descriptor_t *port_descriptor = (mach_msg_port_descriptor_t *) descriptor;
+            NSMachPort *port = [NSMachPort portWithMachPort: port_descriptor->name];
+            [components addObject: port];
+            descriptor += sizeof(mach_msg_port_descriptor_t);
+        } else if (type_descriptor->type == MACH_MSG_OOL_DESCRIPTOR) {
+            mach_msg_ool_descriptor_t *ool_descriptor = (mach_msg_ool_descriptor_t *) descriptor;
+            NSData *data = [[NSData alloc] initWithBytes: ool_descriptor->address
+                                                  length: ool_descriptor->size
+                                                    copy: NO
+                                            freeWhenDone: YES
+                                              bytesAreVM: YES];
+            [components addObject: data];
+            [data release];
+            descriptor += sizeof(mach_msg_ool_descriptor_t);
+        } else {
+            NSLog(@"NSMachPort: cannot decode an object");
+            descriptor += sizeof(mach_msg_descriptor_t);
+        }
+    }
+
+    NSPortMessage *portMessage = [[NSPortMessage alloc] initWithSendPort: sendPort
+                                                             receivePort: receivePort
+                                                              components: components];
+    [portMessage setMsgid: msgid];
+    [delegate handlePortMessage: portMessage];
+    [portMessage release];
 }
 
 - (id)initWithMachPort:(uint32_t)machPort options:(NSUInteger)options
@@ -216,7 +268,7 @@ static void mach_port_callback(CFMachPortRef port, void *msg, CFIndex size, void
 
 - (uint32_t)machPort
 {
-    if ([self class] == [NSMachPort class])
+    if ([self class] != [NSMachPort class])
     {
         return _machPort;
     }
@@ -297,15 +349,94 @@ static void mach_port_callback(CFMachPortRef port, void *msg, CFIndex size, void
 
 - (BOOL)sendBeforeDate:(NSDate *)limitDate components:(NSMutableArray *)components from:(NSPort *)receivePort reserved:(NSUInteger)headerSpaceReserved
 {
-    return [self sendBeforeTime:[limitDate timeIntervalSinceReferenceDate] streamData:NULL components:components from:receivePort msgid:0];
+    return [self sendBeforeTime:[limitDate timeIntervalSinceNow] streamData:NULL components:components from:receivePort msgid:0];
 }
 
 - (BOOL)sendBeforeDate:(NSDate *)limitDate msgid:(NSUInteger)msgID components:(NSMutableArray *)components from:(NSPort *)receivePort reserved:(NSUInteger)headerSpaceReserved
 {
-    return [self sendBeforeTime:[limitDate timeIntervalSinceReferenceDate] streamData:NULL components:components from:receivePort msgid:msgID];
+    return [self sendBeforeTime:[limitDate timeIntervalSinceNow] streamData:NULL components:components from:receivePort msgid:msgID];
 }
 
-// - (BOOL)sendBeforeTime:(NSTimeInterval)time streamData:(void *)data components:(NSMutableArray *)components from:(NSPort *)receivePort msgid:(NSUInteger)msgID
+- (BOOL) sendBeforeTime: (NSTimeInterval) time
+             streamData: (void *) data
+             components: (NSMutableArray *) components
+                   from: (NSPort *) receivePort
+                  msgid: (NSUInteger) msgID {
+
+    return [NSMachPort sendBeforeTime: time
+                           streamData: data
+                           components: components
+                                   to: self
+                                 from: receivePort
+                                msgid: msgID];
+}
+
++ (BOOL) sendBeforeTime: (NSTimeInterval) time
+             streamData: (void *) data
+             components: (NSMutableArray *) components
+                     to: (NSPort*) sendPort
+                   from: (NSPort *) receivePort
+                  msgid: (NSUInteger) msgID {
+
+    NSUInteger count = [components count];
+
+    struct {
+        mach_msg_header_t header;
+        mach_msg_body_t body;
+        // mach_msg_descriptor_t descriptors[];
+    } *message;
+    size_t size = sizeof(*message) + count * sizeof(mach_msg_descriptor_t);
+    message = calloc(1, size);
+
+    mach_msg_type_name_t reply_type_name = (receivePort != MACH_PORT_NULL) ? MACH_MSG_TYPE_MAKE_SEND_ONCE : 0;
+    message->header.msgh_bits = MACH_MSGH_BITS(MACH_MSG_TYPE_COPY_SEND, reply_type_name) | MACH_MSGH_BITS_COMPLEX;
+    message->header.msgh_remote_port = [sendPort machPort];
+    message->header.msgh_local_port = [receivePort machPort];
+    message->header.msgh_id = msgID;
+
+    message->body.msgh_descriptor_count = count;
+    char *descriptor = (char *) (message + 1);
+    for (NSUInteger i = 0; i < count; i++) {
+        id component = [components objectAtIndex: i];
+        if ([component respondsToSelector: @selector(machPort)]) {
+            NSMachPort *port = (NSMachPort *) component;
+            mach_msg_port_descriptor_t *port_descriptor = (mach_msg_port_descriptor_t *) descriptor;
+            port_descriptor->name = [port machPort];
+            port_descriptor->disposition = MACH_MSG_TYPE_MAKE_SEND; // ???
+            port_descriptor->type = MACH_MSG_PORT_DESCRIPTOR;
+            descriptor += sizeof(mach_msg_port_descriptor_t);
+        } else if ([component respondsToSelector: @selector(bytes)]) {
+            NSData *data = (NSData *) component;
+            mach_msg_ool_descriptor_t *ool_descriptor = (mach_msg_ool_descriptor_t *) descriptor;
+            ool_descriptor->address = [data bytes];
+            ool_descriptor->size = [data length];
+            ool_descriptor->deallocate = 0;
+            ool_descriptor->copy = MACH_MSG_PHYSICAL_COPY;
+            ool_descriptor->type = MACH_MSG_OOL_DESCRIPTOR;
+            descriptor += sizeof(mach_msg_ool_descriptor_t);
+        } else {
+            NSLog(@"[NSMachPort sendBeforeDate:] cannot encode an object of type %@", [component class]);
+        }
+    }
+
+    kern_return_t kr = mach_msg(&message->header, MACH_SEND_MSG|MACH_SEND_TIMEOUT, size, 0, MACH_PORT_NULL, time * 1000, MACH_PORT_NULL);
+    free(message);
+
+    switch (kr) {
+        case MACH_MSG_SUCCESS:
+             return YES;
+        case MACH_SEND_INVALID_DEST:
+            [NSException raise: NSInvalidSendPortException format: @"[NSMachPort sendBeforeDate:] invalid send port"];
+            return NO;
+        case MACH_SEND_INVALID_REPLY:
+            [NSException raise: NSInvalidReceivePortException format: @"[NSMachPort sendBeforeDate:] invalid reply port"];
+            return NO;
+        default:
+            [NSException raise: NSPortSendException format: @"[NSMachPort sendBeforeDate:] mach_msg() returned %x", kr];
+            return NO;
+    }
+}
+
 // - (BOOL)isMemberOfClass:(Class)cls;
 // - (BOOL)isKindOfClass:(Class)cls;
 
