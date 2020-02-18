@@ -78,8 +78,8 @@ static NSString *const NSDevKey = @"NSDev";
 
 - (id)awakeAfterUsingCoder:(NSCoder *)coder
 {
-    NSString *table = [[[NSBundle currentNibPath] lastPathComponent] stringByDeletingPathExtension];
-    NSBundle *bundle = [NSBundle currentNibLoadingBundle];
+    NSString *table = nil; // [[[NSBundle currentNibPath] lastPathComponent] stringByDeletingPathExtension];
+    NSBundle *bundle = nil; // [NSBundle currentNibLoadingBundle];
     NSString *str = nil;
     
     if (table)
