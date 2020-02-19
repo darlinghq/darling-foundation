@@ -5,10 +5,10 @@
 
 @interface NSInvocation : NSObject
 {
-    __strong void *_frame;
-    __strong void *_retdata;
+    void *_frame;
+    void *_retdata;
     NSMethodSignature *_signature;
-    id      *_container;
+    __strong id      *_container;
     uint8_t _retainedArgs;
     uint8_t _reserved[15];
 }

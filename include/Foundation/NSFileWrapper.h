@@ -18,7 +18,7 @@ typedef NS_OPTIONS(NSUInteger, NSFileWrapperWritingOptions) {
     NSMutableDictionary *_fileAttributes;
     NSString *_filename;
     NSString *_preferredFilename;
-    id *_icon;
+    id _icon;
 }
 
 - (id)initWithURL:(NSURL *)url options:(NSFileWrapperReadingOptions)options error:(NSError **)outError;
