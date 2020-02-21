@@ -17,7 +17,7 @@ struct NSSlice {
     BOOL pointerPersonality;
     BOOL integerPersonality;
     BOOL simpleReadClear;
-    NSWeakCallback *callback;
+    __unsafe_unretained NSWeakCallback *callback;
     NSUInteger (*sizeFunction)(const void *item);
     NSUInteger (*hashFunction)(const void *item, NSUInteger (*size)(const void *item));
     BOOL (*isEqualFunction)(const void *item1, const void*item2, NSUInteger (*size)(const void *item));
