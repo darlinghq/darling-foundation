@@ -391,7 +391,10 @@ NSString *NSHomeDirectory(void)
     static dispatch_once_t once = 0L;
     static NSString *path = nil;
     dispatch_once(&once, ^{
-        path = [[NSString alloc] initWithUTF8String:getenv("HOME")];
+        const char* home = getenv("HOME");
+        if (!home)
+            home = "/";
+        path = [[NSString alloc] initWithUTF8String:home];
     });
     return path;
 }
