@@ -481,10 +481,8 @@ static inline NSUInteger skipSkipSet(NSScanner *self, NSString *s)
                 BOOL sawExponentSign = NO;
                 BOOL sawExponentValue = NO;
                 
-                for (;*ptr != '\0'; ptr++)
+                for (;*ptr != '\0'; ptr++, exponentDigitsScanned++)
                 {
-                    exponentDigitsScanned++;
-                    
                     // Collect exponent sign
                     if (*ptr == '+' || *ptr == '-')
                     {
