@@ -53,8 +53,10 @@ CF_PRIVATE
 
 + (id)pathWithComponents:(NSArray *)components;
 + (id)pathStoreWithCharacters:(const unichar *)chars length:(NSUInteger)len;
-- (id)stringByResolvingSymlinksInPath;
-- (id)_stringByResolvingSymlinksInPathUsingCache:(BOOL)shouldCache;
+// These 2 methods were unimplemented and broke things,
+// so let's just fall back to the their default NSString implementation
+//- (id)stringByResolvingSymlinksInPath;
+//- (id)_stringByResolvingSymlinksInPathUsingCache:(BOOL)shouldCache;
 - (id)stringByStandardizingPath;
 - (id)_stringByStandardizingPathUsingCache:(BOOL)shouldCache;
 - (id)stringByExpandingTildeInPath;

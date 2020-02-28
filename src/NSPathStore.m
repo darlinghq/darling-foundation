@@ -174,16 +174,6 @@
     [super dealloc];
 }
 
-- (id)stringByResolvingSymlinksInPath
-{
-    return [self _stringByResolvingSymlinksInPathUsingCache:NO];
-}
-
-- (id)_stringByResolvingSymlinksInPathUsingCache:(BOOL)usingCache
-{
-    return nil;
-}
-
 - (id)stringByStandardizingPath
 {
     return [self _stringByStandardizingPathUsingCache:NO];
