@@ -82,7 +82,7 @@ static NSString *const NSDevKey = @"NSDev";
     NSBundle *bundle = nil; // [NSBundle currentNibLoadingBundle];
     NSString *str = nil;
     
-    if (table)
+    if (table && bundle)
     {
         str = [bundle localizedStringForKey:_stringsFileKey value:_developmentLanguageString table:table];
     }
