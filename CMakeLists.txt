@@ -1,8 +1,10 @@
 project(foundation)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -nostdinc -mmacosx-version-min=10.10 \
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mmacosx-version-min=10.10 \
 	-include ${CMAKE_SOURCE_DIR}/src/external/corefoundation/CoreFoundation_Prefix.h \
 	-include ${CMAKE_SOURCE_DIR}/src/external/corefoundation/macros.h")
+
+add_definitions(-nostdinc)
 
 include(darling_framework)
 
