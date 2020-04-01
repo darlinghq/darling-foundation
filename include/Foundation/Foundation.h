@@ -163,3 +163,5 @@
 #import <Foundation/NSXPCConnection.h>
 
 #endif
+
+#include <AssertMacros.h>
