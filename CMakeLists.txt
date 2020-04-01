@@ -235,6 +235,7 @@ set(foundation_sources
 	src/NSConnection.m
 	src/NSDistantObject.m
 	src/NSDateInterval.m
+	src/NSGarbageCollector.m
 )
 
 # Includes ObjC headers -> must be compiled as ObjC
