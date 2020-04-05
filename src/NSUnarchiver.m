@@ -24,6 +24,11 @@ static signed char const SmallestLabel      = -110;     // 0x92
 
 #define BIAS(x) (x - SmallestLabel)
 
+//#define DEBUG_NSUNARCHIVER
+#ifndef DEBUG_NSUNARCHIVER
+#  define NSLog(...)
+#endif
+
 @implementation NSUnarchiver
 
 + (id)unarchiveObjectWithFile:(NSString *)path
@@ -143,10 +148,18 @@ static signed char const SmallestLabel      = -110;     // 0x92
 - (BOOL)readObject:(id*)outObject
 {
     NSString* string;
+    *outObject = nil;
+
     if(![self decodeSharedString:&string])
+    {
+       NSLog(@"NSUnarchiver readObject: decodeSharedString failed\n");
         return NO;
+    }
     if(![string isEqualToString:@"@"])
+    {
+       NSLog(@"NSUnarchiver readObject: unexpected type: %@\n", string);
         return NO;
+    }
     
     return [self _readObject:outObject];
 }
@@ -162,31 +175,46 @@ static signed char const SmallestLabel      = -110;     // 0x92
     
     signed char ch;
     if(![self decodeChar:&ch])
+    {
+       NSLog(@"NSUnarchiver _readObject: failed to decode char\n");
         return NO;
+    }
     
     switch(ch)
     {
         case NullLabel:
+            NSLog(@"readObject -> nil\n");
             *outObject = nil;
             return YES;
             
         case NewLabel:
         {
             NSNumber* label = [self nextSharedObjectLabel];
+            NSLog(@"NSUnarchiver _readObject: new label %@\n", label);
             Class objectClass;
             if(![self readClass:&objectClass])
+            {
+               NSLog(@"NSUnarchiver _readObject: failed to read class!\n");
                 return NO;
-            id object = [[objectClass alloc] initWithCoder:self];
+            }
+            NSLog(@"Will now initWithCoder on class %@\n", NSStringFromClass(objectClass));
+
+            id object = [objectClass alloc];
             if(!object)
                 return NO;
             _sharedObjects[label] = object;
-            id objectAfterAwake = [object awakeAfterUsingCoder:self];
-            if(objectAfterAwake && objectAfterAwake != object)
+
+            id object2 = [object initWithCoder:self];
+            if (object2 != object)
+               NSLog(@"NSUnarchiver: This may not work out, instance changed\n");
+
+            id objectAfterAwake = [object2 awakeAfterUsingCoder:self];
+            if(objectAfterAwake && objectAfterAwake != object2)
             {
-                object = objectAfterAwake;
+                object2 = objectAfterAwake;
                 _sharedObjects[label] = objectAfterAwake;
             }
-            *outObject = object;
+            *outObject = object2;
             
             signed char endMarker;
             if(![self decodeChar:&endMarker] || endMarker != EndOfObjectLabel)
@@ -197,13 +225,20 @@ static signed char const SmallestLabel      = -110;     // 0x92
             
         default:
         {
+            NSLog(@"readObject -> sharedObject\n");
             int label;
             if(![self finishDecodeInt:&label withChar:ch])
+            {
+               NSLog(@"readObject -> sharedObject: FAILED to decode int\n");
                 return NO;
+            }
             label = BIAS(label);
-            if(label >= _sharedObjects.count)
-                return NO;
             *outObject = _sharedObjects[@(label)];
+            if (!*outObject)
+            {
+               NSLog(@"readObject -> sharedObject: non-existent shared obj for label %d\n", label);
+               return NO;
+            }
             return YES;
         }
     }
@@ -215,7 +250,10 @@ static signed char const SmallestLabel      = -110;     // 0x92
     
     signed char ch;
     if(![self decodeChar:&ch])
+    {
+       NSLog(@"NSUnarchiver readClass: decodeChar failed\n");
         return NO;
+    }
     
     switch(ch)
     {
@@ -227,23 +265,37 @@ static signed char const SmallestLabel      = -110;     // 0x92
         {
             NSString* className;
             if(![self decodeSharedString:&className])
+            {
+               NSLog(@"NSUnarchiver readClass: decodeSharedString failed\n");
                 return NO;
+            }
             int version;
             if(![self decodeInt:&version])
+            {
+               NSLog(@"NSUnarchiver readClass: decodeInt failed\n");
                 return NO;
+            }
             
             _versionByClassName[className] = @(version);
             
             *outClass = [self classForName:className];
             if(!*outClass)
+            {
+               NSLog(@"NSUnarchiver readClass: classForName %@ failed\n", className);
                 return NO;
+            }
             
-            _sharedObjects[[self nextSharedObjectLabel]] = *outClass;
+            NSNumber* nextLabel = [self nextSharedObjectLabel];
+            NSLog(@"NSUnarchiver readClass: next label %@ is for class %@\n", nextLabel, className);
+            _sharedObjects[nextLabel] = *outClass;
             
             // We do not check the super-class
             Class superClass;
             if(![self readClass:&superClass])
+            {
+               NSLog(@"NSUnarchiver readClass: failed to read super class\n");
                 return NO;
+            }
             return YES;
         }
             
@@ -251,11 +303,14 @@ static signed char const SmallestLabel      = -110;     // 0x92
         {
             int label;
             if(![self finishDecodeInt:&label withChar:ch])
+            {
+               NSLog(@"NSUnarchiver readClass: finishDecodeInt failed\n");
                 return NO;
+            }
             label = BIAS(label);
-            if(label >= _sharedObjects.count)
-                return NO;
             *outClass = _sharedObjects[@(label)];
+            if (!*outClass)
+               return NO;
             return YES;
         }
     }
@@ -281,6 +336,13 @@ static signed char const SmallestLabel      = -110;     // 0x92
     *outData = [_data subdataWithRange:NSMakeRange(_pos, length)];
     _pos += length;
     return YES;
+}
+
+- (uint8_t)decodeByte
+{
+   uint8_t v = 0;
+   [self readBytes: &v length:1];
+   return v;
 }
 
 - (BOOL)decodeChar:(signed char*)outChar
@@ -384,7 +446,10 @@ static signed char const SmallestLabel      = -110;     // 0x92
             if(![self decodeSharedString:outString])
                 return NO;
             NSAssert(*outString, nil);
-            _sharedObjects[[self nextSharedObjectLabel]] = *outString;
+
+            NSNumber* nextLabel = [self nextSharedObjectLabel];
+            NSLog(@"NSunarchiver decodeString: new label %@ for string %@\n", nextLabel, *outString);
+            _sharedObjects[nextLabel] = *outString;
             return YES;
         
         default:
@@ -393,9 +458,9 @@ static signed char const SmallestLabel      = -110;     // 0x92
             if(![self finishDecodeInt:&label withChar:charValue])
                 return NO;
             label = BIAS(label);
-            if(label >= _sharedObjects.count)
-                return NO;
             *outString = _sharedObjects[@(label)];
+            if (!*outString)
+               return NO;
             return YES;
         }
     }
@@ -631,17 +696,10 @@ static signed char const SmallestLabel      = -110;     // 0x92
     if(!data)
         return nil;
     
-#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
-    MEUnarchiver* unarchiver = [[MEUnarchiver alloc] initForReadingWithData:data];
-    if(archiveClassName)
-        [unarchiver decodeClassName:archiveClassName asClassName:className];
-    return [unarchiver decodeObject];
-#else
     NSUnarchiver* unarchiver = [[NSUnarchiver alloc] initForReadingWithData:data];
     if(archiveClassName)
         [unarchiver decodeClassName:archiveClassName asClassName:className];
     return [unarchiver decodeObject];
-#endif
 }
 
 #pragma mark - NSCoder methods
@@ -721,7 +779,11 @@ static signed char const SmallestLabel      = -110;     // 0x92
 - (id)decodeObject
 {
     id obj;
-    [self readObject:&obj];
+    if (![self readObject:&obj])
+    {
+      NSLog(@"NSUnarchive readObject failed\n");
+      return nil;
+    }
     return obj;
 }
 

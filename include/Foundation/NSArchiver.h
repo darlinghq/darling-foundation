@@ -2,20 +2,20 @@
 #import <Foundation/NSData.h>
 #import <Foundation/NSArray.h>
 #import <Foundation/NSDictionary.h>
+#import <Foundation/NSHashTable.h>
+#import <Foundation/NSMapTable.h>
 #import <CoreFoundation/CFDictionary.h>
 
 @interface NSArchiver : NSCoder
 {
     NSMutableData *mdata;
     void *ids;
-    NSMutableDictionary *map;
     CFMutableDictionaryRef replacementTable;
+    NSMutableDictionary<NSString*,NSString*>* map;
 }
 
 + (BOOL)archiveRootObject:(id)object toFile:(NSString *)path;
 + (id)archivedDataWithRootObject:(id)object;
-+ (NSString *)classNameEncodedForTrueClassName:(NSString *)name;
-+ (void)encodeClassName:(NSString *)name intoClassName:(NSString *)encoded;
 + (void)initialize;
 - (NSString *)classNameEncodedForTrueClassName:(NSString *)name;
 - (void)encodeClassName:(NSString *)name intoClassName:(NSString *)encoded;
@@ -33,10 +33,27 @@
 - (id)data;
 - (id)archiverData;
 - (id)initForWritingWithMutableData:(NSMutableData *)data;
+- (NSString *)classNameEncodedForTrueClassName:(NSString *)trueName;
 
 @end
 
 @interface NSUnarchiver : NSCoder
+{
+    NSData* _data;
+    NSZone* _objectZone;
+    NSUInteger              _pos;
+    int                     _streamerVersion;
+    BOOL                    _swap;
+    NSMutableArray*         _sharedStrings;
+    NSMutableDictionary*    _sharedObjects;
+    NSUInteger              _sharedObjectCounter;
+    NSMutableDictionary*    _versionByClassName;
+    NSMutableDictionary<NSString*,NSString*>* _classNameMap;
+}
+
+@property (nonatomic, readonly, copy)   NSData* data;
+@property (nonatomic, readonly)         BOOL    isAtEnd;
+@property (nonatomic) NSZone* objectZone;
 
 + (void)initialize;
 + (NSString *)classNameDecodedForArchiveClassName:(NSString *)name;
@@ -48,19 +65,14 @@
 - (NSString *)classNameDecodedForArchiveClassName:(NSString *)name;
 - (void)decodeClassName:(NSString *)internalName asClassName:(NSString *)externalName;
 - (id)decodeDataObject;
-- (id)decodeObject;
 - (void *)decodeBytesWithReturnedLength:(NSUInteger *)len;
-- (void)decodeArrayOfObjCType:(const char *)itemType count:(NSUInteger)count at:(void *)array;
-- (void)decodeValuesOfObjCTypes:(const char *)types, ...;
 - (void)decodeValueOfObjCType:(const char *)type at:(void *)data;
-- (NSData *)data;
 - (NSInteger)versionForClassName:(NSString *)className;
-- (unsigned)systemVersion;
 - (BOOL)isAtEnd;
 - (NSZone *)objectZone;
 - (void)setObjectZone:(NSZone *)zone;
-- (void)_setAllowedClasses:(NSArray *)classNames;
 - (void)replaceObject:(id)obj withObject:(id)replacement;
+- (uint8_t)decodeByte;
 
 @end
 

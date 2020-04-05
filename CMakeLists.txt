@@ -236,6 +236,7 @@ set(foundation_sources
 	src/NSDistantObject.m
 	src/NSDateInterval.m
 	src/NSGarbageCollector.m
+	src/NSUnarchiver.m
 )
 
 # Includes ObjC headers -> must be compiled as ObjC

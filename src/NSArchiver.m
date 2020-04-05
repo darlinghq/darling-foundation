@@ -1,16 +1,10 @@
-//
-//  NSArchiver.m
-//  Foundation
-//
-//  Copyright (c) 2014 Apportable. All rights reserved.
-//
-
-#import "NSArchiver.h"
-#import <Foundation/NSDictionary.h>
-#import <Foundation/NSString.h>
-#import <CoreFoundation/CFDictionary.h>
-#import <CoreFoundation/CFSet.h>
-#import <dispatch/dispatch.h>
+#import <Foundation/NSArchiver.h>
+#import <Foundation/NSRaise.h>
+#import <Foundation/NSMutableData.h>
+#import <Foundation/NSMutableDictionary.h>
+#import <Foundation/NSByteOrder.h>
+#import <Foundation/NSGeometry.h>
+#include <string.h>
 
 @implementation NSObject (NSArchiverCallBack)
 
@@ -26,7 +20,19 @@
 
 @end
 
+
+
 @implementation NSArchiver
+
+- (void)dealloc
+{
+    [mdata release];
+    if (replacementTable)
+        CFRelease(replacementTable);
+
+    [map release];
+    [super dealloc];
+}
 
 + (BOOL)archiveRootObject:(id)object toFile:(NSString *)path
 {
@@ -186,12 +192,6 @@ static NSMutableDictionary *encodedClassNames = nil;
 	NSLog(@"STUB: NSArchiver %@", NSStringFromSelector(_cmd));
 }
 
-- (void)dealloc
-{
-	NSLog(@"STUB: NSArchiver %@", NSStringFromSelector(_cmd));
-	[super dealloc];
-}
-
 - (id)data
 {
 	NSLog(@"STUB: NSArchiver %@", NSStringFromSelector(_cmd));
@@ -202,141 +202,6 @@ static NSMutableDictionary *encodedClassNames = nil;
 {
 	NSLog(@"STUB: NSArchiver %@", NSStringFromSelector(_cmd));
 	return nil;
-}
-
-@end
-
-@implementation NSUnarchiver
-{
-}
-
-+ (void)initialize
-{
-	NSLog(@"STUB: NSUnarchiver %@", NSStringFromSelector(_cmd));
-}
-
-+ (NSString *)classNameDecodedForArchiveClassName:(NSString *)name
-{
-	NSLog(@"STUB: NSUnarchiver %@", NSStringFromSelector(_cmd));
-	return nil;
-}
-
-+ (void)decodeClassName:(NSString *)internalName asClassName:(NSString *)externalName
-{
-	NSLog(@"STUB: NSUnarchiver %@", NSStringFromSelector(_cmd));
-}
-
-+ (id)unarchiveObjectWithFile:(NSString *)path
-{
-	NSLog(@"STUB: NSUnarchiver %@", NSStringFromSelector(_cmd));
-	return nil;
-}
-
-+ (id)unarchiveObjectWithData:(NSData *)data
-{
-	NSLog(@"STUB: NSUnarchiver %@", NSStringFromSelector(_cmd));
-	return nil;
-}
-
-- (id)initForReadingWithData:(NSData *)data
-{
-	NSLog(@"STUB: NSUnarchiver %@", NSStringFromSelector(_cmd));
-	return nil;
-}
-
-- (void)dealloc
-{
-	NSLog(@"STUB: NSUnarchiver %@", NSStringFromSelector(_cmd));
-	[super dealloc];
-}
-
-- (NSString *)classNameDecodedForArchiveClassName:(NSString *)name
-{
-	NSLog(@"STUB: NSUnarchiver %@", NSStringFromSelector(_cmd));
-	return nil;
-}
-
-- (void)decodeClassName:(NSString *)internalName asClassName:(NSString *)externalName
-{
-	NSLog(@"STUB: NSUnarchiver %@", NSStringFromSelector(_cmd));
-}
-
-- (id)decodeDataObject
-{
-	NSLog(@"STUB: NSUnarchiver %@", NSStringFromSelector(_cmd));
-	return nil;
-}
-
-- (id)decodeObject
-{
-	NSLog(@"STUB: NSUnarchiver %@", NSStringFromSelector(_cmd));
-	return nil;
-}
-
-- (void *)decodeBytesWithReturnedLength:(NSUInteger *)len
-{
-	NSLog(@"STUB: NSUnarchiver %@", NSStringFromSelector(_cmd));
-	return NULL;
-}
-
-- (void)decodeArrayOfObjCType:(const char *)itemType count:(NSUInteger)count at:(void *)array
-{
-	NSLog(@"STUB: NSUnarchiver %@", NSStringFromSelector(_cmd));
-}
-
-- (void)decodeValuesOfObjCTypes:(const char *)types, ...
-{
-	NSLog(@"STUB: NSUnarchiver %@", NSStringFromSelector(_cmd));
-}
-
-- (void)decodeValueOfObjCType:(const char *)type at:(void *)data
-{
-	NSLog(@"STUB: NSUnarchiver %@", NSStringFromSelector(_cmd));
-}
-
-- (NSData *)data
-{
-	NSLog(@"STUB: NSUnarchiver %@", NSStringFromSelector(_cmd));
-	return nil;
-}
-
-- (NSInteger)versionForClassName:(NSString *)className
-{
-	NSLog(@"STUB: NSUnarchiver %@", NSStringFromSelector(_cmd));
-	return 0;
-}
-
-- (unsigned)systemVersion
-{
-	NSLog(@"STUB: NSUnarchiver %@", NSStringFromSelector(_cmd));
-	return 0;
-}
-
-- (BOOL)isAtEnd
-{
-	NSLog(@"STUB: NSUnarchiver %@", NSStringFromSelector(_cmd));
-	return NO;
-}
-
-- (NSZone *)objectZone
-{
-	NSLog(@"STUB: NSUnarchiver %@", NSStringFromSelector(_cmd));
-	return nil;
-}
-
-- (void)setObjectZone:(NSZone *)zone
-{
-	NSLog(@"STUB: NSUnarchiver %@", NSStringFromSelector(_cmd));
-}
-
-- (void)_setAllowedClasses:(NSArray *)classNames
-{
-	NSLog(@"STUB: NSUnarchiver %@", NSStringFromSelector(_cmd));
-}
-
-- (void)replaceObject:(id)obj withObject:(id)replacement
-{
-	NSLog(@"STUB: NSUnarchiver %@", NSStringFromSelector(_cmd));
 }
 
 @end
