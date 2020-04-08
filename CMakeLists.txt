@@ -237,6 +237,7 @@ set(foundation_sources
 	src/NSDateInterval.m
 	src/NSGarbageCollector.m
 	src/NSUnarchiver.m
+	src/NSDeserializer.m
 )
 
 # Includes ObjC headers -> must be compiled as ObjC
