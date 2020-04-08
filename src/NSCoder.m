@@ -3,6 +3,7 @@
 //  Foundation
 //
 //  Copyright (c) 2014 Apportable. All rights reserved.
+//  Copyright (c) 2020 Lubos Dolezel
 //
 
 #import "NSCoderInternal.h"
@@ -14,6 +15,7 @@
 #import <Foundation/NSString.h>
 #import <Foundation/NSException.h>
 #import <Foundation/NSGeometry.h>
+#import <Foundation/NSSerializer.h>
 #import "NSExternals.h"
 #import "NSObjectInternal.h"
 
@@ -220,6 +222,7 @@ static inline const char *nextType(const char *type)
 - (id)decodeObject
 {
     id obj = nil;
+    NSLog(@"NSCoder decodeObject\n");
     [self decodeValueOfObjCType:@encode(id) at:&obj];
     return [obj autorelease];
 }
@@ -430,6 +433,11 @@ static inline const char *nextType(const char *type)
         plistClasses = [[NSSet alloc] initWithObjects:[NSData class], [NSString class], [NSArray class], [NSDictionary class], [NSDate class], [NSNumber class], nil];
     });
     return [self decodeObjectOfClasses:plistClasses forKey:key];
+}
+
+-(id) decodePropertyList
+{
+    return [NSDeserializer deserializePropertyListFromData: [self decodeDataObject] mutableContainers: NO];
 }
 
 - (NSSet *)allowedClasses

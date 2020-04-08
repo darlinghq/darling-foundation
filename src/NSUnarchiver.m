@@ -10,6 +10,7 @@ Copyright (C) 2020 Lubos Dolezel
 #import <Foundation/NSMutableArray.h>
 #import <Foundation/NSByteOrder.h>
 #import <Foundation/NSGeometry.h>
+#include <CoreFoundation/CFSet.h>
 #include <string.h>
 
 static NSMutableDictionary<NSString*,NSString*>* globalClassNameMap;
@@ -26,8 +27,15 @@ static signed char const SmallestLabel      = -110;     // 0x92
 
 //#define DEBUG_NSUNARCHIVER
 #ifndef DEBUG_NSUNARCHIVER
-#  define NSLog(...)
+#  define NSUDEBUG(...)
+#else
+#  define NSUDEBUG NSLog
 #endif
+
+static const char* uniqueString(const char* str);
+static const char* sizeofType(const char* type, unsigned int* size, unsigned int* align);
+static const char* skipStructName(const char* str);
+static unsigned int roundUp(unsigned int size, unsigned int align);
 
 @implementation NSUnarchiver
 
@@ -51,8 +59,16 @@ static signed char const SmallestLabel      = -110;     // 0x92
 
 - (NSData *)decodeDataObject
 {
-   // TODO
-   return nil;
+   int length;
+   NSMutableData* data;
+
+   [self decodeValuesOfObjCTypes: "i", &length];
+
+   data = [[NSMutableData alloc] initWithLength: length];
+
+   [self decodeArrayOfObjCType: "c" count: length at: [data mutableBytes]];
+
+   return [data autorelease];
 }
 
 -(NSZone *)objectZone
@@ -138,11 +154,15 @@ static signed char const SmallestLabel      = -110;     // 0x92
     else
         return NO;
     
-    int systemVersion;
-    if(![self decodeInt:&systemVersion])
+    if(![self decodeInt: (int*)&_systemVersion])
         return NO;
     
     return YES;
+}
+
+- (unsigned)systemVersion
+{
+    return _systemVersion;
 }
 
 - (BOOL)readObject:(id*)outObject
@@ -152,12 +172,12 @@ static signed char const SmallestLabel      = -110;     // 0x92
 
     if(![self decodeSharedString:&string])
     {
-       NSLog(@"NSUnarchiver readObject: decodeSharedString failed\n");
+       NSUDEBUG(@"NSUnarchiver readObject: decodeSharedString failed\n");
         return NO;
     }
     if(![string isEqualToString:@"@"])
     {
-       NSLog(@"NSUnarchiver readObject: unexpected type: %@\n", string);
+       NSUDEBUG(@"NSUnarchiver readObject: unexpected type: %@\n", string);
         return NO;
     }
     
@@ -172,32 +192,34 @@ static signed char const SmallestLabel      = -110;     // 0x92
 - (BOOL)_readObject:(id*)outObject
 {
     NSParameterAssert(outObject);
+
+    *outObject = nil;
     
     signed char ch;
     if(![self decodeChar:&ch])
     {
-       NSLog(@"NSUnarchiver _readObject: failed to decode char\n");
+       NSUDEBUG(@"NSUnarchiver _readObject: failed to decode char\n");
         return NO;
     }
     
     switch(ch)
     {
         case NullLabel:
-            NSLog(@"readObject -> nil\n");
+            NSUDEBUG(@"readObject -> nil\n");
             *outObject = nil;
             return YES;
             
         case NewLabel:
         {
             NSNumber* label = [self nextSharedObjectLabel];
-            NSLog(@"NSUnarchiver _readObject: new label %@\n", label);
+            NSUDEBUG(@"NSUnarchiver _readObject: new label %@, outObject at %p\n", label, outObject);
             Class objectClass;
             if(![self readClass:&objectClass])
             {
-               NSLog(@"NSUnarchiver _readObject: failed to read class!\n");
+               NSUDEBUG(@"NSUnarchiver _readObject: failed to read class!\n");
                 return NO;
             }
-            NSLog(@"Will now initWithCoder on class %@\n", NSStringFromClass(objectClass));
+            NSUDEBUG(@"Will now initWithCoder on class %@\n", NSStringFromClass(objectClass));
 
             id object = [objectClass alloc];
             if(!object)
@@ -206,39 +228,53 @@ static signed char const SmallestLabel      = -110;     // 0x92
 
             id object2 = [object initWithCoder:self];
             if (object2 != object)
-               NSLog(@"NSUnarchiver: This may not work out, instance changed\n");
+               NSUDEBUG(@"NSUnarchiver: This may not work out, instance changed\n");
 
             id objectAfterAwake = [object2 awakeAfterUsingCoder:self];
             if(objectAfterAwake && objectAfterAwake != object2)
-            {
                 object2 = objectAfterAwake;
-                _sharedObjects[label] = objectAfterAwake;
-            }
+            
+            _sharedObjects[label] = object2;
+            NSUDEBUG(@"Saving %p into outObject at %p\n", object2, outObject);
             *outObject = object2;
             
             signed char endMarker;
             if(![self decodeChar:&endMarker] || endMarker != EndOfObjectLabel)
-                return NO;
+            {
+                NSLog(@"BUG: End of object label not found! This means [%@ initWithCoder:] (or super-class) isn't properly implemented.\n", NSStringFromClass(objectClass));
+                NSLog(@"Decoded byte had value 0x%02x (should be 0x86)\n", ((unsigned) endMarker) & 0xff);
+
+                uint8_t buf[8];
+                [_data getBytes:buf range:NSMakeRange(_pos, 8)];
+                NSLog(@"Following bytes: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
+
+                // Should be NSInconsistentArchiveException
+                [NSException raise:NSInvalidArgumentException format:@"Fix [%@ initWithCoder:]", NSStringFromClass(objectClass)];
+
+                __builtin_unreachable();
+            }
             
             return YES;
         }
             
         default:
         {
-            NSLog(@"readObject -> sharedObject\n");
+            NSUDEBUG(@"readObject -> sharedObject\n");
             int label;
             if(![self finishDecodeInt:&label withChar:ch])
             {
-               NSLog(@"readObject -> sharedObject: FAILED to decode int\n");
+               NSUDEBUG(@"readObject -> sharedObject: FAILED to decode int\n");
                 return NO;
             }
             label = BIAS(label);
             *outObject = _sharedObjects[@(label)];
             if (!*outObject)
             {
-               NSLog(@"readObject -> sharedObject: non-existent shared obj for label %d\n", label);
+               NSUDEBUG(@"readObject -> sharedObject: non-existent shared obj for label %d\n", label);
                return NO;
             }
+            else
+                NSUDEBUG(@"sharedObject is %p\n", *outObject);
             return YES;
         }
     }
@@ -251,7 +287,7 @@ static signed char const SmallestLabel      = -110;     // 0x92
     signed char ch;
     if(![self decodeChar:&ch])
     {
-       NSLog(@"NSUnarchiver readClass: decodeChar failed\n");
+       NSUDEBUG(@"NSUnarchiver readClass: decodeChar failed\n");
         return NO;
     }
     
@@ -266,13 +302,13 @@ static signed char const SmallestLabel      = -110;     // 0x92
             NSString* className;
             if(![self decodeSharedString:&className])
             {
-               NSLog(@"NSUnarchiver readClass: decodeSharedString failed\n");
+               NSUDEBUG(@"NSUnarchiver readClass: decodeSharedString failed\n");
                 return NO;
             }
             int version;
             if(![self decodeInt:&version])
             {
-               NSLog(@"NSUnarchiver readClass: decodeInt failed\n");
+               NSUDEBUG(@"NSUnarchiver readClass: decodeInt failed\n");
                 return NO;
             }
             
@@ -281,19 +317,19 @@ static signed char const SmallestLabel      = -110;     // 0x92
             *outClass = [self classForName:className];
             if(!*outClass)
             {
-               NSLog(@"NSUnarchiver readClass: classForName %@ failed\n", className);
+               NSUDEBUG(@"NSUnarchiver readClass: classForName %@ failed\n", className);
                 return NO;
             }
             
             NSNumber* nextLabel = [self nextSharedObjectLabel];
-            NSLog(@"NSUnarchiver readClass: next label %@ is for class %@\n", nextLabel, className);
+            NSUDEBUG(@"NSUnarchiver readClass: next label %@ is for class %@\n", nextLabel, className);
             _sharedObjects[nextLabel] = *outClass;
             
             // We do not check the super-class
             Class superClass;
             if(![self readClass:&superClass])
             {
-               NSLog(@"NSUnarchiver readClass: failed to read super class\n");
+               NSUDEBUG(@"NSUnarchiver readClass: failed to read super class\n");
                 return NO;
             }
             return YES;
@@ -304,7 +340,7 @@ static signed char const SmallestLabel      = -110;     // 0x92
             int label;
             if(![self finishDecodeInt:&label withChar:ch])
             {
-               NSLog(@"NSUnarchiver readClass: finishDecodeInt failed\n");
+               NSUDEBUG(@"NSUnarchiver readClass: finishDecodeInt failed\n");
                 return NO;
             }
             label = BIAS(label);
@@ -341,7 +377,7 @@ static signed char const SmallestLabel      = -110;     // 0x92
 - (uint8_t)decodeByte
 {
    uint8_t v = 0;
-   [self readBytes: &v length:1];
+   [self decodeValuesOfObjCTypes: "c", &v];
    return v;
 }
 
@@ -448,7 +484,7 @@ static signed char const SmallestLabel      = -110;     // 0x92
             NSAssert(*outString, nil);
 
             NSNumber* nextLabel = [self nextSharedObjectLabel];
-            NSLog(@"NSunarchiver decodeString: new label %@ for string %@\n", nextLabel, *outString);
+            NSUDEBUG(@"NSunarchiver decodeString: new label %@ for string %@\n", nextLabel, *outString);
             _sharedObjects[nextLabel] = *outString;
             return YES;
         
@@ -590,10 +626,17 @@ static signed char const SmallestLabel      = -110;     // 0x92
 
 - (BOOL)readType:(const char*)type data:(void*)data
 {
+   return [self readType: type data: data outType: NULL];
+}
+
+- (BOOL)readType:(const char*)type data:(void*)data outType:(const char**)outType
+{
     NSParameterAssert(type);
     NSParameterAssert(data);
     
+    BOOL rv = TRUE;
     char ch = type[0];
+    type++;
 
     switch(ch)
     {
@@ -602,7 +645,10 @@ static signed char const SmallestLabel      = -110;     // 0x92
         {
             signed char value;
             if(![self decodeChar:&value])
-                return NO;
+            {
+                rv = NO;
+                break;
+            }
             *((char*)data) = (char)value;
             break;
         }
@@ -612,7 +658,10 @@ static signed char const SmallestLabel      = -110;     // 0x92
         {
             short value;
             if(![self decodeShort:&value])
-                return NO;
+            {
+                rv = NO;
+                break;
+            }
             *((short*)data) = value;
             break;
         }
@@ -624,7 +673,10 @@ static signed char const SmallestLabel      = -110;     // 0x92
         {
             int value;
             if(![self decodeInt:&value])
-                return NO;
+            {
+                rv = NO;
+                break;
+            }
             *((int*)data) = value;
             break;
         }
@@ -633,7 +685,10 @@ static signed char const SmallestLabel      = -110;     // 0x92
         {
             float value;
             if(![self decodeFloat:&value])
-                return NO;
+            {
+                rv = NO;
+                break;
+            }
             *((float*)data) = value;
             break;
         }
@@ -642,7 +697,10 @@ static signed char const SmallestLabel      = -110;     // 0x92
         {
             double value;
             if(![self decodeDouble:&value])
-                return NO;
+            {
+                rv = NO;
+                break;
+            }
             *((double*)data) = value;
             break;
         }
@@ -651,12 +709,18 @@ static signed char const SmallestLabel      = -110;     // 0x92
         {
             id obj;
             if(![self _readObject:&obj])
-                return NO;
+            {
+                NSUDEBUG(@"_readObject failure reported to readType\n");
+                rv = NO;
+                break;
+            }
             *((__strong id*)data) = obj;
             break;
         }
             
         case '*':
+        case '%':
+        case ':':
         {
             NSString* string;
             if(![self decodeString:&string])
@@ -673,15 +737,87 @@ static signed char const SmallestLabel      = -110;     // 0x92
                        range:NSMakeRange(0, string.length)
               remainingRange:NULL];
             cString[string.length] = '\0';
-            *((const char**)data) = cString;
+
+            if (ch == '*')
+            {
+               *((const char**)data) = cString;
+            }
+            else if (ch == '%')
+            {
+               *((const char**)data) = uniqueString(cString);
+               free(cString);
+            }
+            else if (ch == ':')
+            {
+               *((SEL*) data) = sel_registerName(cString);
+               free(cString);
+            }
+            break;
+        }
+
+        case '[':
+        {
+            unsigned int size, align;
+            unsigned int i, count = 0;
+            const char* elemType;
+
+            while ('0' <= *type && *type <= '9')
+            {
+               count = 10 * count + (*type - '0');
+               type++;
+            }
+
+            elemType = type;
+            type = sizeofType(elemType, &size, &align);
+            NSUDEBUG(@"size and alignment of %s is %d, %d\n", elemType, size, align);
+
+            for (unsigned int i = 0; i < count; i++)
+               [self readType: elemType data:((char*) data)+(i*size)];
+
+            ch = *type;
+            type++;
+            if (ch != ']')
+               NSUDEBUG(@"Missing ] terminator");
+            break;
+        }
+
+        case '{':
+        {
+           unsigned int off = 0;
+           type = skipStructName(type);
+
+           while (*type != '}')
+           {
+              unsigned int s, a;
+
+              sizeofType(type, &s, &a);
+              off = roundUp(off, a);
+              [self readType:type data:((char*) data)+off outType:&type];
+              off += s;
+           }
+           type++;
+           break;
+        }
+
+        case '(':
+        {
+            unsigned int s, a;
+            type = skipStructName(type);
+            type = sizeofType(type - 1, &s, &a);
+
+            for (unsigned int i = 0; i < s; i++)
+               [self readType:"C" data:((char*) data) + i];
             break;
         }
             
         default:
             NSLog(@"unsupported archiving type %c", ch);
-            return NO;
+            rv = NO;
     }
-    return YES;
+
+    if (outType)
+      *outType = type;
+    return rv;
 }
 
 
@@ -718,9 +854,10 @@ static signed char const SmallestLabel      = -110;     // 0x92
         return;
     
     const char* str = string.UTF8String;
-    if(strcmp(str, type) != 0)
+    if(strcasecmp(str, type) != 0)
     {
         NSLog(@"wrong type in archive '%s', expected '%s'", str, type);
+        [NSException raise:NSInvalidArgumentException format:@"NSUnarchiver decodeValueOfObjCType: wrong type in archive '%s', expected '%s'", str, type];
         return;
     }
     
@@ -732,10 +869,13 @@ static signed char const SmallestLabel      = -110;     // 0x92
     NSString* string;
     if(![self decodeSharedString:&string])
         return;
+
+    NSUDEBUG(@"decodeValuesOfObjCTypes:%s at offset 0x%x\n", types, _pos);
     
-    if(strcmp([string cStringUsingEncoding:NSASCIIStringEncoding], types) != 0)
+    if(strcasecmp([string cStringUsingEncoding:NSASCIIStringEncoding], types) != 0)
     {
         NSLog(@"wrong types in archive '%@', expected '%s'", string, types);
+        [NSException raise:NSInvalidArgumentException format:@"NSUnarchiver decodeValuesOfObjCTypes: wrong types in archive '%@', expected '%s'", string, types];
         return;
     }
 
@@ -746,8 +886,8 @@ static signed char const SmallestLabel      = -110;     // 0x92
     while(*type != '\0')
     {
         void* data = va_arg(argList, void*);
-        [self readType:type data:data];
-        type++;
+        NSUDEBUG(@"next type is %c, data is %p\n", *type, data);
+        [self readType:type data:data outType:&type];
     }
     
     va_end (argList);
@@ -781,7 +921,7 @@ static signed char const SmallestLabel      = -110;     // 0x92
     id obj;
     if (![self readObject:&obj])
     {
-      NSLog(@"NSUnarchive readObject failed\n");
+      NSUDEBUG(@"NSUnarchive readObject failed\n");
       return nil;
     }
     return obj;
@@ -824,3 +964,168 @@ static signed char const SmallestLabel      = -110;     // 0x92
 }
 
 @end
+
+static Boolean stringsEqual(const void* s1, const void* s2)
+{
+   return strcmp((const char*) s1, (const char*) s2) == 0;
+}
+
+static CFHashCode stringHash(const void* s)
+{
+   const char* str = (const char*) s;
+   CFHashCode hash = 5381;
+   int c;
+
+   while ((c = *str++))
+      hash = ((hash << 5) + hash) + c;
+
+   return hash;
+}
+
+static const void* stringRetain(CFAllocatorRef allocator, const void* s)
+{
+   return strdup((char*) s);
+}
+
+// Returns a permanently allocated string (atom).
+// Atoms can be compared with ==.
+static const char* uniqueString(const char* str)
+{
+   static CFMutableSetRef atoms;
+   static dispatch_once_t once;
+
+   dispatch_once(&once, ^{
+      CFSetCallBacks cb = {
+         .equal = stringsEqual,
+         .hash = stringHash,
+         .retain = stringRetain,
+      };
+      atoms = CFSetCreateMutable(NULL, 0, &cb);
+   });
+
+   if (!CFSetContainsValue(atoms, str))
+      CFSetAddValue(atoms, str);
+
+   return (const char*) CFSetGetValue(atoms, str);
+}
+
+static unsigned int roundUp(unsigned int size, unsigned int align)
+{
+   return ((size + align - 1) / align) * align;
+}
+
+static const char* skipStructName(const char* str)
+{
+   const char* type = str;
+
+   while (TRUE)
+   {
+      switch (*type++)
+      {
+         case '=':
+            return type;
+         case '}':
+         case '{':
+         case ')':
+         case '(':
+         case 0:
+            return str;
+      }
+   }
+}
+
+// This is NOT a duplicate of NSGetSizeAndAlignment. This function just stops after the 1st type it finds.
+const char* sizeofType(const char* type, unsigned int* size, unsigned int* align)
+{
+   char c = *type++;
+
+#define simpleCase(cc, type) case cc: *size = sizeof(type); *align = __alignof(type); break
+
+   switch (c)
+   {
+      simpleCase('c', char);
+      simpleCase('C', char);
+      simpleCase('s', short);
+      simpleCase('S', short);
+      simpleCase('i', int);
+      simpleCase('I', int);
+      simpleCase('!', int);
+      simpleCase('l', int);
+      simpleCase('L', int);
+      simpleCase('f', float);
+      simpleCase('d', double);
+      simpleCase('@', id);
+      simpleCase('*', char*);
+      simpleCase('%', char*);
+      simpleCase(':', SEL);
+      simpleCase('#', Class);
+      case '[':
+      {
+         unsigned int count = 0;
+         unsigned s, a;
+
+         while ('0' <= *type && *type <= '9')
+            count = 10 * count + (*type++ - '0');
+
+         type = sizeofType(type, &s, &a);
+
+         *size = count * roundUp(s, a);
+         *align = a;
+
+         c = *type++;
+         if (c != ']')
+            [NSException raise:NSInvalidArgumentException format:@"Invalid char found in array encoding, expected ], found %c", c];
+
+         break;
+      }
+      case '(':
+      {
+         unsigned int unionSize = 0;
+         unsigned int unionAlign = 1;
+
+         type = skipStructName(type);
+
+         while (*type != ')')
+         {
+            unsigned int s, a;
+
+            type = sizeofType(type, &s, &a);
+
+            if (s > unionSize)
+               unionSize = s;
+            if (a > unionAlign)
+               unionAlign = a;
+         }
+
+         *size = roundUp(unionSize, unionAlign);
+         *align = unionAlign;
+         break;
+      }
+      case '{':
+      {
+         unsigned int structSize = 0;
+         unsigned int structAlign = 1;
+
+         type = skipStructName(type);
+
+         while (*type != '}')
+         {
+            unsigned int s, a;
+
+            type = sizeofType(type, &s, &a);
+            structSize = roundUp(structSize, a);
+            structSize += s;
+            if (a > structAlign)
+               structAlign = a;
+         }
+
+         *size = roundUp(structSize, structAlign);
+         *align = structAlign;
+         break;
+      }
+   }
+
+#undef simpleCase
+    return type;
+}
+

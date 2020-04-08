@@ -49,6 +49,7 @@
     NSUInteger              _sharedObjectCounter;
     NSMutableDictionary*    _versionByClassName;
     NSMutableDictionary<NSString*,NSString*>* _classNameMap;
+    unsigned _systemVersion;
 }
 
 @property (nonatomic, readonly, copy)   NSData* data;
@@ -73,6 +74,7 @@
 - (void)setObjectZone:(NSZone *)zone;
 - (void)replaceObject:(id)obj withObject:(id)replacement;
 - (uint8_t)decodeByte;
+- (unsigned)systemVersion;
 
 @end
 
