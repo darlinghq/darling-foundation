@@ -17,16 +17,16 @@
  along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <Foundation/NSObject.h>
+#include <Foundation/NSPortNameServer.h>
 
-@interface NSPortNameServer : NSObject
+@implementation NSPortNameServer
 @end
 
-@interface NSMachBootstrapServer : NSPortNameServer
+@implementation NSMachBootstrapServer
 @end
 
-@interface NSMessagePortNameServer : NSPortNameServer
+@implementation NSMessagePortNameServer
 @end
 
-@interface NSSocketPortNameServer : NSPortNameServer
+@implementation NSSocketPortNameServer
 @end

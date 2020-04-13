@@ -238,6 +238,7 @@ set(foundation_sources
 	src/NSGarbageCollector.m
 	src/NSUnarchiver.m
 	src/NSDeserializer.m
+	src/NSPortNameServer.m
 )
 
 # Includes ObjC headers -> must be compiled as ObjC

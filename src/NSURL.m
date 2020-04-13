@@ -17,6 +17,19 @@
 #import <CoreFoundation/CFURL.h>
 #import <objc/runtime.h>
 
+// Private classes
+@interface NSURLFileTypeMappings : NSObject
+@end
+
+@implementation NSURLFileTypeMappings
+@end
+
+@interface NSURLFileTypeMappingsInternal : NSObject
+@end
+
+@implementation NSURLFileTypeMappingsInternal
+@end
+
 @implementation NSURL (NSURL)
 
 OBJC_PROTOCOL_IMPL_PUSH
