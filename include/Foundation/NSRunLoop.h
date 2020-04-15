@@ -4,8 +4,10 @@
 
 @class NSTimer, NSPort, NSArray;
 
-FOUNDATION_EXPORT NSString * const NSDefaultRunLoopMode;
-FOUNDATION_EXPORT NSString * const NSRunLoopCommonModes;
+typedef NSString *NSRunLoopMode;
+
+FOUNDATION_EXPORT const NSRunLoopMode NSDefaultRunLoopMode;
+FOUNDATION_EXPORT const NSRunLoopMode NSRunLoopCommonModes;
 
 @interface NSRunLoop : NSObject {
 @public
@@ -24,25 +26,25 @@ FOUNDATION_EXPORT NSString * const NSRunLoopCommonModes;
 + (NSRunLoop *)currentRunLoop;
 + (NSRunLoop *)mainRunLoop;
 
-- (NSString *)currentMode;
-- (CFRunLoopRef)getCFRunLoop;
+- (NSRunLoopMode) currentMode;
+- (CFRunLoopRef) getCFRunLoop;
 
-- (void)addTimer:(NSTimer *)timer forMode:(NSString *)mode;
+- (void) addTimer: (NSTimer *) timer forMode: (NSRunLoopMode) mode;
 
-- (void)addPort:(NSPort *)aPort forMode:(NSString *)mode;
-- (void)removePort:(NSPort *)aPort forMode:(NSString *)mode;
+- (void) addPort: (NSPort *) aPort forMode: (NSRunLoopMode) mode;
+- (void) removePort: (NSPort *) aPort forMode: (NSRunLoopMode) mode;
 
-- (NSDate *)limitDateForMode:(NSString *)mode;
-- (void)acceptInputForMode:(NSString *)mode beforeDate:(NSDate *)limitDate;
+- (NSDate *) limitDateForMode: (NSRunLoopMode) mode;
+- (void) acceptInputForMode: (NSRunLoopMode) mode beforeDate: (NSDate *) limitDate;
 
 @end
 
 @interface NSRunLoop (NSRunLoopConveniences)
 
-- (void)run;
+- (void) run;
 
-- (void)runUntilDate:(NSDate *)limitDate;
-- (BOOL)runMode:(NSString *)mode beforeDate:(NSDate *)limitDate;
+- (void) runUntilDate: (NSDate *) limitDate;
+- (BOOL) runMode: (NSRunLoopMode) mode beforeDate: (NSDate *) limitDate;
 
 @end
 

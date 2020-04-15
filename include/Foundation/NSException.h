@@ -193,52 +193,72 @@ FOUNDATION_EXPORT void NSSetUncaughtExceptionHandler(NSUncaughtExceptionHandler 
     __PRAGMA_POP_NO_EXTRA_ARG_WARNINGS
 #endif
 
-FOUNDATION_EXPORT NSString * const NSGenericException;
-FOUNDATION_EXPORT NSString * const NSRangeException;
-FOUNDATION_EXPORT NSString * const NSInvalidArgumentException;
-FOUNDATION_EXPORT NSString * const NSInternalInconsistencyException;
-FOUNDATION_EXPORT NSString * const NSMallocException;
-FOUNDATION_EXPORT NSString * const NSObjectInaccessibleException;
-FOUNDATION_EXPORT NSString * const NSObjectNotAvailableException;
-FOUNDATION_EXPORT NSString * const NSDestinationInvalidException;
-FOUNDATION_EXPORT NSString * const NSPortTimeoutException;
-FOUNDATION_EXPORT NSString * const NSInvalidSendPortException;
-FOUNDATION_EXPORT NSString * const NSInvalidReceivePortException;
-FOUNDATION_EXPORT NSString * const NSPortSendException;
-FOUNDATION_EXPORT NSString * const NSPortReceiveException;
-FOUNDATION_EXPORT NSString * const NSOldStyleException;
-FOUNDATION_EXPORT NSString * const NSAssertionHandlerKey;
+typedef NSString *NSExceptionName;
+
+FOUNDATION_EXPORT const NSExceptionName NSGenericException;
+FOUNDATION_EXPORT const NSExceptionName NSRangeException;
+FOUNDATION_EXPORT const NSExceptionName NSInvalidArgumentException;
+FOUNDATION_EXPORT const NSExceptionName NSInternalInconsistencyException;
+FOUNDATION_EXPORT const NSExceptionName NSMallocException;
+FOUNDATION_EXPORT const NSExceptionName NSObjectInaccessibleException;
+FOUNDATION_EXPORT const NSExceptionName NSObjectNotAvailableException;
+FOUNDATION_EXPORT const NSExceptionName NSDestinationInvalidException;
+FOUNDATION_EXPORT const NSExceptionName NSPortTimeoutException;
+FOUNDATION_EXPORT const NSExceptionName NSInvalidSendPortException;
+FOUNDATION_EXPORT const NSExceptionName NSInvalidReceivePortException;
+FOUNDATION_EXPORT const NSExceptionName NSPortSendException;
+FOUNDATION_EXPORT const NSExceptionName NSPortReceiveException;
+FOUNDATION_EXPORT const NSExceptionName NSOldStyleException;
+FOUNDATION_EXPORT const NSExceptionName NSAssertionHandlerKey;
 
 __attribute__((__objc_exception__))
 @interface NSException : NSObject <NSCopying, NSCoding> {
-    NSString *name;
-    NSString *reason;
-    NSDictionary *userInfo;
-    id reserved;
+    NSExceptionName _name;
+    NSString *_reason;
+    NSDictionary *_userInfo;
+    id _reserved;
 }
 
-+ (NSException *)exceptionWithName:(NSString *)name reason:(NSString *)reason userInfo:(NSDictionary *)userInfo;
-- (id)initWithName:(NSString *)aName reason:(NSString *)aReason userInfo:(NSDictionary *)aUserInfo;
-- (NSString *)name;
-- (NSString *)reason;
-- (NSDictionary *)userInfo;
-- (NSArray *)callStackReturnAddresses;
-- (NSArray *)callStackSymbols;
-- (void)raise;
++ (NSException *) exceptionWithName: (NSExceptionName) name
+                             reason: (NSString *) reason
+                           userInfo: (NSDictionary *) userInfo;
+
+- (instancetype) initWithName: (NSExceptionName) name
+                       reason: (NSString *) reason
+                     userInfo: (NSDictionary *) userInfo;
+
+- (NSExceptionName) name;
+- (NSString *) reason;
+- (NSDictionary *) userInfo;
+- (NSArray *) callStackReturnAddresses;
+- (NSArray *) callStackSymbols;
+- (void) raise;
 
 @end
 
 @interface NSException (NSExceptionRaisingConveniences)
 
-+ (void)raise:(NSString *)name format:(NSString *)format, ... NS_FORMAT_FUNCTION(2,3);
-+ (void)raise:(NSString *)name format:(NSString *)format arguments:(va_list)argList NS_FORMAT_FUNCTION(2,0);
++ (void) raise: (NSExceptionName) name
+        format: (NSString *) format, ... NS_FORMAT_FUNCTION(2,3);
+
++ (void) raise: (NSExceptionName) name
+        format: (NSString *) format
+     arguments: (va_list) argList NS_FORMAT_FUNCTION(2,0);
 
 @end
 
 @interface NSAssertionHandler : NSObject
 
-+ (NSAssertionHandler *)currentHandler;
-- (void)handleFailureInMethod:(SEL)selector object:(id)object file:(NSString *)fileName lineNumber:(NSInteger)line description:(NSString *)format,... NS_FORMAT_FUNCTION(5,6);
-- (void)handleFailureInFunction:(NSString *)functionName file:(NSString *)fileName lineNumber:(NSInteger)line description:(NSString *)format,... NS_FORMAT_FUNCTION(4,5);
++ (NSAssertionHandler *) currentHandler;
+- (void) handleFailureInMethod: (SEL) selector
+                        object: (id) object
+                          file: (NSString *) fileName
+                    lineNumber: (NSInteger) line
+                   description: (NSString *) format,... NS_FORMAT_FUNCTION(5,6);
+
+- (void) handleFailureInFunction: (NSString *) functionName
+                            file: (NSString *) fileName
+                      lineNumber: (NSInteger) line
+                     description: (NSString *) format,... NS_FORMAT_FUNCTION(4,5);
 
 @end

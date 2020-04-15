@@ -24,7 +24,7 @@ typedef struct {
     SEL selector;
     id argument;
     CFRunLoopTimerRef timer;
-    NSArray *modes;
+    NSArray<NSRunLoopMode> *modes;
     int retainCount;
     NSMutableArray *allTimers;
 } NSDelayedPerformer;
@@ -58,7 +58,7 @@ static CFStringRef NSDelayedPerformerCopyDescription(const void *info)
 
 @interface _NSRunLoopInfo : NSObject
 @property (nonatomic, retain) NSPort *port;
-@property (nonatomic, copy) NSString *mode;
+@property (nonatomic, copy) NSRunLoopMode mode;
 @end
 
 @implementation _NSRunLoopInfo
@@ -124,14 +124,14 @@ static CFTypeRef NSRunLoopProvider(CFRunLoopRef rl)
     [super dealloc];
 }
 
-- (NSString *)currentMode
+- (NSRunLoopMode) currentMode
 {
-    return [(NSString *)CFRunLoopCopyCurrentMode(_rl) autorelease];
+    return [(NSString *) CFRunLoopCopyCurrentMode(_rl) autorelease];
 }
 
-- (NSArray *)allModes
+- (NSArray<NSRunLoopMode> *) allModes
 {
-    return [(NSArray *)CFRunLoopCopyAllModes(_rl) autorelease];
+    return [(NSArray<NSRunLoopMode> *) CFRunLoopCopyAllModes(_rl) autorelease];
 }
 
 - (void)_wakeup
@@ -145,7 +145,7 @@ static CFTypeRef NSRunLoopProvider(CFRunLoopRef rl)
     return _rl;
 }
 
-- (void)addTimer:(NSTimer *)timer forMode:(NSString *)mode
+- (void) addTimer: (NSTimer *) timer forMode: (NSRunLoopMode) mode
 {
     if (mode == nil)
     {
@@ -173,7 +173,7 @@ static CFTypeRef NSRunLoopProvider(CFRunLoopRef rl)
     }
 }
 
-- (BOOL)_containsPort:(NSPort *)aPort forMode:(NSString *)mode
+- (BOOL) _containsPort: (NSPort *) aPort forMode: (NSRunLoopMode) mode
 {
     __block BOOL contained = NO;
     @synchronized(self)
@@ -191,7 +191,7 @@ static CFTypeRef NSRunLoopProvider(CFRunLoopRef rl)
     [[NSNotificationCenter defaultCenter] removeObserver:self name:NSPortDidBecomeInvalidNotification object:[notif object]];
 }
 
-- (void)_addPort:(NSPort *)aPort forMode:(NSString *)mode
+- (void) _addPort: (NSPort *) aPort forMode: (NSRunLoopMode) mode
 {
     @synchronized(self)
     {
@@ -205,7 +205,7 @@ static CFTypeRef NSRunLoopProvider(CFRunLoopRef rl)
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(_portInvalidated:) name:NSPortDidBecomeInvalidNotification object:aPort];
 }
 
-- (void)addPort:(NSPort *)aPort forMode:(NSString *)mode
+- (void) addPort: (NSPort *) aPort forMode: (NSRunLoopMode) mode
 {
     if (mode == nil)
     {
@@ -227,7 +227,7 @@ static CFTypeRef NSRunLoopProvider(CFRunLoopRef rl)
     [self _addPort:aPort forMode:mode];
 }
 
-- (void)_removePort:(NSPort *)aPort forMode:(NSString *)mode
+- (void) _removePort: (NSPort *) aPort forMode: (NSRunLoopMode) mode
 {
     @synchronized(self)
     {
@@ -245,7 +245,7 @@ static CFTypeRef NSRunLoopProvider(CFRunLoopRef rl)
     }
 }
 
-- (void)removePort:(NSPort *)aPort forMode:(NSString *)mode
+- (void) removePort: (NSPort *) aPort forMode: (NSRunLoopMode) mode
 {
     if (mode == nil)
     {
@@ -261,7 +261,7 @@ static CFTypeRef NSRunLoopProvider(CFRunLoopRef rl)
     [self _removePort:aPort forMode:mode];
 }
 
-- (NSDate *)limitDateForMode:(NSString *)mode
+- (NSDate *) limitDateForMode: (NSRunLoopMode) mode
 {
     if (mode == nil)
     {
@@ -290,7 +290,7 @@ static CFTypeRef NSRunLoopProvider(CFRunLoopRef rl)
     return [NSDate dateWithTimeIntervalSinceReferenceDate:t];
 }
 
-- (void)acceptInputForMode:(NSString *)mode beforeDate:(NSDate *)limitDate
+- (void) acceptInputForMode: (NSRunLoopMode) mode beforeDate: (NSDate *) limitDate
 {
     if (mode == nil)
     {
@@ -336,7 +336,7 @@ static CFTypeRef NSRunLoopProvider(CFRunLoopRef rl)
     [date release];
 }
 
-- (BOOL)runMode:(NSString *)mode beforeDate:(NSDate *)limitDate
+- (BOOL) runMode: (NSRunLoopMode) mode beforeDate: (NSDate *) limitDate
 {
     if (mode == nil)
     {
@@ -388,7 +388,10 @@ static void __NSFireDelayedPerform(CFRunLoopTimerRef timer, void *info)
     }
 }
 
-- (void)performSelector:(SEL)aSelector withObject:(id)anArgument afterDelay:(NSTimeInterval)delay inModes:(NSArray *)modes
+- (void) performSelector: (SEL) aSelector
+              withObject: (id) anArgument
+              afterDelay: (NSTimeInterval) delay
+                 inModes: (NSArray<NSRunLoopMode> *) modes
 {
     NSRunLoop *rl = [NSRunLoop currentRunLoop];
     CFRunLoopRef loop = [rl getCFRunLoop];
@@ -469,7 +472,11 @@ static void __NSFireDelayedPerform(CFRunLoopTimerRef timer, void *info)
 
 @implementation NSRunLoop (NSOrderedPerform)
 
-- (void)performSelector:(SEL)aSelector target:(id)target argument:(id)arg order:(NSUInteger)order modes:(NSArray *)modes
+- (void) performSelector: (SEL) aSelector
+                  target: (id) target
+                argument: (id) arg
+                   order: (NSUInteger) order
+                   modes: (NSArray<NSRunLoopMode> *) modes
 {
     NSRunLoop *rl = [NSRunLoop currentRunLoop];
     CFRunLoopRef loop = [rl getCFRunLoop];
