@@ -1,14 +1,13 @@
 #import <Foundation/NSObject.h>
-#import <stdbool.h>
 
-@class NSMethodSignature;
+@class NSMethodSignature, NSMutableArray;
 
 @interface NSInvocation : NSObject
 {
     void *_frame;
     void *_retdata;
     NSMethodSignature *_signature;
-    __strong id      *_container;
+    NSMutableArray *_container;
     uint8_t _retainedArgs;
     uint8_t _reserved[15];
 }
