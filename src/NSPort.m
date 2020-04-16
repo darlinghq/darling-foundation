@@ -203,7 +203,7 @@ const NSNotificationName NSPortDidBecomeInvalidNotification = @"NSPortDidBecomeI
     return nil;
 }
 
-static void mach_port_callback(CFMachPortRef port, void *msg, CFIndex size, void *info)
+static void __NSFireMachPort(CFMachPortRef port, void *msg, CFIndex size, void *info)
 {
     id<NSMachPortDelegate> delegate = *(id<NSMachPortDelegate> *) info;
 
@@ -287,9 +287,14 @@ static void mach_port_callback(CFMachPortRef port, void *msg, CFIndex size, void
             NULL
         };
         Boolean shouldFreeInfo = false;
-        self = (NSMachPort*)CFMachPortCreateWithPort(kCFAllocatorDefault, machPort, &mach_port_callback, &context, &shouldFreeInfo);
-        if (shouldFreeInfo)
-        {
+        self = (NSMachPort *) CFMachPortCreateWithPort(
+            kCFAllocatorDefault,
+            machPort,
+            &__NSFireMachPort,
+            &context,
+            &shouldFreeInfo
+        );
+        if (shouldFreeInfo) {
             free(context.info);
         }
     }
