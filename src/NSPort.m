@@ -262,6 +262,11 @@ static void __NSFireMachPort(CFMachPortRef port, void *msg, CFIndex size, void *
     [portMessage release];
 }
 
+static void _NSPortDeathNotify(CFMachPortRef port, void *info) {
+    [[NSNotificationCenter defaultCenter] postNotificationName: NSPortDidBecomeInvalidNotification
+                                                        object: (NSMachPort *) port
+                                                      userInfo: nil];
+}
 
 - (id) initWithMachPort: (uint32_t) machPort
                 options: (NSMachPortOptions) options
@@ -297,6 +302,7 @@ static void __NSFireMachPort(CFMachPortRef port, void *msg, CFIndex size, void *
         if (shouldFreeInfo) {
             free(context.info);
         }
+        CFMachPortSetInvalidationCallBack((CFMachPortRef) self, _NSPortDeathNotify);
     }
     return self;
 }
