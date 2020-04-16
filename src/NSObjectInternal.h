@@ -13,6 +13,7 @@
 
 #define NSRequestConcreteImplementation() do { \
     _NSRequestConcreteImplementation([self class], _cmd); \
+    __builtin_unreachable(); \
 } while (0);
 
 static inline void _NSRequestConcreteImplementation(Class cls, SEL cmd)
@@ -20,13 +21,15 @@ static inline void _NSRequestConcreteImplementation(Class cls, SEL cmd)
     [NSException raise:NSInvalidArgumentException format:@"%s %s requires a subclass implementation", class_getName(cls), sel_getName(cmd)];
 }
 
-#define NSInvalidMutation() \
-    [NSException raise:NSInternalInconsistencyException format:@"attempting to mutate an immutable object"]
+#define NSInvalidMutation() do { \
+    [NSException raise:NSInternalInconsistencyException format:@"attempting to mutate an immutable object"]; \
+    __builtin_unreachable(); \
+} while (0);
 
 #define NSCapacityCheck(c, lim, fmt, ...) if (c >= lim) { \
     [self release]; \
     [NSException raise:NSInvalidArgumentException format:fmt, ##__VA_ARGS__]; \
-    return nil; \
+    __builtin_unreachable(); \
 }
 
 extern Class NSClassFromObject(id object);
