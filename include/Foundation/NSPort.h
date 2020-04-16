@@ -83,3 +83,7 @@ NS_AUTOMATED_REFCOUNT_WEAK_UNAVAILABLE
 
 @interface NSMessagePort : NSPort
 @end
+
+
+// For compatibility, also import concrete port types.
+#import <Foundation/NSSocketPort.h>

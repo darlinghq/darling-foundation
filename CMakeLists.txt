@@ -137,6 +137,7 @@ set(foundation_sources
 	src/NSPointerArray.m
 	src/NSPointerFunctions.m
 	src/NSPort.m
+	src/NSSocketPort.m
 	src/NSPortMessage.m
 	src/NSPortNameServer.m
 	src/NSMachBootstrapServer.m
