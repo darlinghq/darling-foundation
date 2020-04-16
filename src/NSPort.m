@@ -170,7 +170,8 @@ const NSNotificationName NSPortDidBecomeInvalidNotification = @"NSPortDidBecomeI
 
 - (id) initWithMachPort: (uint32_t) machPort
 {
-    return [self initWithMachPort:machPort options:0];
+    NSMachPortOptions options = NSMachPortDeallocateSendRight | NSMachPortDeallocateReceiveRight;
+    return [self initWithMachPort: machPort options: options];
 }
 
 - (void)setDelegate:(id <NSMachPortDelegate>)anObject
@@ -273,6 +274,10 @@ static void mach_port_callback(CFMachPortRef port, void *msg, CFIndex size, void
         }
     } else {
         [self dealloc];
+        // Now, the real plot twist: options are ignored,
+        // and the port rights never get released.
+        (void) options;
+
         id *delegateRef = (id *)calloc(sizeof(id), 1);
         CFMachPortContext context = {
             0,
