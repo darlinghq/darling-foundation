@@ -8,6 +8,7 @@
 #import <Foundation/NSNotification.h>
 #import "NSNotificationInternal.h"
 #import <Foundation/NSCoder.h>
+#import <Foundation/NSPortCoder.h>
 #import <Foundation/NSDictionary.h>
 #import "NSObjectInternal.h"
 #import <Foundation/NSSet.h>
@@ -209,6 +210,14 @@ static NSMutableSet *notificationPool = nil;
 - (NSString*)description
 {
     return [NSString stringWithFormat:@"%@ {name: %@, object: %@, userInfo: %@}", [super description], name, object, userInfo];
+}
+
+@end
+
+@implementation NSNotification (NSNotificationPortCoding)
+
+- (id) replacementObjectForPortCoder: (NSPortCoder *) coder {
+    return self;
 }
 
 @end

@@ -8,6 +8,7 @@
 #import <Foundation/NSAttributedString.h>
 #import "NSAttributedStringInternal.h"
 #import "NSStringInternal.h"
+#import <Foundation/NSPortCoder.h>
 #import <dispatch/dispatch.h>
 
 @implementation NSAttributedString
@@ -380,6 +381,13 @@ OBJC_PROTOCOL_IMPL_POP
 
 @end
 
+@implementation NSAttributedString (NSAttributedStringPortCoding)
+
+- (id) replacementObjectForPortCoder: (NSPortCoder *) portCoder {
+    return self;
+}
+
+@end
 
 @implementation NSMutableAttributedString (NSMutableAttributedString)
 

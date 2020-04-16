@@ -16,6 +16,7 @@
 #import "NSSharedKeySet.h"
 #import "NSSharedKeyDictionary.h"
 #import <Foundation/NSKeyedArchiver.h>
+#import <Foundation/NSPortCoder.h>
 
 #import <CoreFoundation/CFData.h>
 #import <CoreFoundation/CFBase.h>
@@ -375,6 +376,17 @@ OBJC_PROTOCOL_IMPL_POP
 + (id)dictionaryWithSharedKeySet:(id)keyset
 {
     return [NSSharedKeyDictionary sharedKeyDictionaryWithKeySet:keyset];
+}
+
+@end
+
+@implementation NSDictionary (NSDictionaryPortCoding)
+
+- (id) replacementObjectForPortCoder: (NSPortCoder *) portCoder {
+    if ([portCoder isByref]) {
+        return [super replacementObjectForPortCoder: portCoder];
+    }
+    return self;
 }
 
 @end

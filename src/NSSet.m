@@ -11,6 +11,7 @@
 #import <Foundation/NSException.h>
 #import <Foundation/NSKeyedArchiver.h>
 #import <Foundation/NSString.h>
+#import <Foundation/NSPortCoder.h>
 
 #import <CoreFoundation/CFBag.h>
 
@@ -488,6 +489,17 @@ OBJC_PROTOCOL_IMPL_POP
     }
 
     return objectCount;
+}
+
+@end
+
+@implementation NSSet (NSSetPortCoding)
+
+- (id) replacementObjectForPortCoder: (NSPortCoder *) portCoder {
+    if ([portCoder isByref]) {
+        return [super replacementObjectForPortCoder: portCoder];
+    }
+    return self;
 }
 
 @end

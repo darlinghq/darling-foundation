@@ -9,6 +9,7 @@
 #import <Foundation/NSException.h>
 #import <Foundation/NSRunLoop.h>
 #import <Foundation/NSNotification.h>
+#import <Foundation/NSPortCoder.h>
 #import "NSObjectInternal.h"
 #import <CoreFoundation/CFRunLoop.h>
 #import <CoreFoundation/CFMachPort.h>
@@ -110,6 +111,10 @@ NSString *const NSPortDidBecomeInvalidNotification = @"NSPortDidBecomeInvalidNot
 {
     [NSException raise:NSInvalidArgumentException format:@"Cannot encode NSPorts"];
     return Nil;
+}
+
+- (id) replacementObjectForPortCoder: (NSPortCoder *) portCoder {
+    return self;
 }
 
 @end

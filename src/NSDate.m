@@ -11,6 +11,7 @@
 #import "NSObjectInternal.h"
 
 #import <Foundation/NSCoder.h>
+#import <Foundation/NSPortCoder.h>
 
 @implementation NSDate (NSDate)
 
@@ -49,6 +50,16 @@ OBJC_PROTOCOL_IMPL_PUSH
 OBJC_PROTOCOL_IMPL_POP
 
 @end
+
+
+@implementation NSDate (NSDatePortCoding)
+
+- (id) replacementObjectForPortCoder: (NSPortCoder *) portCoder {
+    return self;
+}
+
+@end
+
 
 @interface NSCalendarDate : NSDate
 @end

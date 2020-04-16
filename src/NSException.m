@@ -9,6 +9,7 @@
 #import "NSObjectInternal.h"
 
 #import <Foundation/NSString.h>
+#import <Foundation/NSPortCoder.h>
 
 #import <dispatch/dispatch.h>
 #import <objc/runtime.h>
@@ -155,4 +156,12 @@ OBJC_PROTOCOL_IMPL_PUSH
 }
 
 OBJC_PROTOCOL_IMPL_POP
+@end
+
+@implementation NSException (NSExceptionPortCoding)
+
+- (id) replacementObjectForPortCoder: (NSPortCoder *) portCoder {
+    return self;
+}
+
 @end

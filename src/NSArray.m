@@ -14,6 +14,7 @@
 #import "NSObjectInternal.h"
 #import <stdlib.h>
 #import <Foundation/NSKeyedArchiver.h>
+#import <Foundation/NSPortCoder.h>
 #import "NSExternals.h"
 
 CF_EXPORT CFTypeRef _CFPropertyListCreateFromXMLData(CFAllocatorRef allocator, CFDataRef xmlData, CFOptionFlags option, CFStringRef *errorString, Boolean allNewTypes, CFPropertyListFormat *format);
@@ -336,6 +337,17 @@ OBJC_PROTOCOL_IMPL_POP
 - (Class)classForCoder
 {
     return [NSMutableArray self];
+}
+
+@end
+
+@implementation NSArray (NSArrayPortCoding)
+
+- (id) replacementObjectForPortCoder: (NSPortCoder *) portCoder {
+    if ([portCoder isByref]) {
+        return [super replacementObjectForPortCoder: portCoder];
+    }
+    return self;
 }
 
 @end

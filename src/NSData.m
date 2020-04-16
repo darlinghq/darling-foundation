@@ -14,6 +14,7 @@
 #import <Foundation/NSURLRequest.h>
 
 #import <Foundation/NSSerialization.h>
+#import <Foundation/NSPortCoder.h>
 #import "CFInternal.h"
 #import "NSCoderInternal.h"
 #import "NSKeyedArchiver.h"
@@ -1826,5 +1827,14 @@ static inline BOOL NSPurgeableDataCheckAccessCount(NSPurgeableData *d)
 }
 
 SINGLETON_RR()
+
+@end
+
+
+@implementation NSData (NSDataPortCoding)
+
+- (id) replacementObjectForPortCoder: (NSPortCoder *) portCoder {
+    return self;
+}
 
 @end

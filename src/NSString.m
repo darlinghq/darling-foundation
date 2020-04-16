@@ -11,6 +11,7 @@
 #import <Foundation/NSCache.h>
 #import <Foundation/NSCharacterSet.h>
 #import "NSCoderInternal.h"
+#import <Foundation/NSPortCoder.h>
 #import <Foundation/NSData.h>
 #import <Foundation/NSError.h>
 #import <Foundation/NSException.h>
@@ -2505,6 +2506,14 @@ static BOOL _NSScanStringValue(NSString *self, NSNumericValueType type, NSNumeri
     NSData *data = [[NSData alloc] initWithContentsOfURL:url];
     self = [self _initWithDataOfUnknownEncoding:data];
     [data release];
+    return self;
+}
+
+@end
+
+@implementation NSString (NSStringPortCoding)
+
+- (id) replacementObjectForPortCoder: (NSPortCoder *) portCoder {
     return self;
 }
 

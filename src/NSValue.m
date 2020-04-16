@@ -10,6 +10,7 @@
 #import "NSObjectInternal.h"
 #import "NSExternals.h"
 #import <Foundation/NSCoder.h>
+#import <Foundation/NSPortCoder.h>
 #import "NSCoderInternal.h"
 #import <Foundation/NSRange.h>
 #include <libkern/OSAtomic.h>
@@ -786,6 +787,14 @@ static uint8_t charHalfToAscii(uint8_t in)
 - (void)getValue:(void *)value
 {
     memcpy(value, [self _value], typeInfo->size);
+}
+
+@end
+
+@implementation NSValue (NSValuePortCoding)
+
+- (id) replacementObjectForPortCoder: (NSPortCoder *) portCoder {
+    return self;
 }
 
 @end
