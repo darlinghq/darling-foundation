@@ -28,5 +28,7 @@ typedef struct {
 @end
 
 @interface NSMethodSignature (Internal)
+- (NSMethodType *) _argInfo: (NSUInteger) index;
 - (NSString *) _typeString;
+- (BOOL) _stret;
 @end
