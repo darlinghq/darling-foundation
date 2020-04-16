@@ -222,7 +222,6 @@ static inline const char *nextType(const char *type)
 - (id)decodeObject
 {
     id obj = nil;
-    NSLog(@"NSCoder decodeObject\n");
     [self decodeValueOfObjCType:@encode(id) at:&obj];
     return [obj autorelease];
 }
