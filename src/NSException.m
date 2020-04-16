@@ -124,3 +124,35 @@ NSString *_NSMethodExceptionProem(id object, SEL selector)
 }
 
 @end
+
+@implementation NSException (NSException)
+OBJC_PROTOCOL_IMPL_PUSH
+
+- (instancetype) initWithCoder: (NSCoder *) coder {
+    if ([coder allowsKeyedCoding]) {
+        _name = [[coder decodeObjectForKey: @"NS.name"] retain];
+        _reason = [[coder decodeObjectForKey: @"NS.reason"] retain];
+        _userInfo = [[coder decodeObjectForKey: @"NS.userinfo"] retain];
+    } else {
+        _name = [[coder decodeObject] retain];
+        _reason = [[coder decodeObject] retain];
+        _userInfo = [[coder decodeObject] retain];
+    }
+
+    return self;
+}
+
+- (void) encodeWithCoder: (NSCoder *) coder {
+    if ([coder allowsKeyedCoding]) {
+        [coder encodeObject: _name forKey: @"NS.name"];
+        [coder encodeObject: _reason forKey: @"NS.reason"];
+        [coder encodeObject: _userInfo forKey: @"NS.userinfo"];
+    } else {
+        [coder encodeObject: _name];
+        [coder encodeObject: _reason];
+        [coder encodeObject: _userInfo];
+    }
+}
+
+OBJC_PROTOCOL_IMPL_POP
+@end
