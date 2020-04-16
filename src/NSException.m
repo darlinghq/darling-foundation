@@ -29,7 +29,7 @@ static void objc_setUncaughtExceptionHandler(void (*handler)(id, void *))
 static NSUncaughtExceptionHandler *handler = nil;
 BOOL NSHangOnUncaughtException = NO;
 
-static void printExceptionInformation(id exception, void* context)
+static void printExceptionInformation(id exception)
 {
     NSLog(@"Terminating app due to uncaught exception '%@', reason: '%@'", NSStringFromClass([exception class]), [exception reason]);
 }
@@ -74,7 +74,7 @@ NSString *_NSFullMethodName(id object, SEL selector)
 {
     Class c = NSClassFromObject(object);
     const char *className = c ? class_getName(c) : "nil";
-    
+
     return [NSString stringWithFormat:@"%c[%s %s]", (c == object ? '+' : '-'), className, sel_getName(selector)];
 }
 
@@ -82,7 +82,7 @@ NSString *_NSMethodExceptionProem(id object, SEL selector)
 {
     Class c = NSClassFromObject(object);
     const char *className = c ? class_getName(c) : "nil";
-    
+
     return [NSString stringWithFormat:@"*** %c[%s %s]", (c == object ? '+' : '-'), className, sel_getName(selector)];
 }
 
