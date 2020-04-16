@@ -349,17 +349,19 @@ static CFTypeRef NSRunLoopProvider(CFRunLoopRef rl)
         mode = NSDefaultRunLoopMode;
     }
 
-    BOOL moreWork = NO;
-
-    if (!_CFRunLoopFinished(_rl, (CFStringRef)mode))
+    if (_CFRunLoopFinished(_rl, (CFStringRef) mode))
     {
-        CFTimeInterval t = [limitDate timeIntervalSinceNow];
-        @autoreleasepool {
-            moreWork = CFRunLoopRunInMode((CFStringRef)mode, t, true) == kCFRunLoopRunHandledSource;
-        }
+        return NO;
     }
 
-    return moreWork;
+    CFTimeInterval t = [limitDate timeIntervalSinceNow];
+
+    SInt32 result;
+    @autoreleasepool {
+        result = CFRunLoopRunInMode((CFStringRef)mode, t, true);
+    }
+
+    return result != kCFRunLoopRunFinished;
 }
 
 @end
