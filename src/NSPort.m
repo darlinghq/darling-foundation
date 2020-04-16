@@ -440,7 +440,7 @@ static void mach_port_callback(CFMachPortRef port, void *msg, CFIndex size, void
     size_t size = sizeof(*message) + count * sizeof(mach_msg_descriptor_t);
     message = calloc(1, size);
 
-    mach_msg_type_name_t reply_type_name = (receivePort != MACH_PORT_NULL) ? MACH_MSG_TYPE_MAKE_SEND_ONCE : 0;
+    mach_msg_type_name_t reply_type_name = (receivePort != MACH_PORT_NULL) ? MACH_MSG_TYPE_MAKE_SEND : 0;
     message->header.msgh_bits = MACH_MSGH_BITS(MACH_MSG_TYPE_COPY_SEND, reply_type_name) | MACH_MSGH_BITS_COMPLEX;
     message->header.msgh_remote_port = [(NSMachPort *) sendPort machPort];
     message->header.msgh_local_port = [(NSMachPort *) receivePort machPort];
