@@ -17,19 +17,33 @@
   along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#import <Foundation/NSProxy.h>
-#import <objc/runtime.h>
+#import "NSConcretePortCoder.h"
 
-@class NSObject;
+@class NSInvocation, NSMutableArray;
 
-@interface NSProtocolChecker: NSProxy
+CF_PRIVATE
+@interface NSUnkeyedPortCoder : NSConcretePortCoder {
+    NSPort *_recvPort;
+    NSPort *_sendPort;
+    NSMutableArray *_components;
 
-@property (readonly, retain) NSObject *target;
-@property (readonly) Protocol *protocol;
+    BOOL _isBycopy;
+    BOOL _isByref;
 
-+ (instancetype) protocolCheckerWithTarget: (NSObject *) target
-                                  protocol: (Protocol *) protocol;
+    NSUInteger _componentIndex;
+    NSUInteger _readingOffset;
+}
 
-- (instancetype) initWithTarget: (NSObject *) target
-                       protocol: (Protocol *) protocol;
+- (NSArray *) components;
+- (BOOL) _hasMoreData;
+
+- (void) encodeObject: (id) object
+             isBycopy: (BOOL) isBycopy
+              isByref: (BOOL) isByref;
+
+- (id) decodeRetainedObject NS_RETURNS_RETAINED;
+
+- (void) encodeReturnValue: (NSInvocation *) invocation;
+- (void) decodeReturnValue: (NSInvocation *) invocation;
+
 @end

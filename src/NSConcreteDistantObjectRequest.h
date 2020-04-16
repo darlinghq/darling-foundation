@@ -1,7 +1,7 @@
 /*
   This file is part of Darling.
 
-  Copyright (C) 2020 Lubos Dolezel
+  Copyright (C) 2019 Lubos Dolezel
 
   Darling is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,19 +17,23 @@
   along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#import <Foundation/NSProxy.h>
-#import <objc/runtime.h>
+#import <Foundation/NSDistantObjectRequest.h>
 
-@class NSObject;
+@class NSAutoreleasePool;
 
-@interface NSProtocolChecker: NSProxy
+CF_PRIVATE
+@interface NSConcreteDistantObjectRequest : NSDistantObjectRequest {
+    id _conversation;
+    NSConnection *_connection;
+    NSInvocation *_invocation;
+    uint32_t _sequenceNumber;
+    NSAutoreleasePool *_pool;
+}
 
-@property (readonly, retain) NSObject *target;
-@property (readonly) Protocol *protocol;
+- (instancetype) initWithConversation: (id) conversation
+                           connection: (NSConnection *) connection
+                           invocation: (NSInvocation *) invocation
+                       sequenceNumber: (uint32_t) sequenceNumber
+                        releasingPool: (NSAutoreleasePool *) pool;
 
-+ (instancetype) protocolCheckerWithTarget: (NSObject *) target
-                                  protocol: (Protocol *) protocol;
-
-- (instancetype) initWithTarget: (NSObject *) target
-                       protocol: (Protocol *) protocol;
 @end

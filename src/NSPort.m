@@ -137,6 +137,20 @@ const NSNotificationName NSPortDidBecomeInvalidNotification = @"NSPortDidBecomeI
     return self;
 }
 
+- (void) addConnection: (NSConnection *) connection
+             toRunLoop: (NSRunLoop *) runLoop
+               forMode: (NSString *) mode
+{
+    [runLoop addPort: self forMode: mode];
+}
+
+- (void) removeConnection: (NSConnection *) connection
+              fromRunLoop: (NSRunLoop *) runLoop
+                  forMode: (NSString *) mode
+{
+    [runLoop removePort: self forMode: mode];
+}
+
 @end
 
 
@@ -514,6 +528,20 @@ static void _NSPortDeathNotify(CFMachPortRef port, void *info) {
             [NSException raise: NSPortSendException
                         format: @"%s: mach_msg(): %s", __PRETTY_FUNCTION__, mach_error_string(kr)];
             return NO;
+    }
+}
+
+- (void) addConnection: (NSConnection *) connection
+             toRunLoop: (NSRunLoop *) runLoop
+               forMode: (NSString *) mode
+{
+    if (runLoop) {
+        [super addConnection: connection
+                   toRunLoop: runLoop
+                     forMode: mode];
+        if (![self delegate]) {
+            [self setDelegate: (id<NSPortDelegate>) connection];
+        }
     }
 }
 

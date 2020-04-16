@@ -863,5 +863,19 @@ static void __NSFireSocketAccept(CFSocketRef listeningSocket, CFSocketCallBackTy
     return CFSocketSendData(socket, NULL, (CFDataRef) message, time) == kCFSocketSuccess;
 }
 
+- (void) addConnection: (NSConnection *) connection
+             toRunLoop: (NSRunLoop *) runLoop
+               forMode: (NSString *) mode
+{
+    if (runLoop) {
+        [super addConnection: connection
+                   toRunLoop: runLoop
+                     forMode: mode];
+        if (![self delegate]) {
+            [self setDelegate: (id<NSPortDelegate>) connection];
+        }
+    }
+}
+
 
 @end

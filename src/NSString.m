@@ -2514,6 +2514,7 @@ static BOOL _NSScanStringValue(NSString *self, NSNumericValueType type, NSNumeri
 @implementation NSString (NSStringPortCoding)
 
 - (id) replacementObjectForPortCoder: (NSPortCoder *) portCoder {
+    // Note: this is overriden for NSMutableString using NSMutableStringProxy.
     return self;
 }
 

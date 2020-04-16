@@ -110,6 +110,7 @@ set(foundation_sources
 	src/NSLog.m
 	src/NSMapTable.m
 	src/NSMatchingPredicateOperator.m
+	src/NSMutableStringProxy.m
 	#src/NSMutableStringProxyForMutableAttributedString.m # duplicate?!
 	src/NSNestedDictionary.m
 	src/NSNetServices.m
@@ -134,13 +135,24 @@ set(foundation_sources
 	src/NSPlatform_posix.m
 	src/NSPlatform_darwin.m
 
-	src/NSPointerArray.m
-	src/NSPointerFunctions.m
 	src/NSPort.m
 	src/NSSocketPort.m
+	src/NSPortCoder.m
 	src/NSPortMessage.m
+	src/NSConcretePortCoder.m
+	src/NSUnkeyedPortCoder.m
+	src/NSKeyedPortCoder.m
+	src/NSConnection.m
+	src/NSDistantObject.m
+	src/NSDistantObjectRequest.m
+	src/NSConcreteDistantObjectRequest.m
+	src/NSProtocolChecker.m
+	src/NSConcreteProtocolChecker.m
 	src/NSPortNameServer.m
 	src/NSMachBootstrapServer.m
+
+	src/NSPointerArray.m
+	src/NSPointerFunctions.m
 	src/NSPredicateLexer.m
 	src/NSPredicate.m
 	src/NSPredicateOperator.m
@@ -235,8 +247,6 @@ set(foundation_sources
 	src/NSScriptCommandDescription.m
 	src/NSScriptClassDescription.m
 	src/NSUserNotification.m
-	src/NSConnection.m
-	src/NSDistantObject.m
 	src/NSDateInterval.m
 	src/NSGarbageCollector.m
 	src/NSUnarchiver.m

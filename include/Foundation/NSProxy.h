@@ -19,5 +19,6 @@ NS_ROOT_CLASS
 - (NSString *)debugDescription;
 - (BOOL)allowsWeakReference NS_UNAVAILABLE;
 - (BOOL)retainWeakReference NS_UNAVAILABLE;
++ (BOOL)isAncestorOfObject:(id)object;
 
 @end

@@ -13,6 +13,7 @@
 #import <Foundation/NSPathUtilities.h>
 #import <Foundation/NSUUID.h>
 #import <CoreFoundation/CFPriv.h>
+#import "NSConnectionInternal.h"
 #import "NSObjectInternal.h"
 #import <dispatch/dispatch.h>
 #import <crt_externs.h>
@@ -373,9 +374,14 @@ void __NSInitializeProcess(int argc,const char *argv[]) {
     // there are apps and programs that don't call NSApplicationMain(), but we
     // still want to initialize Foundation properly for them.
 
-    char *loggingEnabled = getenv("NSObjCMessageLoggingEnabled");
-    if (loggingEnabled != NULL && strcmp(loggingEnabled, "YES") == 0) {
+    char *messageLoggingEnabled = getenv("NSObjCMessageLoggingEnabled");
+    if (messageLoggingEnabled != NULL && strcmp(messageLoggingEnabled, "YES") == 0) {
         instrumentObjcMessageSends(YES);
+    }
+
+    char *doLoggingEnabled = getenv("NSDOLoggingEnabled");
+    if (doLoggingEnabled != NULL && strcmp(doLoggingEnabled, "YES") == 0) {
+        NSDOLoggingEnabled = YES;
     }
 }
 #endif

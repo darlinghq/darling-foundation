@@ -17,19 +17,16 @@
   along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#import <Foundation/NSProxy.h>
-#import <objc/runtime.h>
+#import <Foundation/NSObject.h>
 
-@class NSObject;
+@class NSConnection, NSInvocation, NSException;
 
-@interface NSProtocolChecker: NSProxy
+@interface NSDistantObjectRequest : NSObject
 
-@property (readonly, retain) NSObject *target;
-@property (readonly) Protocol *protocol;
+@property (readonly, retain) NSConnection *connection;
+@property (readonly, retain) id conversation;
+@property (readonly, retain) NSInvocation *invocation;
 
-+ (instancetype) protocolCheckerWithTarget: (NSObject *) target
-                                  protocol: (Protocol *) protocol;
+- (void) replyWithException: (NSException *) exception;
 
-- (instancetype) initWithTarget: (NSObject *) target
-                       protocol: (Protocol *) protocol;
 @end

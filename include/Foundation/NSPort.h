@@ -54,6 +54,14 @@ FOUNDATION_EXPORT const NSNotificationName NSPortDidBecomeInvalidNotification;
                    from: (NSPort *) receivePort
                reserved: (NSUInteger) headerSpaceReserved;
 
+- (void) addConnection: (NSConnection *) connection
+             toRunLoop: (NSRunLoop *) runLoop
+               forMode: (NSString *) mode;
+
+- (void) removeConnection: (NSConnection *) connection
+              fromRunLoop: (NSRunLoop *) runLoop
+                  forMode: (NSString *) mode;
+
 @end
 
 NS_AUTOMATED_REFCOUNT_WEAK_UNAVAILABLE

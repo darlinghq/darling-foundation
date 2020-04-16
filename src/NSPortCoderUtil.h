@@ -17,19 +17,29 @@
   along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#import <Foundation/NSProxy.h>
 #import <objc/runtime.h>
+#import <string.h>
 
-@class NSObject;
+static inline BOOL hasQualifier(const char *t1, const char *t2, char q) {
+    for (const char *t = t1; t < t2; t++) {
+        if (*t == q) return YES;
+    }
+    return NO;
+}
 
-@interface NSProtocolChecker: NSProxy
-
-@property (readonly, retain) NSObject *target;
-@property (readonly) Protocol *protocol;
-
-+ (instancetype) protocolCheckerWithTarget: (NSObject *) target
-                                  protocol: (Protocol *) protocol;
-
-- (instancetype) initWithTarget: (NSObject *) target
-                       protocol: (Protocol *) protocol;
-@end
+// Check if the given pointer type points to void or to an
+// unknown type or an incomplete structure.
+static inline BOOL isUnknownPointer(const char *type) {
+    if (type[0] != _C_PTR) return NO;
+    switch (type[1]) {
+    case _C_VOID:
+    case _C_UNDEF:
+        return YES;
+    case _C_STRUCT_B:
+        // We still get the name for an empty struct,
+        // e.g. {foo=}
+        return strchr(type, '=')[1] == _C_STRUCT_E;
+    default:
+        return NO;
+    }
+}
