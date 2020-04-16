@@ -55,16 +55,14 @@ OBJC_PROTOCOL_IMPL_PUSH
     id *objects = NULL;
     if ([coder allowsKeyedCoding])
     {
-        if (![coder isKindOfClass:[NSXPCCoder class]])
+        if ([coder isKindOfClass:[NSXPCCoder class]] || [coder isKindOfClass: [NSKeyedUnarchiver class]])
         {
             // note: self could be mutable
             return [self initWithArray:[coder _decodeArrayOfObjectsForKey:NS_objects]];
         }
         else
         {
-            NSUInteger capacity = 31;
-            NSUInteger index = 0;
-            id object = nil;
+            NSUInteger capacity = 32;
             objects = malloc(capacity * sizeof(id));
             if (objects == NULL)
             {
@@ -72,7 +70,15 @@ OBJC_PROTOCOL_IMPL_PUSH
                 [NSException raise:NSMallocException format:@"Could not allocate buffer"];
                 return nil;
             }
-            do {
+            while (YES) {
+                NSString *key = [NSString stringWithFormat:@"NS.object.%lu", (unsigned long) count];
+                id object = [coder decodeObjectForKey:key];
+                // NS.object.# being nil signifies the end of the list
+                if (object == nil)
+                {
+                    break;
+                }
+                count++;
                 if (count > capacity)
                 {
                     capacity *= 2;
@@ -86,15 +92,8 @@ OBJC_PROTOCOL_IMPL_PUSH
                     }
                     objects = newObjects;
                 }
-                object = [coder decodeObjectForKey:[NSString stringWithFormat:@"NS.object.%d", index]];
-                // NS.object.# being nil signifies the end of the list
-                if (object != nil)
-                {
-                    objects[index] = object;
-                    index++;
-                }
-                count = index;
-            } while (object != nil);
+                objects[count - 1] = object;
+            }
         }
     }
     else
@@ -114,7 +113,7 @@ OBJC_PROTOCOL_IMPL_PUSH
             [coder decodeValueOfObjCType:@encode(id) at:&object];
             if (object != nil)
             {
-                objects[idx] = object;
+                objects[idx] = [object autorelease];
             }
             else
             {
@@ -136,24 +135,18 @@ OBJC_PROTOCOL_IMPL_PUSH
     NSUInteger count = [self count];
     if ([coder allowsKeyedCoding])
     {
-        if ([coder class] == [NSKeyedArchiver class])
+        if ([coder class] == [NSKeyedArchiver class] || [coder isKindOfClass: [NSXPCCoder class]])
         {
             [coder _encodeArrayOfObjects:self forKey:NS_objects];
         }
         else
         {
+            NSUInteger idx = 0;
             for (id object in self)
             {
-                [object encodeWithCoder:coder];
+                NSString *key = [NSString stringWithFormat:@"NS.object.%lu", (unsigned long) idx++];
+                [coder encodeObject:object forKey:key];
             }
-        }
-    }
-    else if ([coder isKindOfClass:[NSXPCCoder class]])
-    {
-        NSUInteger idx = 0;
-        for (id object in self)
-        {
-            [coder encodeObject:object forKey:[NSString stringWithFormat:@"NS.object.%d", idx]];
         }
     }
     else

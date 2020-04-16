@@ -169,8 +169,8 @@ OBJC_PROTOCOL_IMPL_PUSH
             {
                 // fault?
             }
-            keys[idx] = key;
-            objects[idx] = object;
+            keys[idx] = [key autorelease];
+            objects[idx] = [object autorelease];
         }
     }
     NSDictionary *dict = nil;
@@ -224,7 +224,7 @@ OBJC_PROTOCOL_IMPL_PUSH
         {
             for (id object in self)
             {
-                [object encodeWithCoder:aCoder];
+                [aCoder encodeObject:object];
             }
         }
     }
