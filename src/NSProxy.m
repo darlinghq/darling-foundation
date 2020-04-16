@@ -345,10 +345,11 @@ OBJC_EXPORT void _objc_rootDealloc(id obj);
 {
     BOOL retVal = NO;
     NSInvocation *inv = nil;
-    id receiver = _NSMessageBuilder(self, &inv, _cmd, sel);
-    [receiver forwardInvocation:inv];
-    [receiver getReturnValue:&retVal];
-    object_dispose(receiver);
+    id builder = _NSMessageBuilder(self, &inv);
+    [builder respondsToSelector: sel];
+    object_dispose(builder);
+    [self forwardInvocation: inv];
+    [inv getReturnValue: &retVal];
     return retVal;
 }
 
@@ -356,10 +357,11 @@ OBJC_EXPORT void _objc_rootDealloc(id obj);
 {
     BOOL retVal = NO;
     NSInvocation *inv = nil;
-    id receiver = _NSMessageBuilder(self, &inv, _cmd, protocol);
-    [self forwardInvocation:inv];
-    [receiver getReturnValue:&retVal];
-    object_dispose(receiver);
+    id builder = _NSMessageBuilder(self, &inv);
+    [builder conformsToProtocol: protocol];
+    object_dispose(builder);
+    [self forwardInvocation: inv];
+    [inv getReturnValue: &retVal];
     return retVal;
 }
 
@@ -367,10 +369,11 @@ OBJC_EXPORT void _objc_rootDealloc(id obj);
 {
     BOOL retVal = NO;
     NSInvocation *inv = nil;
-    id receiver = _NSMessageBuilder(self, &inv, _cmd, cls);
-    [receiver forwardInvocation:inv];
-    [receiver getReturnValue:&retVal];
-    object_dispose(receiver);
+    id builder = _NSMessageBuilder(self, &inv);
+    [builder isMemberOfClass: cls];
+    object_dispose(builder);
+    [self forwardInvocation: inv];
+    [inv getReturnValue: &retVal];
     return retVal;
 }
 
@@ -378,10 +381,11 @@ OBJC_EXPORT void _objc_rootDealloc(id obj);
 {
     BOOL retVal = NO;
     NSInvocation *inv = nil;
-    id receiver = _NSMessageBuilder(self, &inv, _cmd, aClass);
-    [receiver forwardInvocation:inv];
-    [inv getReturnValue:&retVal];
-    object_dispose(receiver);
+    id builder = _NSMessageBuilder(self, &inv);
+    [builder isKindOfClass: aClass];
+    object_dispose(builder);
+    [self forwardInvocation: inv];
+    [inv getReturnValue: &retVal];
     return retVal;
 }
 
