@@ -471,7 +471,21 @@ static void mach_port_callback(CFMachPortRef port, void *msg, CFIndex size, void
         }
     }
 
-    kern_return_t kr = mach_msg(&message->header, MACH_SEND_MSG|MACH_SEND_TIMEOUT, size, 0, MACH_PORT_NULL, time * 1000, MACH_PORT_NULL);
+    mach_msg_option_t options = MACH_SEND_MSG;
+    BOOL useTimeout = time * 1000 < UINT_MAX;
+    if (useTimeout) {
+        options |= MACH_SEND_TIMEOUT;
+    }
+
+    kern_return_t kr = mach_msg(
+        &message->header,
+        options,
+        size,
+        0,
+        MACH_PORT_NULL,
+        useTimeout ? time * 1000 : MACH_MSG_TIMEOUT_NONE,
+        MACH_PORT_NULL
+    );
     free(message);
 
     switch (kr) {
