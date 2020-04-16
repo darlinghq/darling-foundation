@@ -1,4 +1,5 @@
 #import <Foundation/NSObject.h>
+#import <CoreFoundation/CFString.h>
 
 typedef struct {
     NSUInteger size;
@@ -9,6 +10,7 @@ typedef struct {
 
 @interface NSMethodSignature : NSObject {
     NSMethodType *_types;
+    CFMutableStringRef _typeString;
     NSUInteger _count;
     NSUInteger _frameLength;
     BOOL _isOneway;
@@ -23,4 +25,8 @@ typedef struct {
 - (const char *)methodReturnType NS_RETURNS_INNER_POINTER;
 - (NSUInteger)methodReturnLength;
 
+@end
+
+@interface NSMethodSignature (Internal)
+- (NSString *) _typeString;
 @end
