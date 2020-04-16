@@ -138,6 +138,8 @@ set(foundation_sources
 	src/NSPointerFunctions.m
 	src/NSPort.m
 	src/NSPortMessage.m
+	src/NSPortNameServer.m
+	src/NSMachBootstrapServer.m
 	src/NSPredicateLexer.m
 	src/NSPredicate.m
 	src/NSPredicateOperator.m
