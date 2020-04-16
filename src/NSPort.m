@@ -161,7 +161,11 @@ const NSNotificationName NSPortDidBecomeInvalidNotification = @"NSPortDidBecomeI
         [super release];
         return nil;
     }
-    return [self initWithMachPort:port options:0];
+    if (mach_port_insert_right(mach_task_self(), port, port, MACH_MSG_TYPE_MAKE_SEND) != KERN_SUCCESS) {
+        [super release];
+        return nil;
+    }
+    return [self initWithMachPort: port];
 }
 
 - (id) initWithMachPort: (uint32_t) machPort
