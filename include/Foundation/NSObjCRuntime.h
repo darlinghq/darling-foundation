@@ -395,3 +395,5 @@ typedef NS_ENUM(NSInteger, NSQualityOfService) {
     NSQualityOfServiceBackground = 0x09,
     NSQualityOfServiceDefault = -1
 };
+
+#define NS_SWIFT_NAME(_name) CF_SWIFT_NAME(_name)
