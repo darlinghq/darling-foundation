@@ -250,6 +250,7 @@ set(foundation_sources
 	src/NSUnarchiver.m
 	src/NSDeserializer.m
 	src/NSPortNameServer.m
+	src/NSHFSFileTypes.m
 )
 
 # Includes ObjC headers -> must be compiled as ObjC
