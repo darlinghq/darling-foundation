@@ -2615,3 +2615,49 @@ static BOOL _NSScanStringValue(NSString *self, NSNumericValueType type, NSNumeri
 }
 
 @end
+
+
+@implementation NSString (StringsFormat)
+- (NSString *)quotedStringRepresentation
+{
+    const NSUInteger len = [self length];
+    unichar* buf = (unichar*) malloc((len+1) * sizeof(unichar));
+    unichar* out = (unichar*) malloc((len*6+3) * sizeof(unichar));
+    NSUInteger outPos = 0;
+
+    out[outPos++] = '"';
+
+    [self getCharacters: buf range: NSMakeRange(0, len)];
+
+    for (NSUInteger inPos = 0; inPos < len; inPos++)
+    {
+        const unichar c = buf[inPos];
+        if (c == '"')
+        {
+            out[outPos++] = '\\';
+            out[outPos++] = '"';
+        }
+        else if (c < 0x80)
+        {
+            out[outPos++] = c;
+        }
+        else
+        {
+            static const char hex[] = "0123456789abcdef";
+
+            out[outPos++] = '\\';
+            out[outPos++] = 'U';
+
+            unichar c = c;
+            out[outPos++] = hex[(c >> 24) & 0xf];
+            out[outPos++] = hex[(c >> 16) & 0xf];
+            out[outPos++] = hex[(c >> 8) & 0xf];
+            out[outPos++] = hex[c & 0xf];
+        }
+    }
+    out[outPos++] = '"';
+
+    free(buf);
+    return [[[NSString alloc] initWithCharactersNoCopy:out length:outPos freeWhenDone:YES] autorelease];
+}
+@end
