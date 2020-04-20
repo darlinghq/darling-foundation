@@ -3,19 +3,19 @@
 
 @class NSArray, NSDictionary, NSString;
 
-@interface NSSet : NSObject <NSCopying, NSMutableCopying, NSSecureCoding, NSFastEnumeration>
+@interface NSSet<__covariant ObjectType> : NSObject <NSCopying, NSMutableCopying, NSSecureCoding, NSFastEnumeration>
 
 - (NSUInteger)count;
-- (id)member:(id)object;
-- (NSEnumerator *)objectEnumerator;
+- (ObjectType)member:(ObjectType)object;
+- (NSEnumerator<ObjectType> *)objectEnumerator;
 
 @end
 
-@interface NSSet (NSExtendedSet)
+@interface NSSet<__covariant ObjectType> (NSExtendedSet)
 
 - (NSArray *)allObjects;
-- (id)anyObject;
-- (BOOL)containsObject:(id)anObject;
+- (ObjectType)anyObject;
+- (BOOL)containsObject:(ObjectType)anObject;
 - (NSString *)description;
 - (NSString *)descriptionWithLocale:(id)locale;
 - (BOOL)intersectsSet:(NSSet *)other;
@@ -23,50 +23,50 @@
 - (BOOL)isSubsetOfSet:(NSSet *)other;
 - (void)makeObjectsPerformSelector:(SEL)sel;
 - (void)makeObjectsPerformSelector:(SEL)sel withObject:(id)argument;
-- (NSSet *)setByAddingObject:(id)anObject;
-- (NSSet *)setByAddingObjectsFromSet:(NSSet *)other;
-- (NSSet *)setByAddingObjectsFromArray:(NSArray *)other;
+- (NSSet<ObjectType> *)setByAddingObject:(ObjectType)anObject;
+- (NSSet<ObjectType> *)setByAddingObjectsFromSet:(NSSet<ObjectType> *)other;
+- (NSSet<ObjectType> *)setByAddingObjectsFromArray:(NSArray<ObjectType> *)other;
 #if NS_BLOCKS_AVAILABLE
-- (void)enumerateObjectsUsingBlock:(void (^)(id obj, BOOL *stop))block;
-- (void)enumerateObjectsWithOptions:(NSEnumerationOptions)opts usingBlock:(void (^)(id obj, BOOL *stop))block;
-- (NSSet *)objectsPassingTest:(BOOL (^)(id obj, BOOL *stop))predicate;
-- (NSSet *)objectsWithOptions:(NSEnumerationOptions)opts passingTest:(BOOL (^)(id obj, BOOL *stop))predicate;
+- (void)enumerateObjectsUsingBlock:(void (^)(ObjectType obj, BOOL *stop))block;
+- (void)enumerateObjectsWithOptions:(NSEnumerationOptions)opts usingBlock:(void (^)(ObjectType obj, BOOL *stop))block;
+- (NSSet *)objectsPassingTest:(BOOL (^)(ObjectType obj, BOOL *stop))predicate;
+- (NSSet *)objectsWithOptions:(NSEnumerationOptions)opts passingTest:(BOOL (^)(ObjectType obj, BOOL *stop))predicate;
 #endif
 
 @end
 
-@interface NSSet (NSSetCreation)
+@interface NSSet<__covariant ObjectType> (NSSetCreation)
 
 + (instancetype)set;
 + (instancetype)setWithObject:(id)object;
-+ (instancetype)setWithObjects:(const id [])objects count:(NSUInteger)cnt;
-+ (instancetype)setWithObjects:(id)firstObj, ... NS_REQUIRES_NIL_TERMINATION;
-+ (instancetype)setWithSet:(NSSet *)set;
-+ (instancetype)setWithArray:(NSArray *)array;
-- (instancetype)initWithObjects:(const id [])objects count:(NSUInteger)cnt;
-- (instancetype)initWithObjects:(id)firstObj, ... NS_REQUIRES_NIL_TERMINATION;
-- (instancetype)initWithSet:(NSSet *)set;
-- (instancetype)initWithSet:(NSSet *)set copyItems:(BOOL)flag;
-- (instancetype)initWithArray:(NSArray *)array;
++ (instancetype)setWithObjects:(const ObjectType [])objects count:(NSUInteger)cnt;
++ (instancetype)setWithObjects:(ObjectType)firstObj, ... NS_REQUIRES_NIL_TERMINATION;
++ (instancetype)setWithSet:(NSSet<ObjectType> *)set;
++ (instancetype)setWithArray:(NSArray<ObjectType> *)array;
+- (instancetype)initWithObjects:(const ObjectType [])objects count:(NSUInteger)cnt;
+- (instancetype)initWithObjects:(ObjectType)firstObj, ... NS_REQUIRES_NIL_TERMINATION;
+- (instancetype)initWithSet:(NSSet<ObjectType> *)set;
+- (instancetype)initWithSet:(NSSet<ObjectType> *)set copyItems:(BOOL)flag;
+- (instancetype)initWithArray:(NSArray<ObjectType> *)array;
 
 @end
 
-@interface NSMutableSet : NSSet
+@interface NSMutableSet<__covariant ObjectType> : NSSet
 
-- (void)addObject:(id)object;
-- (void)removeObject:(id)object;
+- (void)addObject:(ObjectType)object;
+- (void)removeObject:(ObjectType)object;
 
 @end
 
-@interface NSMutableSet (NSExtendedMutableSet)
+@interface NSMutableSet<__covariant ObjectType> (NSExtendedMutableSet)
 
-- (void)addObjectsFromArray:(NSArray *)array;
-- (void)intersectSet:(NSSet *)other;
-- (void)minusSet:(NSSet *)other;
+- (void)addObjectsFromArray:(NSArray<ObjectType> *)array;
+- (void)intersectSet:(NSSet<ObjectType> *)other;
+- (void)minusSet:(NSSet<ObjectType> *)other;
 - (void)removeAllObjects;
-- (void)unionSet:(NSSet *)other;
+- (void)unionSet:(NSSet<ObjectType> *)other;
 
-- (void)setSet:(NSSet *)other;
+- (void)setSet:(NSSet<ObjectType> *)other;
 
 @end
 
@@ -78,18 +78,18 @@
 @end
 
 typedef struct __CFBag* CFMutableBagRef;
-@interface NSCountedSet : NSMutableSet
+@interface NSCountedSet<__covariant ObjectType> : NSMutableSet
 {
     CFMutableBagRef _table;
     void *_reserved;
 }
 
 - (instancetype)initWithCapacity:(NSUInteger)numItems;
-- (instancetype)initWithArray:(NSArray *)array;
-- (instancetype)initWithSet:(NSSet *)set;
-- (NSUInteger)countForObject:(id)object;
-- (NSEnumerator *)objectEnumerator;
-- (void)addObject:(id)object;
-- (void)removeObject:(id)object;
+- (instancetype)initWithArray:(NSArray<ObjectType> *)array;
+- (instancetype)initWithSet:(NSSet<ObjectType> *)set;
+- (NSUInteger)countForObject:(ObjectType)object;
+- (NSEnumerator<ObjectType> *)objectEnumerator;
+- (void)addObject:(ObjectType)object;
+- (void)removeObject:(ObjectType)object;
 
 @end
