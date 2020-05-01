@@ -66,7 +66,7 @@ typedef NSUInteger _NSOperationState;
     NSInteger _effectivePriorityValue;
 }
 
-@property (readonly) NSArray *depedencies;
+@property (readonly) NSArray *dependencies;
 
 - (id)initWithOperation:(NSOperation *)operation;
 
@@ -86,7 +86,7 @@ static pthread_mutex_t _NSOperationLock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER;
 
 @implementation _NSOperationInternal
 
-@synthesize depedencies=_dependencies;
+@synthesize dependencies=_dependencies;
 
 - (id)initWithOperation:(NSOperation *)operation
 {
