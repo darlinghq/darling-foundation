@@ -499,9 +499,25 @@ static void encodeDouble(NSKeyedArchiver *archiver, double d, NSString *key)
     return [data autorelease];
 }
 
+- (id)init
+{
+    NSMutableData* data = [[NSMutableData alloc] initWithCapacity: 0];
+    self = [self _initWithOutput:(CFTypeRef) data];
+    [data release];
+    return self;
+}
+
 - (id)initForWritingWithMutableData:(NSMutableData *)data
 {
     return [self _initWithOutput:(CFTypeRef)data];
+}
+
+-(NSData *)encodedData
+{
+    [self finishEncoding];
+    if ([_stream isKindOfClass: [NSData class]])
+        return (NSData*) _stream;
+    return nil;
 }
 
 static const void *_retain(CFAllocatorRef allocator, const void *value)
@@ -546,13 +562,6 @@ static void _release(CFAllocatorRef allocator, const void *value)
         [dict release];
     }
     return self;
-}
-
-- (id)init
-{
-    [NSException raise:NSInvalidArgumentException format:@"Cannot use -init on %@", [self class]];
-    [self release];
-    return nil;
 }
 
 - (void)dealloc

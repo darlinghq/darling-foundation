@@ -60,12 +60,14 @@ typedef const struct __CFKeyedArchiverUID* CFKeyedArchiverUIDRef;
 + (void)setClassName:(NSString *)codedName forClass:(Class)cls;
 + (NSString *)classNameForClass:(Class)cls;
 
+- (id)init;
 - (id)initForWritingWithMutableData:(NSMutableData *)data;
 - (void)setDelegate:(id <NSKeyedArchiverDelegate>)delegate;
 - (id <NSKeyedArchiverDelegate>)delegate;
 - (void)setOutputFormat:(NSPropertyListFormat)format;
 - (NSPropertyListFormat)outputFormat;
 - (void)finishEncoding;
+@property(readonly, strong) NSData *encodedData;
 - (void)setClassName:(NSString *)codedName forClass:(Class)cls;
 - (NSString *)classNameForClass:(Class)cls;
 - (void)encodeObject:(id)objv forKey:(NSString *)key;
