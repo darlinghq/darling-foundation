@@ -93,7 +93,11 @@
 
 - (void) encodePortObject: (NSPort *) port {
     if (port == nil) {
-        __asm__("int3");
+        #if defined(__x86_64__) || defined(__i386__)
+            __asm__("int3");
+        #else
+            __builtin_debugtrap();
+        #endif
     }
     [_components addObject: port];
 }
