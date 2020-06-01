@@ -26,3 +26,7 @@
 @interface NSXPCListener : NSObject
 
 @end
+
+@interface NSXPCListenerEndpoint : NSObject <NSSecureCoding>
+
+@end
