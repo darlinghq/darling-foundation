@@ -18,6 +18,8 @@ FOUNDATION_EXPORT NSString * const NSURLAuthenticationMethodNTLM;
 FOUNDATION_EXPORT NSString * const NSURLAuthenticationMethodNegotiate;
 FOUNDATION_EXPORT NSString * const NSURLAuthenticationMethodClientCertificate;
 FOUNDATION_EXPORT NSString * const NSURLAuthenticationMethodServerTrust;
+// NSURLAuthenticationMethodOAuth
+// NSURLAuthenticationMethodXMobileMeAuthToken
 
 @class NSURLProtectionSpaceInternal;
 
