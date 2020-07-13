@@ -2,6 +2,8 @@
 
 @class NSDictionary, NSArray;
 
+typedef NSString *NSErrorDomain;
+
 FOUNDATION_EXPORT NSString *const NSCocoaErrorDomain;
 FOUNDATION_EXPORT NSString *const NSPOSIXErrorDomain;
 FOUNDATION_EXPORT NSString *const NSOSStatusErrorDomain;

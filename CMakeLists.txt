@@ -258,7 +258,7 @@ set_source_files_properties(src/NSPredicateParser.tab.c PROPERTIES COMPILE_FLAGS
 set(DYLIB_COMPAT_VERSION "300.0.0")
 set(DYLIB_CURRENT_VERSION "1349.0.0")
 
-add_framework(Foundation
+add_separated_framework(Foundation
     FAT
 	CURRENT_VERSION
 	SOURCES
@@ -273,6 +273,18 @@ add_framework(Foundation
 	LINK_FLAGS " -Wl,-reexport_library,${CMAKE_BINARY_DIR}/src/external/corefoundation/CoreFoundation \
 				-Wl,-reexport_library,${CMAKE_BINARY_DIR}/src/external/objc4/runtime/libobjc.A.dylib"
 )
+
+# if (TARGET_i386)
+# set_property(
+# 	TARGET CoreFoundation_i386 APPEND_STRING PROPERTY
+# 	LINK_FLAGS " -Wl,-reexported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/reexport_i386.exp")
+# endif (TARGET_i386)
+if (TARGET_x86_64)
+set_property(
+	TARGET Foundation_x86_64 APPEND_STRING PROPERTY
+	LINK_FLAGS " -Wl,-reexported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/reexport_x86_64.exp"
+)
+endif (TARGET_x86_64)
 
 add_darling_executable(defaults tools/defaults.m)
 target_link_libraries(defaults Foundation)

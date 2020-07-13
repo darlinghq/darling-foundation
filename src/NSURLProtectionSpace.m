@@ -9,22 +9,6 @@
 #import <Foundation/NSString.h>
 #import <CFNetwork/CFURLProtectionSpace.h>
 
-NSString * const NSURLProtectionSpaceHTTP = @"http";
-NSString * const NSURLProtectionSpaceHTTPS = @"https";
-NSString * const NSURLProtectionSpaceFTP = @"ftp";
-NSString * const NSURLProtectionSpaceHTTPProxy = @"http";
-NSString * const NSURLProtectionSpaceHTTPSProxy = @"https";
-NSString * const NSURLProtectionSpaceFTPProxy = @"ftp";
-NSString * const NSURLProtectionSpaceSOCKSProxy = @"SOCKS";
-
-NSString * const NSURLAuthenticationMethodDefault = @"NSURLAuthenticationMethodDefault";
-NSString * const NSURLAuthenticationMethodHTTPBasic = @"NSURLAuthenticationMethodDefault";
-NSString * const NSURLAuthenticationMethodHTTPDigest = @"NSURLAuthenticationMethodHTTPDigest";
-NSString * const NSURLAuthenticationMethodHTMLForm = @"NSURLAuthenticationMethodHTMLForm";
-NSString * const NSURLAuthenticationMethodNTLM = @"NSURLAuthenticationMethodNTLM";
-NSString * const NSURLAuthenticationMethodNegotiate = @"NSURLAuthenticationMethodNegotiate";
-NSString * const NSURLAuthenticationMethodClientCertificate = @"NSURLAuthenticationMethodClientCertificate";
-NSString * const NSURLAuthenticationMethodServerTrust = @"NSURLAuthenticationMethodServerTrust";
 
 @class NSURLProtectionSpaceInternal;
 
