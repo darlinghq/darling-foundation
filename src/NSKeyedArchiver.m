@@ -512,6 +512,12 @@ static void encodeDouble(NSKeyedArchiver *archiver, double d, NSString *key)
     return [self _initWithOutput:(CFTypeRef)data];
 }
 
+- (id)initRequiringSecureCoding:(BOOL)requiringSecureCoding
+{
+#warning TODO: [NSKeyedArchiver initRequiringSecureCoding:]
+    return [self init];
+}
+
 -(NSData *)encodedData
 {
     [self finishEncoding];
