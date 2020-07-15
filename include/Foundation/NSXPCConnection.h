@@ -18,15 +18,47 @@
 */
 
 #import <Foundation/NSObject.h>
+#import <xpc/xpc.h>
+#import <bsm/audit.h>
 
-@interface NSXPCConnection : NSObject
+@interface NSXPCInterface : NSObject
+
+@property (assign) Protocol* protocol;
+
+@end
+
+@interface NSXPCListenerEndpoint : NSObject <NSSecureCoding>
+
+@end
+
+@protocol NSXPCListenerDelegate <NSObject>
 
 @end
 
 @interface NSXPCListener : NSObject
 
+@property (weak) id<NSXPCListenerDelegate> delegate;
+@property (readonly, retain) NSXPCListenerEndpoint* endpoint;
+
 @end
 
-@interface NSXPCListenerEndpoint : NSObject <NSSecureCoding>
+typedef enum NSXPCConnectionOptions : NSUInteger {
+	NSXPCConnectionPrivileged = (1 << 12UL),
+} NSXPCConnectionOptions;
+
+@interface NSXPCConnection : NSObject
+
+@property (readonly) au_asid_t auditSessionIdentifier;
+@property (readonly) gid_t effectiveGroupIdentifier;
+@property (readonly) uid_t effectiveUserIdentifier;
+@property (readonly, retain) NSXPCListenerEndpoint* endpoint;
+@property (retain) NSXPCInterface* exportedInterface;
+@property (retain) id exportedObject;
+@property (copy) void (^interruptionHandler)(void);
+@property (copy) void (^invalidationHandler)(void);
+@property (readonly) pid_t processIdentifier;
+@property (retain) NSXPCInterface* remoteObjectInterface;
+@property (readonly, retain) id remoteObjectProxy;
+@property (readonly, copy) NSString* serviceName;
 
 @end
