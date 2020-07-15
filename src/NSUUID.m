@@ -33,24 +33,24 @@ static NSString * const NSUUIDBytesKey = @"NS.uuidbytes";
     }
 }
 
-+ (id)UUID
++ (FOUNDATION_INSTANCETYPE)UUID
 {
     return [[[self alloc] init] autorelease];
 }
 
-- (id)init
+- (FOUNDATION_INSTANCETYPE)init
 {
     return [super init];
 }
 
-- (id)initWithUUIDString:(NSString *)string
+- (FOUNDATION_INSTANCETYPE)initWithUUIDString:(NSString *)string
 {
     NSRequestConcreteImplementation();
     [self release];
     return nil;
 }
 
-- (id)initWithUUIDBytes:(const uuid_t)bytes
+- (FOUNDATION_INSTANCETYPE)initWithUUIDBytes:(const uuid_t)bytes
 {
     NSRequestConcreteImplementation();
     [self release];

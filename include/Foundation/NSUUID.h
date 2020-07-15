@@ -2,12 +2,18 @@
 #import <CoreFoundation/CFUUID.h>
 #import <uuid/uuid.h>
 
+#if __OBJC2__
+#define FOUNDATION_INSTANCETYPE instancetype
+#else
+#define FOUNDATION_INSTANCETYPE id
+#endif
+
 @interface NSUUID : NSObject <NSCopying, NSSecureCoding>
 
-+ (id)UUID;
-- (id)init;
-- (id)initWithUUIDString:(NSString *)string;
-- (id)initWithUUIDBytes:(const uuid_t)bytes;
++ (FOUNDATION_INSTANCETYPE)UUID;
+- (FOUNDATION_INSTANCETYPE)init;
+- (FOUNDATION_INSTANCETYPE)initWithUUIDString:(NSString *)string;
+- (FOUNDATION_INSTANCETYPE)initWithUUIDBytes:(const uuid_t)bytes;
 - (void)getUUIDBytes:(uuid_t)uuid;
 - (NSString *)UUIDString;
 
