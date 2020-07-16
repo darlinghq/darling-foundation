@@ -37,7 +37,7 @@
 
 @interface NSXPCListener : NSObject
 
-@property (weak) id<NSXPCListenerDelegate> delegate;
+@property (assign) id<NSXPCListenerDelegate> delegate;
 @property (readonly, retain) NSXPCListenerEndpoint* endpoint;
 
 @end

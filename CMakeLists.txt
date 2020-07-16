@@ -7,6 +7,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -nostdinc -mmacosx-version-min=10.10 \
 include(darling_framework)
 
 include_directories(
+	${CMAKE_SOURCE_DIR}/src/external/corefoundation # for `ForFoundationOnly.h`
 	${CMAKE_CURRENT_SOURCE_DIR}/include/Foundation
 	${CMAKE_CURRENT_SOURCE_DIR}/src
 )
@@ -17,6 +18,7 @@ add_definitions(
 	-DDEPLOYMENT_TARGET_MACOSX=1
 	-D__CONSTANT_CFSTRINGS__=1
 	-D__CONSTANT_STRINGS__=1
+	-DOBJC_OLD_DISPATCH_PROTOTYPES=1
 )
 
 set(foundation_sources
@@ -268,7 +270,7 @@ add_separated_framework(Foundation
 		objc
 		system
 		CoreFoundation
-		CFNetwork
+		CFNetwork_firstpass
 		xml2
 	LINK_FLAGS " -Wl,-reexport_library,${CMAKE_BINARY_DIR}/src/external/corefoundation/CoreFoundation \
 				-Wl,-reexport_library,${CMAKE_BINARY_DIR}/src/external/objc4/runtime/libobjc.A.dylib"
