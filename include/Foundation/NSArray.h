@@ -91,7 +91,7 @@ typedef NS_OPTIONS(NSUInteger, NSBinarySearchingOptions) {
 
 @end
 
-@interface NSMutableArray<ObjectType> : NSArray
+@interface NSMutableArray<ObjectType> : NSArray<ObjectType>
 
 - (instancetype)init;
 - (instancetype)initWithCapacity:(NSUInteger)numItems;
