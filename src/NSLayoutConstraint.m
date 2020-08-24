@@ -17,23 +17,39 @@
  along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#import <Foundation/NSObject.h>
-#import <Foundation/NSMethodSignature.h>
 #import <Foundation/NSInvocation.h>
-
-@interface NSLayoutConstraint : NSObject
-@end
-
+#import <Foundation/NSLayoutConstraint.h>
+#import <Foundation/NSMethodSignature.h>
 #warning TODO: $ld$hide$os 10.4 through 10.7, also METACLASS
 
 @implementation NSLayoutConstraint
 
+// @synthesize firstItem=_firstItem;
+// @synthesize firstAttribute=_firstAttribute;
+// @synthesize secondItem=_secondItem;
+// @synthesize secondAttribute=_secondAttribute;
+// @synthesize relation=_relation;
+// @synthesize multiplier=_multiplier;
+// @synthesize constant=_constant;
+
++ (instancetype)constraintWithItem:(id)view1
+                         attribute:(NSLayoutAttribute)attr1
+                         relatedBy:(NSLayoutRelation)relation
+                            toItem:(id)view2
+                         attribute:(NSLayoutAttribute)attr2
+                        multiplier:(CGFloat)multiplier
+                          constant:(CGFloat)c {
+    NSLayoutConstraint *item = [[NSLayoutConstraint alloc] init];
+
+    return item;
+}
+
 - (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector {
-    return [NSMethodSignature signatureWithObjCTypes: "v@:"];
+  return [NSMethodSignature signatureWithObjCTypes: "v@:"];
 }
 
 - (void)forwardInvocation:(NSInvocation *)anInvocation {
-    NSLog(@"Stub called: %@ in %@", NSStringFromSelector([anInvocation selector]), [self class]);
+  NSLog(@"Stub called: %@ in %@", NSStringFromSelector([anInvocation selector]), [self class]);
 }
 
 @end
