@@ -35,6 +35,17 @@
 
 @implementation NSXPCListener
 
++ (instancetype)anonymousListener {
+    // TODO: do stuff?
+    return [NSXPCListener alloc];
+}
+
+- (instancetype)initWithMachServiceName:(NSString*)serviceName {
+    #warning TODO: implement `initWithMachServiceName:` in NSXPCListener
+    // actually, it's more like "TODO: implement all of NSXPC*"
+    return self;
+}
+
 - (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector {
     return [NSMethodSignature signatureWithObjCTypes: "v@:"];
 }

@@ -1,7 +1,7 @@
 /*
  This file is part of Darling.
 
- Copyright (C) 2019 Lubos Dolezel
+ Copyright (C) 2020 Lubos Dolezel
 
  Darling is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -17,11 +17,21 @@
  along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#import <Foundation/NSObject.h>
-#import <Foundation/NSDate.h>
+#ifndef _NSDATA_PRIVATE_H_
+#define _NSDATA_PRIVATE_H_
 
-@interface NSDateInterval : NSObject <NSCopying, NSSecureCoding>
+typedef void (^NSDataDeallocator)(void *bytes, NSUInteger length);
 
-@property (readonly) NSTimeInterval duration;
+FOUNDATION_EXPORT const NSDataDeallocator NSDataDeallocatorVM;
+FOUNDATION_EXPORT const NSDataDeallocator NSDataDeallocatorUnmap;
+FOUNDATION_EXPORT const NSDataDeallocator NSDataDeallocatorFree;
+FOUNDATION_EXPORT const NSDataDeallocator NSDataDeallocatorNone;
+
+// not sure what to name this category
+@interface NSData (NSDataPrivateStuff)
+
++ (id)_newZeroingDataWithBytesNoCopy:(void *)bytes length:(NSUInteger)length deallocator:(NSDataDeallocator)deallocator;
 
 @end
+
+#endif // _NSDATA_PRIVATE_H_

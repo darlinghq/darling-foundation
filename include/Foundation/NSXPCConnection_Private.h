@@ -17,3 +17,17 @@
  along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <mach/mach.h>
+#import <Foundation/NSXPCConnection.h>
+
+@interface NSXPCListenerEndpoint (NSXPCPrivateStuff)
+
+- (xpc_endpoint_t)_endpoint;
+
+@end
+
+@interface NSXPCConnection (NSXPCPrivateStuff)
+
+@property (readonly) audit_token_t auditToken;
+
+@end

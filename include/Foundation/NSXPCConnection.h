@@ -20,8 +20,15 @@
 #import <Foundation/NSObject.h>
 #import <xpc/xpc.h>
 #import <bsm/audit.h>
+#import <Foundation/NSSet.h>
+#import <Foundation/NSString.h>
 
 @interface NSXPCInterface : NSObject
+
++ (NSXPCInterface*)interfaceWithProtocol:(Protocol*)protocol;
+
+- (void)setClasses:(NSSet<Class>*)classes forSelector:(SEL)selector argumentIndex:(NSUInteger)argumentIndex ofReply:(BOOL)ofReply;
+- (void)setClass:(Class)classes forSelector:(SEL)selector argumentIndex:(NSUInteger)argumentIndex ofReply:(BOOL)ofReply;
 
 @property (assign) Protocol* protocol;
 
@@ -37,6 +44,12 @@
 
 @interface NSXPCListener : NSObject
 
++ (instancetype)anonymousListener;
+
+- (instancetype)initWithMachServiceName:(NSString*)serviceName;
+
+- (void)resume;
+
 @property (assign) id<NSXPCListenerDelegate> delegate;
 @property (readonly, retain) NSXPCListenerEndpoint* endpoint;
 
@@ -47,6 +60,10 @@ typedef enum NSXPCConnectionOptions : NSUInteger {
 } NSXPCConnectionOptions;
 
 @interface NSXPCConnection : NSObject
+
+- (void)resume;
+
+- (id)valueForEntitlement:(NSString*)entitlement;
 
 @property (readonly) au_asid_t auditSessionIdentifier;
 @property (readonly) gid_t effectiveGroupIdentifier;

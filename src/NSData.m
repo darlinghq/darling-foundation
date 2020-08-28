@@ -6,6 +6,7 @@
 //
 
 #import <Foundation/NSData.h>
+#import <Foundation/NSData_Private.h>
 
 #import <Foundation/NSError.h>
 #import <Foundation/NSException.h>
@@ -25,8 +26,6 @@
 #import <objc/runtime.h>
 #import <stdlib.h>
 #import <sys/mman.h>
-
-typedef void (^NSDataDeallocator)(void *bytes, NSUInteger length);
 
 FOUNDATION_EXPORT const NSDataDeallocator NSDataDeallocatorVM = ^(void *bytes, NSUInteger length) {
     // TODO
@@ -1835,6 +1834,21 @@ SINGLETON_RR()
 
 - (id) replacementObjectForPortCoder: (NSPortCoder *) portCoder {
     return self;
+}
+
+@end
+
+@implementation NSData (NSDataPrivateStuff)
+
++ (id) _newZeroingDataWithBytesNoCopy: (void *)bytes length: (NSUInteger)length deallocator: (NSDataDeallocator)deallocator {
+    // based on the name and its usage in Security, this method is designed to clear the memory when freed
+    // (in order to not leave secrets potentially lying around in memory)
+    //
+    // for now, just pass it on to `initWithBytes:length:copy:deallocator:`
+    //
+    // we'll implement more robust implementations with security in mind later on
+    // for now, we just need it to work
+    return [[NSData alloc] initWithBytes: bytes length: length copy: FALSE deallocator: deallocator];
 }
 
 @end

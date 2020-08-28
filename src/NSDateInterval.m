@@ -43,4 +43,9 @@
 	return nil;
 }
 
+- (NSTimeInterval)duration {
+	NSLog(@"Foundation Stub: -[NSDateInterval duration]");
+	return 0;
+};
+
 @end
