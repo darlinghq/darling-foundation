@@ -19,7 +19,6 @@
 
 #import <Foundation/NSProxy.h>
 #import <Foundation/NSDictionary.h>
-#import <stdatomic.h>
 
 @class NSCoder, NSConnection;
 
@@ -51,7 +50,7 @@ typedef NS_ENUM(unsigned int, NSDistantObjectType) {
     // For remote proxies, this is the wire retain count we hold on them.
     // Note that for local proxies, wire retain count also contributes to the
     // regular retain count, i.e. we actually retain ourselves that many times.
-    atomic_uint _wireRetainCount;
+    unsigned int _wireRetainCount;
     // A protocol the proxy is known to conform to. This can be set explicitly,
     // and enables us to resolve method signatures locally instead of asking the
     // remote.

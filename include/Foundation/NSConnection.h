@@ -21,7 +21,6 @@
 #import <Foundation/NSNotification.h>
 #import <Foundation/NSDate.h>
 #import <Foundation/NSRunLoop.h>
-#import <stdatomic.h>
 
 @class NSArray<ObjectType>, NSMutableArray<ObjectType>, NSMutableDictionary<KeyType, ObjectType>;
 @class NSData, NSNumber, NSString;
@@ -59,8 +58,8 @@ FOUNDATION_EXPORT const NSNotificationName NSConnectionDidDieNotification;
 typedef NSArray<NSNumber *> *NSConnectionReleasedProxyRecord;
 
 @interface NSConnection : NSObject {
-    atomic_bool _isValid;
-    atomic_uchar _canUseKeyedCoder;
+    bool _isValid;
+    unsigned char _canUseKeyedCoder;
 
     id _rootObject;
     id<NSConnectionDelegate> _delegate;
