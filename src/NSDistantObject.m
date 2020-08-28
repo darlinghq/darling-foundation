@@ -65,7 +65,7 @@ static const char *typeString(int type) {
 }
 
 #define _atomic_wireRetainCount (*((atomic_uint*)&_wireRetainCount))
-#define _proxy_atomic_writeRetainCount(proxy) (*((atomic_uint*)&proxy->_wireRetainCount))
+#define _proxy_atomic_wireRetainCount(proxy) (*((atomic_uint*)&proxy->_wireRetainCount))
 
 @implementation NSDistantObject
 
@@ -246,7 +246,7 @@ static const char *typeString(int type) {
                                        id: id
                                      type: NSDistantObjectTypeRemoteProxy];
         // Decoding a remote proxy gives us a strong reference.
-        _proxy_atomic_writeRetainCount(proxy)++;
+        _proxy_atomic_wireRetainCount(proxy)++;
         [proxy retain];
         // [connection importObject: proxy];
         break;
@@ -280,7 +280,7 @@ static const char *typeString(int type) {
                                            id: id
                                          type: NSDistantObjectTypeRemoteProxy];
             // This also gives us a strong reference.
-            _proxy_atomic_writeRetainCount(proxy)++;
+            _proxy_atomic_wireRetainCount(proxy)++;
             [proxy retain];
             // Should we [otherConnection importObject: proxy]; ??
             break;
@@ -439,7 +439,7 @@ static const char *typeString(int type) {
         newProxy->_connection = [newConnection retain];
         newProxy->_localObject = [oldProxy->_localObject retain];
         [allProxies addObject: newProxy];
-        _proxy_atomic_writeRetainCount(newProxy) = 1;
+        _proxy_atomic_wireRetainCount(newProxy) = 1;
     }
 }
 
