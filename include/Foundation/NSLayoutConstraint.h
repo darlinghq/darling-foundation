@@ -39,29 +39,29 @@ typedef enum NSLayoutRelation : NSInteger {
 } NSLayoutRelation;
 
 @interface NSLayoutConstraint : NSObject 
-// {
-    // id _firstItem;
-    // NSLayoutAttribute _firstAttribute;
+{
+    id _firstItem;
+    NSLayoutAttribute _firstAttribute;
 
-    // id _secondItem;
-    // NSLayoutAttribute _secondAttribute;
+    id _secondItem;
+    NSLayoutAttribute _secondAttribute;
 
-    // NSLayoutRelation _relation;
-    // CGFloat _multiplier;
-    // CGFloat _constant;
-// }
+    NSLayoutRelation _relation;
+    CGFloat _multiplier;
+    CGFloat _constant;
+}
 
-// @property(readonly, assign) id firstItem;
-// @property(readonly) NSLayoutAttribute firstAttribute;
-// // @property(readonly,copy) NSLayoutAnchor *firstAnchor;
+@property(readonly, assign) id firstItem;
+@property(readonly) NSLayoutAttribute firstAttribute;
+// @property(readonly,copy) NSLayoutAnchor *firstAnchor;
 
-// @property(readonly, assign) id secondItem;
-// @property(readonly) NSLayoutAttribute secondAttribute;
-// // @property(readonly,copy) NSLayoutAnchor *secondAnchor;
+@property(readonly, assign) id secondItem;
+@property(readonly) NSLayoutAttribute secondAttribute;
+// @property(readonly,copy) NSLayoutAnchor *secondAnchor;
 
-// @property(readonly) NSLayoutRelation relation;
-// @property(readonly) CGFloat multiplier;
-// @property CGFloat constant;
+@property(readonly) NSLayoutRelation relation;
+@property(readonly) CGFloat multiplier;
+@property CGFloat constant;
 
 
 

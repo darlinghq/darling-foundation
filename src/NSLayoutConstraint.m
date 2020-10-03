@@ -22,15 +22,30 @@
 #import <Foundation/NSMethodSignature.h>
 #warning TODO: $ld$hide$os 10.4 through 10.7, also METACLASS
 
+@interface NSLayoutConstraint()
+
+@property(readwrite, assign) id firstItem;
+@property(readwrite) NSLayoutAttribute firstAttribute;
+// @property(readwrite,copy) NSLayoutAnchor *firstAnchor;
+
+@property(readwrite, assign) id secondItem;
+@property(readwrite) NSLayoutAttribute secondAttribute;
+// @property(readwrite,copy) NSLayoutAnchor *secondAnchor;
+
+@property(readwrite) NSLayoutRelation relation;
+@property(readwrite) CGFloat multiplier;
+
+@end
+
 @implementation NSLayoutConstraint
 
-// @synthesize firstItem=_firstItem;
-// @synthesize firstAttribute=_firstAttribute;
-// @synthesize secondItem=_secondItem;
-// @synthesize secondAttribute=_secondAttribute;
-// @synthesize relation=_relation;
-// @synthesize multiplier=_multiplier;
-// @synthesize constant=_constant;
+@synthesize firstItem=_firstItem;
+@synthesize firstAttribute=_firstAttribute;
+@synthesize secondItem=_secondItem;
+@synthesize secondAttribute=_secondAttribute;
+@synthesize relation=_relation;
+@synthesize multiplier=_multiplier;
+@synthesize constant=_constant;
 
 + (instancetype)constraintWithItem:(id)view1
                          attribute:(NSLayoutAttribute)attr1
@@ -39,9 +54,15 @@
                          attribute:(NSLayoutAttribute)attr2
                         multiplier:(CGFloat)multiplier
                           constant:(CGFloat)c {
-    NSLayoutConstraint *item = [[NSLayoutConstraint alloc] init];
-
-    return item;
+  NSLayoutConstraint *item = [[NSLayoutConstraint alloc] init];
+  [item setFirstItem: view1];
+  [item setFirstAttribute: attr1];
+  [item setSecondItem: view1];
+  [item setSecondAttribute: attr1];
+  [item setRelation: relation];
+  [item setMultiplier: multiplier];
+  [item setConstant: c];
+  return item;
 }
 
 - (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector {
