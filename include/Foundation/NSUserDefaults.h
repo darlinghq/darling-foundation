@@ -1,4 +1,5 @@
 #import <Foundation/NSObject.h>
+#import <dispatch/dispatch.h>
 
 @class NSArray, NSData, NSDictionary, NSMutableDictionary, NSString, NSURL;
 
@@ -13,6 +14,12 @@ FOUNDATION_EXPORT NSString * const NSUserDefaultsDidChangeNotification;
 {
     NSString *_suiteName;
     NSMutableDictionary *_volatileDomains;
+
+    dispatch_queue_t _synchronizeQueue;
+    dispatch_queue_t _notificationQueue;
+    dispatch_source_t _synchronizeTimer;
+
+    NSUserDefaults * __strong *_weakSelfPointer;
 }
 
 #undef PREFS_TYPE
