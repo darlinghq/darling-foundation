@@ -50,6 +50,7 @@
 + (instancetype)dictionaryWithObjects:(NSArray<ObjectType> *)objects forKeys:(NSArray<KeyType> *)keys;
 + (instancetype)dictionaryWithContentsOfFile:(NSString *)path;
 + (instancetype)dictionaryWithContentsOfURL:(NSURL *)url;
++ (instancetype)dictionaryWithContentsOfURL:(NSURL *)url error:(NSError **)error;
 - (instancetype)initWithObjects:(const ObjectType [])objects forKeys:(const KeyType <NSCopying> [])keys count:(NSUInteger)cnt;
 - (instancetype)initWithObjectsAndKeys:(ObjectType)firstObject, ... NS_REQUIRES_NIL_TERMINATION;
 - (instancetype)initWithDictionary:(NSDictionary<KeyType, ObjectType> *)otherDictionary;
@@ -57,6 +58,7 @@
 - (instancetype)initWithObjects:(NSArray<ObjectType> *)objects forKeys:(NSArray<KeyType> *)keys;
 - (instancetype)initWithContentsOfFile:(NSString *)path;
 - (instancetype)initWithContentsOfURL:(NSURL *)url;
+- (instancetype)initWithContentsOfURL:(NSURL *)url error:(NSError **)error;
 
 @end
 
