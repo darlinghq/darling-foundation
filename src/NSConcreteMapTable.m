@@ -36,6 +36,7 @@
 #import "Foundation/NSMapTable.h"
 #import "Foundation/NSHashTable.h"
 #import "NSConcreteHashTableInternal.h"
+#import "NSPointerFunctionsInternal.h"
 
 #import "NSPointerFunctions.h"
 #import "NSCallBacks.h"
@@ -1251,12 +1252,14 @@ const NSMapTableValueCallBacks NSOwnedPointerMapValueCallBacks =
   self->cb.pf.k.isEqualFunction = keyFunctions.isEqualFunction;
   self->cb.pf.k.relinquishFunction = keyFunctions.relinquishFunction;
   self->cb.pf.k.sizeFunction = keyFunctions.sizeFunction;
+  self->cb.pf.k.options = ((NSConcretePointerFunctions *)keyFunctions)->_options;
 
   self->cb.pf.v.acquireFunction = valueFunctions.acquireFunction;
   self->cb.pf.v.descriptionFunction = valueFunctions.descriptionFunction;
   self->cb.pf.v.isEqualFunction = valueFunctions.isEqualFunction;
   self->cb.pf.v.relinquishFunction = valueFunctions.relinquishFunction;
   self->cb.pf.v.sizeFunction = valueFunctions.sizeFunction;
+  self->cb.pf.v.options = ((NSConcretePointerFunctions *)valueFunctions)->_options;
 
 #if	GC_WITH_GC
   if (self->cb.pf.k.usesWeakReadAndWriteBarriers)

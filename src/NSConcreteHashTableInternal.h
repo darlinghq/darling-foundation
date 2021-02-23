@@ -81,16 +81,6 @@ inline static BOOL memoryType(int options, int flag)
   return (options & 0xff) == flag;
 }
 
-/* Declare the concrete pointer functions class as a wrapper around
- * an instance of the PFInfo structure.
- */
-@interface NSConcretePointerFunctions : NSPointerFunctions
-{
-@public
-  PFInfo	_x;
-}
-@end
-
 /* Wrapper functions to make use of the pointer functions.
  */
 

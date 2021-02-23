@@ -35,6 +35,7 @@
 #import "Foundation/NSException.h"
 #import "Foundation/NSHashTable.h"
 #import "NSConcreteHashTableInternal.h"
+#import "NSPointerFunctionsInternal.h"
 
 #define NSWarnFLog(fmt, ...)
 #define NSWarnMLog(fmt, ...)
@@ -979,6 +980,7 @@ const NSHashTableCallBacks NSOwnedObjectIdentityHashCallBacks =
   self->cb.pf.isEqualFunction = functions.isEqualFunction;
   self->cb.pf.relinquishFunction = functions.relinquishFunction;
   self->cb.pf.sizeFunction = functions.sizeFunction;
+  self->cb.pf.options = ((NSConcretePointerFunctions *)functions)->_options;
 
 #if	GC_WITH_GC
   if (self->cb.pf.usesWeakReadAndWriteBarriers)
