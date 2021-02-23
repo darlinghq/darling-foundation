@@ -252,6 +252,10 @@ set(foundation_sources
 	src/NSDeserializer.m
 	src/NSPortNameServer.m
 	src/NSHFSFileTypes.m
+	src/NSMeasurement.m
+	src/NSUnit.m
+	src/NSUnitDuration.m
+	src/NSDimension.m
 )
 
 # Includes ObjC headers -> must be compiled as ObjC

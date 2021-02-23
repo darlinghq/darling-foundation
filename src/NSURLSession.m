@@ -9,6 +9,7 @@
 #import <objc/runtime.h>
 
 const int64_t NSURLSessionTransferSizeUnknown = -1LL;
+NSString* const NSURLSessionDownloadTaskResumeData = @"NSURLSessionDownloadTaskResumeData";
 
 @implementation NSURLSession
 
