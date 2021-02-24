@@ -323,7 +323,7 @@ static void __NSBundleMainBundleDealloc()
 
 - (NSString *)resourcePath
 {
-    return [self bundlePath];
+    return [[self resourceURL] path];
 }
 
 - (NSString *)executablePath
@@ -442,7 +442,7 @@ static void __NSBundleMainBundleDealloc()
 
 - (NSURL *)resourceURL
 {
-    return [self bundleURL];
+    return [(NSURL *)CFBundleCopyResourcesDirectoryURL(_cfBundle) autorelease];
 }
 
 - (NSURL *)executableURL
