@@ -20,12 +20,7 @@ static NSString * const NSUUIDBytesKey = @"NS.uuidbytes";
 {
     if (self == [NSUUID class])
     {
-        static dispatch_once_t once = 0L;
-        static __NSConcreteUUID *placeholder = nil;
-        dispatch_once(&once, ^{
-            placeholder = [__NSConcreteUUID allocWithZone:zone];
-        });
-        return placeholder;
+        return [__NSConcreteUUID allocWithZone:zone];
     }
     else
     {
