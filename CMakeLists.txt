@@ -256,6 +256,12 @@ set(foundation_sources
 	src/NSUnit.m
 	src/NSUnitDuration.m
 	src/NSDimension.m
+	src/NSUnitConverter.m
+	src/NSUnitConverterLinear.m
+	src/NSUnitLength.m
+	src/NSAutoresizingMaskLayoutConstraint.m
+	src/NSContentSizeLayoutConstraint.m
+	src/NSIBPrototypingLayoutConstraint.m
 )
 
 # Includes ObjC headers -> must be compiled as ObjC
