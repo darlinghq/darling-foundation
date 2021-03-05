@@ -610,6 +610,14 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
 
 - (NSDictionary *)attributesOfItemAtPath:(NSString *)path error:(NSError **)error
 {
+    if (path == nil) {
+        if (error) {
+            *error = [NSError errorWithDomain: NSCocoaErrorDomain
+                                         code: NSFileReadUnknownError
+                                     userInfo: @{ NSFilePathErrorKey: path }];
+        }
+        return nil;
+    }
     struct stat s;
     int err = lstat([path UTF8String], &s);
     if (err == -1)
