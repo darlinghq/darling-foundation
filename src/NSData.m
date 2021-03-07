@@ -13,6 +13,7 @@
 #import <Foundation/NSURL.h>
 #import <Foundation/NSURLConnection.h>
 #import <Foundation/NSURLRequest.h>
+#import <Foundation/NSURLResponsePrivate.h>
 
 #import <Foundation/NSSerialization.h>
 #import <Foundation/NSPortCoder.h>
@@ -21,7 +22,6 @@
 #import "NSKeyedArchiver.h"
 #import "NSObjectInternal.h"
 #import "NSRangeCheck.h"
-#import "NSURLResponseInternal.h"
 #import "_NSFileIO.h"
 #import <objc/runtime.h>
 #import <stdlib.h>

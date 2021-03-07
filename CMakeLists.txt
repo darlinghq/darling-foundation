@@ -76,8 +76,6 @@ set(foundation_sources
 	src/NSGrammarCheckingResult.m
 	src/NSHashTable.m
 	src/NSHost.m
-	src/NSHTTPCookie.m
-	src/NSHTTPCookieStorage.m
 	src/NSIndexPath.m
 	src/NSIndexSet.m
 	src/NSInPredicateOperator.m
@@ -192,20 +190,10 @@ set(foundation_sources
 	src/NSUndoGroup.m
 	src/NSUndoManager.m
 	src/NSUserDefaults.m
-	src/NSURLAuthenticationChallenge.m
-	src/NSURLCache.m
 	src/NSURLComponents.m
-	src/NSURLConnection.m
-	src/NSURLCredential.m
-	src/NSURLCredentialStorage.m
 	src/NSURLError.m
 	# src/NSURLHandle.m # deprecated since 10.4, from GNUstep
 	src/NSURL.m
-	src/NSURLProtectionSpace.m
-	src/NSURLProtocol.m
-	src/NSURLRequest.m
-	src/NSURLResponse.m
-	src/NSURLSession.m
 	src/NSUUID.m
 	src/NSValue.m
 	src/NSValueTransformer.m
@@ -226,12 +214,10 @@ set(foundation_sources
 
 	src/NSSpellServer.m
 	src/NSSpellEngine.m
-	src/stub.m
 	src/NSFileWrapper.m
 	src/NSAppleEventDescriptor.m
 	src/NSXPCInterface.m
 
-	src/NSURLDownload.m
 	src/NSXPCConnection.m
 	src/NSAppleEventManager.m
 	src/NSDateComponentsFormatter.m
