@@ -43,11 +43,14 @@ OBJC_PROTOCOL_IMPL_PUSH
             path = [path stringByStandardizingPath];
             length = [path length];
         }
+#if 0 // we're supposed to blindly trust the input
         if ([path characterAtIndex:length - 1] == '/')
         {
             isDir = YES;
         }
+#endif
 
+#if 0 // nope, we're not supposed to "catch the dirty lies from the user"
         BOOL isDirectory = NO;
         BOOL exists = [[NSFileManager defaultManager] fileExistsAtPath:path isDirectory:&isDirectory];
         if (exists && isDir != isDirectory) // catch the dirty lies from the user?
@@ -55,9 +58,10 @@ OBJC_PROTOCOL_IMPL_PUSH
             [self release];
             return nil;
         }
+#endif
 
         [self release];
-        self = (NSURL*) CFURLCreateWithFileSystemPath(kCFAllocatorDefault, (CFStringRef)path, kCFURLPOSIXPathStyle, isDirectory);
+        self = (NSURL*) CFURLCreateWithFileSystemPath(kCFAllocatorDefault, (CFStringRef)path, kCFURLPOSIXPathStyle, isDir);
         return self;
     }
     else
