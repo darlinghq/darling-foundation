@@ -1,0 +1,1 @@
+../../src/NSFileCoordinator+Internal.h
