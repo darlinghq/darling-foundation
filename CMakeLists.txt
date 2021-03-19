@@ -250,6 +250,7 @@ set(foundation_sources
 	src/NSAutoresizingMaskLayoutConstraint.m
 	src/NSContentSizeLayoutConstraint.m
 	src/NSIBPrototypingLayoutConstraint.m
+	src/NSDeprecatedKeyValueCoding.m
 )
 
 # Includes ObjC headers -> must be compiled as ObjC
