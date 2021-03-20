@@ -1,16 +1,29 @@
-//
-//  NSXPCCoder.m
-//  Foundation
-//
-//  Copyright (c) 2014 Apportable. All rights reserved.
-//
-
-#import "NSCoderInternal.h"
+#import <Foundation/NSXPCCoder.h>
+#import <xpc/xpc.h>
 
 @implementation NSXPCCoder
 
-- (void)dealloc
+@synthesize userInfo = _userInfo;
+@synthesize connection = _connection;
+
+- (void) encodeXPCObject: (xpc_object_t) object
+                  forKey: (NSString *) key
 {
+    // Do nothing, overriden in NSXPCEncoder.
+}
+
+- (xpc_object_t) decodeXPCObjectOfType: (xpc_type_t) type
+                                forKey: (NSString *) key
+{
+    // Do nothing, overriden in NSXPCDecoder.
+    return NULL;
+}
+
+- (BOOL) requiresSecureCoding {
+    return YES;
+}
+
+- (void) dealloc {
     [_userInfo release];
     [super dealloc];
 }

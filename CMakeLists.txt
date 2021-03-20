@@ -216,7 +216,16 @@ set(foundation_sources
 	src/NSXMLElement.m
 	src/NSXMLNode.m
 	src/NSXMLParser.m
+
+	src/NSXPCInterface.m
+	src/NSXPCConnection.m
 	src/NSXPCCoder.m
+	src/_NSXPCDistantObject.m
+	src/NSXPCDecoder.m
+	src/NSXPCEncoder.m
+	src/NSXPCSerialization.c
+	src/NSXPCSerializationObjC.m
+
 	src/NSZone.m
 
 	src/NSConcreteHashTable.m
@@ -228,10 +237,8 @@ set(foundation_sources
 	src/stub.m
 	src/NSFileWrapper.m
 	src/NSAppleEventDescriptor.m
-	src/NSXPCInterface.m
 
 	src/NSURLDownload.m
-	src/NSXPCConnection.m
 	src/NSAppleEventManager.m
 	src/NSDateComponentsFormatter.m
 	src/NSMeasurementFormatter.m

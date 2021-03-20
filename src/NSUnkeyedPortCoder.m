@@ -338,9 +338,9 @@ static Class decodeClass(NSUnkeyedPortCoder *self) {
     NSUInteger itemSize;
     NSGetSizeAndAlignment(itemType, &itemSize, NULL);
 
-    const char *item = (const char *) array;
+    uintptr_t item = (uintptr_t) array;
     for (NSUInteger i = 0; i < count; i++) {
-        [self encodeValueOfObjCType: itemType at: item];
+        [self encodeValueOfObjCType: itemType at: (void *) item];
         item += itemSize;
     }
 }
@@ -452,9 +452,9 @@ static Class decodeClass(NSUnkeyedPortCoder *self) {
     NSUInteger itemSize;
     NSGetSizeAndAlignment(itemType, &itemSize, NULL);
 
-    char *item = (char *) array;
+    uintptr_t item = (uintptr_t) array;
     for (NSUInteger i = 0; i < count; i++) {
-        [self decodeValueOfObjCType: itemType at: item];
+        [self decodeValueOfObjCType: itemType at: (void *) item];
         item += itemSize;
     }
 }

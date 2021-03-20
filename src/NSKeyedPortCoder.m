@@ -455,9 +455,9 @@ static void endObject(NSKeyedPortCoder *self) {
     NSUInteger itemSize;
     NSGetSizeAndAlignment(itemType, &itemSize, NULL);
 
-    const char *item = (const char *) array;
+    uintptr_t item = (uintptr_t) array;
     for (NSUInteger i = 0; i < count; i++) {
-        [self encodeValueOfObjCType: itemType at: item];
+        [self encodeValueOfObjCType: itemType at: (void *) item];
         item += itemSize;
     }
 }
@@ -490,7 +490,7 @@ static void endObject(NSKeyedPortCoder *self) {
                  const char *itemType = strchr(type, '=') + 1, *nextItemType;
                  itemType[0] != _C_STRUCT_E;
                  itemType = nextItemType
-                 ) {
+            ) {
                 NSUInteger size, alignment;
                 nextItemType = NSGetSizeAndAlignment(itemType, &size, &alignment);
                 item = (item + alignment - 1) / alignment * alignment;
@@ -567,9 +567,9 @@ static void endObject(NSKeyedPortCoder *self) {
     NSUInteger itemSize;
     NSGetSizeAndAlignment(itemType, &itemSize, NULL);
 
-    char *item = (char *) array;
+    uintptr_t item = (uintptr_t) array;
     for (NSUInteger i = 0; i < count; i++) {
-        [self decodeValueOfObjCType: itemType at: item];
+        [self decodeValueOfObjCType: itemType at: (void *) item];
         item += itemSize;
     }
 }
