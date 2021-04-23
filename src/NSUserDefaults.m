@@ -15,6 +15,7 @@
 #import <Foundation/NSKeyedArchiver.h>
 #import "NSObjectInternal.h"
 #import <pthread.h>
+#include <stdlib.h>
 
 NSString * const NSGlobalDomain = @"NSGlobalDomain";
 NSString * const NSArgumentDomain = @"NSArgumentDomain";
@@ -22,15 +23,23 @@ NSString * const NSRegistrationDomain = @"NSRegistrationDomain";
 NSString * const NSUserDefaultsDidChangeNotification = @"NSUserDefaultsDidChangeNotification";
 
 static NSUserDefaults *standardDefaults = nil;
-
-static pthread_mutex_t defaultsLock = PTHREAD_MUTEX_INITIALIZER;
-static dispatch_source_t synchronizeTimer;
 static dispatch_queue_t synchronizeQueue;
 static dispatch_queue_t notificationQueue;
+
+static pthread_mutex_t defaultsLock = PTHREAD_MUTEX_INITIALIZER;
 
 #define SYNC_INTERVAL 30
 
 #define APP_NAME (self->_suiteName != nil ? (CFStringRef) self->_suiteName : kCFPreferencesCurrentApplication)
+
+static void initQueues() {
+    static dispatch_once_t onceToken;
+
+    dispatch_once(&onceToken, ^{
+        synchronizeQueue = dispatch_queue_create("com.apportable.synchronize.userdefaults", NULL);
+        notificationQueue = dispatch_queue_create("com.apportable.notify.userdefaults", NULL);
+    });
+};
 
 @implementation NSUserDefaults (NSUserDefaults)
 
@@ -40,7 +49,6 @@ static dispatch_queue_t notificationQueue;
     if (standardDefaults == nil)
     {
         standardDefaults = [[NSUserDefaults alloc] init];
-        _startSynchronizeTimer(standardDefaults);
         [standardDefaults setObject:[NSLocale preferredLanguages] forKey:@"AppleLanguages"];
         [standardDefaults setObject:[[NSLocale systemLocale] languageCode] forKey:@"AppleLocale"];
     }
@@ -53,11 +61,6 @@ static dispatch_queue_t notificationQueue;
     pthread_mutex_lock(&defaultsLock);
     [standardDefaults release];
     standardDefaults = nil;
-    if (synchronizeTimer)
-    {
-        dispatch_source_cancel(synchronizeTimer);
-        synchronizeTimer = nil;
-    }
     pthread_mutex_unlock(&defaultsLock);
 }
 
@@ -67,8 +70,23 @@ static dispatch_queue_t notificationQueue;
 }
 
 - (id) initWithSuiteName: (NSString *) name {
+    initQueues();
+
     _suiteName = [name copy];
     _volatileDomains = [[NSMutableDictionary alloc] init];
+    _synchronizeTimer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, synchronizeQueue);
+
+    // set interval
+    dispatch_source_set_timer(_synchronizeTimer, dispatch_time(DISPATCH_TIME_NOW, SYNC_INTERVAL * NSEC_PER_SEC), SYNC_INTERVAL * NSEC_PER_SEC, 0);
+
+    NSString* appName = APP_NAME;
+    dispatch_source_set_event_handler(_synchronizeTimer, ^{
+        CFPreferencesAppSynchronize(appName);
+    });
+
+    // now that the timer is set up, start it up
+    dispatch_resume(_synchronizeTimer);
+
     [self setVolatileDomain: [self parseArguments] forName: NSArgumentDomain];
     return self;
 }
@@ -81,6 +99,9 @@ static dispatch_queue_t notificationQueue;
 
 - (void)dealloc
 {
+    dispatch_source_cancel(_synchronizeTimer);
+    dispatch_release(_synchronizeTimer);
+
     [_suiteName release];
     [_volatileDomains release];
     [super dealloc];
@@ -114,28 +135,6 @@ static dispatch_queue_t notificationQueue;
     }
 
     return [res autorelease];
-}
-
-void static _startSynchronizeTimer(NSUserDefaults *self)
-{
-    synchronizeQueue = dispatch_queue_create("com.apportable.synchronize.userdefaults", NULL);
-    notificationQueue = dispatch_queue_create("com.apportable.notify.userdefaults", NULL);
-
-    // create the timer source
-    synchronizeTimer = dispatch_source_create(
-                       DISPATCH_SOURCE_TYPE_TIMER, 0, 0,
-                       synchronizeQueue);
-
-    // set interval
-    dispatch_source_set_timer(synchronizeTimer,
-           dispatch_time(DISPATCH_TIME_NOW, SYNC_INTERVAL * NSEC_PER_SEC), SYNC_INTERVAL * NSEC_PER_SEC, 0);
-
-    dispatch_source_set_event_handler(synchronizeTimer, ^{
-        CFPreferencesAppSynchronize(APP_NAME);
-    });
-
-    // now that the timer is set up, start it up
-    dispatch_resume(synchronizeTimer);
 }
 
 - (id)objectForKey:(NSString *)key

@@ -1,5 +1,7 @@
 project(foundation)
 
+add_subdirectory(services/filecoordinationd)
+
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -nostdinc -mmacosx-version-min=10.10 \
 	-include ${CMAKE_SOURCE_DIR}/src/external/corefoundation/CoreFoundation_Prefix.h \
 	-include ${CMAKE_SOURCE_DIR}/src/external/corefoundation/macros.h")
@@ -7,7 +9,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -nostdinc -mmacosx-version-min=10.10 \
 include(darling_framework)
 
 include_directories(
-	${CMAKE_SOURCE_DIR}/src/external/corefoundation
+	${CMAKE_SOURCE_DIR}/src/external/corefoundation # for `ForFoundationOnly.h`
 	${CMAKE_CURRENT_SOURCE_DIR}/include/Foundation
 	${CMAKE_CURRENT_SOURCE_DIR}/src
 )
@@ -18,6 +20,7 @@ add_definitions(
 	-DDEPLOYMENT_TARGET_MACOSX=1
 	-D__CONSTANT_CFSTRINGS__=1
 	-D__CONSTANT_STRINGS__=1
+	-DOBJC_OLD_DISPATCH_PROTOTYPES=1
 )
 
 set(foundation_sources
@@ -75,8 +78,6 @@ set(foundation_sources
 	src/NSGrammarCheckingResult.m
 	src/NSHashTable.m
 	src/NSHost.m
-	src/NSHTTPCookie.m
-	src/NSHTTPCookieStorage.m
 	src/NSIndexPath.m
 	src/NSIndexSet.m
 	src/NSInPredicateOperator.m
@@ -191,20 +192,10 @@ set(foundation_sources
 	src/NSUndoGroup.m
 	src/NSUndoManager.m
 	src/NSUserDefaults.m
-	src/NSURLAuthenticationChallenge.m
-	src/NSURLCache.m
 	src/NSURLComponents.m
-	src/NSURLConnection.m
-	src/NSURLCredential.m
-	src/NSURLCredentialStorage.m
 	src/NSURLError.m
 	# src/NSURLHandle.m # deprecated since 10.4, from GNUstep
 	src/NSURL.m
-	src/NSURLProtectionSpace.m
-	src/NSURLProtocol.m
-	src/NSURLRequest.m
-	src/NSURLResponse.m
-	src/NSURLSession.m
 	src/NSUUID.m
 	src/NSValue.m
 	src/NSValueTransformer.m
@@ -234,11 +225,10 @@ set(foundation_sources
 
 	src/NSSpellServer.m
 	src/NSSpellEngine.m
-	src/stub.m
 	src/NSFileWrapper.m
 	src/NSAppleEventDescriptor.m
 
-	src/NSURLDownload.m
+	src/NSXPCConnection.m
 	src/NSAppleEventManager.m
 	src/NSDateComponentsFormatter.m
 	src/NSMeasurementFormatter.m
@@ -258,6 +248,17 @@ set(foundation_sources
 	src/NSDeserializer.m
 	src/NSPortNameServer.m
 	src/NSHFSFileTypes.m
+	src/NSMeasurement.m
+	src/NSUnit.m
+	src/NSUnitDuration.m
+	src/NSDimension.m
+	src/NSUnitConverter.m
+	src/NSUnitConverterLinear.m
+	src/NSUnitLength.m
+	src/NSAutoresizingMaskLayoutConstraint.m
+	src/NSContentSizeLayoutConstraint.m
+	src/NSIBPrototypingLayoutConstraint.m
+	src/NSDeprecatedKeyValueCoding.m
 )
 
 # Includes ObjC headers -> must be compiled as ObjC
@@ -276,7 +277,7 @@ add_separated_framework(Foundation
 		objc
 		system
 		CoreFoundation
-		CFNetwork
+		CFNetwork_firstpass
 		xml2
 	LINK_FLAGS " -Wl,-reexport_library,${CMAKE_BINARY_DIR}/src/external/corefoundation/CoreFoundation \
 				-Wl,-reexport_library,${CMAKE_BINARY_DIR}/src/external/objc4/runtime/libobjc.A.dylib"

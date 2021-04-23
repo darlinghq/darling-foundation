@@ -24,7 +24,7 @@ CF_PRIVATE
 extern CFMutableSetRef NSKVOMutableSetGetters;
 
 CF_PRIVATE
-CFSetCallBacks _NSKVOSetterCallbacks;
+extern CFSetCallBacks _NSKVOSetterCallbacks;
 
 typedef struct {
     Class evil; // This is to account for the isa of NSKeyValueSetter (NSKeyValueAccessor)

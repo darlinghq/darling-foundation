@@ -62,6 +62,7 @@ typedef const struct __CFKeyedArchiverUID* CFKeyedArchiverUIDRef;
 
 - (id)init;
 - (id)initForWritingWithMutableData:(NSMutableData *)data;
+- (id)initRequiringSecureCoding:(BOOL)requiringSecureCoding;
 - (void)setDelegate:(id <NSKeyedArchiverDelegate>)delegate;
 - (id <NSKeyedArchiverDelegate>)delegate;
 - (void)setOutputFormat:(NSPropertyListFormat)format;
@@ -109,6 +110,7 @@ typedef struct offsetDataStruct offsetDataStruct;
 + (id)unarchiveObjectWithData:(NSData *)data;
 + (id)unarchiveObjectWithFile:(NSString *)path;
 - (id)initForReadingWithData:(NSData *)data;
+- (id)initForReadingFromData:(NSData *)data error:(NSError **)error;
 - (void)setDelegate:(id <NSKeyedUnarchiverDelegate>)delegate;
 - (id <NSKeyedUnarchiverDelegate>)delegate;
 - (void)finishDecoding;

@@ -20,12 +20,7 @@ static NSString * const NSUUIDBytesKey = @"NS.uuidbytes";
 {
     if (self == [NSUUID class])
     {
-        static dispatch_once_t once = 0L;
-        static __NSConcreteUUID *placeholder = nil;
-        dispatch_once(&once, ^{
-            placeholder = [__NSConcreteUUID allocWithZone:zone];
-        });
-        return placeholder;
+        return [__NSConcreteUUID allocWithZone:zone];
     }
     else
     {
@@ -33,24 +28,24 @@ static NSString * const NSUUIDBytesKey = @"NS.uuidbytes";
     }
 }
 
-+ (id)UUID
++ (FOUNDATION_INSTANCETYPE)UUID
 {
     return [[[self alloc] init] autorelease];
 }
 
-- (id)init
+- (FOUNDATION_INSTANCETYPE)init
 {
     return [super init];
 }
 
-- (id)initWithUUIDString:(NSString *)string
+- (FOUNDATION_INSTANCETYPE)initWithUUIDString:(NSString *)string
 {
     NSRequestConcreteImplementation();
     [self release];
     return nil;
 }
 
-- (id)initWithUUIDBytes:(const uuid_t)bytes
+- (FOUNDATION_INSTANCETYPE)initWithUUIDBytes:(const uuid_t)bytes
 {
     NSRequestConcreteImplementation();
     [self release];

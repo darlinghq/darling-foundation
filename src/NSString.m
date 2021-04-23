@@ -2223,6 +2223,11 @@ static BOOL _NSScanStringValue(NSString *self, NSNumericValueType type, NSNumeri
     return NO;
 }
 
+- (BOOL)containsString:(NSString *)string
+{
+    NSRange range = [self rangeOfString: string];
+    return range.location != NSNotFound;
+}
 
 @end
 

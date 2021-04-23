@@ -94,6 +94,8 @@ FOUNDATION_EXPORT NSString * const NSURLUbiquitousItemIsUploadingKey;
 FOUNDATION_EXPORT NSString * const NSURLUbiquitousItemPercentDownloadedKey;
 FOUNDATION_EXPORT NSString * const NSURLUbiquitousItemPercentUploadedKey;
 
+typedef NSString * NSURLResourceKey;
+
 typedef NS_OPTIONS(NSUInteger, NSURLBookmarkCreationOptions) {
     NSURLBookmarkCreationPreferFileIDResolution           = ( 1UL << 8 ),
     NSURLBookmarkCreationMinimalBookmark                  = ( 1UL << 9 ),

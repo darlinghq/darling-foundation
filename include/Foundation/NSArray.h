@@ -80,6 +80,7 @@ typedef NS_OPTIONS(NSUInteger, NSBinarySearchingOptions) {
 - (instancetype)initWithArray:(NSArray<ObjectType> *)array copyItems:(BOOL)flag;
 + (instancetype)arrayWithContentsOfFile:(NSString *)path;
 + (instancetype)arrayWithContentsOfURL:(NSURL *)url;
++ (instancetype)arrayWithContentsOfURL:(NSURL *)url error:(NSError**)error;
 - (instancetype)initWithContentsOfFile:(NSString *)path;
 - (instancetype)initWithContentsOfURL:(NSURL *)url;
 
@@ -91,7 +92,7 @@ typedef NS_OPTIONS(NSUInteger, NSBinarySearchingOptions) {
 
 @end
 
-@interface NSMutableArray<ObjectType> : NSArray
+@interface NSMutableArray<ObjectType> : NSArray<ObjectType>
 
 - (instancetype)init;
 - (instancetype)initWithCapacity:(NSUInteger)numItems;

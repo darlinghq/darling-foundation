@@ -1061,6 +1061,12 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
     return self;
 }
 
+- (id)initForReadingFromData:(NSData *)data error:(NSError **)error
+{
+#warning TODO [NSKeyedUnarchiver initForReadingFromData:error:]
+    return [self initForReadingWithData: data];
+}
+
 - (id)init
 {
     [NSException raise:NSInvalidArgumentException format:@"Cannot use -init on %@", [self class]];

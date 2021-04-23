@@ -18,6 +18,10 @@
 */
 
 #import <Foundation/NSObject.h>
+#import <Foundation/NSDate.h>
 
 @interface NSDateInterval : NSObject <NSCopying, NSSecureCoding>
+
+@property (readonly) NSTimeInterval duration;
+
 @end

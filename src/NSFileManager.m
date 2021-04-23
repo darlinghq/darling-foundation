@@ -610,6 +610,14 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
 
 - (NSDictionary *)attributesOfItemAtPath:(NSString *)path error:(NSError **)error
 {
+    if (path == nil) {
+        if (error) {
+            *error = [NSError errorWithDomain: NSCocoaErrorDomain
+                                         code: NSFileReadUnknownError
+                                     userInfo: @{ NSFilePathErrorKey: path }];
+        }
+        return nil;
+    }
     struct stat s;
     int err = lstat([path UTF8String], &s);
     if (err == -1)
@@ -786,9 +794,9 @@ static NSError *_NSErrorWithFilePathAndErrno(id path, int code)
         return nil;
     }
     
-    const int numAttributes = 5;
+    #define FILESYSTEM_NUM_ATTRIBUTES 5
     
-    NSString *keys[numAttributes] = {
+    NSString *keys[FILESYSTEM_NUM_ATTRIBUTES] = {
         NSFileSystemNumber,
         NSFileSystemSize,
         NSFileSystemFreeSize,
@@ -800,7 +808,7 @@ static NSError *_NSErrorWithFilePathAndErrno(id path, int code)
     long fsnumber;
     memcpy(&fsnumber, &statbuf.f_fsid, sizeof(fsnumber));
     
-    NSNumber *objects[numAttributes] = {
+    NSNumber *objects[FILESYSTEM_NUM_ATTRIBUTES] = {
         [NSNumber numberWithUnsignedLong:fsnumber],
         [NSNumber numberWithUnsignedLongLong:blocksize * (unsigned long long)statbuf.f_blocks],
         [NSNumber numberWithUnsignedLongLong:blocksize * (unsigned long long)statbuf.f_bavail],
@@ -813,7 +821,8 @@ static NSError *_NSErrorWithFilePathAndErrno(id path, int code)
         *error = nil;
     }
     
-    return [NSDictionary dictionaryWithObjects:objects forKeys:keys count:numAttributes];
+    return [NSDictionary dictionaryWithObjects:objects forKeys:keys count:FILESYSTEM_NUM_ATTRIBUTES];
+    #undef FILESYSTEM_NUM_ATTRIBUTES
 }
 
 - (NSString *)currentDirectoryPath

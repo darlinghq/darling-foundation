@@ -32,6 +32,7 @@
 #import "NSMessageBuilder.h"
 #include <objc/runtime.h>
 
+#include <stdatomic.h>
 
 @interface NSObject (NSDOAdditions)
 + (struct objc_method_description *) methodDescriptionForSelector: (SEL) selector;
@@ -63,6 +64,8 @@ static const char *typeString(int type) {
     }
 }
 
+#define _atomic_wireRetainCount (*((atomic_uint*)&_wireRetainCount))
+#define _proxy_atomic_wireRetainCount(proxy) (*((atomic_uint*)&proxy->_wireRetainCount))
 
 @implementation NSDistantObject
 
@@ -85,12 +88,12 @@ static const char *typeString(int type) {
 
     switch (_type) {
     case NSDistantObjectTypeLocalProxy:
-        NSAssert(_wireRetainCount == 0, @"deallocating a proxy that's still in use");
+        NSAssert(_atomic_wireRetainCount == 0, @"deallocating a proxy that's still in use");
         break;
     case NSDistantObjectTypeRemoteProxy:
-        if (_wireRetainCount != 0) {
+        if (_atomic_wireRetainCount != 0) {
             // Tell the remote we're no longer using this proxy.
-            [_connection releaseProxyID: _id count: _wireRetainCount];
+            [_connection releaseProxyID: _id count: _atomic_wireRetainCount];
         }
         break;
     default:
@@ -134,7 +137,7 @@ static const char *typeString(int type) {
     );
     NSDOLog(@"local proxy with id %d, count %u", proxy->_id, count);
 
-    unsigned int previousWireRetainCount = atomic_fetch_sub(&proxy->_wireRetainCount, count);
+    unsigned int previousWireRetainCount = atomic_fetch_sub((atomic_uint*)&proxy->_wireRetainCount, count);
     BOOL shouldInvalidate = previousWireRetainCount <= count;
     if (shouldInvalidate) {
         // The remote no longer needs this proxy. We cannot deallocate it just
@@ -206,7 +209,7 @@ static const char *typeString(int type) {
     if (type == NSDistantObjectTypeLocalProxy) {
         // Passing a local proxy encoded also implicitly
         // transfers them a strong reference.
-        _wireRetainCount++;
+        _atomic_wireRetainCount++;
         [self retain];
     }
 }
@@ -243,7 +246,7 @@ static const char *typeString(int type) {
                                        id: id
                                      type: NSDistantObjectTypeRemoteProxy];
         // Decoding a remote proxy gives us a strong reference.
-        proxy->_wireRetainCount++;
+        _proxy_atomic_wireRetainCount(proxy)++;
         [proxy retain];
         // [connection importObject: proxy];
         break;
@@ -277,7 +280,7 @@ static const char *typeString(int type) {
                                            id: id
                                          type: NSDistantObjectTypeRemoteProxy];
             // This also gives us a strong reference.
-            proxy->_wireRetainCount++;
+            _proxy_atomic_wireRetainCount(proxy)++;
             [proxy retain];
             // Should we [otherConnection importObject: proxy]; ??
             break;
@@ -436,7 +439,7 @@ static const char *typeString(int type) {
         newProxy->_connection = [newConnection retain];
         newProxy->_localObject = [oldProxy->_localObject retain];
         [allProxies addObject: newProxy];
-        newProxy->_wireRetainCount = 1;
+        _proxy_atomic_wireRetainCount(newProxy) = 1;
     }
 }
 

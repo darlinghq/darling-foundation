@@ -253,6 +253,8 @@
 #define NS_OPTIONS(_type, _name) _type _name; enum
 #endif
 
+#define NS_STRING_ENUM CF_STRING_ENUM
+
 FOUNDATION_EXPORT double NSFoundationVersionNumber;
 
 #if TARGET_OS_IPHONE

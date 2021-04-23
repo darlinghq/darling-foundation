@@ -1,14 +1,20 @@
 #import <Foundation/NSObject.h>
-
-@class NSError, NSFileVersion, NSOperationQueue, NSURL;
+#import <Foundation/NSError.h>
+#import <Foundation/NSFileVersion.h>
+#import <Foundation/NSOperation.h>
+#import <Foundation/NSURL.h>
+#import <Foundation/NSSet.h>
 
 @protocol NSFilePresenter<NSObject>
 @required
 
-@property (readonly) NSURL *presentedItemURL;
-@property (readonly) NSOperationQueue *presentedItemOperationQueue;
+@property (nullable, readonly, copy) NSURL *presentedItemURL;
+@property (readonly, retain) NSOperationQueue *presentedItemOperationQueue;
 
 @optional
+
+@property(nullable, readonly, copy) NSURL *primaryPresentedItemURL;
+@property(readonly, strong) NSSet<NSURLResourceKey> *observedPresentedItemUbiquityAttributes;
 
 #if NS_BLOCKS_AVAILABLE
 - (void)relinquishPresentedItemToReader:(void (^)(void (^reacquirer)(void)))reader;
@@ -30,5 +36,6 @@
 - (void)presentedSubitemAtURL:(NSURL *)url didGainVersion:(NSFileVersion *)version;
 - (void)presentedSubitemAtURL:(NSURL *)url didLoseVersion:(NSFileVersion *)version;
 - (void)presentedSubitemAtURL:(NSURL *)url didResolveConflictVersion:(NSFileVersion *)version;
+- (void)presentedItemDidChangeUbiquityAttributes:(NSSet<NSURLResourceKey> *)attributes;
 
 @end

@@ -118,7 +118,6 @@ _Pragma("clang diagnostic ignored \"-Wobjc-protocol-method-implementation\"")
 #define OBJC_PROTOCOL_IMPL_POP \
 _Pragma("clang diagnostic pop")
 
-__attribute__((visibility("hidden")))
 @interface _NSWeakRef: NSObject
 {
     id _weakRef;

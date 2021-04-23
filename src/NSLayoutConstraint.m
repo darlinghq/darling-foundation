@@ -17,12 +17,9 @@
  along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#import <Foundation/NSObject.h>
+#import <Foundation/NSLayoutConstraint.h>
 #import <Foundation/NSMethodSignature.h>
 #import <Foundation/NSInvocation.h>
-
-@interface NSLayoutConstraint : NSObject
-@end
 
 #warning TODO: $ld$hide$os 10.4 through 10.7, also METACLASS
 

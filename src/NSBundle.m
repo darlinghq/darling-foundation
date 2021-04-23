@@ -15,13 +15,16 @@
 #import <Foundation/NSProcessInfo.h>
 #import <Foundation/NSURL.h>
 #import <Foundation/NSDictionary.h>
+#import <Foundation/NSFileManager.h>
 
 NSString *const NSBundleDidLoadNotification = @"NSBundleDidLoadNotification";
 NSString *const NSLoadedClasses = @"NSLoadedClasses";
 
-static NSMutableDictionary *loadedBundles = nil;
+static NSMutableDictionary *bundlesByIdentifier = nil;
 static NSBundle *mainBundle = nil;
 static NSMutableDictionary *classToBundle = nil;
+static NSMutableDictionary<NSString *, NSBundle *> *bundlesByPath = nil;
+static NSMutableDictionary<NSString *, NSBundle *> *frameworkBundlesByPath = nil;
 
 __attribute__((visibility("hidden")))
 NSString * _NSFrameworkPathFromLibraryPath(NSString *path)
@@ -79,14 +82,26 @@ NSString * _NSBundlePathFromExecutablePath(NSString *path)
 	return [path stringByDeletingLastPathComponent];
 }
 
+static NSString* frameworkPathForPath(NSString *filePath) {
+    NSString *frameworkPath = _NSFrameworkPathFromLibraryPath(filePath);
+    if (frameworkPath) {
+        filePath = frameworkPath;
+    } else {
+        filePath = _NSBundlePathFromExecutablePath(filePath);
+    }
+    return filePath;
+};
+
 @implementation NSBundle
 
 + (void)initialize
 {
     static dispatch_once_t once = 0L;
     dispatch_once(&once, ^{
-        loadedBundles = [[NSMutableDictionary alloc] init];
+        bundlesByIdentifier = [[NSMutableDictionary alloc] init];
         classToBundle = [[NSMutableDictionary alloc] init];
+        bundlesByPath = [NSMutableDictionary dictionary];
+        frameworkBundlesByPath = [NSMutableDictionary dictionary];
     });
 }
 
@@ -103,6 +118,75 @@ NSString * _NSBundlePathFromExecutablePath(NSString *path)
     });
 
     return mainBundle;
+}
+
+- (BOOL)_isRegistered
+{
+    @synchronized(self) {
+        return (_flags & NSBundleIsRegisteredFlag) != 0;
+    }
+}
+
+- (void)_setIsRegistered: (BOOL)isRegistered
+{
+    @synchronized(self) {
+        if (isRegistered) {
+            _flags |= NSBundleIsRegisteredFlag;
+        } else {
+            _flags &= ~NSBundleIsRegisteredFlag;
+        }
+    }
+}
+
+- (void)_addToGlobalTables
+{
+    NSString* bundleIdentifier = [self bundleIdentifier];
+    NSString* bundlePath = [self bundlePath];
+
+    if (bundleIdentifier != nil) {
+        @synchronized(bundlesByIdentifier) {
+            bundlesByIdentifier[bundleIdentifier] = self;
+        }
+    }
+
+    if (bundlePath != nil) {
+        @synchronized(bundlesByPath) {
+            bundlesByPath[bundlePath] = self;
+        }
+
+        if (self != [NSBundle mainBundle] && frameworkPathForPath([self executablePath]) != nil) {
+            @synchronized(frameworkBundlesByPath) {
+                frameworkBundlesByPath[bundlePath] = self;
+            }
+        }
+    }
+
+    [self _setIsRegistered: YES];
+}
+
+- (void)_removeFromGlobalTables
+{
+    if (![self _isRegistered]) {
+        return;
+    }
+
+    NSString* bundleIdentifier = [self bundleIdentifier];
+    NSString* bundlePath = [self bundlePath];
+
+    if (bundleIdentifier != nil) {
+        @synchronized(bundlesByIdentifier) {
+            [bundlesByIdentifier removeObjectForKey: bundleIdentifier];
+        }
+    }
+
+    if (bundlePath != nil) {
+        @synchronized(bundlesByPath) {
+            [bundlesByPath removeObjectForKey: bundlePath];
+        }
+        @synchronized(frameworkBundlesByPath) {
+            [frameworkBundlesByPath removeObjectForKey: bundlePath];
+        }
+    }
 }
 
 + (NSBundle *)bundleWithPath:(NSString *)path
@@ -161,9 +245,10 @@ NSString * _NSBundlePathFromExecutablePath(NSString *path)
 + (NSBundle *)bundleWithIdentifier:(NSString *)identifier
 {
     NSBundle *bundle = nil;
-    @synchronized(loadedBundles)
+    @synchronized(bundlesByIdentifier)
     {
-        bundle = [loadedBundles[identifier] retain];
+        bundle = [bundlesByIdentifier[identifier] retain];
+        // TODO: we should be doing some searching if the bundle is nil
     }
     return [bundle autorelease];
 }
@@ -171,16 +256,40 @@ NSString * _NSBundlePathFromExecutablePath(NSString *path)
 + (NSArray *)allBundles
 {
     NSArray *allBundles = nil;
-    @synchronized(loadedBundles)
+    @synchronized(bundlesByIdentifier)
     {
-        allBundles = [[loadedBundles allValues] copy];
+        allBundles = [[bundlesByIdentifier allValues] copy];
     }
     return [allBundles autorelease];
 }
 
 + (NSArray *)allFrameworks
 {
-    return nil; // this is technically incorrect, when we do start supporting frameworks, this will need to be fixed.
+    static dispatch_once_t onceToken = 0;
+    dispatch_once(&onceToken, ^{
+        unsigned int imageCount = 0;
+        const char **imageNames = objc_copyImageNames(&imageCount);
+        if (imageNames != nil) {
+            for (unsigned int i = 0; i < imageCount; ++i) {
+                @autoreleasepool {
+                    NSString *path = [[NSFileManager defaultManager] stringWithFileSystemRepresentation: imageNames[i] length: strlen(imageNames[i])];
+                    NSString *frameworkPath = frameworkPathForPath(path);
+                    if (frameworkPath != nil) {
+                        [NSBundle bundleWithPath: frameworkPath];
+                        // the bundle will automatically register itself to the framework table if it refers to one
+                    }
+                }
+            }
+            free(imageNames);
+        }
+    });
+
+    NSArray *allFrameworks = nil;
+    @synchronized(allFrameworks) {
+        allFrameworks = [[frameworkBundlesByPath allValues] copy];
+    }
+
+    return [allFrameworks autorelease];
 }
 
 - (id)initWithPath:(NSString *)path
@@ -202,6 +311,19 @@ NSString * _NSBundlePathFromExecutablePath(NSString *path)
             [self release];
             return nil;
         }
+
+        // only add it to the global table after we've initialized `_cfBundle`
+        NSBundle *existingOne = nil;
+        @synchronized(bundlesByPath) {
+            existingOne = bundlesByPath[[url path]];
+            if (existingOne == nil) {
+                [self _addToGlobalTables];
+            }
+        }
+        if (existingOne != nil) {
+            [self release];
+            return [existingOne retain];
+        }
     }
     return self;
 }
@@ -218,6 +340,7 @@ static void __NSBundleMainBundleDealloc()
         return;
     }
 
+    [self _removeFromGlobalTables];
     if (_cfBundle)
     {
         CFRelease(_cfBundle);
@@ -323,7 +446,7 @@ static void __NSBundleMainBundleDealloc()
 
 - (NSString *)resourcePath
 {
-    return [self bundlePath];
+    return [[self resourceURL] path];
 }
 
 - (NSString *)executablePath
@@ -442,7 +565,7 @@ static void __NSBundleMainBundleDealloc()
 
 - (NSURL *)resourceURL
 {
-    return [self bundleURL];
+    return [(NSURL *)CFBundleCopyResourcesDirectoryURL(_cfBundle) autorelease];
 }
 
 - (NSURL *)executableURL
@@ -548,7 +671,20 @@ static void __NSBundleMainBundleDealloc()
 
 - (BOOL)isLoaded
 {
-    return (_flags & NSBundleIsLoadedFlag) != 0;
+    @synchronized(self) {
+        return (_flags & NSBundleIsLoadedFlag) != 0;
+    }
+}
+
+- (void)_setIsLoaded: (BOOL)isLoaded
+{
+    @synchronized(self) {
+        if (isLoaded) {
+            _flags |= NSBundleIsLoadedFlag;
+        } else {
+            _flags &= ~NSBundleIsLoadedFlag;
+        }
+    }
 }
 
 - (BOOL)unload
@@ -572,21 +708,16 @@ static void __NSBundleMainBundleDealloc()
     {
         *error = nil;
     }
-    NSString *identifier = [self bundleIdentifier];
     Boolean loaded = false;
-    @synchronized(loadedBundles)
+    // synchronize this entire block to prevent simultaneous loads
+    @synchronized(self)
     {
-
-        if (loadedBundles[identifier] == nil)
+        if (![self isLoaded])
         {
             loaded = CFBundleLoadExecutableAndReturnError(_cfBundle, (CFErrorRef *)error);
             if (loaded)
             {
-                if (identifier != nil)
-                {
-                    loadedBundles[identifier] = self;
-                }
-                _flags |= NSBundleIsLoadedFlag;
+                [self _setIsLoaded: YES];
             }
         }
     }
@@ -602,7 +733,7 @@ static void __NSBundleMainBundleDealloc()
 
 - (Class)principalClass
 {
-    if ((_flags & NSBundleIsLoadedFlag) == 0)
+    if (![self isLoaded])
     {
         [self load];
     }

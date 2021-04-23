@@ -42,6 +42,8 @@
 #import "NSKeyedPortCoder.h"
 #import "NSUnkeyedPortCoder.h"
 
+#include <stdatomic.h>
+
 @interface NSRunLoop (Wakeup)
 - (void) _wakeup;
 @end
@@ -55,6 +57,8 @@ static atomic_uint lastSequenceNumber = 0;
 static NSMutableArray<NSConnection *> *allConnections;
 static NSData *keyedMagic;
 
+#define _atomic_isValid (*((atomic_bool*)&_isValid))
+#define _atomic_canUseKeyedCoder (*((atomic_uchar*)&_canUseKeyedCoder))
 
 @implementation NSConnection
 
@@ -112,7 +116,7 @@ static NSData *keyedMagic;
     // 5. Otherwise, create a new connection.
     _recvPort = [recvPort retain];
     _sendPort = [sendPort retain];
-    _isValid = YES;
+    _atomic_isValid = YES;
 
     // 6. If there's a connection that uses our receive port
     // as both its receive and send port, it's our parent.
@@ -153,9 +157,9 @@ static NSData *keyedMagic;
     }
 
     if ([[NSUserDefaults standardUserDefaults] boolForKey: @"NSForceUnkeyedPortCoder"]) {
-        _canUseKeyedCoder = NO;
+        _atomic_canUseKeyedCoder = NO;
     } else {
-        _canUseKeyedCoder = MAYBE;
+        _atomic_canUseKeyedCoder = MAYBE;
     }
 
     _classVersions = [NSMutableDictionary new];
@@ -230,11 +234,11 @@ static NSData *keyedMagic;
 }
 
 - (BOOL) isValid {
-    return _isValid;
+    return _atomic_isValid;
 }
 
 - (void) invalidate {
-    BOOL wasValid = atomic_exchange(&_isValid, NO);
+    BOOL wasValid = atomic_exchange((atomic_bool*)&_isValid, NO);
     if (!wasValid) {
         // Lost the race to invalidate this connection; some other thread is
         // going to invalidate us. Or maybe we are already invalidated. In any
@@ -362,7 +366,7 @@ static NSData *keyedMagic;
                internal: (BOOL) internal
 {
     @autoreleasepool {
-        if (!_isValid) {
+        if (!_atomic_isValid) {
             // Sorry, we no longer accept new invocations.
             [NSException raise: NSInvalidReceivePortException
                         format: @"attempted to send an invocation using an invalid connection"];
@@ -811,7 +815,7 @@ static NSData *keyedMagic;
     // For this, we use a special method, keyedRootObject, that returns
     // the same root object, but (if executed successfully) lets both
     // sides know they both support NSKeyedPortCoder.
-    switch ((unsigned int) _canUseKeyedCoder) {
+    switch ((unsigned int) _atomic_canUseKeyedCoder) {
     case YES:
         NSDOLog(@"can use NSKeyedPortCoder, using keyedRootObject");
         return [remoteConnection keyedRootObject];
@@ -825,7 +829,7 @@ static NSData *keyedMagic;
             NSDOLog(@"attempting to invoke keyedRootObject");
             id rootProxy = [remoteConnection keyedRootObject];
             // If no exception got thrown, the remote supports NSKeyedPortCoder!
-            _canUseKeyedCoder = YES;
+            _atomic_canUseKeyedCoder = YES;
             return rootProxy;
         } @catch (NSException *exception) {
             // Old versions of Cocoa don't support NSKeyedPortCoder and don't
@@ -834,7 +838,7 @@ static NSData *keyedMagic;
             if ([[exception name] isEqual: NSInvalidArgumentException]) {
                 NSDOLog(@"got an exception %@;"
                         " assuming remote doesn't support NSKeyedPortCoder", exception);
-                _canUseKeyedCoder = NO;
+                _atomic_canUseKeyedCoder = NO;
                 return [remoteConnection rootObject];
             } else {
                 NSDOLog(@"got an unexpected exception %@", exception);
@@ -845,12 +849,12 @@ static NSData *keyedMagic;
 }
 
 - (id) keyedRootObject {
-    if (_canUseKeyedCoder == NO) {
+    if (_atomic_canUseKeyedCoder == NO) {
         // Pretend we got an unrecognized selector.
         [self doesNotRecognizeSelector: _cmd];
     }
     // If the remote is calling this, it supports NSKeyedPortCoder!
-    _canUseKeyedCoder = YES;
+    _atomic_canUseKeyedCoder = YES;
     return _rootObject;
 }
 
@@ -917,7 +921,7 @@ static NSData *keyedMagic;
     [self addRunLoop: runLoop];
 
     NSDate *distantFuture = [NSDate distantFuture];
-    while (_isValid) {
+    while (_atomic_isValid) {
         @autoreleasepool {
             [runLoop runMode: NSDefaultRunLoopMode
                   beforeDate: distantFuture];
@@ -935,7 +939,7 @@ static NSData *keyedMagic;
 }
 
 - (Class) _portCoderClass {
-    if (_canUseKeyedCoder == YES) {
+    if (_atomic_canUseKeyedCoder == YES) {
         return [NSKeyedPortCoder class];
     } else {
         return [NSUnkeyedPortCoder class];
@@ -964,13 +968,13 @@ static NSData *keyedMagic;
             portCoderClass = [NSKeyedPortCoder class];
             [mutableComponents removeLastObject];
 
-            switch ((unsigned int) _canUseKeyedCoder) {
+            switch ((unsigned int) _atomic_canUseKeyedCoder) {
             case YES:
                 break;
             case MAYBE:
                 NSDOLog(@"got a keyed-coded message from the remote,"
                         " assuming it supports NSKeyedPortCoder");
-                _canUseKeyedCoder = YES;
+                _atomic_canUseKeyedCoder = YES;
                 break;
             case NO:
                 NSDOLog(@"got an unexpected keyed-coded message from the remote");

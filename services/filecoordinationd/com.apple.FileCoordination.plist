@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>EnablePressuredExit</key>
+	<true/>
+	<key>HardResourceLimits</key>
+	<dict>
+		<key>NumberOfFiles</key>
+		<integer>10240</integer>
+	</dict>
+	<key>JetsamProperties</key>
+	<dict>
+		<key>JetsamMemoryLimit</key>
+		<integer>3500</integer>
+	</dict>
+	<key>Label</key>
+	<string>com.apple.FileCoordination</string>
+	<key>MachServices</key>
+	<dict>
+		<key>com.apple.FileCoordination</key>
+		<true/>
+		<key>com.apple.FileCoordination.kernel.ipc</key>
+		<dict>
+			<key>HostSpecialPort</key>
+			<integer>30</integer>
+		</dict>
+		<key>com.apple.ProgressReporting</key>
+		<true/>
+	</dict>
+	<key>POSIXSpawnType</key>
+	<string>Interactive</string>
+	<key>Program</key>
+	<string>/usr/sbin/filecoordinationd</string>
+	<key>SoftResourceLimits</key>
+	<dict>
+		<key>NumberOfFiles</key>
+		<integer>10240</integer>
+	</dict>
+	<key>TransactionTimeLimitEnabled</key>
+	<false/>
+
+	<!-- uncomment this to enable debugging -->
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>FCD_DEBUG</key>
+		<string>1</string>
+	</dict>
+	<key>StandardOutPath</key>
+	<string>/var/log/fcdaemon.log</string>
+	<key>StandardErrorPath</key>
+	<string>/var/log/fcdaemon.log</string>
+</dict>
+</plist>

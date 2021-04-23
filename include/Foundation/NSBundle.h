@@ -8,6 +8,7 @@ enum {
 };
 typedef enum {
     NSBundleIsLoadedFlag = 0x01,
+    NSBundleIsRegisteredFlag = 0x02,
 } NSBundleFlags;
 
 typedef struct __CFBundle *CFBundleRef;

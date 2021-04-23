@@ -26,6 +26,7 @@ CF_PRIVATE
 @interface NSConcretePointerFunctions : NSPointerFunctions {
 @package
     struct NSSlice slice;
+    NSPointerFunctionsOptions _options;
 }
 
 @property NSUInteger (*hashFunction)(const void *item, NSUInteger (*size)(const void *item));

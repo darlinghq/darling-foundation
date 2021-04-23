@@ -36,6 +36,7 @@
 #import "Foundation/NSMapTable.h"
 #import "Foundation/NSHashTable.h"
 #import "NSConcreteHashTableInternal.h"
+#import "NSPointerFunctionsInternal.h"
 
 #import "NSPointerFunctions.h"
 #import "NSCallBacks.h"
@@ -1251,12 +1252,16 @@ const NSMapTableValueCallBacks NSOwnedPointerMapValueCallBacks =
   self->cb.pf.k.isEqualFunction = keyFunctions.isEqualFunction;
   self->cb.pf.k.relinquishFunction = keyFunctions.relinquishFunction;
   self->cb.pf.k.sizeFunction = keyFunctions.sizeFunction;
+  self->cb.pf.k.hashFunction = keyFunctions.hashFunction;
+  self->cb.pf.k.options = ((NSConcretePointerFunctions *)keyFunctions)->_options;
 
   self->cb.pf.v.acquireFunction = valueFunctions.acquireFunction;
   self->cb.pf.v.descriptionFunction = valueFunctions.descriptionFunction;
   self->cb.pf.v.isEqualFunction = valueFunctions.isEqualFunction;
   self->cb.pf.v.relinquishFunction = valueFunctions.relinquishFunction;
   self->cb.pf.v.sizeFunction = valueFunctions.sizeFunction;
+  self->cb.pf.v.hashFunction = valueFunctions.hashFunction;
+  self->cb.pf.v.options = ((NSConcretePointerFunctions *)valueFunctions)->_options;
 
 #if	GC_WITH_GC
   if (self->cb.pf.k.usesWeakReadAndWriteBarriers)
@@ -1301,13 +1306,14 @@ const NSMapTableValueCallBacks NSOwnedPointerMapValueCallBacks =
 
 - (NSPointerFunctions*) keyPointerFunctions
 {
-  NSPointerFunctions	*p = [NSPointerFunctions new];
+  NSPointerFunctions	*p = [[NSPointerFunctions alloc] initWithOptions: self->cb.pf.k.options];
 
   p.acquireFunction = self->cb.pf.k.acquireFunction;
   p.descriptionFunction = self->cb.pf.k.descriptionFunction;
   p.isEqualFunction = self->cb.pf.k.isEqualFunction;
   p.relinquishFunction = self->cb.pf.k.relinquishFunction;
   p.sizeFunction = self->cb.pf.k.sizeFunction;
+  p.hashFunction = self->cb.pf.k.hashFunction;
   return [p autorelease];
 }
 
@@ -1396,13 +1402,14 @@ const NSMapTableValueCallBacks NSOwnedPointerMapValueCallBacks =
 
 - (NSPointerFunctions*) valuePointerFunctions
 {
-  NSPointerFunctions	*p = [NSPointerFunctions new];
+  NSPointerFunctions	*p = [[NSPointerFunctions alloc] initWithOptions: self->cb.pf.v.options];
 
   p.acquireFunction = self->cb.pf.v.acquireFunction;
   p.descriptionFunction = self->cb.pf.v.descriptionFunction;
   p.isEqualFunction = self->cb.pf.v.isEqualFunction;
   p.relinquishFunction = self->cb.pf.v.relinquishFunction;
   p.sizeFunction = self->cb.pf.v.sizeFunction;
+  p.hashFunction = self->cb.pf.v.hashFunction;
   return [p autorelease];
 }
 

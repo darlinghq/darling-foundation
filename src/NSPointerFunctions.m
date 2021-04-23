@@ -690,6 +690,7 @@ static inline void sliceInitializeError(NSPointerFunctionsOptions options)
             [self release];
             return nil;
         }
+        _options = options;
     }
     return self;
 }
@@ -845,6 +846,7 @@ static inline void sliceInitializeError(NSPointerFunctionsOptions options)
     obj->slice.readAt = slice.readAt;
     obj->slice.clearAt = slice.clearAt;
     obj->slice.storeAt = slice.storeAt;
+    obj->_options = _options;
 
     return obj;
 }

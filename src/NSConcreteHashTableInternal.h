@@ -29,8 +29,8 @@
 #  include <objc/capabilities.h>
 #endif
 
-#if defined(OBJC_CAP_ARC)
-#    include <objc/objc-arc.h>
+#if 1
+#    include <objc/runtime.h>
 #    define ARC_WEAK_READ(x) objc_loadWeak((id*)x)
 #    define ARC_WEAK_WRITE(addr, x) objc_storeWeak((id*)addr, (id)x)
 #    define WEAK_READ(x) (*x)
@@ -80,16 +80,6 @@ inline static BOOL memoryType(int options, int flag)
 {
   return (options & 0xff) == flag;
 }
-
-/* Declare the concrete pointer functions class as a wrapper around
- * an instance of the PFInfo structure.
- */
-@interface NSConcretePointerFunctions : NSPointerFunctions
-{
-@public
-  PFInfo	_x;
-}
-@end
 
 /* Wrapper functions to make use of the pointer functions.
  */
