@@ -18,7 +18,8 @@ void _NSXPCSerializationAddInvocationArgumentsArray(
     NSInvocation *invocation,
     NSMethodSignature *signature,
     NSXPCEncoder *encoder,
-    struct NSXPCSerializer *serializer
+    struct NSXPCSerializer *serializer,
+    bool isReply
 );
 
 CF_PRIVATE
@@ -41,5 +42,6 @@ void _NSXPCSerializationDecodeInvocationArgumentArray(
     NSXPCDecoder *decoder,
     struct NSXPCDeserializer *deserializer,
     const struct NSXPCObject *object,
-    NSArray<NSSet *> *classesForArguments
+    NSArray<NSSet *> *classesForArguments,
+    bool isReply
 );

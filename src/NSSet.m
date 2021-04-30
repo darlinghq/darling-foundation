@@ -37,7 +37,7 @@ OBJC_PROTOCOL_IMPL_PUSH
     id *objects = NULL;
     if ([coder allowsKeyedCoding])
     {
-        if (![coder isKindOfClass:[NSXPCCoder class]])
+        if ([coder isKindOfClass: [NSKeyedUnarchiver class]] || [coder isKindOfClass: [NSXPCCoder class]])
         {
             return [self initWithArray:[coder _decodeArrayOfObjectsForKey:NS_objects]];
         }
@@ -106,24 +106,17 @@ OBJC_PROTOCOL_IMPL_PUSH
     NSUInteger count = [self count];
     if ([coder allowsKeyedCoding])
     {
-        if ([coder class] == [NSKeyedArchiver class])
+        if ([coder isKindOfClass: [NSKeyedArchiver class]] || [coder isKindOfClass: [NSXPCCoder class]])
         {
             [coder _encodeArrayOfObjects:[self allObjects] forKey:NS_objects];
         }
         else
         {
+            NSUInteger idx = 0;
             for (id object in self)
             {
-                [coder encodeObject:object];
+                [coder encodeObject:object forKey:[NSString stringWithFormat:@"NS.object.%d", idx]];
             }
-        }
-    }
-    else if ([coder isKindOfClass:[NSXPCCoder class]])
-    {
-        NSUInteger idx = 0;
-        for (id object in self)
-        {
-            [coder encodeObject:object forKey:[NSString stringWithFormat:@"NS.object.%d", idx]];
         }
     }
     else

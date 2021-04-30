@@ -22,12 +22,16 @@
 
 @interface NSXPCListenerEndpoint (NSXPCPrivateStuff)
 
-- (xpc_endpoint_t)_endpoint;
+@property(retain) xpc_endpoint_t _endpoint;
+
+- (instancetype)_initWithConnection: (xpc_connection_t)connection;
 
 @end
 
 @interface NSXPCConnection (NSXPCPrivateStuff)
 
-@property (readonly) audit_token_t auditToken;
+@property(readonly) audit_token_t auditToken;
+
+- (id)valueForEntitlement: (NSString*)entitlement;
 
 @end

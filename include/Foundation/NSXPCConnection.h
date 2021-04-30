@@ -23,9 +23,15 @@
 #import <Foundation/NSXPCProxyCreating.h>
 #import <dispatch/dispatch.h>
 #import <xpc/xpc.h>
+#import <bsm/audit.h>
+#import <xpc/connection.h>
+#import <xpc/endpoint.h>
 
-@class NSXPCListenerEndpoint, NSXPCInterface;
-@class _NSXPCConnectionExportInfo, _NSXPCDistantObject;
+// it seems that this header is supposed to include the interface definition for NSXPCInterface
+#import <Foundation/NSXPCInterface.h>
+
+@class NSXPCListenerEndpoint, NSXPCListener;
+@class _NSXPCConnectionExportInfo, _NSXPCDistantObject, _NSXPCConnectionExpectedReplies;
 
 typedef NS_OPTIONS(NSUInteger, NSXPCConnectionOptions) {
     NSXPCConnectionPrivileged = (1 << 12UL)
@@ -44,6 +50,7 @@ typedef NS_OPTIONS(NSUInteger, NSXPCConnectionOptions) {
 
     NSMutableArray<_NSXPCDistantObject *> *_imported;
     NSMutableDictionary<NSNumber *, _NSXPCConnectionExportInfo *> *_exported;
+    _NSXPCConnectionExpectedReplies* _expectedReplies;
 }
 
 @property(readonly) pid_t processIdentifier;
@@ -58,6 +65,11 @@ typedef NS_OPTIONS(NSUInteger, NSXPCConnectionOptions) {
 @property(retain) NSXPCInterface *remoteObjectInterface;
 @property(readonly, retain) id remoteObjectProxy;
 
+@property(readonly) uid_t effectiveUserIdentifier;
+@property(readonly) gid_t effectiveGroupIdentifier;
+@property(readonly) au_asid_t auditSessionIdentifier;
+
++ (NSXPCConnection *)currentConnection;
 
 - (instancetype) initWithListenerEndpoint: (NSXPCListenerEndpoint *) endpoint;
 
@@ -68,7 +80,12 @@ typedef NS_OPTIONS(NSUInteger, NSXPCConnectionOptions) {
 - (instancetype) initWithMachServiceName: (NSString *) serviceName
                                  options: (NSXPCConnectionOptions) options;
 
+- (void) invalidate;
 - (void) resume;
+- (void) suspend;
+
+- (id) remoteObjectProxyWithErrorHandler: (void (^)(NSError *error)) handler;
+- (id) synchronousRemoteObjectProxyWithErrorHandler: (void (^)(NSError *error)) handler;
 
 - (void) _addImportedProxy: (_NSXPCDistantObject *) proxy;
 - (void) _removeImportedProxy: (_NSXPCDistantObject *) proxy;
@@ -85,40 +102,35 @@ typedef NS_OPTIONS(NSUInteger, NSXPCConnectionOptions) {
 
 @end
 
-@interface NSXPCListener : NSObject
+@protocol NSXPCListenerDelegate <NSObject>
+
+- (BOOL) listener: (NSXPCListener *) listener shouldAcceptNewConnection: (NSXPCConnection *) newConnection;
+
+@end
+
+@interface NSXPCListener : NSObject {
+    xpc_connection_t _xpcConnection;
+    dispatch_queue_t _queue;
+    id<NSXPCListenerDelegate> _delegate;
+    NSString* _serviceName;
+}
 
 + (instancetype)anonymousListener;
++ (NSXPCListener *)serviceListener;
 
 - (instancetype)initWithMachServiceName:(NSString*)serviceName;
 
+- (void)invalidate;
 - (void)resume;
+- (void)suspend;
 
-@property (assign) id<NSXPCListenerDelegate> delegate;
+@property (assign /* actually weak */) id<NSXPCListenerDelegate> delegate;
 @property (readonly, retain) NSXPCListenerEndpoint* endpoint;
 
 @end
 
-typedef enum NSXPCConnectionOptions : NSUInteger {
-	NSXPCConnectionPrivileged = (1 << 12UL),
-} NSXPCConnectionOptions;
-
-@interface NSXPCConnection : NSObject
-
-- (void)resume;
-
-- (id)valueForEntitlement:(NSString*)entitlement;
-
-@property (readonly) au_asid_t auditSessionIdentifier;
-@property (readonly) gid_t effectiveGroupIdentifier;
-@property (readonly) uid_t effectiveUserIdentifier;
-@property (readonly, retain) NSXPCListenerEndpoint* endpoint;
-@property (retain) NSXPCInterface* exportedInterface;
-@property (retain) id exportedObject;
-@property (copy) void (^interruptionHandler)(void);
-@property (copy) void (^invalidationHandler)(void);
-@property (readonly) pid_t processIdentifier;
-@property (retain) NSXPCInterface* remoteObjectInterface;
-@property (readonly, retain) id remoteObjectProxy;
-@property (readonly, copy) NSString* serviceName;
+@interface NSXPCListenerEndpoint : NSObject <NSSecureCoding> {
+    xpc_endpoint_t _endpoint;
+}
 
 @end

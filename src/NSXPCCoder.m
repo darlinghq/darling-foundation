@@ -19,6 +19,12 @@
     return NULL;
 }
 
+- (xpc_object_t) decodeXPCObjectForKey: (NSString *)key
+{
+    // Do nothing, overriden in NSXPCDecoder.
+    return NULL;
+}
+
 - (BOOL) requiresSecureCoding {
     return YES;
 }

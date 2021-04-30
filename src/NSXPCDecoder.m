@@ -27,8 +27,10 @@
 #import <Foundation/NSMethodSignature.h>
 #import <Foundation/NSInvocation.h>
 #import <CoreFoundation/NSInvocationInternal.h>
+#import <Foundation/NSKeyedArchiver.h>
 #import <objc/runtime.h>
 
+#import "NSXPCConnectionInternal.h"
 
 @implementation NSXPCDecoder
 
@@ -51,7 +53,7 @@
     }
 
     // We start reading from the top-level collection.
-    _collection = _rootObject;
+    _collection = &_rootObject;
 }
 
 - (BOOL) allowsKeyedCoding {
@@ -63,12 +65,20 @@ static BOOL findObject(
     NSString *key,
     struct NSXPCObject *object
 ) {
-    return _NSXPCSerializationCreateObjectInDictionaryForKey(
-        &decoder->_deserializer,
-        &decoder->_collection,
-        (CFStringRef) key,
-        object
-    );
+    if (key) {
+        return _NSXPCSerializationCreateObjectInDictionaryForKey(
+            &decoder->_deserializer,
+            decoder->_collection,
+            (CFStringRef) key,
+            object
+        );
+    } else {
+        if (_NSXPCSerializationCreateObjectInDictionaryForGenericKey(&decoder->_deserializer, decoder->_collection, decoder->_genericKey, object)) {
+            ++decoder->_genericKey;
+            return YES;
+        }
+        return NO;
+    }
 }
 
 - (BOOL) containsValueForKey: (NSString *) key {
@@ -149,11 +159,113 @@ static BOOL findObject(
     return [data bytes];
 }
 
+- (xpc_object_t)_xpcObjectForIndex: (NSUInteger)index
+{
+    if (!_oolObjects) {
+        return NULL;
+    }
+    if (xpc_array_get_count(_oolObjects) <= index) {
+        return NULL;
+    }
+    return xpc_array_get_value(_oolObjects, index);
+}
+
 - (id) _decodeObjectOfClasses: (NSSet *) classes
                      atObject: (const struct NSXPCObject *) object
 {
-    // TODO
-    return nil;
+    unsigned char marker = 0;
+    id result = nil;
+
+    if (!_NSXPCSerializationTypeOfObject(&_deserializer, object, &marker)) {
+        return nil;
+    }
+
+    // these ones that have their own "if" conditions require the whole marker to be checked because they're differentiated based on length
+    if (marker == NSXPC_FLOAT32 || marker == NSXPC_FLOAT64 || marker == NSXPC_UINT64) {
+        result = _NSXPCSerializationNumberForObject(&_deserializer, object);
+    } else {
+        // for everything else, the type is the only thing that differentiates them
+        switch (marker & 0xf0) {
+            case NSXPC_TRUE: // fallthrough
+            case NSXPC_FALSE: // fallthrough
+            case NSXPC_INTEGER: {
+                result = _NSXPCSerializationNumberForObject(&_deserializer, object);
+            } break;
+
+            case NSXPC_NULL: {
+                result = nil;
+            } break;
+
+            case NSXPC_DATA: {
+                result = _NSXPCSerializationDataForObject(&_deserializer, object);
+            } break;
+
+            case NSXPC_STRING: {
+                result = _NSXPCSerializationStringForObject(&_deserializer, object);
+            } break;
+
+            case NSXPC_DICT: {
+                struct NSXPCObject xpcOOLIndexObject;
+                struct NSXPCObject classNameObject;
+                NSUInteger savedGenericKey = _genericKey;
+                struct NSXPCObject* savedCollection = _collection;
+
+                _genericKey = 0;
+                _collection = object;
+
+                if (_NSXPCSerializationCreateObjectInDictionaryForASCIIKey(&_deserializer, object, "$xpc", &xpcOOLIndexObject)) {
+                    // it's an OOL XPC object
+                    NSUInteger index = _NSXPCSerializationIntegerForObject(&_deserializer, &xpcOOLIndexObject);
+                    result = [self _xpcObjectForIndex: index];
+                } else {
+                    const char* className = NULL;
+                    Class class = nil;
+
+                    if (!_NSXPCSerializationCreateObjectInDictionaryForASCIIKey(&_deserializer, object, "$class", &classNameObject)) {
+                        // no class name? invalid object.
+                        [NSException raise: NSInvalidUnarchiveOperationException format: @"No class name found while deserializing Objective-C object"];
+                    }
+
+                    className = _NSXPCSerializationASCIIStringForObject(&_deserializer, &classNameObject);
+                    if (!className) {
+                        [NSException raise: NSInvalidUnarchiveOperationException format: @"Failed to read class name while deserializing Objective-C object"];
+                    }
+
+                    class = objc_lookUpClass(className);
+                    if (!class) {
+                        [NSException raise: NSInvalidUnarchiveOperationException format: @"Failed to load class while deserializing Objective-C object"];
+                    }
+
+                    result = [class allocWithZone: self.zone];
+                    if (!result) {
+                        [NSException raise: NSInvalidUnarchiveOperationException format: @"allocWithZone: for %s returned nil while deserializing Objective-C object", className];
+                    }
+
+                    result = [result initWithCoder: self];
+                    if (!result) {
+                        [NSException raise: NSInvalidUnarchiveOperationException format: @"initWithCoder: for %s returned nil while deserializing Objective-C object", className];
+                    }
+
+                    result = [result awakeAfterUsingCoder: self];
+                    if (!result) {
+                        [NSException raise: NSInvalidUnarchiveOperationException format: @"initWithCoder: for %s returned nil while deserializing Objective-C object", className];
+                    }
+
+                    result = [result autorelease];
+                }
+
+                _collection = savedCollection;
+                _genericKey = savedGenericKey;
+            } break;
+
+            default: {
+                os_log_fault(nsxpc_get_log(), "Unexpected marker %u while trying to deserialize Objective-C object", marker);
+                result = nil;
+            };
+        }
+    }
+
+    return result;
 }
 
 - (void) __decodeXPCObject: (xpc_object_t) object
@@ -204,6 +316,8 @@ static BOOL findObject(
             ];
             [invocation setSelector: isReply ? replySelector : selector];
         } else if (index == 2) {
+            struct NSXPCObject* savedCollection = _collection;
+            _collection = item;
             // Third item: the arguments.
             _NSXPCSerializationDecodeInvocationArgumentArray(
                 invocation,
@@ -211,8 +325,10 @@ static BOOL findObject(
                 self,
                 &_deserializer,
                 item,
-                /* TODO */ nil
+                /* TODO */ nil,
+                isReply
             );
+            _collection = savedCollection;
         } else {
             [NSException raise: NSInvalidArgumentException
                         format: @"Too many arguments"];
@@ -224,12 +340,19 @@ static BOOL findObject(
 
     _NSXPCSerializationIterateArrayObject(
         &_deserializer,
-        &_collection,
+        _collection,
         block
     );
 
-    *outInvocation = invocation;
-    *outSignature = signature;
+    if (outInvocation) {
+        *outInvocation = invocation;
+    }
+    if (outSignature) {
+        *outSignature = signature;
+    }
+    if (!isReply && outSelector) {
+        *outSelector = invocation.selector;
+    }
 }
 
 
@@ -252,6 +375,115 @@ static BOOL findObject(
                     isReply: NO
               replySelector: (SEL) NULL
                   interface: interface];
+}
+
+- (NSInvocation*) _decodeReplyFromXPCObject: (xpc_object_t) object
+                                forSelector: (SEL) selector
+                                  interface: (NSXPCInterface*) interface
+{
+    NSInvocation* invocation = nil;
+    [self __decodeXPCObject: object
+  allowingSimpleMessageSend: NO
+              outInvocation: &invocation
+               outArguments: NULL
+       outArgumentsMaxCount: 0
+         outMethodSignature: NULL
+                outSelector: NULL
+                    isReply: YES
+              replySelector: selector
+                  interface: interface];
+    return invocation;
+}
+
+- (xpc_object_t) decodeXPCObjectForKey: (NSString *)key
+{
+    struct NSXPCObject object;
+    if (!findObject(self, key, &object)) {
+        return NULL;
+    }
+    return [self _xpcObjectForIndex: _NSXPCSerializationIntegerForObject(&_deserializer, &object)];
+}
+
+- (xpc_object_t) decodeXPCObjectOfType: (xpc_type_t) type
+                                forKey: (NSString *) key
+{
+    xpc_object_t object = [self decodeXPCObjectForKey: key];
+    if (object && xpc_get_type(object) != type) {
+        [NSException raise: NSInvalidUnarchiveOperationException format: @"Type of resulting xpc_object (%@) does not match expected type for key %@", object, key];
+    }
+    return object;
+}
+
+- (id)decodeObject
+{
+    return [self decodeObjectForKey: nil];
+}
+
+- (id)decodeObjectForKey: (NSString*)key
+{
+    return [self decodeObjectOfClasses: nil forKey: key];
+}
+
+- (id)decodeObjectOfClasses: (NSSet<Class>*)classes forKey: (NSString*)key
+{
+    struct NSXPCObject object;
+    if (!findObject(self, key, &object)) {
+        return nil;
+    }
+    return [self _decodeObjectOfClasses: classes atObject: &object];
+}
+
+- (void)decodeValueOfObjCType: (const char*)type at: (void*)address
+{
+    struct NSXPCObject* savedCollection = _collection;
+    struct NSXPCObject object;
+    __block BOOL found = NO;
+
+    if (!findObject(self, nil, &object)) {
+        return;
+    }
+
+    _collection = &object;
+
+    _NSXPCSerializationIterateArrayObject(&_deserializer, &object, ^Boolean(struct NSXPCObject* item) {
+        found = YES;
+        _NSXPCSerializationDecodeTypedObjCValuesFromArray(self, &_deserializer, type, address, YES, &object, item, nil, nil);
+        return false; // stop iterating on the first object
+    });
+
+    _collection = savedCollection;
+
+    if (!found) {
+        [NSException raise: NSInvalidUnarchiveOperationException format: @"Expected to find an array of Objective-C typed arguments, but there was nothing there."];
+    }
+}
+
+- (NSArray*)_decodeArrayOfObjectsForKey: (NSString*)key
+{
+    struct NSXPCObject* savedCollection = _collection;
+    struct NSXPCObject object;
+    NSMutableArray* result = nil;
+
+    if (!findObject(self, key, &object)) {
+        return nil;
+    }
+
+    _collection = &object;
+
+    result = [NSMutableArray array];
+
+    _NSXPCSerializationIterateArrayObject(&_deserializer, &object, ^Boolean(struct NSXPCObject* item) {
+        id object = [self _decodeObjectOfClasses: nil atObject: item];
+        if (!object) {
+            [NSException raise: NSInvalidUnarchiveOperationException format: @"Value in array for key %@ was nil", key];
+        }
+        [result addObject: object];
+        return true;
+    });
+
+    _collection = savedCollection;
+
+    return result;
 }
 
 @end

@@ -29,6 +29,8 @@
 #import <CoreFoundation/NSInvocationInternal.h>
 #import <objc/runtime.h>
 
+static dispatch_once_t _XPCObjectClass_once;
+static Class _XPCObjectClass = nil;
 
 @implementation NSXPCEncoder
 
@@ -39,6 +41,13 @@
 - (instancetype) initWithStackSpace: (unsigned char *) buffer
                                size: (size_t) bufferSize
 {
+    dispatch_once(&_XPCObjectClass_once, ^{
+        // fetch the base XPC object class.
+        // any object will do; null works nicely
+        xpc_object_t xpc_null = xpc_null_create();
+        _XPCObjectClass = [xpc_null superclass];
+        [xpc_null release];
+    });
     self = [super init];
     if (self == nil) {
         return nil;
@@ -164,7 +173,7 @@
     );
 
     // See if it's an XPC object that we need to encode out-of-line.
-    if (NO) {
+    if ([object isKindOfClass: _XPCObjectClass]) {
         // It's an XPC object; we encode those out-of-line.
         static const char oolXpcKey[] = "$xpc";
         _NSXPCSerializationAddASCIIString(
@@ -250,8 +259,9 @@
     _NSXPCSerializationAddInvocationArgumentsArray(
         invocation,
         signature,
-        /* ??? */ 0,
-        &_serializer
+        self,
+        &_serializer,
+        isReply
     );
 
     _NSXPCSerializationEndArrayWrite(&_serializer);
@@ -266,6 +276,40 @@
     if (_oolObjects != NULL) {
         xpc_dictionary_set_value(destinationDictionary, "ool", _oolObjects);
     }
+}
+
+- (void)encodeXPCObject: (xpc_object_t) object forKey: (NSString *) key
+{
+    _NSXPCSerializationAddString(&_serializer, (CFStringRef) key, YES);
+    _NSXPCSerializationAddInteger(&_serializer, [self _encodeOOLXPCObject: object]);
+}
+
+- (void)encodeObject: (id)object
+{
+    return [self encodeObject: object forKey: nil];
+}
+
+- (void)encodeValueOfObjCType: (const char*)type at: (const void*)address
+{
+    _NSXPCSerializationAddNull(&_serializer);
+    _NSXPCSerializationStartArrayWrite(&_serializer);
+    _NSXPCSerializationAddTypedObjCValuesToArray(self, &_serializer, type, address);
+    _NSXPCSerializationEndArrayWrite(&_serializer);
+}
+
+- (void)encodeDataObject: (id)object
+{
+    return [self encodeObject: object];
+}
+
+- (void)_encodeArrayOfObjects: (NSArray*)array forKey: (NSString*)key
+{
+    _NSXPCSerializationAddString(&_serializer, (CFStringRef)key, YES);
+    _NSXPCSerializationStartArrayWrite(&_serializer);
+    for (id object in array) {
+        [self _encodeUnkeyedObject: object];
+    }
+    _NSXPCSerializationEndArrayWrite(&_serializer);
 }
 
 @end

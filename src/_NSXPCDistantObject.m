@@ -23,6 +23,7 @@
 #import <Foundation/NSException.h>
 #import <Foundation/NSXPCInterface.h>
 #import <Foundation/NSXPCConnection.h>
+#import "NSXPCConnectionInternal.h"
 
 @implementation _NSXPCDistantObject
 

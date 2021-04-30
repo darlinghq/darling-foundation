@@ -25,6 +25,25 @@ struct NSXPCObject {
     // Apple also have a type here, but we'll do without it.
 };
 
+enum {
+    NSXPC_INTEGER = 0x10,
+
+    NSXPC_FLOAT32 = 0x22,
+    NSXPC_FLOAT64 = 0x23,
+
+    NSXPC_DATA = 0x40,
+    NSXPC_STRING = 0x60,
+    NSXPC_ASCII = 0x70,
+
+    NSXPC_ARRAY = 0xa0,
+    NSXPC_TRUE = 0xb0,
+    NSXPC_FALSE = 0xc0,
+    NSXPC_NULL = 0xe0,
+    NSXPC_DICT = 0xd0,
+
+    NSXPC_UINT64 = 0xf8,
+};
+
 // Encoding.
 
 CF_PRIVATE
@@ -221,3 +240,23 @@ Boolean _NSXPCSerializationCreateObjectInDictionaryForKey(
     CFStringRef key,
     struct NSXPCObject *value
 );
+
+CF_PRIVATE
+Boolean _NSXPCSerializationCreateObjectInDictionaryForASCIIKey(
+    struct NSXPCDeserializer *deserializer,
+    const struct NSXPCObject *object,
+    const char* key,
+    struct NSXPCObject *value
+);
+
+CF_PRIVATE
+Boolean _NSXPCSerializationCreateObjectInDictionaryForGenericKey(
+    struct NSXPCDeserializer *deserializer,
+    const struct NSXPCObject *object,
+    size_t key,
+    struct NSXPCObject *value
+);
+
+// Apple's version of this has a different signature because they store the type within the object structure
+CF_PRIVATE
+Boolean _NSXPCSerializationTypeOfObject(struct NSXPCDeserializer* deserializer, struct NSXPCObject* object, unsigned char* outType);

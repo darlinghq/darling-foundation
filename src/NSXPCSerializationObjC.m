@@ -399,11 +399,12 @@ void _NSXPCSerializationAddInvocationArgumentsArray(
     NSInvocation *invocation,
     NSMethodSignature *signature,
     NSXPCEncoder *encoder,
-    struct NSXPCSerializer *serializer
+    struct NSXPCSerializer *serializer,
+    bool isReply
 ) {
     _NSXPCSerializationStartArrayWrite(serializer);
 
-    for (CFIndex index = 2; index < [signature numberOfArguments]; index++) {
+    for (CFIndex index = isReply ? 1 : 2; index < [signature numberOfArguments]; index++) {
         NSMethodType *arg = [signature _argInfo: index + 1];
         _NSXPCSerializationAddTypedObjCValuesToArray(
             encoder,
@@ -422,10 +423,11 @@ void _NSXPCSerializationDecodeInvocationArgumentArray(
     NSXPCDecoder *decoder,
     struct NSXPCDeserializer *deserializer,
     const struct NSXPCObject *object,
-    NSArray<NSSet *> *classesForArguments
+    NSArray<NSSet *> *classesForArguments,
+    bool isReply
 ) {
     NSUInteger numberOfArguments = [signature numberOfArguments];
-    __block CFIndex index = 2;
+    __block CFIndex index = isReply ? 1 : 2;
 
     _NSXPCSerializationIterateArrayObject(
         deserializer,
