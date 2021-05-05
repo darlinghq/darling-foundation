@@ -41,7 +41,7 @@ typedef NS_OPTIONS(NSUInteger, NSXPCConnectionMessageOptions) {
 	NSXPCConnectionMessageOptionsResumeProgress            = 1 << 18,
 };
 
-@class NSXPCInterface, NSDictionary, NSProgress, NSMutableDictionary, NSNumber, NSXPCEncoder;
+@class NSXPCInterface, NSDictionary, NSProgress, NSMutableDictionary, NSNumber, NSXPCEncoder, _NSXPCDistantObject;
 
 CF_PRIVATE
 @interface _NSXPCConnectionExportInfo : NSObject {
@@ -88,6 +88,17 @@ CF_PRIVATE
 - (NSUInteger)sequenceForProgress: (NSProgress*)progress;
 - (NSProgress*)progressForSequence: (NSUInteger)sequence;
 - (void)removeProgressSequence: (NSUInteger)sequence;
+
+@end
+
+CF_PRIVATE
+@interface _NSXPCConnectionImportInfo : NSObject {
+	// since we just want to hold counters, it's honestly just easier to use a CFDictionary with NULL key and value callbacks
+	CFMutableDictionaryRef _imports;
+}
+
+- (void)addProxy: (_NSXPCDistantObject*)proxy;
+- (BOOL)removeProxy: (_NSXPCDistantObject*)proxy;
 
 @end
 

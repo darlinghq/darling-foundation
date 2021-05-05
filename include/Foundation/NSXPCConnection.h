@@ -31,7 +31,7 @@
 #import <Foundation/NSXPCInterface.h>
 
 @class NSXPCListenerEndpoint, NSXPCListener;
-@class _NSXPCConnectionExportInfo, _NSXPCDistantObject, _NSXPCConnectionExpectedReplies;
+@class _NSXPCConnectionExportInfo, _NSXPCDistantObject, _NSXPCConnectionExpectedReplies, _NSXPCConnectionImportInfo;
 
 typedef NS_OPTIONS(NSUInteger, NSXPCConnectionOptions) {
     NSXPCConnectionPrivileged = (1 << 12UL)
@@ -49,7 +49,7 @@ typedef NS_OPTIONS(NSUInteger, NSXPCConnectionOptions) {
     void (^_invalidationHandler)(void);
     void (^_interruptionHandler)(void);
 
-    NSMutableArray<_NSXPCDistantObject *> *_imported;
+    _NSXPCConnectionImportInfo* _importInfo;
     NSMutableDictionary<NSNumber *, _NSXPCConnectionExportInfo *> *_exported;
     _NSXPCConnectionExpectedReplies* _expectedReplies;
     NSUInteger _nextExportNumber;

@@ -166,6 +166,8 @@
 }
 
 - (void) dealloc {
+    os_log_debug(nsxpc_get_log(), "deallocating proxy %p", self);
+
     if (![self _exported]) {
         [_connection _removeImportedProxy: self];
     }

@@ -46,5 +46,6 @@ int main(int argc, char** argv) {
 	dispatch_semaphore_wait(waiter, DISPATCH_TIME_FOREVER);
 	dispatch_semaphore_wait(waiter, DISPATCH_TIME_FOREVER);
 	dispatch_semaphore_wait(waiter, DISPATCH_TIME_FOREVER);
+
 	return 0;
 };

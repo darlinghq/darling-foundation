@@ -35,6 +35,7 @@
 #import <objc/runtime.h>
 #import <Foundation/NSXPCConnection_Private.h>
 #import "NSXPCInterfaceInternal.h"
+#import <Foundation/NSMapTable.h>
 
 CF_PRIVATE
 os_log_t nsxpc_get_log(void) {
@@ -122,6 +123,53 @@ os_log_t nsxpc_get_log(void) {
 
 @end
 
+@implementation _NSXPCConnectionImportInfo
+
+- (instancetype)init
+{
+    if (self = [super init]) {
+        _imports = CFDictionaryCreateMutable(NULL, 0, NULL, NULL);
+    }
+    return self;
+}
+
+- (void)addProxy: (_NSXPCDistantObject*)proxy
+{
+    @synchronized(self) {
+        void* value = 0;
+        CFDictionaryGetValueIfPresent(_imports, (void*)proxy._proxyNumber, &value);
+        value = (void*)((uintptr_t)value + 1);
+        CFDictionarySetValue(_imports, (void*)proxy._proxyNumber, value);
+    }
+}
+
+- (BOOL)removeProxy: (_NSXPCDistantObject*)proxy
+{
+    @synchronized(self) {
+        void* value = 0;
+        if (CFDictionaryGetValueIfPresent(_imports, (void*)proxy._proxyNumber, &value)) {
+            value = (void*)((uintptr_t)value - 1);
+            if (value == 0) {
+                CFDictionaryRemoveValue(_imports, (void*)proxy._proxyNumber);
+                return YES;
+            } else {
+                CFDictionarySetValue(_imports, (void*)proxy._proxyNumber, value);
+            }
+        }
+    }
+    return NO;
+}
+
+- (void)dealloc
+{
+    if (_imports != NULL) {
+        CFRelease(_imports);
+    }
+    [super dealloc];
+}
+
+@end
+
 @implementation NSXPCConnection
 
 @synthesize serviceName = _serviceName;
@@ -136,7 +184,7 @@ os_log_t nsxpc_get_log(void) {
 }
 
 - (instancetype) init {
-    _imported = [NSMutableArray new];
+    _importInfo = [_NSXPCConnectionImportInfo new];
     _exported = [NSMutableDictionary new];
     _expectedReplies = [_NSXPCConnectionExpectedReplies new];
     _nextExportNumber = 2;
@@ -192,6 +240,8 @@ os_log_t nsxpc_get_log(void) {
                 self.interruptionHandler = nil;
                 self.invalidationHandler = nil;
                 self.exportedObject = nil;
+
+
             }
         } else {
             // something's up; ditch the connection
@@ -367,22 +417,21 @@ os_log_t nsxpc_get_log(void) {
     xpc_dictionary_set_uint64(message, "f", NSXPCConnectionMessageOptionsRequired | NSXPCConnectionMessageOptionsNoninvocation | NSXPCConnectionMessageOptionsDesistProxy);
     xpc_dictionary_set_uint64(message, "proxynum", proxy._proxyNumber);
 
+    os_log_debug(nsxpc_get_log(), "sending desist for proxy #%lu", (long unsigned)proxy._proxyNumber);
+
     // TODO: send a notification instead of a message
     xpc_connection_send_message(_xpcConnection, message);
     xpc_release(message);
 }
 
 - (void) _addImportedProxy: (_NSXPCDistantObject *) proxy {
-    [_imported addObject: proxy];
+    [_importInfo addProxy: proxy];
 }
 
 - (void) _removeImportedProxy: (_NSXPCDistantObject *) proxy {
-    NSUInteger index = [_imported indexOfObjectIdenticalTo: proxy];
-    if (index == NSNotFound) {
-        return;
+    if ([_importInfo removeProxy: proxy]) {
+        [self _sendDesistForProxy: proxy];
     }
-    [self _sendDesistForProxy: proxy];
-    [_imported removeObjectAtIndex: index];
 }
 
 - (Class) _remoteObjectInterfaceClass {
@@ -515,80 +564,82 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
 
     if (parameterCount > 2) {
         for (NSUInteger i = 0; i < parameterCount - 2; ++i) {
-            const char* paramType = [signature getArgumentTypeAtIndex: i + 2];
-            size_t paramTypeLen = strlen(paramType);
+            @autoreleasepool {
+                const char* paramType = [signature getArgumentTypeAtIndex: i + 2];
+                size_t paramTypeLen = strlen(paramType);
 
-            if (paramTypeLen > 1 && paramType[0] == '@' && paramType[1] == '?') {
-                // this parameter is a block
-                id block = nil;
-                const char* rawBlockSig = NULL;
-                NSMethodSignature* blockSig = nil;
+                if (paramTypeLen > 1 && paramType[0] == '@' && paramType[1] == '?') {
+                    // this parameter is a block
+                    id block = nil;
+                    const char* rawBlockSig = NULL;
+                    NSMethodSignature* blockSig = nil;
 
-                if (replyInfo) {
-                    [NSException raise: NSInvalidArgumentException format: @"NSXPC only supports a single reply block per method"];
-                }
+                    if (replyInfo) {
+                        [NSException raise: NSInvalidArgumentException format: @"NSXPC only supports a single reply block per method"];
+                    }
 
-                if (invocation) {
-                    [invocation getArgument: &block atIndex: i + 2];
-                } else {
-                    block = arguments[i];
-                }
-
-                if (!block) {
-                    [NSException raise: NSInvalidArgumentException format: @"Reply block for %s was nil", sel_getName(selector)];
-                }
-
-                rawBlockSig = _Block_signature(block);
-                if (!rawBlockSig) {
-                    [NSException raise: NSInvalidArgumentException format: @"Reply block for %s was compiled without an embedded signature", sel_getName(selector)];
-                }
-
-                blockSig = [NSMethodSignature signatureWithObjCTypes: rawBlockSig];
-
-                if (blockSig.methodReturnType[0] != 'v') {
-                    [NSException raise: NSInvalidArgumentException format: @"Reply block for %s must return void", sel_getName(selector)];
-                }
-
-                // zero-out the block argument (so it doesn't confuse the serializer)
-                if (invocation) {
-                    id arg = nil;
-                    [invocation setArgument: &arg atIndex: i + 2];
-                } else {
-                    arguments[i] = nil;
-                }
-
-                xpc_transaction_begin();
-
-                replyInfo = [_NSXPCConnectionExpectedReplyInfo new];
-                replyInfo.interface = proxy._remoteInterface;
-                replyInfo.selector = selector;
-                replyInfo.proxyNumber = proxy._proxyNumber;
-                replyInfo.replyBlock = block;
-                replyInfo.errorBlock = proxy._errorHandler;
-                replyInfo.cleanupBlock = ^{
-                    // TODO: timeouts
-                    xpc_transaction_end();
-                };
-
-                options |= NSXPCConnectionMessageOptionsExpectsReply;
-                xpc_dictionary_set_string(request, "replysig", rawBlockSig);
-            } else if (paramTypeLen > 0 && paramType[0] == '@') {
-                // this parameter is an object
-                id object = nil;
-
-                if (invocation) {
-                    [invocation getArgument: &object atIndex: i + 2];
-                } else {
-                    object = arguments[i];
-                }
-
-                object = [self tryReplacingWithProxy: object interface: [proxy._remoteInterface _interfaceForArgument: i ofSelector: selector reply: NO]];
-                if (object) {
                     if (invocation) {
-                        [invocation setArgument: &object atIndex: i + 2];
-                        [invocation _addAttachedObject: object];
+                        [invocation getArgument: &block atIndex: i + 2];
                     } else {
-                        arguments[i] = object;
+                        block = arguments[i];
+                    }
+
+                    if (!block) {
+                        [NSException raise: NSInvalidArgumentException format: @"Reply block for %s was nil", sel_getName(selector)];
+                    }
+
+                    rawBlockSig = _Block_signature(block);
+                    if (!rawBlockSig) {
+                        [NSException raise: NSInvalidArgumentException format: @"Reply block for %s was compiled without an embedded signature", sel_getName(selector)];
+                    }
+
+                    blockSig = [NSMethodSignature signatureWithObjCTypes: rawBlockSig];
+
+                    if (blockSig.methodReturnType[0] != 'v') {
+                        [NSException raise: NSInvalidArgumentException format: @"Reply block for %s must return void", sel_getName(selector)];
+                    }
+
+                    // zero-out the block argument (so it doesn't confuse the serializer)
+                    if (invocation) {
+                        id arg = nil;
+                        [invocation setArgument: &arg atIndex: i + 2];
+                    } else {
+                        arguments[i] = nil;
+                    }
+
+                    xpc_transaction_begin();
+
+                    replyInfo = [_NSXPCConnectionExpectedReplyInfo new];
+                    replyInfo.interface = proxy._remoteInterface;
+                    replyInfo.selector = selector;
+                    replyInfo.proxyNumber = proxy._proxyNumber;
+                    replyInfo.replyBlock = block;
+                    replyInfo.errorBlock = proxy._errorHandler;
+                    replyInfo.cleanupBlock = ^{
+                        // TODO: timeouts
+                        xpc_transaction_end();
+                    };
+
+                    options |= NSXPCConnectionMessageOptionsExpectsReply;
+                    xpc_dictionary_set_string(request, "replysig", rawBlockSig);
+                } else if (paramTypeLen > 0 && paramType[0] == '@') {
+                    // this parameter is an object
+                    id object = nil;
+
+                    if (invocation) {
+                        [invocation getArgument: &object atIndex: i + 2];
+                    } else {
+                        object = arguments[i];
+                    }
+
+                    object = [self tryReplacingWithProxy: object interface: [proxy._remoteInterface _interfaceForArgument: i ofSelector: selector reply: NO]];
+                    if (object) {
+                        if (invocation) {
+                            [invocation setArgument: &object atIndex: i + 2];
+                            [invocation _addAttachedObject: object];
+                        } else {
+                            arguments[i] = object;
+                        }
                     }
                 }
             }
@@ -760,74 +811,79 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
 
         if (parameterCount > 2) {
             for (NSUInteger i = 0; i < parameterCount - 2; ++i) {
-                const char* paramType = [signature getArgumentTypeAtIndex: i + 2];
-                size_t paramTypeLen = strlen(paramType);
+                @autoreleasepool {
+                    const char* paramType = [signature getArgumentTypeAtIndex: i + 2];
+                    size_t paramTypeLen = strlen(paramType);
 
-                if (paramTypeLen > 1 && paramType[0] == '@' && paramType[1] == '?') {
-                    // TODO: check if incoming and local reply block signatures are compatible
-                    const char* replySig = xpc_dictionary_get_string(event, "replysig");
-                    NSMethodSignature* remoteBlockSignature = nil;
-                    NSMethodSignature* localBlockSignature = nil;
-                    xpc_object_t reply = NULL;
-                    id forwardingBlock = nil;
+                    if (paramTypeLen > 1 && paramType[0] == '@' && paramType[1] == '?') {
+                        // TODO: check if incoming and local reply block signatures are compatible
+                        const char* replySig = xpc_dictionary_get_string(event, "replysig");
+                        NSMethodSignature* remoteBlockSignature = nil;
+                        NSMethodSignature* localBlockSignature = nil;
+                        xpc_object_t reply = NULL;
+                        id forwardingBlock = nil;
 
-                    if (!replySig) {
-                        [NSException raise: NSInvalidArgumentException format: @"No remote reply signature provided"];
-                    }
+                        if (!replySig) {
+                            [NSException raise: NSInvalidArgumentException format: @"No remote reply signature provided"];
+                        }
 
-                    remoteBlockSignature = [NSMethodSignature signatureWithObjCTypes: replySig];
+                        remoteBlockSignature = [NSMethodSignature signatureWithObjCTypes: replySig];
 
-                    localBlockSignature = [interface replyBlockSignatureForSelector: selector];
+                        localBlockSignature = [interface replyBlockSignatureForSelector: selector];
 
-                    if (!localBlockSignature) {
-                        [NSException raise: NSInvalidArgumentException format: @"No local reply signature found"];
-                    }
+                        if (!localBlockSignature) {
+                            [NSException raise: NSInvalidArgumentException format: @"No local reply signature found"];
+                        }
 
-                    reply = __NSXPCCONNECTION_IS_CREATING_REPLY__(event);
+                        reply = __NSXPCCONNECTION_IS_CREATING_REPLY__(event);
 
-                    os_log_debug(nsxpc_get_log(), "creating forwarding block with signature %@", localBlockSignature._typeString);
+                        os_log_debug(nsxpc_get_log(), "creating forwarding block with signature %@", localBlockSignature._typeString);
 
-                    forwardingBlock = [__NSMakeSpecialForwardingCaptureBlock(localBlockSignature._typeString.UTF8String, ^(NSBlockInvocation* invocation) {
-                        os_log_debug(nsxpc_get_log(), "forwarding reply block called with invocation %@; sending invocation to remote peer...", invocation);
-                        [self _endTransactionForSequence: sequence completionHandler: ^{
-                            NSUInteger parameterCount = invocation.methodSignature.numberOfArguments;
+                        forwardingBlock = [__NSMakeSpecialForwardingCaptureBlock(localBlockSignature._typeString.UTF8String, ^(NSBlockInvocation* invocation) {
+                            os_log_debug(nsxpc_get_log(), "forwarding reply block called with invocation %@; sending invocation to remote peer...", invocation);
+                            [self _endTransactionForSequence: sequence completionHandler: ^{
+                                NSUInteger parameterCount = invocation.methodSignature.numberOfArguments;
 
-                            if (parameterCount > 1) {
-                                for (NSUInteger i = 0; i < parameterCount - 1; ++i) {
-                                    const char* paramType = [invocation.methodSignature getArgumentTypeAtIndex: i + 1];
-                                    size_t paramTypeLen = strlen(paramType);
+                                if (parameterCount > 1) {
+                                    for (NSUInteger i = 0; i < parameterCount - 1; ++i) {
+                                        @autoreleasepool {
+                                            const char* paramType = [invocation.methodSignature getArgumentTypeAtIndex: i + 1];
+                                            size_t paramTypeLen = strlen(paramType);
 
-                                    if (paramTypeLen > 0 && paramType[0] == '@') {
-                                        // this parameter is an object
-                                        id object = nil;
+                                            if (paramTypeLen > 0 && paramType[0] == '@') {
+                                                // this parameter is an object
+                                                id object = nil;
 
-                                        [invocation getArgument: &object atIndex: i + 1];
+                                                [invocation getArgument: &object atIndex: i + 1];
 
-                                        object = [self tryReplacingWithProxy: object interface: [interface _interfaceForArgument: i ofSelector: selector reply: YES]];
-                                        if (object) {
-                                            [invocation setArgument: &object atIndex: i + 1];
-                                            [invocation _addAttachedObject: object];
+                                                object = [self tryReplacingWithProxy: object interface: [interface _interfaceForArgument: i ofSelector: selector reply: YES]];
+                                                if (object) {
+                                                    [invocation setArgument: &object atIndex: i + 1];
+                                                    [invocation _addAttachedObject: object];
+                                                }
+                                            }
                                         }
                                     }
                                 }
-                            }
 
-                            @autoreleasepool {
-                                unsigned char buffer[1024];
-                                NSXPCEncoder *encoder = [[NSXPCEncoder alloc] initWithStackSpace: buffer size: sizeof(buffer)];
-                                [encoder setConnection: self];
-                                [encoder _encodeInvocation: invocation isReply: YES into: reply];
-                                os_log_debug(nsxpc_get_log(), "encoded reply invocation: %@", reply);
-                                [encoder release];
-                            }
+                                @autoreleasepool {
+                                    unsigned char buffer[1024];
+                                    NSXPCEncoder *encoder = [[NSXPCEncoder alloc] initWithStackSpace: buffer size: sizeof(buffer)];
+                                    [encoder setConnection: self];
+                                    [encoder _encodeInvocation: invocation isReply: YES into: reply];
+                                    os_log_debug(nsxpc_get_log(), "encoded reply invocation: %@", reply);
+                                    [encoder release];
+                                }
 
-                            xpc_connection_send_message(_xpcConnection, reply);
-                        }];
-                    }) autorelease];
+                                xpc_connection_send_message(_xpcConnection, reply);
+                            }];
+                        }) autorelease];
 
-                    [invocation setArgument: &forwardingBlock atIndex: i + 2];
+                        [invocation setArgument: &forwardingBlock atIndex: i + 2];
+                        [invocation _addAttachedObject: forwardingBlock];
 
-                    break;
+                        break;
+                    }
                 }
             }
         }
@@ -874,6 +930,7 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
 
 - (void)receivedReleaseForProxyNumber: (NSUInteger)proxyNumber userQueue: (dispatch_queue_t)queue
 {
+    os_log_debug(nsxpc_get_log(), "received release for proxy #%lu; waiting for outstanding replies", (long unsigned)proxyNumber);
     // wait until there's no possibility of anyone using the proxy
     dispatch_group_notify(_outstandingRepliesGroup, queue, ^{
         [self releaseExportedObject: proxyNumber];
@@ -888,11 +945,13 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
 - (void)releaseExportedObject: (NSUInteger)proxyNumber
 {
     @synchronized(_exported) {
+        os_log_debug(nsxpc_get_log(), "releasing proxy #%lu", (long unsigned)proxyNumber);
         @autoreleasepool {
             NSNumber* key = [NSNumber numberWithUnsignedInteger: proxyNumber];
             _NSXPCConnectionExportInfo* info = _exported[key];
             if (info) {
                 if (info.exportCount == 0) {
+                    os_log_debug(nsxpc_get_log(), "proxy #%lu has no more references; removing it from export table", (long unsigned)proxyNumber);
                     [_exported removeObjectForKey: key];
                 } else {
                     --info.exportCount;
@@ -908,7 +967,8 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
 }
 
 - (void) dealloc {
-    [_imported release];
+    os_log_debug(nsxpc_get_log(), "connection %@ is being deallocated", self);
+    [_importInfo release];
     [_exported release];
     [_expectedReplies release];
     [_serviceName release];
