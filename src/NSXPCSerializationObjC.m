@@ -188,7 +188,11 @@ void _NSXPCSerializationDecodeTypedObjCValuesFromArray(
             id obj = [decoder _decodeObjectOfClasses: classes
                                             atObject: object];
             *(id *) addr = obj;
-            // TODO: we may need to [invocation _addAttachedObject: obj] here.
+            if (invocation) {
+                [invocation _addAttachedObject: obj];
+            } else {
+                [obj retain];
+            }
             break;
         }
 

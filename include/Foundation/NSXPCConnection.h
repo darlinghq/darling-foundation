@@ -44,6 +44,7 @@ typedef NS_OPTIONS(NSUInteger, NSXPCConnectionOptions) {
 
     xpc_connection_t _xpcConnection;
     dispatch_queue_t _queue;
+    dispatch_group_t _outstandingRepliesGroup;
 
     void (^_invalidationHandler)(void);
     void (^_interruptionHandler)(void);
@@ -51,6 +52,8 @@ typedef NS_OPTIONS(NSUInteger, NSXPCConnectionOptions) {
     NSMutableArray<_NSXPCDistantObject *> *_imported;
     NSMutableDictionary<NSNumber *, _NSXPCConnectionExportInfo *> *_exported;
     _NSXPCConnectionExpectedReplies* _expectedReplies;
+    NSUInteger _nextExportNumber;
+    NSUInteger _generationCount;
 }
 
 @property(readonly) pid_t processIdentifier;

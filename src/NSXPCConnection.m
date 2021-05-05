@@ -34,6 +34,7 @@
 #import <os/log.h>
 #import <objc/runtime.h>
 #import <Foundation/NSXPCConnection_Private.h>
+#import "NSXPCInterfaceInternal.h"
 
 CF_PRIVATE
 os_log_t nsxpc_get_log(void) {
@@ -44,18 +45,6 @@ os_log_t nsxpc_get_log(void) {
     });
     return logger;
 };
-
-@interface _NSXPCConnectionExportInfo : NSObject {
-    id _exportedObject;
-    NSXPCInterface *_exportedInterface;
-    NSUInteger _exportCount;
-}
-
-@property(nonatomic, retain) id exportedObject;
-@property(nonatomic, retain) NSXPCInterface *exportedInterface;
-@property(nonatomic) NSUInteger exportCount;
-
-@end
 
 @implementation _NSXPCConnectionExportInfo
 @synthesize exportedObject = _exportedObject;
@@ -150,6 +139,8 @@ os_log_t nsxpc_get_log(void) {
     _imported = [NSMutableArray new];
     _exported = [NSMutableDictionary new];
     _expectedReplies = [_NSXPCConnectionExpectedReplies new];
+    _nextExportNumber = 2;
+    _outstandingRepliesGroup = dispatch_group_create();
     return self;
 }
 
@@ -175,10 +166,16 @@ os_log_t nsxpc_get_log(void) {
         if (type == XPC_TYPE_DICTIONARY) {
             NSXPCConnectionMessageOptions flags = xpc_dictionary_get_uint64(message, "f");
 
-            if (!(flags & NSXPCConnectionMessageOptionsTracksProgress)) {
+            if (!(flags & NSXPCConnectionMessageOptionsNoninvocation)) {
+                // "not non-invocation" means it's an invocation, so handle it
                 [self _decodeAndInvokeMessageWithEvent: message flags: flags];
+            } else if (flags & NSXPCConnectionMessageOptionsDesistProxy) {
+                [self receivedReleaseForProxyNumber: xpc_dictionary_get_uint64(message,"proxynum") userQueue: _queue];
+            } else if (flags & NSXPCConnectionMessageOptionsProgressMessage) {
+                [self _decodeProgressMessageWithData: message flags: flags];
             } else {
-                // TODO: NSProgress support
+                os_log_fault(nsxpc_get_log(), "Unexpected message flags (%#lx) received on XPC connection", (long)flags);
+                // this is weird, but we're not supposed to invalidate the connection for it
             }
         } else if (type == XPC_TYPE_ERROR) {
             if (message == XPC_ERROR_CONNECTION_INTERRUPTED) {
@@ -322,8 +319,57 @@ os_log_t nsxpc_get_log(void) {
     xpc_connection_suspend(_xpcConnection);
 }
 
+- (void)_sendProgressMessage: (xpc_object_t)message forSequence: (NSUInteger)sequence
+{
+    xpc_dictionary_set_uint64(message, "f", NSXPCConnectionMessageOptionsRequired | NSXPCConnectionMessageOptionsNoninvocation | NSXPCConnectionMessageOptionsProgressMessage);
+    xpc_dictionary_set_uint64(message, "sequence", sequence);
+    xpc_connection_send_message(_xpcConnection, message);
+}
+
+- (void)_cancelProgress: (NSUInteger)sequence
+{
+    xpc_object_t message = xpc_dictionary_create(NULL, NULL, 0);
+
+    xpc_dictionary_set_uint64(message, "f", NSXPCConnectionMessageOptionsRequired | NSXPCConnectionMessageOptionsNoninvocation | NSXPCConnectionMessageOptionsProgressMessage | NSXPCConnectionMessageOptionsCancelProgress);
+    xpc_dictionary_set_uint64(message, "sequence", sequence);
+
+    xpc_connection_send_message(_xpcConnection, message);
+    xpc_release(message);
+}
+
+- (void)_pauseProgress: (NSUInteger)sequence
+{
+    xpc_object_t message = xpc_dictionary_create(NULL, NULL, 0);
+
+    xpc_dictionary_set_uint64(message, "f", NSXPCConnectionMessageOptionsRequired | NSXPCConnectionMessageOptionsNoninvocation | NSXPCConnectionMessageOptionsProgressMessage | NSXPCConnectionMessageOptionsPauseProgress);
+    xpc_dictionary_set_uint64(message, "sequence", sequence);
+
+    xpc_connection_send_message(_xpcConnection, message);
+    xpc_release(message);
+}
+
+- (void)_resumeProgress: (NSUInteger)sequence
+{
+    xpc_object_t message = xpc_dictionary_create(NULL, NULL, 0);
+
+    xpc_dictionary_set_uint64(message, "f", NSXPCConnectionMessageOptionsRequired | NSXPCConnectionMessageOptionsNoninvocation | NSXPCConnectionMessageOptionsProgressMessage | NSXPCConnectionMessageOptionsResumeProgress);
+    xpc_dictionary_set_uint64(message, "sequence", sequence);
+
+    xpc_connection_send_message(_xpcConnection, message);
+    xpc_release(message);
+}
+
 - (void) _sendDesistForProxy: (_NSXPCDistantObject *) proxy {
-    // TODO
+    xpc_object_t message = xpc_dictionary_create(NULL, NULL, 0);
+
+    // might need to revisit the name of "NSXPCConnectionMessageOptionsRequired";
+    // this is certainly not an invocation
+    xpc_dictionary_set_uint64(message, "f", NSXPCConnectionMessageOptionsRequired | NSXPCConnectionMessageOptionsNoninvocation | NSXPCConnectionMessageOptionsDesistProxy);
+    xpc_dictionary_set_uint64(message, "proxynum", proxy._proxyNumber);
+
+    // TODO: send a notification instead of a message
+    xpc_connection_send_message(_xpcConnection, message);
+    xpc_release(message);
 }
 
 - (void) _addImportedProxy: (_NSXPCDistantObject *) proxy {
@@ -363,6 +409,21 @@ os_log_t nsxpc_get_log(void) {
     @synchronized(_exported) {
         NSNumber* key = [NSNumber numberWithUnsignedInteger: proxyNumber];
         return [[_exported[key].exportedInterface retain] autorelease];
+    }
+}
+
+- (NSUInteger)proxyNumberForExportedObject: (id)object interface: (NSXPCInterface*)interface
+{
+    @synchronized(_exported) {
+        NSUInteger proxyNumber = _nextExportNumber++;
+        NSNumber* key = [NSNumber numberWithUnsignedInteger: proxyNumber];
+        _NSXPCConnectionExportInfo* info = _exported[key];
+        if (!info) {
+            _exported[key] = info = [[_NSXPCConnectionExportInfo new] autorelease];
+        }
+        info.exportedObject = object;
+        info.exportedInterface = interface;
+        return proxyNumber;
     }
 }
 
@@ -412,6 +473,30 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
     [invocation invoke];
 };
 
+/**
+ * Try to replace the given object with a proxy of the given interface. If the object is already a proxy or the interface is `nil`, it does not replace the object.
+ *
+ * @returns A new autoreleased proxy if the given object was replaced with a proxy.
+ */
+- (id)tryReplacingWithProxy: (id)objectToReplace interface: (NSXPCInterface*)interface
+{
+    BOOL isProxy = [objectToReplace isKindOfClass: [_NSXPCDistantObject class]];
+
+    if (interface) {
+        // we're expecting a proxy object for this argument;
+        // if it's not already a proxy, make it into one
+        if (!isProxy) {
+            return [[[_NSXPCDistantObject alloc] _initWithConnection: self exportedObject: objectToReplace interface: interface] autorelease];
+        }
+    } else if (isProxy) {
+        // we're NOT expecting a proxy object for this argument;
+        // if it's a proxy, throw something
+        [NSException raise: NSInvalidArgumentException format: @"Received a proxy object as an argument for a parameter that did not expect one"];
+    }
+
+    return nil;
+}
+
 - (void) _sendInvocation: (NSInvocation *) invocation
              orArguments: (id *) arguments
                    count: (NSUInteger) argumentsCount
@@ -420,7 +505,7 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
                withProxy: (_NSXPCDistantObject *) proxy
 {
     xpc_object_t request = xpc_dictionary_create(NULL, NULL, 0);
-    NSXPCConnectionMessageOptions options = NSXPCConnectionMessageOptionsInvocation;
+    NSXPCConnectionMessageOptions options = NSXPCConnectionMessageOptionsRequired;
     NSUInteger parameterCount = signature.numberOfArguments;
     _NSXPCConnectionExpectedReplyInfo* replyInfo = nil;
 
@@ -487,6 +572,25 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
 
                 options |= NSXPCConnectionMessageOptionsExpectsReply;
                 xpc_dictionary_set_string(request, "replysig", rawBlockSig);
+            } else if (paramTypeLen > 0 && paramType[0] == '@') {
+                // this parameter is an object
+                id object = nil;
+
+                if (invocation) {
+                    [invocation getArgument: &object atIndex: i + 2];
+                } else {
+                    object = arguments[i];
+                }
+
+                object = [self tryReplacingWithProxy: object interface: [proxy._remoteInterface _interfaceForArgument: i ofSelector: selector reply: NO]];
+                if (object) {
+                    if (invocation) {
+                        [invocation setArgument: &object atIndex: i + 2];
+                        [invocation _addAttachedObject: object];
+                    } else {
+                        arguments[i] = object;
+                    }
+                }
             }
         }
     }
@@ -501,6 +605,7 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
         NSXPCEncoder *encoder = [[NSXPCEncoder alloc]
                                     initWithStackSpace: buffer
                                                   size: sizeof(buffer)];
+        [encoder setConnection: self];
         [encoder _encodeInvocation: invocation
                            isReply: NO
                               into: request];
@@ -516,10 +621,15 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
         NSProgress* progress = nil;
         NSUInteger sequence = [_expectedReplies sequenceForProgress: progress];
         void (^replyHandler)(xpc_object_t) = nil;
+        BOOL hasProxiesInReply = [proxy._remoteInterface _hasProxiesInReplyBlockArgumentsOfSelector: selector];
 
-        os_log_debug(nsxpc_get_log(), "sending invocation expected reply, with sequence %zu", sequence);
+        os_log_debug(nsxpc_get_log(), "sending invocation expecting reply, with sequence %zu", sequence);
 
         xpc_dictionary_set_uint64(request, "sequence", sequence);
+
+        if (hasProxiesInReply) {
+            [self incrementOutstandingReplyCount];
+        }
 
         replyHandler = ^(xpc_object_t reply) {
             xpc_type_t type = xpc_get_type(reply);
@@ -560,6 +670,10 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
                 if (replyInfo.cleanupBlock) {
                     replyInfo.cleanupBlock();
                 }
+
+                if (hasProxiesInReply) {
+                    [self decrementOutstandingReplyCount];
+                }
             } else {
                 [NSException raise: NSInvalidArgumentException format: @"Invalid reply (not error and not dictionary)"];
             }
@@ -589,6 +703,16 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
     xpc_transaction_end();
 }
 
+- (void)incrementOutstandingReplyCount
+{
+    dispatch_group_enter(_outstandingRepliesGroup);
+}
+
+- (void)decrementOutstandingReplyCount
+{
+    dispatch_group_leave(_outstandingRepliesGroup);
+}
+
 static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_EXPORTED_OBJECT__(NSInvocation* invocation) {
     [invocation invoke];
 };
@@ -607,6 +731,8 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
     NSArray* arguments = nil;
     NSMethodSignature* signature = nil;
     SEL selector = nil;
+
+    [decoder setConnection: self];
 
     os_log_debug(nsxpc_get_log(), "decoding and invoking message with flags %zu and raw XPC content %@", flags, event);
 
@@ -664,9 +790,32 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
                     forwardingBlock = [__NSMakeSpecialForwardingCaptureBlock(localBlockSignature._typeString.UTF8String, ^(NSBlockInvocation* invocation) {
                         os_log_debug(nsxpc_get_log(), "forwarding reply block called with invocation %@; sending invocation to remote peer...", invocation);
                         [self _endTransactionForSequence: sequence completionHandler: ^{
+                            NSUInteger parameterCount = invocation.methodSignature.numberOfArguments;
+
+                            if (parameterCount > 1) {
+                                for (NSUInteger i = 0; i < parameterCount - 1; ++i) {
+                                    const char* paramType = [invocation.methodSignature getArgumentTypeAtIndex: i + 1];
+                                    size_t paramTypeLen = strlen(paramType);
+
+                                    if (paramTypeLen > 0 && paramType[0] == '@') {
+                                        // this parameter is an object
+                                        id object = nil;
+
+                                        [invocation getArgument: &object atIndex: i + 1];
+
+                                        object = [self tryReplacingWithProxy: object interface: [interface _interfaceForArgument: i ofSelector: selector reply: YES]];
+                                        if (object) {
+                                            [invocation setArgument: &object atIndex: i + 1];
+                                            [invocation _addAttachedObject: object];
+                                        }
+                                    }
+                                }
+                            }
+
                             @autoreleasepool {
                                 unsigned char buffer[1024];
                                 NSXPCEncoder *encoder = [[NSXPCEncoder alloc] initWithStackSpace: buffer size: sizeof(buffer)];
+                                [encoder setConnection: self];
                                 [encoder _encodeInvocation: invocation isReply: YES into: reply];
                                 os_log_debug(nsxpc_get_log(), "encoded reply invocation: %@", reply);
                                 [encoder release];
@@ -698,7 +847,11 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
 - (void)_decodeAndInvokeReplyBlockWithEvent: (xpc_object_t)event sequence: (NSUInteger)sequence replyInfo: (_NSXPCConnectionExpectedReplyInfo*)replyInfo
 {
     NSXPCDecoder* decoder = [[NSXPCDecoder new] autorelease];
-    NSInvocation* invocation = [decoder _decodeReplyFromXPCObject: event forSelector: replyInfo.selector interface: replyInfo.interface];
+    NSInvocation* invocation = nil;
+
+    [decoder setConnection: self];
+
+    invocation = [decoder _decodeReplyFromXPCObject: event forSelector: replyInfo.selector interface: replyInfo.interface];
 
     os_log_debug(nsxpc_get_log(), "decoded reply invocation %@ for selector %s", invocation, sel_getName(replyInfo.selector));
 
@@ -719,6 +872,41 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
     _CFSetTSD(__CFTSDKeyNSXPCCurrentConnection, nil, NULL);
 }
 
+- (void)receivedReleaseForProxyNumber: (NSUInteger)proxyNumber userQueue: (dispatch_queue_t)queue
+{
+    // wait until there's no possibility of anyone using the proxy
+    dispatch_group_notify(_outstandingRepliesGroup, queue, ^{
+        [self releaseExportedObject: proxyNumber];
+    });
+}
+
+- (void)_decodeProgressMessageWithData: (xpc_object_t)data flags: (NSXPCConnectionMessageOptions)flags
+{
+    // TODO
+}
+
+- (void)releaseExportedObject: (NSUInteger)proxyNumber
+{
+    @synchronized(_exported) {
+        @autoreleasepool {
+            NSNumber* key = [NSNumber numberWithUnsignedInteger: proxyNumber];
+            _NSXPCConnectionExportInfo* info = _exported[key];
+            if (info) {
+                if (info.exportCount == 0) {
+                    [_exported removeObjectForKey: key];
+                } else {
+                    --info.exportCount;
+                }
+            }
+        }
+    }
+}
+
+- (NSUInteger)_generationCount
+{
+    return _generationCount;
+}
+
 - (void) dealloc {
     [_imported release];
     [_exported release];
@@ -734,6 +922,10 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
     if (_queue != NULL) {
         dispatch_release(_queue);
         _queue = NULL;
+    }
+    if (_outstandingRepliesGroup != NULL) {
+        dispatch_release(_outstandingRepliesGroup);
+        _outstandingRepliesGroup = NULL;
     }
     [super dealloc];
 }

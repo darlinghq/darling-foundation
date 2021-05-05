@@ -1,5 +1,6 @@
 #import <Foundation/NSXPCCoder.h>
 #import <xpc/xpc.h>
+#import "NSXPCCoderInternal.h"
 
 @implementation NSXPCCoder
 
@@ -31,7 +32,19 @@
 
 - (void) dealloc {
     [_userInfo release];
+    [_connection release];
     [super dealloc];
+}
+
+@end
+
+@implementation NSXPCCoder (Internal)
+
+- (void)setConnection: (NSXPCConnection*)connection
+{
+    NSXPCConnection* oldConnection = _connection;
+    _connection = [connection retain];
+    [oldConnection release];
 }
 
 @end

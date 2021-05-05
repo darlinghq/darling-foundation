@@ -46,6 +46,15 @@
     return (_flags & NSXPCDistantObjectFlagNoImportance) != 0;
 }
 
+- (instancetype)_initWithConnection: (NSXPCConnection*)connection exportedObject: (id)object interface: (NSXPCInterface*)interface
+{
+    if (self = [super init]) {
+        _connection = [connection retain];
+        _proxyNumber = [_connection proxyNumberForExportedObject: object interface: interface];
+        _flags = NSXPCDistantObjectFlagExported;
+    }
+    return self;
+}
 
 - (instancetype) _initWithConnection: (NSXPCConnection *) connection
                          proxyNumber: (NSUInteger) proxyNumber

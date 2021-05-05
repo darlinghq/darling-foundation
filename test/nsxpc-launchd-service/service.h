@@ -17,6 +17,20 @@
 
 @end
 
+@protocol Counter
+
+/**
+ * Increments the counter by the given amount.
+ */
+- (void)incrementCounter: (NSUInteger)amount;
+
+/**
+ * Returns the current value of the counter via the given reply block.
+ */
+- (void)fetchCounter: (void(^)(NSUInteger))reply;
+
+@end
+
 @protocol Service
 
 /**
@@ -38,5 +52,10 @@
  * Asks the server to look for objects with the given details and return them via the given callback block.
  */
 - (void)findAllWithDetails: (NSDictionary<NSString*, id>*)details callback: (void(^)(NSArray<id>*))callback;
+
+/**
+ * Returns a reference to the common counter shared by all clients of the service via the given reply block.
+ */
+- (void)fetchSharedCounter: (void(^)(id<Counter>))reply;
 
 @end

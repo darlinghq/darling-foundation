@@ -104,7 +104,11 @@ static Class _XPCObjectClass = nil;
 }
 
 - (id) _replaceObject: (id) object {
-    // TODO
+    if (_askForReplacement) {
+        object = [object replacementObjectForCoder: self];
+        // TODO: ask the connection/delegate (not sure which one) for a replacement as well;
+        //       the objects replaced by the delegate (and their replacements) are cached
+    }
     return object;
 }
 
@@ -256,6 +260,7 @@ static Class _XPCObjectClass = nil;
     );
 
     // Third item: the arguments.
+    _askForReplacement = YES;
     _NSXPCSerializationAddInvocationArgumentsArray(
         invocation,
         signature,
@@ -263,6 +268,7 @@ static Class _XPCObjectClass = nil;
         &_serializer,
         isReply
     );
+    _askForReplacement = NO;
 
     _NSXPCSerializationEndArrayWrite(&_serializer);
     _genericKey = savedGenericKey;

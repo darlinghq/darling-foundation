@@ -7,6 +7,7 @@ CF_PRIVATE
     xpc_object_t _oolObjects;
     struct NSXPCSerializer _serializer;
     NSUInteger _genericKey;
+    BOOL _askForReplacement;
 }
 
 - (instancetype) initWithStackSpace: (unsigned char *) buffer

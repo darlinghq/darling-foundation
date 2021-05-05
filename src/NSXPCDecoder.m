@@ -31,6 +31,7 @@
 #import <objc/runtime.h>
 
 #import "NSXPCConnectionInternal.h"
+#import "_NSXPCDistantObject.h"
 
 @implementation NSXPCDecoder
 
@@ -329,6 +330,26 @@ static BOOL findObject(
                 isReply
             );
             _collection = savedCollection;
+
+            for (NSUInteger i = isReply ? 1 : 2; i < signature.numberOfArguments; ++i) {
+                const char* paramType = [signature getArgumentTypeAtIndex: i];
+                size_t paramTypeLen = strlen(paramType);
+
+                if (paramTypeLen > 0 && paramType[0] == '@') {
+                    // this parameter is an object
+                    id object = nil;
+
+                    [invocation getArgument: &object atIndex: i];
+
+                    if ([object isKindOfClass: [_NSXPCDistantObject class]]) {
+                        NSXPCInterface* argumentInterface = [interface _interfaceForArgument: i - (isReply ? 1 : 2) ofSelector: (isReply ? replySelector : selector) reply: isReply];
+                        if (!argumentInterface) {
+                            [NSException raise: NSInvalidArgumentException format: @"Received proxy object for argument %lu, but interface did not expect one there", (long unsigned)(i - (isReply ? 1 : 2))];
+                        }
+                        ((_NSXPCDistantObject*)object)._remoteInterface = argumentInterface;
+                    }
+                }
+            }
         } else {
             [NSException raise: NSInvalidArgumentException
                         format: @"Too many arguments"];

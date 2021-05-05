@@ -24,13 +24,39 @@
 #import <os/log.h>
 
 typedef NS_OPTIONS(NSUInteger, NSXPCConnectionMessageOptions) {
-	NSXPCConnectionMessageOptionsInvocation                = 1 << 0,
+	// Required to be present on all messages
+	NSXPCConnectionMessageOptionsRequired                  = 1 << 0,
+
+	// doesn't seem to be used
+	//NSXPCConnectionMessageOptionsUnknownOption1            = 1 << 1,
+
+	NSXPCConnectionMessageOptionsNoninvocation             = 1 << 2,
+	NSXPCConnectionMessageOptionsDesistProxy               = 1 << 3,
+	NSXPCConnectionMessageOptionsProgressMessage           = 1 << 4,
 	NSXPCConnectionMessageOptionsExpectsReply              = 1 << 5,
 	NSXPCConnectionMessageOptionsTracksProgress            = 1 << 6,
 	NSXPCConnectionMessageOptionsInitiatesProgressTracking = 1 << 7,
+	NSXPCConnectionMessageOptionsCancelProgress            = 1 << 16,
+	NSXPCConnectionMessageOptionsPauseProgress             = 1 << 17,
+	NSXPCConnectionMessageOptionsResumeProgress            = 1 << 18,
 };
 
-@class NSXPCInterface, NSDictionary, NSProgress, NSMutableDictionary, NSNumber;
+@class NSXPCInterface, NSDictionary, NSProgress, NSMutableDictionary, NSNumber, NSXPCEncoder;
+
+CF_PRIVATE
+@interface _NSXPCConnectionExportInfo : NSObject {
+	id _exportedObject;
+	NSXPCInterface* _exportedInterface;
+
+	// strangely enough, it seems that this is never incremented
+	NSUInteger _exportCount;
+}
+
+@property(nonatomic, retain) id exportedObject;
+@property(nonatomic, retain) NSXPCInterface* exportedInterface;
+@property(nonatomic) NSUInteger exportCount;
+
+@end
 
 CF_PRIVATE
 @interface _NSXPCConnectionExpectedReplyInfo : NSObject {
@@ -67,15 +93,33 @@ CF_PRIVATE
 
 @interface NSXPCConnection (Internal)
 
+@property(readonly) NSUInteger _generationCount;
+
 - (instancetype)_initWithPeerConnection: (xpc_connection_t)connection name: (NSString*)serviceName options: (NSUInteger)options;
 
 - (id)_exportedObjectForProxyNumber: (NSUInteger)proxyNumber;
 - (NSXPCInterface*)_interfaceForProxyNumber: (NSUInteger)proxyNumber;
+- (NSUInteger)proxyNumberForExportedObject: (id)object interface: (NSXPCInterface*)interface;
 
 - (void)_decodeAndInvokeReplyBlockWithEvent: (xpc_object_t)event sequence: (NSUInteger)sequence replyInfo: (_NSXPCConnectionExpectedReplyInfo*)replyInfo;
 - (void)_decodeAndInvokeMessageWithEvent: (xpc_object_t)event flags: (NSXPCConnectionMessageOptions)flags;
 
 - (void)_beginTransactionForSequence: (NSUInteger)sequence reply: (xpc_object_t)object withProgress: (NSProgress*)progress;
+
+- (void)_sendProgressMessage: (xpc_object_t)message forSequence: (NSUInteger)sequence;
+- (void)_cancelProgress: (NSUInteger)sequence;
+- (void)_pauseProgress: (NSUInteger)sequence;
+- (void)_resumeProgress: (NSUInteger)sequence;
+
+- (void)receivedReleaseForProxyNumber: (NSUInteger)proxyNumber userQueue: (dispatch_queue_t)queue;
+- (void)_decodeProgressMessageWithData: (xpc_object_t)data flags: (NSXPCConnectionMessageOptions)flags;
+
+- (void)releaseExportedObject: (NSUInteger)proxyNumber;
+
+- (void)incrementOutstandingReplyCount;
+- (void)decrementOutstandingReplyCount;
+
+- (id)replacementObjectForEncoder: (NSXPCEncoder*)encoder object: (id)object;
 
 @end
 

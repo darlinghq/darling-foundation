@@ -2,7 +2,31 @@
 
 #import "service.h"
 
-@interface ServiceDelegate : NSObject <NSXPCListenerDelegate, Service>
+#include <stdatomic.h>
+
+@interface Counter : NSObject <Counter> {
+	_Atomic NSUInteger _counter;
+}
+
+@end
+
+@interface ServiceDelegate : NSObject <NSXPCListenerDelegate, Service> {
+	Counter* _counter;
+}
+
+@end
+
+@implementation Counter
+
+- (void)incrementCounter: (NSUInteger)amount
+{
+	_counter += amount;
+}
+
+- (void)fetchCounter: (void(^)(NSUInteger))reply
+{
+	reply(_counter);
+}
 
 @end
 
@@ -54,19 +78,43 @@
 	]);
 }
 
+- (void)fetchSharedCounter: (void(^)(id<Counter>))reply
+{
+	reply(_counter);
+}
+
 - (BOOL)listener: (NSXPCListener*)listener shouldAcceptNewConnection: (NSXPCConnection*)connection
 {
+	NSXPCInterface* serviceInterface = [NSXPCInterface interfaceWithProtocol: @protocol(Service)];
+	NSXPCInterface* counterInterface = [NSXPCInterface interfaceWithProtocol: @protocol(Counter)];
+
+	[serviceInterface setInterface: counterInterface forSelector: @selector(fetchSharedCounter:) argumentIndex: 0 ofReply: YES];
+
 	NSLog(@"Received new connection request from EUID %u, EGID %u, PID %u", connection.effectiveUserIdentifier, connection.effectiveGroupIdentifier, connection.processIdentifier);
 
 	connection.invalidationHandler = ^{
 		NSLog(@"Client connection got invalidated");
 	};
 
-	connection.exportedInterface = [NSXPCInterface interfaceWithProtocol: @protocol(Service)];
+	connection.exportedInterface = serviceInterface;
 	connection.exportedObject = self;
 
 	[connection resume];
 	return YES;
+}
+
+- (instancetype)init
+{
+	if (self = [super init]) {
+		_counter = [Counter new];
+	}
+	return self;
+}
+
+- (void)dealloc
+{
+	[_counter release];
+	[super dealloc];
 }
 
 @end

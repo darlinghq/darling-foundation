@@ -11,6 +11,7 @@
 {
 	[_someString release];
 	[_someOtherCodableObjects release];
+	[super dealloc];
 }
 
 - (instancetype)init
