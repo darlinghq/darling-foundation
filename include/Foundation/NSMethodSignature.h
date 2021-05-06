@@ -32,4 +32,5 @@ typedef struct {
 - (NSString *) _typeString;
 - (BOOL) _stret;
 - (NSMethodSignature*)_signatureForBlockAtArgumentIndex: (NSUInteger)index;
+- (Class)_classForObjectAtArgumentIndex: (NSUInteger)index;
 @end

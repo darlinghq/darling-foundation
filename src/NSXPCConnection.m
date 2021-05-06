@@ -36,6 +36,9 @@
 #import <Foundation/NSXPCConnection_Private.h>
 #import "NSXPCInterfaceInternal.h"
 #import <Foundation/NSMapTable.h>
+#import <Foundation/NSProgress.h>
+#import "NSProgressInternal.h"
+#import "NSXPCCoderInternal.h"
 
 CF_PRIVATE
 os_log_t nsxpc_get_log(void) {
@@ -557,6 +560,7 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
     NSXPCConnectionMessageOptions options = NSXPCConnectionMessageOptionsRequired;
     NSUInteger parameterCount = signature.numberOfArguments;
     _NSXPCConnectionExpectedReplyInfo* replyInfo = nil;
+    BOOL startReportingProgress = NO;
 
     os_log_debug(nsxpc_get_log(), "going to send invocation %@ with signature %@ for selector %s on proxy %p", invocation, signature, sel_getName(selector), proxy);
 
@@ -646,9 +650,18 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
         }
     }
 
-    // TODO: NSProgress support
     if (signature.methodReturnType[0] != 'v') {
-        [NSException raise: NSInvalidArgumentException format: @"Reply block for %s must return void", sel_getName(selector)];
+        if (replyInfo) {
+            Class retClass = [proxy._remoteInterface _returnClassForSelector: selector];
+            if (!retClass || ![retClass isSubclassOfClass: [NSProgress class]]) {
+                // any other non-NSProgress return type is an error
+                [NSException raise: NSInvalidArgumentException format: @"Selector %s must return void or NSProgress*", sel_getName(selector)];
+            }
+            startReportingProgress = YES;
+        } else {
+            // no reply block? must return void.
+            [NSException raise: NSInvalidArgumentException format: @"Selector %s must return void because it does not accept a reply block", sel_getName(selector)];
+        }
     }
 
     @autoreleasepool {
@@ -664,19 +677,44 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
         [encoder release];
     }
 
-    xpc_dictionary_set_uint64(request, "f", options);
     os_log_debug(nsxpc_get_log(), "sending invocation with flags %zu", options);
 
     if (options & NSXPCConnectionMessageOptionsExpectsReply) {
-        // TODO: NSProgress support
         NSProgress* progress = nil;
-        NSUInteger sequence = [_expectedReplies sequenceForProgress: progress];
+        NSUInteger sequence = 0;
         void (^replyHandler)(xpc_object_t) = nil;
         BOOL hasProxiesInReply = [proxy._remoteInterface _hasProxiesInReplyBlockArgumentsOfSelector: selector];
 
+        if (startReportingProgress) {
+            progress = [NSProgress discreteProgressWithTotalUnitCount: 1];
+            [invocation setReturnValue: &progress];
+            [invocation _addAttachedObject: progress];
+            options |= NSXPCConnectionMessageOptionsTracksProgress | NSXPCConnectionMessageOptionsInitiatesProgressTracking;
+        } else {
+            NSProgress* parent = [NSProgress currentProgress];
+            if (parent) {
+                progress = [[[NSProgress alloc] initWithParent: parent userInfo: nil] autorelease];
+                options |= NSXPCConnectionMessageOptionsTracksProgress;
+            }
+        }
+
+        sequence = [_expectedReplies sequenceForProgress: progress];
+
         os_log_debug(nsxpc_get_log(), "sending invocation expecting reply, with sequence %zu", sequence);
 
+        xpc_dictionary_set_uint64(request, "f", options);
         xpc_dictionary_set_uint64(request, "sequence", sequence);
+
+        progress.totalUnitCount = 1;
+        progress.cancellationHandler = ^{
+            [self _cancelProgress: sequence];
+        };
+        progress.pausingHandler = ^{
+            [self _pauseProgress: sequence];
+        };
+        progress.resumingHandler = ^{
+            [self _resumeProgress: sequence];
+        };
 
         if (hasProxiesInReply) {
             [self incrementOutstandingReplyCount];
@@ -688,6 +726,7 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
             os_log_debug(nsxpc_get_log(), "recevied reply for sequence %zu with raw XPC content: %@", sequence, reply);
 
             [_expectedReplies removeProgressSequence: sequence];
+            progress.completedUnitCount = progress.totalUnitCount;
 
             if (type == XPC_TYPE_DICTIONARY) {
                 [self _decodeAndInvokeReplyBlockWithEvent: reply sequence: sequence replyInfo: replyInfo];
@@ -736,6 +775,7 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
             xpc_connection_send_message_with_reply(_xpcConnection, request, _queue, replyHandler);
         }
     } else {
+        xpc_dictionary_set_uint64(request, "f", options);
         // TODO: no-importance sending
         xpc_connection_send_message(_xpcConnection, request);
     }
@@ -782,6 +822,8 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
     NSArray* arguments = nil;
     NSMethodSignature* signature = nil;
     SEL selector = nil;
+    _NSProgressWithRemoteParent* progress = nil;
+    BOOL progressShouldBecomeCurrent = !(flags & NSXPCConnectionMessageOptionsInitiatesProgressTracking);
 
     [decoder setConnection: self];
 
@@ -808,6 +850,13 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
         NSUInteger parameterCount = signature.numberOfArguments;
 
         os_log_debug(nsxpc_get_log(), "received invocation expecting reply for sequence %zu", sequence);
+
+        if (flags & NSXPCConnectionMessageOptionsTracksProgress) {
+            progress = [[[_NSProgressWithRemoteParent alloc] initWithParent: nil userInfo: nil] autorelease];
+            progress.totalUnitCount = 1;
+            progress.sequence = sequence;
+            progress.parentConnection = self;
+        }
 
         if (parameterCount > 2) {
             for (NSUInteger i = 0; i < parameterCount - 2; ++i) {
@@ -838,6 +887,8 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
                         reply = __NSXPCCONNECTION_IS_CREATING_REPLY__(event);
 
                         os_log_debug(nsxpc_get_log(), "creating forwarding block with signature %@", localBlockSignature._typeString);
+
+                        [self _beginTransactionForSequence: sequence reply: reply withProgress: progress];
 
                         forwardingBlock = [__NSMakeSpecialForwardingCaptureBlock(localBlockSignature._typeString.UTF8String, ^(NSBlockInvocation* invocation) {
                             os_log_debug(nsxpc_get_log(), "forwarding reply block called with invocation %@; sending invocation to remote peer...", invocation);
@@ -894,7 +945,21 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
     _CFSetTSD(__CFTSDKeyNSXPCCurrentConnection, self, NULL);
     _CFSetTSD(__CFTSDKeyNSXPCCurrentMessage, event, NULL);
 
+    if (progressShouldBecomeCurrent) {
+        [progress becomeCurrentWithPendingUnitCount: 1];
+    }
+
     __NSXPCCONNECTION_IS_CALLING_OUT_TO_EXPORTED_OBJECT__(invocation);
+
+    if (progressShouldBecomeCurrent) {
+        [progress resignCurrent];
+    } else if (signature.methodReturnType[0] == '@') {
+        NSProgress* ret = nil;
+        [invocation getReturnValue: &ret];
+        if ([ret isKindOfClass: [NSProgress class]]) {
+            [progress addChild: ret withPendingUnitCount: 1];
+        }
+    }
 
     _CFSetTSD(__CFTSDKeyNSXPCCurrentMessage, NULL, NULL);
     _CFSetTSD(__CFTSDKeyNSXPCCurrentConnection, NULL, NULL);
@@ -939,7 +1004,18 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
 
 - (void)_decodeProgressMessageWithData: (xpc_object_t)data flags: (NSXPCConnectionMessageOptions)flags
 {
-    // TODO
+    NSUInteger sequence = xpc_dictionary_get_uint64(data,"sequence");
+    NSProgress* progress = [_expectedReplies progressForSequence: sequence];
+
+    if (flags & NSXPCConnectionMessageOptionsCancelProgress) {
+        [progress cancel];
+    } else if (flags & NSXPCConnectionMessageOptionsPauseProgress) {
+        [progress pause];
+    } else if (flags & NSXPCConnectionMessageOptionsResumeProgress) {
+        [progress resume];
+    } else {
+        [progress _receiveProgressMessage: data forSequence: sequence];
+    }
 }
 
 - (void)releaseExportedObject: (NSUInteger)proxyNumber
@@ -997,6 +1073,12 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
 + (instancetype)anonymousListener
 {
     return [[[NSXPCListener alloc] initAsAnonymousListener] autorelease];
+}
+
++ (instancetype)serviceListener
+{
+    // TODO
+    return nil;
 }
 
 - (void)dealloc

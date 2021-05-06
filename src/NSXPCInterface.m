@@ -18,6 +18,7 @@ extern const char* _protocol_getMethodTypeEncoding(Protocol* proto, SEL sel, BOO
 @synthesize replyParameterClassesWhitelist = _replyParameterClassesWhitelist;
 @synthesize parameterInterfaces = _parameterInterfaces;
 @synthesize replyParameterInterfaces = _replyParameterInterfaces;
+@synthesize returnClass = _returnClass;
 
 - (instancetype)initWithProtocol: (Protocol*)protocol selector: (SEL)selector
 {
@@ -52,7 +53,7 @@ extern const char* _protocol_getMethodTypeEncoding(Protocol* proto, SEL sel, BOO
 
             if (paramTypeLen > 1 && paramType[0] == '@' && paramType[1] == '?') {
                 // found the block
-                _replyBlockSignature = [[_methodSignature _signatureForBlockAtArgumentIndex: i] retain];
+                _replyBlockSignature = [[_methodSignature _signatureForBlockAtArgumentIndex: i + 1] retain];
                 break;
             }
         }
@@ -75,6 +76,9 @@ extern const char* _protocol_getMethodTypeEncoding(Protocol* proto, SEL sel, BOO
                 [_replyParameterInterfaces addObject: [NSNull null]];
             }
         }
+
+        // determine the return class
+        _returnClass = [_methodSignature _classForObjectAtArgumentIndex: 0];
     }
     return self;
 }
@@ -367,6 +371,21 @@ extern const char* _protocol_getMethodTypeEncoding(Protocol* proto, SEL sel, BOO
     }
 
     return NO;
+}
+
+- (Class)_returnClassForSelector: (SEL)selector
+{
+    _NSXPCInterfaceMethodInfo* info = nil;
+
+    @synchronized(self) {
+        info = _methods[NSStringFromSelector(selector)];
+    }
+
+    if (!info) {
+        return nil;
+    }
+
+    return info.returnClass;
 }
 
 @end

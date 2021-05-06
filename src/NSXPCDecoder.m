@@ -32,6 +32,7 @@
 
 #import "NSXPCConnectionInternal.h"
 #import "_NSXPCDistantObject.h"
+#import "NSXPCInterfaceInternal.h"
 
 @implementation NSXPCDecoder
 
