@@ -534,6 +534,11 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
 {
     BOOL isProxy = [objectToReplace isKindOfClass: [_NSXPCDistantObject class]];
 
+    if (!objectToReplace) {
+        // nil should be sent as nil, not as a proxy, so do nothing
+        return nil;
+    }
+
     if (interface) {
         // we're expecting a proxy object for this argument;
         // if it's not already a proxy, make it into one

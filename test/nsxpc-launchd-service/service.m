@@ -4,19 +4,50 @@
 
 #include <stdatomic.h>
 
+@class ServiceDelegate;
+
 @interface Counter : NSObject <Counter> {
 	_Atomic NSUInteger _counter;
 }
 
++ (instancetype)sharedCounter;
+
 @end
 
-@interface ServiceDelegate : NSObject <NSXPCListenerDelegate, Service> {
-	Counter* _counter;
+@interface ServerPeer : NSObject <Service> {
+	NSUInteger _identifier;
+	ServiceDelegate* _delegate;
+	NSMutableArray<NSXPCListenerEndpoint*>* _endpoints;
 }
+
+- (instancetype)initWithIdentifier: (NSUInteger)identifier delegate: (ServiceDelegate*)delegate;
+
+@property(assign) NSUInteger identifier;
+@property(assign /* actually weak */) ServiceDelegate* delegate;
+@property(readonly) NSArray<NSXPCListenerEndpoint*>* endpoints;
+
+@end
+
+@interface ServiceDelegate : NSObject <NSXPCListenerDelegate> {
+	_Atomic NSUInteger _nextIdentifier;
+	NSMutableDictionary<NSNumber*, ServerPeer*>* _peersByIdentifier;
+}
+
+@property(readonly) NSDictionary<NSNumber*, ServerPeer*>* peersByIdentifier;
 
 @end
 
 @implementation Counter
+
++ (instancetype)sharedCounter
+{
+	static Counter* counter = nil;
+	static dispatch_once_t token;
+	dispatch_once(&token, ^{
+		counter = [Counter new];
+	});
+	return counter;
+}
 
 - (void)incrementCounter: (NSUInteger)amount
 {
@@ -30,11 +61,40 @@
 
 @end
 
-@implementation ServiceDelegate
+@implementation ServerPeer
+
+@synthesize identifier = _identifier;
+@synthesize endpoints = _endpoints;
+
+- (ServiceDelegate*)delegate
+{
+	return objc_loadWeak(&_delegate);
+}
+
+- (void)setDelegate: (ServiceDelegate*)delegate
+{
+	objc_storeWeak(&_delegate, delegate);
+}
+
+- (instancetype)initWithIdentifier: (NSUInteger)identifier delegate: (ServiceDelegate*)delegate
+{
+	if (self = [super init]) {
+		self.identifier = identifier;
+		self.delegate = delegate;
+		_endpoints = [NSMutableArray new];
+	}
+	return self;
+}
+
+- (void)dealloc
+{
+	[_endpoints release];
+	[super dealloc];
+}
 
 - (void)sayHello
 {
-	NSLog(@"Client said hello.");
+	NSLog(@"Client #%lu said hello.", (long unsigned)self.identifier);
 }
 
 - (void)greet: (NSString*)name
@@ -80,24 +140,72 @@
 
 - (void)fetchSharedCounter: (void(^)(id<Counter>))reply
 {
-	reply(_counter);
+	reply([Counter sharedCounter]);
 }
+
+- (void)broadcast: (NSXPCListenerEndpoint*)endpoint
+{
+	@synchronized(_endpoints) {
+		[_endpoints addObject: endpoint];
+	}
+}
+
+- (void)findAnotherServer: (void(^)(NSXPCListenerEndpoint*))reply
+{
+	ServiceDelegate* delegate = self.delegate;
+
+	if (!delegate) {
+		reply(nil);
+		return;
+	}
+
+	// TODO: make this more random
+	@synchronized(delegate.peersByIdentifier) {
+		for (ServerPeer* peer in delegate.peersByIdentifier.allValues) {
+			@synchronized(peer.endpoints) {
+				if (peer.endpoints.count == 0) {
+					continue;
+				}
+				reply(peer.endpoints[arc4random_uniform(peer.endpoints.count)]);
+				return;
+			}
+		}
+	}
+
+	reply(nil);
+}
+
+@end
+
+@implementation ServiceDelegate
+
+@synthesize peersByIdentifier = _peersByIdentifier;
 
 - (BOOL)listener: (NSXPCListener*)listener shouldAcceptNewConnection: (NSXPCConnection*)connection
 {
 	NSXPCInterface* serviceInterface = [NSXPCInterface interfaceWithProtocol: @protocol(Service)];
 	NSXPCInterface* counterInterface = [NSXPCInterface interfaceWithProtocol: @protocol(Counter)];
+	ServerPeer* server = nil;
 
 	[serviceInterface setInterface: counterInterface forSelector: @selector(fetchSharedCounter:) argumentIndex: 0 ofReply: YES];
 
 	NSLog(@"Received new connection request from EUID %u, EGID %u, PID %u", connection.effectiveUserIdentifier, connection.effectiveGroupIdentifier, connection.processIdentifier);
 
-	connection.invalidationHandler = ^{
-		NSLog(@"Client connection got invalidated");
-	};
+	server = [[[ServerPeer alloc] initWithIdentifier: _nextIdentifier++ delegate: self] autorelease];
+
+	@synchronized(_peersByIdentifier) {
+		_peersByIdentifier[[NSNumber numberWithUnsignedInteger: server.identifier]] = server;
+	}
 
 	connection.exportedInterface = serviceInterface;
-	connection.exportedObject = self;
+	connection.exportedObject = server;
+
+	connection.invalidationHandler = ^{
+		NSLog(@"Client connection got invalidated");
+		@synchronized(_peersByIdentifier) {
+			[_peersByIdentifier removeObjectForKey: [NSNumber numberWithUnsignedInteger: server.identifier]];
+		}
+	};
 
 	[connection resume];
 	return YES;
@@ -106,14 +214,14 @@
 - (instancetype)init
 {
 	if (self = [super init]) {
-		_counter = [Counter new];
+		_peersByIdentifier = [NSMutableDictionary new];
 	}
 	return self;
 }
 
 - (void)dealloc
 {
-	[_counter release];
+	[_peersByIdentifier release];
 	[super dealloc];
 }
 
