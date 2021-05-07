@@ -1082,8 +1082,14 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
 
 + (instancetype)serviceListener
 {
-    // TODO
-    return nil;
+    static NSXPCListener* listener = nil;
+    static dispatch_once_t token;
+
+    dispatch_once(&token, ^{
+        listener = [[NSXPCListener alloc] _initShared];
+    });
+
+    return listener;
 }
 
 - (void)dealloc
@@ -1111,24 +1117,28 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
     _queue = dispatch_queue_create([@"org.darlinghq.Foundation.NSXPCListener." stringByAppendingString: serviceName].UTF8String, dispatch_queue_attr_make_with_autorelease_frequency(NULL, DISPATCH_AUTORELEASE_FREQUENCY_WORK_ITEM));
 }
 
+static void process_connection(NSXPCListener* self, xpc_connection_t connection) {
+    NSXPCConnection* peer = [[NSXPCConnection alloc] _initWithPeerConnection: connection name: self->_serviceName options: 0];
+    id<NSXPCListenerDelegate> delegate = self.delegate;
+    BOOL acceptIt = NO;
+    os_log_debug(nsxpc_get_log(), "received new peer connection from PID %u, EUID %u, EGID %u", peer.processIdentifier, peer.effectiveUserIdentifier, peer.effectiveGroupIdentifier);
+    if (delegate && [delegate respondsToSelector: @selector(listener:shouldAcceptNewConnection:)]) {
+        acceptIt = [delegate listener: self shouldAcceptNewConnection: peer];
+    }
+    if (!acceptIt) {
+        os_log_debug(nsxpc_get_log(), "delegate refused connection (or lacked the necessary method to make that decision); invalidating peer connection");
+        [peer invalidate];
+    }
+    [peer release];
+};
+
 - (void)_setupConnection
 {
     xpc_connection_set_event_handler(_xpcConnection, ^(xpc_object_t object) {
         xpc_type_t type = xpc_get_type(object);
 
         if (type == XPC_TYPE_CONNECTION) {
-            NSXPCConnection* peer = [[NSXPCConnection alloc] _initWithPeerConnection: object name: _serviceName options: 0];
-            id<NSXPCListenerDelegate> delegate = self.delegate;
-            BOOL acceptIt = NO;
-            os_log_debug(nsxpc_get_log(), "received new peer connection from PID %u, EUID %u, EGID %u", peer.processIdentifier, peer.effectiveUserIdentifier, peer.effectiveGroupIdentifier);
-            if (delegate && [delegate respondsToSelector: @selector(listener:shouldAcceptNewConnection:)]) {
-                acceptIt = [delegate listener: self shouldAcceptNewConnection: peer];
-            }
-            if (!acceptIt) {
-                os_log_debug(nsxpc_get_log(), "delegate refused connection (or lacked the necessary method to make that decision); invalidating peer connection");
-                [peer invalidate];
-            }
-            [peer release];
+            process_connection(self, object);
         } else if (type == XPC_TYPE_ERROR) {
             if (object != XPC_ERROR_CONNECTION_INVALID && object != XPC_ERROR_TERMINATION_IMMINENT) {
                 os_log_fault(nsxpc_get_log(), "Received unexpected/unknown error in listener event handler");
@@ -1161,6 +1171,15 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
     return self;
 }
 
+- (instancetype)_initShared
+{
+    if (self = [super init]) {
+        _queue = dispatch_get_main_queue();
+        dispatch_retain(_queue);
+    }
+    return self;
+}
+
 - (id<NSXPCListenerDelegate>)delegate
 {
     return objc_loadWeak(&_delegate);
@@ -1176,8 +1195,17 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
     xpc_connection_cancel(_xpcConnection);
 }
 
+static void handle_new_connection(xpc_connection_t connection) {
+    process_connection([NSXPCListener serviceListener], connection);
+};
+
 - (void)resume
 {
+    if (self == [NSXPCListener serviceListener]) {
+        xpc_main(handle_new_connection);
+        return;
+    }
+
     xpc_connection_resume(_xpcConnection);
 }
 

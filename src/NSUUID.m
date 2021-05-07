@@ -64,7 +64,7 @@ static NSString * const NSUUIDBytesKey = @"NS.uuidbytes";
 
 + (BOOL)supportsSecureCoding
 {
-    return NO;
+    return YES;
 }
 
 - (id)copyWithZone:(NSZone *)zone

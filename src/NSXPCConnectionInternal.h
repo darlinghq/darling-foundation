@@ -137,6 +137,7 @@ CF_PRIVATE
 @interface NSXPCListener (Internal)
 
 - (instancetype)initAsAnonymousListener;
+- (instancetype)_initShared;
 
 @end
 
