@@ -248,7 +248,7 @@ static NSStringEncoding __NSDefaultCStringEncoding()
 
 + (BOOL)supportsSecureCoding
 {
-    return NO;
+    return YES;
 }
 
 - (void)encodeWithCoder:(NSCoder *)aCoder

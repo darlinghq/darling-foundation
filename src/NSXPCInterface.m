@@ -18,6 +18,8 @@ extern const char* _protocol_getMethodTypeEncoding(Protocol* proto, SEL sel, BOO
 @synthesize replyParameterClassesWhitelist = _replyParameterClassesWhitelist;
 @synthesize parameterInterfaces = _parameterInterfaces;
 @synthesize replyParameterInterfaces = _replyParameterInterfaces;
+@synthesize parameterXPCWhitelist = _parameterXPCWhitelist;
+@synthesize replyParameterXPCWhitelist = _replyParameterXPCWhitelist;
 @synthesize returnClass = _returnClass;
 
 - (instancetype)initWithProtocol: (Protocol*)protocol selector: (SEL)selector
@@ -62,18 +64,22 @@ extern const char* _protocol_getMethodTypeEncoding(Protocol* proto, SEL sel, BOO
 
         _parameterClassesWhitelist = [NSMutableArray new];
         _parameterInterfaces = [NSMutableArray new];
+        _parameterXPCWhitelist = [NSMutableArray new];
         for (NSUInteger i = 2; i < parameterCount; ++i) {
             [_parameterClassesWhitelist addObject: [NSNull null]];
             [_parameterInterfaces addObject: [NSNull null]];
+            [_parameterXPCWhitelist addObject: [NSNull null]];
         }
 
         if (_replyBlockSignature) {
             _replyParameterClassesWhitelist = [NSMutableArray new];
             _replyParameterInterfaces = [NSMutableArray new];
+            _replyParameterXPCWhitelist = [NSMutableArray new];
             parameterCount = _replyBlockSignature.numberOfArguments;
             for (NSUInteger i = 1; i < parameterCount; ++i) {
                 [_replyParameterClassesWhitelist addObject: [NSNull null]];
                 [_replyParameterInterfaces addObject: [NSNull null]];
+                [_replyParameterXPCWhitelist addObject: [NSNull null]];
             }
         }
 
@@ -91,6 +97,8 @@ extern const char* _protocol_getMethodTypeEncoding(Protocol* proto, SEL sel, BOO
     [_replyParameterClassesWhitelist release];
     [_parameterInterfaces release];
     [_replyParameterInterfaces release];
+    [_parameterXPCWhitelist release];
+    [_replyParameterXPCWhitelist release];
     [super dealloc];
 }
 
@@ -259,8 +267,26 @@ extern const char* _protocol_getMethodTypeEncoding(Protocol* proto, SEL sel, BOO
 
 - (xpc_type_t) XPCTypeForSelector: (SEL)selector argumentIndex: (NSUInteger)argumentIndex ofReply: (BOOL)isReply
 {
-    // TODO
-    return NULL;
+    _NSXPCInterfaceMethodInfo* info = nil;
+    NSMutableArray<Class>* target = nil;
+
+    @synchronized(self) {
+        info = _methods[NSStringFromSelector(selector)];
+    }
+
+    if (!info) {
+        [NSException raise: NSInvalidArgumentException format: @"No method was found for selector %s", sel_getName(selector)];
+    }
+
+    target = isReply ? info.replyParameterClassesWhitelist : info.parameterClassesWhitelist;
+
+    if (argumentIndex >= target.count) {
+        [NSException raise: NSInvalidArgumentException format: @"Given argument index (%lu) is greater than or equal to number of parameters (%lu)", (long)argumentIndex, (long)target.count];
+    }
+
+    @synchronized(target) {
+        return (xpc_type_t)((target[argumentIndex] == [NSNull null]) ? nil : target[argumentIndex]);
+    }
 }
 
 - (void) setClass: (Class)klass forSelector: (SEL)selector argumentIndex: (NSUInteger)argumentIndex ofReply: (BOOL)isReply
@@ -294,7 +320,6 @@ extern const char* _protocol_getMethodTypeEncoding(Protocol* proto, SEL sel, BOO
 
 - (void) setInterface: (NSXPCInterface *)interface forSelector: (SEL) selector argumentIndex: (NSUInteger)argumentIndex ofReply: (BOOL)isReply
 {
-
     _NSXPCInterfaceMethodInfo* info = nil;
     NSMutableArray<NSXPCInterface*>* target = nil;
 
@@ -319,7 +344,27 @@ extern const char* _protocol_getMethodTypeEncoding(Protocol* proto, SEL sel, BOO
 
 - (void) setXPCType: (xpc_type_t)type forSelector: (SEL)selector argumentIndex: (NSUInteger)argumentIndex ofReply: (BOOL)isReply
 {
-    // TODO
+    _NSXPCInterfaceMethodInfo* info = nil;
+    NSMutableArray<Class>* target = nil;
+
+    @synchronized(self) {
+        info = _methods[NSStringFromSelector(selector)];
+    }
+
+    if (!info) {
+        [NSException raise: NSInvalidArgumentException format: @"No method was found for selector %s", sel_getName(selector)];
+    }
+
+    target = isReply ? info.replyParameterXPCWhitelist : info.parameterXPCWhitelist;
+
+    if (argumentIndex >= target.count) {
+        [NSException raise: NSInvalidArgumentException format: @"Given argument index (%lu) is greater than or equal to number of parameters (%lu)", (long)argumentIndex, (long)target.count];
+    }
+
+    @synchronized(target) {
+        // XPC types are Objective-C classes (true for both our libxpc and the official libxpc)
+        target[argumentIndex] = (Class)type;
+    }
 }
 
 - (NSXPCInterface*)_interfaceForArgument: (NSUInteger)argumentIndex ofSelector: (SEL)selector reply: (BOOL)isReply
@@ -386,6 +431,24 @@ extern const char* _protocol_getMethodTypeEncoding(Protocol* proto, SEL sel, BOO
     }
 
     return info.returnClass;
+}
+
+- (NSArray<NSSet*>*)_allowedClassesForSelector: (SEL)selector reply: (BOOL)isReply
+{
+    _NSXPCInterfaceMethodInfo* info = nil;
+    NSMutableArray<NSSet<Class>*>* target = nil;
+
+    @synchronized(self) {
+        info = _methods[NSStringFromSelector(selector)];
+    }
+
+    if (!info) {
+        [NSException raise: NSInvalidArgumentException format: @"No method was found for selector %s", sel_getName(selector)];
+    }
+
+    target = isReply ? info.replyParameterClassesWhitelist : info.parameterClassesWhitelist;
+
+    return [[target copy] autorelease];
 }
 
 @end

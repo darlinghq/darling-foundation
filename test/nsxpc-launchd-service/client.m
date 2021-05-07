@@ -3,6 +3,10 @@
 
 #import "service.h"
 
+#ifndef TEST_SECURE_CODING
+	#define TEST_SECURE_CODING 0
+#endif
+
 int main(int argc, char** argv) {
 	dispatch_semaphore_t waiter = dispatch_semaphore_create(0);
 	NSXPCConnection* server = [[NSXPCConnection alloc] initWithMachServiceName: @NSXPC_TEST_LAUNCHD_SERVICE_NAME];
@@ -10,6 +14,17 @@ int main(int argc, char** argv) {
 	NSXPCInterface* counterInterface = [NSXPCInterface interfaceWithProtocol: @protocol(Counter)];
 
 	[serviceInterface setInterface: counterInterface forSelector: @selector(fetchSharedCounter:) argumentIndex: 0 ofReply: YES];
+
+#if TEST_SECURE_CODING
+	// purposefully set the wrong classes to see if our de/serialization will catch it
+
+	// validate outgoing object; not sure if NSXPC should catch this
+	// currently, we don't catch this; TODO: check official NSXPC behavior
+	[serviceInterface setClasses: [NSSet setWithObjects: [NSNumber class], nil] forSelector: @selector(greet:) argumentIndex: 0 ofReply: NO];
+
+	// validate incoming object; definitely supposed to be caught
+	[serviceInterface setClasses: [NSSet setWithObjects: [NSNumber class], nil] forSelector: @selector(generateNonsense:) argumentIndex: 0 ofReply: YES];
+#endif
 
 	server.remoteObjectInterface = serviceInterface;
 

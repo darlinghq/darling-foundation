@@ -113,7 +113,14 @@ static Class _XPCObjectClass = nil;
 }
 
 - (void) _checkObject: (id) object {
-    // TODO
+    // the object is allowed to be one of three things:
+    //   * an invocation,
+    //   * an XPC object, or
+    //   * any other class that conforms to NSSecureCoding
+    // if it doesn't satisfy any of those conditions, it's not allowed
+    if (object && !([object isKindOfClass: [NSInvocation class]] || [object isKindOfClass: [_XPCObjectClass class]] || [object conformsToProtocol: @protocol(NSSecureCoding)])) {
+        [NSException raise: NSInvalidArgumentException format: @"NSXPCCoder only accepts objects that conform to NSSecureCoding or are XPC objects"];
+    }
 }
 
 - (size_t) _encodeOOLXPCObject: (xpc_object_t) object {

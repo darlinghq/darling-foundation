@@ -707,7 +707,7 @@ static inline id newDecodedNumber(NSCoder *coder)
 
 + (BOOL)supportsSecureCoding
 {
-    return NO;
+    return YES;
 }
 
 - (id)initWithCoder:(NSCoder *)coder

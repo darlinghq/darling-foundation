@@ -445,8 +445,8 @@ void _NSXPCSerializationDecodeInvocationArgumentArray(
             }
             NSMethodType *arg = [signature _argInfo: index + 1];
             NSSet *classes = nil;
-            if (index < [classesForArguments count]) {
-                classes = classesForArguments[index];
+            if (index - (isReply ? 1 : 2) < [classesForArguments count]) {
+                classes = classesForArguments[index - (isReply ? 1 : 2)];
             }
             _NSXPCSerializationDecodeTypedObjCValuesFromArray(
                 decoder,

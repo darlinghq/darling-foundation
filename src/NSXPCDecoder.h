@@ -10,6 +10,7 @@ CF_PRIVATE
     struct NSXPCObject* _collection;
     NSUInteger _genericKey;
     struct NSXPCObject _rootObject;
+    NSSet<Class>* _currentWhitelist;
 }
 
 - (void) _startReadingFromXPCObject: (xpc_object_t) object;
@@ -43,5 +44,9 @@ CF_PRIVATE
 - (NSInvocation*) _decodeReplyFromXPCObject: (xpc_object_t) object
                                 forSelector: (SEL) selector
                                   interface: (NSXPCInterface*) interface;
+
+// the key argument is only used for exception messages
+- (void)_validateAllowedClass: (Class)class forKey: (NSString*)key allowingInvocations: (BOOL)allowingInvocations;
+- (void)_validateAllowedXPCType: (xpc_type_t)type forKey: (NSString*)key;
 
 @end

@@ -991,7 +991,7 @@ OBJC_PROTOCOL_IMPL_PUSH
 
 + (BOOL)supportsSecureCoding
 {
-    return NO;
+    return YES;
 }
 
 - (id)initWithCoder:(NSCoder *)coder

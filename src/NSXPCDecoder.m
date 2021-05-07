@@ -177,13 +177,17 @@ static BOOL findObject(
 {
     unsigned char marker = 0;
     id result = nil;
+    NSSet<Class>* savedWhitelist = _currentWhitelist;
 
     if (!_NSXPCSerializationTypeOfObject(&_deserializer, object, &marker)) {
         return nil;
     }
 
+    _currentWhitelist = classes;
+
     // these ones that have their own "if" conditions require the whole marker to be checked because they're differentiated based on length
     if (marker == NSXPC_FLOAT32 || marker == NSXPC_FLOAT64 || marker == NSXPC_UINT64) {
+        [self _validateAllowedClass: [NSNumber class] forKey: @"<no key>" allowingInvocations: YES];
         result = _NSXPCSerializationNumberForObject(&_deserializer, object);
     } else {
         // for everything else, the type is the only thing that differentiates them
@@ -191,6 +195,7 @@ static BOOL findObject(
             case NSXPC_TRUE: // fallthrough
             case NSXPC_FALSE: // fallthrough
             case NSXPC_INTEGER: {
+                [self _validateAllowedClass: [NSNumber class] forKey: @"<no key>" allowingInvocations: YES];
                 result = _NSXPCSerializationNumberForObject(&_deserializer, object);
             } break;
 
@@ -199,10 +204,12 @@ static BOOL findObject(
             } break;
 
             case NSXPC_DATA: {
+                [self _validateAllowedClass: [NSData class] forKey: @"<no key>" allowingInvocations: YES];
                 result = _NSXPCSerializationDataForObject(&_deserializer, object);
             } break;
 
             case NSXPC_STRING: {
+                [self _validateAllowedClass: [NSString class] forKey: @"<no key>" allowingInvocations: YES];
                 result = _NSXPCSerializationStringForObject(&_deserializer, object);
             } break;
 
@@ -238,6 +245,8 @@ static BOOL findObject(
                         [NSException raise: NSInvalidUnarchiveOperationException format: @"Failed to load class while deserializing Objective-C object"];
                     }
 
+                    [self _validateAllowedClass: class forKey: @"<no key>" allowingInvocations: YES];
+
                     result = [class allocWithZone: self.zone];
                     if (!result) {
                         [NSException raise: NSInvalidUnarchiveOperationException format: @"allocWithZone: for %s returned nil while deserializing Objective-C object", className];
@@ -266,6 +275,8 @@ static BOOL findObject(
             };
         }
     }
+
+    _currentWhitelist = savedWhitelist;
 
     return result;
 }
@@ -327,7 +338,7 @@ static BOOL findObject(
                 self,
                 &_deserializer,
                 item,
-                /* TODO */ nil,
+                [interface _allowedClassesForSelector: (isReply ? replySelector : selector) reply: (isReply ? replySelector : selector)],
                 isReply
             );
             _collection = savedCollection;
@@ -495,7 +506,7 @@ static BOOL findObject(
     result = [NSMutableArray array];
 
     _NSXPCSerializationIterateArrayObject(&_deserializer, &object, ^Boolean(struct NSXPCObject* item) {
-        id object = [self _decodeObjectOfClasses: nil atObject: item];
+        id object = [self _decodeObjectOfClasses: _currentWhitelist atObject: item];
         if (!object) {
             [NSException raise: NSInvalidUnarchiveOperationException format: @"Value in array for key %@ was nil", key];
         }
@@ -506,6 +517,75 @@ static BOOL findObject(
     _collection = savedCollection;
 
     return result;
+}
+
+- (void)_validateAllowedClass: (Class)class forKey: (NSString*)key allowingInvocations: (BOOL)allowingInvocations
+{
+    Class origClass = class;
+
+    if (!class) {
+        [NSException raise: NSInvalidUnarchiveOperationException format: @"No class for key %@", key];
+    }
+
+    if (!_currentWhitelist || _currentWhitelist == [NSNull null]) {
+        // no whitelist? everything's allowed.
+        return;
+    }
+
+    // iterate through all the superclasses, checking if any one of them is allowed;
+    // if any one of them is allowed, the class is valid
+    while (class != NULL) {
+        // pretty straightforward: if invocations are allowed and this class is an invocation, it's allowed
+        if (allowingInvocations && class == [NSInvocation class]) {
+            return;
+        }
+
+        for (Class allowedClass in _currentWhitelist) {
+            // if the allowed class is NSXPCInterface, what we really want to check is whether it's a proxy
+            if (allowedClass == [NSXPCInterface class]) {
+                allowedClass = [_NSXPCDistantObject class];
+            }
+
+            // skip it if it's not the current class
+            if (class != allowedClass) {
+                continue;
+            }
+
+            // ok, so, at this point, we know it's an allowed class per the whitelist,
+            // but now we have to make sure it satisfies NSXPC's coding requirements
+
+            // make sure it conforms to NSSecureCoding
+            if (![origClass conformsToProtocol: @protocol(NSSecureCoding)]) {
+                [NSException raise: NSInvalidUnarchiveOperationException format: @"Class %@ does not adopt NSSecureCoding; NSXPC requires that classes adopt it.", NSStringFromClass(origClass)];
+            }
+
+            // make sure it actually supports it
+            if (![origClass respondsToSelector: @selector(supportsSecureCoding)] || ![origClass supportsSecureCoding]) {
+                [NSException raise: NSInvalidUnarchiveOperationException format: @"Class %@ reports that it does not support secure coding; NSXPC requires that classes support it.", NSStringFromClass(origClass)];
+            }
+
+            // make sure it implements `initWithCoder:`
+            if (![origClass instancesRespondToSelector: @selector(initWithCoder:)]) {
+                [NSException raise: NSInvalidUnarchiveOperationException format: @"Class %@ does not implement `initWithCoder:`", NSStringFromClass(origClass)];
+            }
+
+            // if it overrides `initWithCoder:`, it needs to override `supportsSecureCoding` as well (i.e. it can't use the parent's implementation).
+            // TODO: check this
+
+            // great! we've got a valid class!
+            // TODO: we should probably cache this to avoid re-running these checks on the same classes
+            return;
+        }
+
+        class = [class superclass];
+    }
+
+    [NSException raise: NSInvalidUnarchiveOperationException format: @"Value for key %@ is of class %@, which is not allowed. Allowed classes are %@", key, NSStringFromClass(origClass), _currentWhitelist];
+}
+
+- (void)_validateAllowedXPCType: (xpc_type_t)type forKey: (NSString*)key
+{
+    // TODO
 }
 
 @end
