@@ -10,6 +10,27 @@
 #import <CoreFoundation/NSObjCRuntimeInternal.h>
 #import <CoreFoundation/NSInvocationInternal.h>
 
+/**
+ * About NSXPC's generic Objective-C type serialization
+ * ----------------------------------------------------
+ *
+ * `NSXPCSerializationObjC.m` handles generic Objective-C type serialization.
+ * This means interpreting the type encodings provided (as provided by method signatures) in order to determine the appropriate serialization format.
+ * It also handles invocation argument arrays, though these are format-wise the same as other bplist16 arrays.
+ *
+ * How each type is handled:
+ * - Objects are handed over to NSXPCEncoder/NSXPCDecoder for encoding/decoding as unkeyed objects.
+ * - Classes have their names encoded as ASCII strings.
+ * - Selectors are encoded as ASCII strings.
+ * - C strings (i.e. `char*`) are encoded by first adding a boolean indicating whether they are null and then by encoding them as raw data (including their null terminators).
+ * - Booleans are encoded as booleans.
+ * - Floats and doubles are encoded as their respective bplist16 types.
+ * - Pointers are encoded only by recording whether they're NULL or not. If they're NULL, they're encoded as null. Otherwise, they're encoded as an integer with value 0.
+ * - Arrays are encoded as a sequence of values with the length specified in the type encoding.
+ * - Structures are encoded as a sequence of values.
+ * - Any other integral type (e.g. char, int, long, etc.) is encoded as an integer.
+ */
+
 void _NSXPCSerializationAddTypedObjCValuesToArray(
     NSXPCEncoder *encoder,
     struct NSXPCSerializer *serializer,
@@ -240,8 +261,13 @@ void _NSXPCSerializationDecodeTypedObjCValuesFromArray(
                     deserializer,
                     object
                 );
-                // FIXME: Might need to attach this too.
-                str = [data bytes];
+                if (invocation) {
+                    str = [data bytes];
+                    [invocation _addAttachedObject: data];
+                } else {
+                    str = malloc([data length]);
+                    [data getBytes: str length: [data length]];
+                }
             }
             *(const char **) addr = str;
             break;

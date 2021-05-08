@@ -8,6 +8,22 @@
 
 #import "NSXPCInterfaceInternal.h"
 
+/**
+ * The role of protocols and interfaces in NSXPC
+ * ------------------------------
+ *
+ * Whereas the old NSDistantObject system only uses protocols as an optional optimization, protocols are required for NSXPC.
+ * Apple has also added certain extensions to protocols compiled with Clang that provide essential information for NSXPC, such as
+ * extended type encodings which carry more information than usual type encodings for parameters
+ * (e.g. object classes, Block signatures, protocol names, and probably more that I haven't encountered).
+ *
+ * Interfaces describe the communication interface for each connection. They're generated from protocols, but can be extended with additional information.
+ * For example, all objects are sent as copies by default, but users can choose to send certain parameters as proxies. To do so, they must create another interface
+ * describing the object that will be sent or received as a proxy and set it as the interface for that particular parameter in the target selector of the interface.
+ *
+ * Thus, for NSXPC, NSXPCInterface mainly acts as an information store describing the messages that can be sent across the connection.
+ */
+
 extern const char* _protocol_getMethodTypeEncoding(Protocol* proto, SEL sel, BOOL isRequiredMethod, BOOL isInstanceMethod);
 
 @implementation _NSXPCInterfaceMethodInfo

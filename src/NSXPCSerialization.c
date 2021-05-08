@@ -1,6 +1,64 @@
 #include "NSXPCSerialization.h"
 #include <assert.h>
 
+/**
+ * An overview of NSXPC's serialization format
+ * -------------------------------------------
+ *
+ * NSXPC uses bplist16 for its serialization. This format is similar to bplist00, but differs primarily in that objects are serialized sequentially rather than using an offset table.
+ * Messages consist of the bytes "bplist16" followed directly by the root object. The root object is simply an object like any other.
+ *
+ * > Note: when I say "object" here, I mean bplist objects, not Objective-C objects. Those are encoded using this format, and their encoding format is described in `NSXPCEncoder.h`.
+ * >       Some Objective-C objects (like NSNumber, NSString, and NSData) are exceptions and are described later on in this file.
+ *
+ * The first byte of each object contains a marker in the upper 4 bits followed by a length indicator in the lower 4 bits.
+ * The format of the length follows the format for bplist00: if the length is less than 15 (i.e. 0xf), it is encoded directly into the tag byte.
+ * Otherwise, if it is 15 or greater, the lower 4 bits of the tag are set to 0x0f and the length is encoded after the tag byte as an integer, just like any other integer is encoded.
+ * Data for the object, if any, immediately follows the tag byte (and extended length, if necessary).
+ *
+ * Integers have a marker of 0x1 with a variable length of 1, 2, 4, or 8 bytes. They are serialized in the host's endianness, which is little endian on all of Apple's platforms.
+ *
+ * Unsigned integers have a marker of 0xf with a fixed length of 8. They are serialized in the host's endianness, which is little endian on all of Apple's platforms.
+ *
+ * Floating point numbers have a marker of 0x2. If they have a length value of 2, they are 32-bit floats (i.e. the `float` type).
+ * If they have a length value of 3, they are 64-bit floats (i.e. the `double` type). Both `float` and `double` are encoded in the host's native floating-point format,
+ * which is IEEE 754 floating point on all of Apple's platforms.
+ *
+ * Generic data has a marker of 0x4 with a variable length specifying the length of all the data.
+ *
+ * Strings come in two variaties: UTF-16 strings and ASCII strings. UTF-16 strings have a marker of 0x6 with a variable length specifying the length of the string in bytes.
+ * This length is always two times the number of UTF-16 codepoints in the string. ASCII strings have a marker f 0x7 with a variable length specifying the length of the string in bytes.
+ *
+ * Booleans consist solely of their markers: 0xb for `true` and 0xc for `false`. No length is required (since they carry no additional data).
+ * Likewise, null consists solely of its marker: 0xe.
+ *
+ * Arrays and dictionaries are containers and share a common format. The tag byte contains only the marker (0xa for arrays, 0xd for dictionaries), no length.
+ * The tag byte is immediately followed by a fixed width offset of 8 bytes, pointing to the last byte in the container, counting from the start of the entire message.
+ * The only difference between arrays and dictionaries is that each entry in an array consists of a single object, while each entry in a dictionary consists of two objects (a key and a value).
+ * There is no technical restriction on the kinds of objects allowed to be keys in a dictionary (even null is allowed), although NSXPC generally uses only UTF-16 strings, ASCII strings, or null (treated as a "generic" key).
+ */
+
+/**
+ * A note on certain special Objective-C objects
+ * ---------------------------------------------
+ *
+ * NSNumber, NSString, and NSData are considered special objects for the purpose of NSXPC serialization.
+ *
+ * NSNumbers are the most complex of the three. If they're booleans, they're encoded as such. If they're floats, they're encoded as such (either 32-bit or 64-bit, depending on the size).
+ * If they're 64-bit unsigned integers, they're encoded as such. Anything else is just an integer and is encoded as such. "Encoded as such" here means in the respective bplist16 format.
+ *
+ * NSStrings are usually encoded as UTF-16 strings, but can optionally be encoded as ASCII strings if they contain no Unicode codepoints.
+ * Note that when serializing NSStrings from user input/arguments, NSXPC does NOT enable the ASCII optimization; NSStrings being encoded from invocation are ALWAYS encoded as UTF-16 strings.
+ *
+ * NSData is simply encoded as a data object.
+ */
+
+enum {
+    kCFNumberSInt128Type = 17
+};
+
+CF_EXPORT CFNumberType _CFNumberGetType2(CFNumberRef number);
+
 static CFIndex currentOffset(struct NSXPCSerializer *serializer) {
     return serializer->ptr - serializer->buffer;
 }
@@ -150,10 +208,15 @@ void _NSXPCSerializationAddNumber(
         return;
     }
 
+    // unsigned 64-bit integers
+    if (_CFNumberGetType2(number) == kCFNumberSInt128Type) {
+        uint64_t value[2];
+        CFNumberGetValue(number, kCFNumberSInt128Type, &value[0]);
+        _NSXPCSerializationAddUnsignedInteger(serializer, value[0]);
+        return;
+    }
+
     // Integers.
-    // TODO: This doesn't quite handle positive 64-bit integers
-    // that don't fit into (signed) int64_t, even though CFNumber
-    // can represent them internally with kCFNumberSInt128Type.
     int64_t value;
     CFNumberGetValue(number, kCFNumberSInt64Type, &value);
     _NSXPCSerializationAddInteger(serializer, (uint64_t) value);

@@ -415,8 +415,6 @@ os_log_t nsxpc_get_log(void) {
 - (void) _sendDesistForProxy: (_NSXPCDistantObject *) proxy {
     xpc_object_t message = xpc_dictionary_create(NULL, NULL, 0);
 
-    // might need to revisit the name of "NSXPCConnectionMessageOptionsRequired";
-    // this is certainly not an invocation
     xpc_dictionary_set_uint64(message, "f", NSXPCConnectionMessageOptionsRequired | NSXPCConnectionMessageOptionsNoninvocation | NSXPCConnectionMessageOptionsDesistProxy);
     xpc_dictionary_set_uint64(message, "proxynum", proxy._proxyNumber);
 
@@ -525,11 +523,6 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
     [invocation invoke];
 };
 
-/**
- * Try to replace the given object with a proxy of the given interface. If the object is already a proxy or the interface is `nil`, it does not replace the object.
- *
- * @returns A new autoreleased proxy if the given object was replaced with a proxy.
- */
 - (id)tryReplacingWithProxy: (id)objectToReplace interface: (NSXPCInterface*)interface
 {
     BOOL isProxy = [objectToReplace isKindOfClass: [_NSXPCDistantObject class]];
@@ -571,6 +564,7 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
 
     xpc_dictionary_set_uint64(request, "proxynum", [proxy _proxyNumber]);
 
+    // look for a reply block
     if (parameterCount > 2) {
         for (NSUInteger i = 0; i < parameterCount - 2; ++i) {
             @autoreleasepool {
@@ -655,6 +649,8 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
         }
     }
 
+    // methods are usually required to return void;
+    // the only other thing they can return is NSProgress, and that's only when they have reply blocks
     if (signature.methodReturnType[0] != 'v') {
         if (replyInfo) {
             Class retClass = [proxy._remoteInterface _returnClassForSelector: selector];
@@ -669,6 +665,7 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
         }
     }
 
+    // encode the message
     @autoreleasepool {
         unsigned char buffer[1024];
         NSXPCEncoder *encoder = [[NSXPCEncoder alloc]
@@ -684,18 +681,21 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
 
     os_log_debug(nsxpc_get_log(), "sending invocation with flags %zu", options);
 
+    // if we want a reply, then we've got some more work to do
     if (options & NSXPCConnectionMessageOptionsExpectsReply) {
         NSProgress* progress = nil;
         NSUInteger sequence = 0;
         void (^replyHandler)(xpc_object_t) = nil;
         BOOL hasProxiesInReply = [proxy._remoteInterface _hasProxiesInReplyBlockArgumentsOfSelector: selector];
 
+        // if we return an NSProgress, then we start tracking it separately from the "current" NSProgress
         if (startReportingProgress) {
             progress = [NSProgress discreteProgressWithTotalUnitCount: 1];
             [invocation setReturnValue: &progress];
             [invocation _addAttachedObject: progress];
             options |= NSXPCConnectionMessageOptionsTracksProgress | NSXPCConnectionMessageOptionsInitiatesProgressTracking;
         } else {
+            // otherwise, check to see if there's a "current" NSProgress
             NSProgress* parent = [NSProgress currentProgress];
             if (parent) {
                 progress = [[[NSProgress alloc] initWithParent: parent userInfo: nil] autorelease];
@@ -703,6 +703,7 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
             }
         }
 
+        // generate a new reply sequence
         sequence = [_expectedReplies sequenceForProgress: progress];
 
         os_log_debug(nsxpc_get_log(), "sending invocation expecting reply, with sequence %zu", sequence);
@@ -721,6 +722,8 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
             [self _resumeProgress: sequence];
         };
 
+        // ok, i don't entirely understand why this part is necessary, but it follows Apple behavior...
+        // if we're expecting to receive proxies, we need to make local proxy releases wait, for some reason :/
         if (hasProxiesInReply) {
             [self incrementOutstandingReplyCount];
         }
@@ -730,7 +733,10 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
 
             os_log_debug(nsxpc_get_log(), "recevied reply for sequence %zu with raw XPC content: %@", sequence, reply);
 
+            // alright, we're done with this reply sequence
             [_expectedReplies removeProgressSequence: sequence];
+
+            // also mark the NSProgress as complete
             progress.completedUnitCount = progress.totalUnitCount;
 
             if (type == XPC_TYPE_DICTIONARY) {
@@ -765,12 +771,13 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
                 if (replyInfo.cleanupBlock) {
                     replyInfo.cleanupBlock();
                 }
-
-                if (hasProxiesInReply) {
-                    [self decrementOutstandingReplyCount];
-                }
             } else {
                 [NSException raise: NSInvalidArgumentException format: @"Invalid reply (not error and not dictionary)"];
+            }
+
+            // this is the counterpart to the earlier `incrementOutstandingReplyCount`
+            if (hasProxiesInReply) {
+                [self decrementOutstandingReplyCount];
             }
         };
 
@@ -850,12 +857,14 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
 
     os_log_debug(nsxpc_get_log(), "decoded invocation %@ with signature %@ and selector %s", invocation, signature, sel_getName(selector));
 
+    // if they expect a reply, there's more work
     if (flags & NSXPCConnectionMessageOptionsExpectsReply) {
         NSUInteger sequence = xpc_dictionary_get_uint64(event, "sequence");
         NSUInteger parameterCount = signature.numberOfArguments;
 
         os_log_debug(nsxpc_get_log(), "received invocation expecting reply for sequence %zu", sequence);
 
+        // if we've got progress tracking, setup a special NSProgress instance
         if (flags & NSXPCConnectionMessageOptionsTracksProgress) {
             progress = [[[_NSProgressWithRemoteParent alloc] initWithParent: nil userInfo: nil] autorelease];
             progress.totalUnitCount = 1;
@@ -863,6 +872,7 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
             progress.parentConnection = self;
         }
 
+        // look for the reply block
         if (parameterCount > 2) {
             for (NSUInteger i = 0; i < parameterCount - 2; ++i) {
                 @autoreleasepool {
@@ -893,13 +903,18 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
 
                         os_log_debug(nsxpc_get_log(), "creating forwarding block with signature %@", localBlockSignature._typeString);
 
+                        // tell the XPC runtime that we're handling a message that needs a reply
                         [self _beginTransactionForSequence: sequence reply: reply withProgress: progress];
 
+                        // setup a forwarding block to pass to the exported object
                         forwardingBlock = [__NSMakeSpecialForwardingCaptureBlock(localBlockSignature._typeString.UTF8String, ^(NSBlockInvocation* invocation) {
                             os_log_debug(nsxpc_get_log(), "forwarding reply block called with invocation %@; sending invocation to remote peer...", invocation);
+
+                            // tell the XPC runtime that we're done handling the mesage;
                             [self _endTransactionForSequence: sequence completionHandler: ^{
                                 NSUInteger parameterCount = invocation.methodSignature.numberOfArguments;
 
+                                // look for arguments that need to become proxies
                                 if (parameterCount > 1) {
                                     for (NSUInteger i = 0; i < parameterCount - 1; ++i) {
                                         @autoreleasepool {
@@ -912,6 +927,7 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
 
                                                 [invocation getArgument: &object atIndex: i + 1];
 
+                                                // see if it needs to be replaced with a proxy
                                                 object = [self tryReplacingWithProxy: object interface: [interface _interfaceForArgument: i ofSelector: selector reply: YES]];
                                                 if (object) {
                                                     [invocation setArgument: &object atIndex: i + 1];
@@ -922,6 +938,7 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
                                     }
                                 }
 
+                                // encode it
                                 @autoreleasepool {
                                     unsigned char buffer[1024];
                                     NSXPCEncoder *encoder = [[NSXPCEncoder alloc] initWithStackSpace: buffer size: sizeof(buffer)];

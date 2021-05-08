@@ -29,6 +29,41 @@
 #import <CoreFoundation/NSInvocationInternal.h>
 #import <objc/runtime.h>
 
+/**
+ * About NSXPC's Objective-C object serialization
+ * ----------------------------------------------
+ *
+ * With the exception of NSNumber, NSString, and NSData, all Objective-C objects encoded by NSXPC follow the same format and are encoded similarly to keyed archives.
+ * Objects sent as proxies follow this same format as well. Only objects that conform to and support NSSecureCoding are allowed to be coded by NSXPC;
+ * the only exceptions to this are XPC objects (they don't conform, but they are allowed).
+ *
+ * When the data is serialized into the final XPC message dictionary, "root" contains the bplist16 data with all the encoded objects and "ool" contains the array of out-of-line
+ * XPC objects encoded along with the message (if any).
+ *
+ * All keys are encoded as flexible strings (either UTF-16 or ASCII, as permitted by the contents of the string).
+ *
+ * `encodeValueOfObjCType:at:` first writes null for the key (to indicate a generic key) and then creates an array in which the value is serialized.
+ * The actual value serialization is performed by `_NSXPCSerializationAddTypedObjCValuesToArray`. If the value is an Objective-C object, that function calls back to the encoder
+ * and tells it to encode the object as an unkeyed object (using `_encodeUnkeyedObject`).
+ *
+ * All keyed objects are encoded simply by encoding the key followed by the object as an unkeyed object.
+ *
+ * Unkeyed objects are encoded in one of three ways. If they're `nil`, they're encoded as null. If they're one of the three special Objective-C classes (NSNumber, NSString, or NSData),
+ * they're encoded as the respective bplist16 objects. Otherwise, a dictionary is created for them. Then, its class is queried with `classForCoder` and the name of that class
+ * is written as an ASCII string for the "$class" key. Next, if the object is an XPC object, it is added to the out-of-line XPC object array and its position in this array is encoded
+ * as an integer for the "$xpc" key. Otherwise, if it's not an XPC object, `encodeWithCoder` is called on the object with the current NSXPCEncoder as the coder argument.
+ *
+ * When objects serialize themselves, they are allowed to use both keyed and unkeyed coding. When values are encoded without keys, they are assigned generic keys.
+ * Generic keys are those for which the key value is null. They are identified by the their position in the dictionary relative to other generically keyed values.
+ * Thus, for these kinds of values, the dictionary acts like an array.
+ *
+ * Invocations are serialized as an array with 3 items: a selector, a signature, and an array of arguments.
+ * For reply invocations, the selector is null. Otherwise, it's encoded as an ASCII string.
+ * The signature is encoded as a flexible string (either UTF-16 or ASCII, as permitted by the contents of the string).
+ * Finally, the arguments are encoded as an array by `_NSXPCSerializationAddInvocationArgumentsArray`.
+ * This function merely creates an array and calls `_NSXPCSerializationAddTypedObjCValuesToArray` on each argument.
+ */
+
 static dispatch_once_t _XPCObjectClass_once;
 static Class _XPCObjectClass = nil;
 

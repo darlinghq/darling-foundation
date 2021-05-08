@@ -90,19 +90,6 @@ typedef NS_OPTIONS(NSUInteger, NSXPCConnectionOptions) {
 - (id) remoteObjectProxyWithErrorHandler: (void (^)(NSError *error)) handler;
 - (id) synchronousRemoteObjectProxyWithErrorHandler: (void (^)(NSError *error)) handler;
 
-- (void) _addImportedProxy: (_NSXPCDistantObject *) proxy;
-- (void) _removeImportedProxy: (_NSXPCDistantObject *) proxy;
-
-- (void) _sendInvocation: (NSInvocation *) invocation
-               withProxy: (_NSXPCDistantObject *) proxy;
-
-- (void) _sendInvocation: (NSInvocation *) invocation
-             orArguments: (id *) arguments
-                   count: (NSUInteger) argumentsCount
-         methodSignature: (NSMethodSignature *) signature
-                selector: (SEL) selector
-               withProxy: (_NSXPCDistantObject *) proxy;
-
 @end
 
 @protocol NSXPCListenerDelegate <NSObject>
