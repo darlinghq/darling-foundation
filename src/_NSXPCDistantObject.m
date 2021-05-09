@@ -24,6 +24,7 @@
 #import <Foundation/NSXPCInterface.h>
 #import <Foundation/NSXPCConnection.h>
 #import "NSXPCConnectionInternal.h"
+#import "NSXPCInterfaceInternal.h"
 
 @implementation _NSXPCDistantObject
 
@@ -145,7 +146,17 @@
 }
 
 - (BOOL) respondsToSelector: (SEL) selector {
-    // TODO
+    char response = _remoteInterface ? [_remoteInterface _respondsToRemoteSelector: selector] : 1;
+
+    if (response == 0) {
+        // response of 0 means it DOES respond to it
+        return YES;
+    } else if (response == 2) {
+        // response of 2 means it DOES respond to it, but the versions aren't compatible
+        return NO;
+    }
+
+    // response of 1 it DOES NOT respond to it, so we need to check our non-proxied methods
     return [super respondsToSelector: selector];
 }
 

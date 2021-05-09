@@ -92,7 +92,7 @@ int main(int argc, char** argv) {
 	__block NSXPCConnection* server = [[NSXPCConnection alloc] initWithMachServiceName: @NSXPC_TEST_LAUNCHD_SERVICE_NAME];
 	NSXPCInterface* serviceInterface = [NSXPCInterface interfaceWithProtocol: @protocol(Service)];
 	NSXPCInterface* counterInterface = [NSXPCInterface interfaceWithProtocol: @protocol(Counter)];
-	__block id<Service> service = nil;
+	__block id<Service, NSObject> service = nil;
 
 	[serviceInterface setInterface: counterInterface forSelector: @selector(fetchSharedCounter:) argumentIndex: 0 ofReply: YES];
 
@@ -176,6 +176,9 @@ int main(int argc, char** argv) {
 			dispatch_semaphore_signal(waiter);
 		}];
 	}];
+
+	NSLog(@"Responds to `sayHello`? %@", [service respondsToSelector: @selector(sayHello)] ? @"YES" : @"NO");
+	NSLog(@"Responds to `lolNope`? %@", [service respondsToSelector: @selector(lolNope)] ? @"YES" : @"NO");
 
 	dispatch_semaphore_wait(waiter, DISPATCH_TIME_FOREVER);
 	dispatch_semaphore_wait(waiter, DISPATCH_TIME_FOREVER);

@@ -35,4 +35,12 @@
 - (BOOL)_hasProxiesInReplyBlockArgumentsOfSelector: (SEL)selector;
 - (NSArray<NSSet*>*)_allowedClassesForSelector: (SEL)selector reply: (BOOL)isReply;
 
+/**
+ * Possible return values:
+ * - 0 = DOES respond to selector
+ * - 1 = DOES NOT respond to selector
+ * - 2 = DOES respond to selector, but versions aren't compatible
+ */
+- (char)_respondsToRemoteSelector: (SEL)selector;
+
 @end

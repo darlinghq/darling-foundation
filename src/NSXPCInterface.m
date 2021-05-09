@@ -467,5 +467,24 @@ extern const char* _protocol_getMethodTypeEncoding(Protocol* proto, SEL sel, BOO
     return [[target copy] autorelease];
 }
 
+- (char)_respondsToRemoteSelector: (SEL)selector
+{
+    _NSXPCInterfaceMethodInfo* info = nil;
+
+    @synchronized(self) {
+        info = _methods[NSStringFromSelector(selector)];
+    }
+
+    if (!info) {
+        // method info not found? remote does not respond to the selector.
+        return 1;
+    }
+
+    // TODO: check for version incompatibility
+
+    // method info found and version are compatible -> we do respond to that selector.
+    return 0;
+}
+
 @end
 
