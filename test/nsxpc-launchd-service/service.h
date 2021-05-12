@@ -74,4 +74,9 @@
  */
 - (void)invalidateConnection;
 
+/**
+ * Ask the server to wait for the given number of seconds to elapse before invoking the reply block.
+ */
+- (void)wait: (NSUInteger)secondsToWait reply: (void(^)(void))reply;
+
 @end

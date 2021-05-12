@@ -571,6 +571,7 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
     NSUInteger parameterCount = signature.numberOfArguments;
     _NSXPCConnectionExpectedReplyInfo* replyInfo = nil;
     BOOL startReportingProgress = NO;
+    dispatch_semaphore_t timeoutWaiter = NULL;
 
     os_log_debug(nsxpc_get_log(), "going to send invocation %@ with signature %@ for selector %s on proxy %p", invocation, signature, sel_getName(selector), proxy);
 
@@ -630,8 +631,17 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
                     replyInfo.proxyNumber = proxy._proxyNumber;
                     replyInfo.replyBlock = block;
                     replyInfo.errorBlock = proxy._errorHandler;
+
+                    if (proxy._timeout && !proxy._sync) {
+                        // if we don't have a timeout, we have no reason to set this up.
+                        // likewise, if the proxy is synchronous, we're going to block until we get a response anyways, so we don't need a waiter.
+                        timeoutWaiter = dispatch_semaphore_create(0);
+                    }
+
                     replyInfo.cleanupBlock = ^{
-                        // TODO: timeouts
+                        if (timeoutWaiter) {
+                            dispatch_semaphore_signal(timeoutWaiter);
+                        }
                         xpc_transaction_end();
                     };
 
@@ -825,7 +835,9 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
         };
 
         if (proxy._sync) {
-            replyHandler(__NSXPCCONNECTION_IS_WAITING_FOR_A_SYNCHRONOUS_REPLY__(_xpcConnection, request));
+            xpc_object_t reply = __NSXPCCONNECTION_IS_WAITING_FOR_A_SYNCHRONOUS_REPLY__(_xpcConnection, request);
+            replyHandler(reply);
+            xpc_release(reply);
         } else {
             xpc_connection_send_message_with_reply(_xpcConnection, request, _queue, replyHandler);
         }
@@ -837,6 +849,18 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
 
     [replyInfo release];
     xpc_release(request);
+
+    if (timeoutWaiter) {
+        // when timeouts are involved, asynchronous proxies block unil the timeout expires (or a reply is received).
+        // seems like stupid behavior to me (especially when we could just do `dispatch_async`), but that's how it behaves on macOS.
+        dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(proxy._timeout * NSEC_PER_SEC));
+        if (dispatch_semaphore_wait(timeoutWaiter, timeout)) {
+            // timeout triggered; invalidate the connection and wait for it to be invalidated
+            [self invalidate];
+            dispatch_semaphore_wait(timeoutWaiter, DISPATCH_TIME_FOREVER);
+        }
+        dispatch_release(timeoutWaiter);
+    }
 }
 
 - (void)_beginTransactionForSequence: (NSUInteger)sequence reply: (xpc_object_t)object withProgress: (NSProgress*)progress

@@ -7,6 +7,12 @@
 	#define TEST_SECURE_CODING 0
 #endif
 
+@protocol NSXPCProxyWithTimeout
+
+@property double _timeout;
+
+@end
+
 @interface AnonymousServerDelegate : NSObject <NSXPCListenerDelegate, Service> {
 
 }
@@ -57,6 +63,11 @@
 	[[NSXPCConnection currentConnection] invalidate];
 }
 
+- (void)wait: (NSUInteger)secondsToWait reply: (void(^)(void))reply
+{
+	dispatch_after(dispatch_time(DISPATCH_TIME_NOW, secondsToWait * NSEC_PER_SEC), dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), reply);
+}
+
 - (BOOL)listener: (NSXPCListener*)listener shouldAcceptNewConnection: (NSXPCConnection*)connection
 {
 	NSXPCInterface* serviceInterface = [NSXPCInterface interfaceWithProtocol: @protocol(Service)];
@@ -100,7 +111,7 @@ int main(int argc, char** argv) {
 	__block NSXPCConnection* server = [[NSXPCConnection alloc] initWithMachServiceName: @NSXPC_TEST_LAUNCHD_SERVICE_NAME];
 	NSXPCInterface* serviceInterface = [NSXPCInterface interfaceWithProtocol: @protocol(Service)];
 	NSXPCInterface* counterInterface = [NSXPCInterface interfaceWithProtocol: @protocol(Counter)];
-	__block id<Service, NSObject> service = nil;
+	__block id<Service, NSObject, NSXPCProxyWithTimeout> service = nil;
 
 	[serviceInterface setInterface: counterInterface forSelector: @selector(fetchSharedCounter:) argumentIndex: 0 ofReply: YES];
 
@@ -206,6 +217,7 @@ int main(int argc, char** argv) {
 
 	// setup an interruption handler for later
 	server.interruptionHandler = ^{
+		NSLog(@"The connection was interrupted");
 		dispatch_semaphore_signal(interrupted);
 	};
 
@@ -233,6 +245,34 @@ int main(int argc, char** argv) {
 		dispatch_semaphore_signal(waiter);
 	}];
 
+	dispatch_semaphore_wait(waiter, DISPATCH_TIME_FOREVER);
+
+	// finally, let's test out the timeout.
+	// this should trigger an invalidation.
+
+	NSLog(@"Going to wait 5 seconds for the timeout...");
+
+	server.invalidationHandler = ^{
+		NSLog(@"The connection was invalidated");
+		dispatch_semaphore_signal(waiter);
+	};
+
+	// invalidate the connection after 5 seconds of waiting for a reply
+	service._timeout = 5;
+
+	// this should not trigger the timeout
+	[service wait: 3 reply: ^{
+		NSLog(@"Waited 3 seconds and did not trigger the timeout");
+		dispatch_semaphore_signal(waiter);
+	}];
+
+	// ask the server to wait for 6 seconds before calling back
+	[service wait: 6 reply: ^{
+		NSLog(@"Huh? Waiting for a timeout failed and we actually received a reply!");
+		dispatch_semaphore_signal(waiter);
+	}];
+
+	dispatch_semaphore_wait(waiter, DISPATCH_TIME_FOREVER);
 	dispatch_semaphore_wait(waiter, DISPATCH_TIME_FOREVER);
 
 	return 0;

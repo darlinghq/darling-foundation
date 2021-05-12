@@ -180,6 +180,11 @@
 	[[NSXPCConnection currentConnection] invalidate];
 }
 
+- (void)wait: (NSUInteger)secondsToWait reply: (void(^)(void))reply
+{
+	dispatch_after(dispatch_time(DISPATCH_TIME_NOW, secondsToWait * NSEC_PER_SEC), dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), reply);
+}
+
 @end
 
 @implementation ServiceDelegate
