@@ -52,6 +52,11 @@
 	reply(nil);
 }
 
+- (void)invalidateConnection
+{
+	[[NSXPCConnection currentConnection] invalidate];
+}
+
 - (BOOL)listener: (NSXPCListener*)listener shouldAcceptNewConnection: (NSXPCConnection*)connection
 {
 	NSXPCInterface* serviceInterface = [NSXPCInterface interfaceWithProtocol: @protocol(Service)];
@@ -89,6 +94,9 @@ static void serve(id<Service> proxyService) {
 
 int main(int argc, char** argv) {
 	dispatch_semaphore_t waiter = dispatch_semaphore_create(0);
+	dispatch_semaphore_t waiter2 = dispatch_semaphore_create(0);
+	dispatch_semaphore_t synchronizer = dispatch_semaphore_create(0);
+	dispatch_semaphore_t interrupted = dispatch_semaphore_create(0);
 	__block NSXPCConnection* server = [[NSXPCConnection alloc] initWithMachServiceName: @NSXPC_TEST_LAUNCHD_SERVICE_NAME];
 	NSXPCInterface* serviceInterface = [NSXPCInterface interfaceWithProtocol: @protocol(Service)];
 	NSXPCInterface* counterInterface = [NSXPCInterface interfaceWithProtocol: @protocol(Counter)];
@@ -162,7 +170,9 @@ int main(int argc, char** argv) {
 		dispatch_semaphore_signal(waiter);
 	}];
 
-	[service fetchSharedCounter: ^(id<Counter> counter) {
+	[service fetchSharedCounter: ^(id<Counter, NSXPCProxyCreating> counter) {
+		id<Counter, NSXPCProxyCreating> counterWithErrorHandler = nil;
+
 		if (!counter) {
 			NSLog(@"Server didn't have a counter for us");
 			dispatch_semaphore_signal(waiter);
@@ -175,13 +185,54 @@ int main(int argc, char** argv) {
 			NSLog(@"Fetched current counter value: %lu", (long)value);
 			dispatch_semaphore_signal(waiter);
 		}];
+
+		counterWithErrorHandler = [counter remoteObjectProxyWithErrorHandler: ^(NSError* error) {
+			NSLog(@"Counter with error handler received error: %@", error);
+			dispatch_semaphore_signal(waiter2);
+		}];
+
+		dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), ^{
+			dispatch_semaphore_signal(synchronizer);
+			dispatch_semaphore_wait(waiter2, DISPATCH_TIME_FOREVER);
+			[counterWithErrorHandler fetchCounter: ^(NSUInteger value) {
+				NSLog(@"Counter with error handler successfully fetched counter value? That wasn't supposed to happen! The value is %lu", (long)value);
+				dispatch_semaphore_signal(waiter2);
+			}];
+		});
 	}];
 
 	NSLog(@"Responds to `sayHello`? %@", [service respondsToSelector: @selector(sayHello)] ? @"YES" : @"NO");
 	NSLog(@"Responds to `lolNope`? %@", [service respondsToSelector: @selector(lolNope)] ? @"YES" : @"NO");
 
+	// setup an interruption handler for later
+	server.interruptionHandler = ^{
+		dispatch_semaphore_signal(interrupted);
+	};
+
 	dispatch_semaphore_wait(waiter, DISPATCH_TIME_FOREVER);
 	dispatch_semaphore_wait(waiter, DISPATCH_TIME_FOREVER);
+	dispatch_semaphore_wait(waiter, DISPATCH_TIME_FOREVER);
+
+	// now let's test non-root proxy invalidation upon interruption (using the counter)
+	dispatch_semaphore_wait(synchronizer, DISPATCH_TIME_FOREVER);
+	[service invalidateConnection];
+	dispatch_semaphore_signal(waiter2);
+
+	dispatch_semaphore_wait(waiter2, DISPATCH_TIME_FOREVER);
+
+	// now let's try sending a message back over the connection to see if it will reconnect
+
+	// first, we must wait for interruption to be signaled;
+	// this is because otherwise we race against the interruption notification and might send the message before the connection gets notified of interruption
+	// (the error handler for the proxy would get invoked properly due to send failure, but not the actual connection interruption handler; that one could be slightly delayed)
+
+	dispatch_semaphore_wait(interrupted, DISPATCH_TIME_FOREVER);
+
+	[service generateNonsense: ^(NSString* nonsense) {
+		NSLog(@"The second time--after reconnecting--the server told me to say: %@", nonsense);
+		dispatch_semaphore_signal(waiter);
+	}];
+
 	dispatch_semaphore_wait(waiter, DISPATCH_TIME_FOREVER);
 
 	return 0;

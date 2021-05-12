@@ -230,21 +230,24 @@ os_log_t nsxpc_get_log(void) {
             }
         } else if (type == XPC_TYPE_ERROR) {
             if (message == XPC_ERROR_CONNECTION_INTERRUPTED) {
+                os_log_debug(nsxpc_get_log(), "Connection %@ was interrupted", self);
+
+                ++_generationCount;
+
                 if (self.interruptionHandler) {
                     self.interruptionHandler();
                 }
             } else if (message == XPC_ERROR_CONNECTION_INVALID) {
+                os_log_debug(nsxpc_get_log(), "Connection %@ was invalidated", self);
+
                 [self invalidate];
                 if (self.invalidationHandler) {
                     self.invalidationHandler();
                 }
 
-                // shouldn't be necessary, but Apple does this
                 self.interruptionHandler = nil;
                 self.invalidationHandler = nil;
                 self.exportedObject = nil;
-
-
             }
         } else {
             // something's up; ditch the connection
@@ -413,7 +416,16 @@ os_log_t nsxpc_get_log(void) {
 }
 
 - (void) _sendDesistForProxy: (_NSXPCDistantObject *) proxy {
-    xpc_object_t message = xpc_dictionary_create(NULL, NULL, 0);
+    xpc_object_t message = NULL;
+
+    // the root proxy cannot be desisted
+    // AND
+    // the generation counts must match
+    if (proxy._proxyNumber == 1 || proxy._generationCount != _generationCount) {
+        return;
+    }
+
+    message = xpc_dictionary_create(NULL, NULL, 0);
 
     xpc_dictionary_set_uint64(message, "f", NSXPCConnectionMessageOptionsRequired | NSXPCConnectionMessageOptionsNoninvocation | NSXPCConnectionMessageOptionsDesistProxy);
     xpc_dictionary_set_uint64(message, "proxynum", proxy._proxyNumber);
@@ -665,6 +677,36 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
         }
     }
 
+    // now, check if proxy is valid. this check is performed here rather than earlier because we need reply info, if any.
+    // for it to be valid, it must either be the root proxy or have the same generation count as this connection.
+    if (proxy._proxyNumber != 1 && proxy._generationCount != _generationCount) {
+        // not the root proxy and generation count didn't match? it's invalid
+        // let's do some cleanup
+        if (replyInfo) {
+            void (^cleanupReplyInfo)(void) = ^{
+                if (replyInfo.errorBlock) {
+                    NSError* err = [NSError errorWithDomain: NSCocoaErrorDomain code: NSXPCConnectionInvalid userInfo: @{
+                        (__bridge NSString*)kCFErrorDescriptionKey: @"The connection was interrupted, but the message was sent over a proxy that was not the root connection proxy; that proxy is now invalid.",
+                    }];
+                    __NSXPCCONNECTION_IS_CALLING_OUT_TO_ERROR_BLOCK__(replyInfo.errorBlock, err);
+                }
+
+                if (replyInfo.cleanupBlock) {
+                    replyInfo.cleanupBlock();
+                }
+            };
+
+            if (proxy._sync) {
+                cleanupReplyInfo();
+            } else {
+                dispatch_async(_queue, cleanupReplyInfo);
+            }
+        }
+
+        xpc_release(request);
+        return;
+    }
+
     // encode the message
     @autoreleasepool {
         unsigned char buffer[1024];
@@ -696,6 +738,7 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
             options |= NSXPCConnectionMessageOptionsTracksProgress | NSXPCConnectionMessageOptionsInitiatesProgressTracking;
         } else {
             // otherwise, check to see if there's a "current" NSProgress
+            // POSSIBLE BUG: check if this is only supposed to be done when a reply is expected or if it's done in all cases
             NSProgress* parent = [NSProgress currentProgress];
             if (parent) {
                 progress = [[[NSProgress alloc] initWithParent: parent userInfo: nil] autorelease];
@@ -793,6 +836,7 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
     }
 
     [replyInfo release];
+    xpc_release(request);
 }
 
 - (void)_beginTransactionForSequence: (NSUInteger)sequence reply: (xpc_object_t)object withProgress: (NSProgress*)progress
@@ -842,7 +886,9 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
     os_log_debug(nsxpc_get_log(), "decoding and invoking message with flags %zu and raw XPC content %@", flags, event);
 
     if (!exportedObject || !interface) {
+        // bad proxy number; invalidate this connection (the peer probably has outdated info)
         os_log_fault(nsxpc_get_log(), "no exported interface or object was found for the given proxy number (%zu)", proxyNumber);
+        [self invalidate];
         return;
     }
 
@@ -861,6 +907,7 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
     if (flags & NSXPCConnectionMessageOptionsExpectsReply) {
         NSUInteger sequence = xpc_dictionary_get_uint64(event, "sequence");
         NSUInteger parameterCount = signature.numberOfArguments;
+        BOOL foundReplyBlock = NO;
 
         os_log_debug(nsxpc_get_log(), "received invocation expecting reply for sequence %zu", sequence);
 
@@ -887,8 +934,12 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
                         xpc_object_t reply = NULL;
                         id forwardingBlock = nil;
 
+                        foundReplyBlock = YES;
+
                         if (!replySig) {
-                            [NSException raise: NSInvalidArgumentException format: @"No remote reply signature provided"];
+                            os_log_fault(nsxpc_get_log(), "No remote reply signature provided");
+                            [self invalidate];
+                            return;
                         }
 
                         remoteBlockSignature = [NSMethodSignature signatureWithObjCTypes: replySig];
@@ -896,7 +947,9 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
                         localBlockSignature = [interface replyBlockSignatureForSelector: selector];
 
                         if (!localBlockSignature) {
-                            [NSException raise: NSInvalidArgumentException format: @"No local reply signature found"];
+                            os_log_fault(nsxpc_get_log(), "Found reply block parameter, but no local reply signature");
+                            [self invalidate];
+                            return;
                         }
 
                         reply = __NSXPCCONNECTION_IS_CREATING_REPLY__(event);
@@ -959,6 +1012,12 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
                     }
                 }
             }
+        }
+
+        if (!foundReplyBlock) {
+            os_log_fault(nsxpc_get_log(), "Remote asked for reply but we didn't find any reply block parameter locally");
+            [self invalidate];
+            return;
         }
     }
 

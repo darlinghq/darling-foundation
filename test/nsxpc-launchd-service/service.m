@@ -175,6 +175,11 @@
 	reply(nil);
 }
 
+- (void)invalidateConnection
+{
+	[[NSXPCConnection currentConnection] invalidate];
+}
+
 @end
 
 @implementation ServiceDelegate

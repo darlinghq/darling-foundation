@@ -69,4 +69,9 @@
  */
 - (void)findAnotherServer: (void(^)(NSXPCListenerEndpoint*))reply;
 
+/**
+ * Ask the server to invalidate the connection on its end.
+ */
+- (void)invalidateConnection;
+
 @end
