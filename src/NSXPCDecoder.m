@@ -327,7 +327,9 @@ static BOOL findObject(
             invocation = [NSInvocation invocationWithMethodSignature:
                 signature
             ];
-            [invocation setSelector: isReply ? replySelector : selector];
+            if (!isReply) {
+                [invocation setSelector: selector];
+            }
         } else if (index == 2) {
             struct NSXPCObject* savedCollection = _collection;
             _collection = item;
