@@ -64,9 +64,11 @@ typedef NSUInteger _NSOperationState;
     NSOperationQueuePriority _queuePriority;
     int _waiting_deps;
     NSInteger _effectivePriorityValue;
+    NSQualityOfService _qualityOfService;
 }
 
 @property (readonly) NSArray *dependencies;
+@property NSQualityOfService qualityOfService;
 
 - (id)initWithOperation:(NSOperation *)operation;
 
@@ -87,6 +89,9 @@ static pthread_mutex_t _NSOperationLock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER;
 @implementation _NSOperationInternal
 
 @synthesize dependencies=_dependencies;
+
+// TODO: do something with the value
+@synthesize qualityOfService = _qualityOfService;
 
 - (id)initWithOperation:(NSOperation *)operation
 {
@@ -629,6 +634,16 @@ static NSString const *NSOperationQueueKey = @"NSOperationQueue";
     [_internal setThreadPriority:priority];
 }
 
+- (NSQualityOfService)qualityOfService
+{
+    return _internal.qualityOfService;
+}
+
+- (void)setQualityOfService: (NSQualityOfService)qualityOfService
+{
+    _internal.qualityOfService = qualityOfService;
+}
+
 @end
 
 
@@ -658,6 +673,9 @@ static NSString const *NSOperationQueueKey = @"NSOperationQueue";
 
 
 @implementation NSOperationQueue
+
+// TODO: do something with the value
+@synthesize qualityOfService = _qualityOfService;
 
 + (BOOL)automaticallyNotifiesObserversForKey:(NSString *)key
 {
@@ -1094,6 +1112,20 @@ static NSComparisonResult compareOperationEffectivePriorities(id obj1, id obj2, 
 
     pthread_mutex_unlock(&_queuelock);
 }
+
+- (dispatch_queue_t)underlyingQueue
+{
+    return _internal->_schedule_queue;
+}
+
+- (void)setUnderlyingQueue: (dispatch_queue_t)underlyingQueue
+{
+    dispatch_queue_t oldQueue = _internal->_schedule_queue;
+    dispatch_retain(underlyingQueue);
+    _internal->_schedule_queue = underlyingQueue;
+    dispatch_release(oldQueue);
+}
+
 @end
 
 @implementation NSInvocationOperation

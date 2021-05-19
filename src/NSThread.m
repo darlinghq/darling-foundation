@@ -95,6 +95,9 @@ CF_PRIVATE
 
 @implementation NSThread
 
+// TODO: do something with the value
+@synthesize qualityOfService = _qualityOfService;
+
 static void NSThreadEnd(NSThread *thread)
 {
     @autoreleasepool {

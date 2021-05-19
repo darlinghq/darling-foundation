@@ -25,6 +25,8 @@ FOUNDATION_EXPORT NSString * const NSInvocationOperationCancelledException;
     _NSOperationInternal *_internal;
 }
 
+@property NSQualityOfService qualityOfService;
+
 - (id)init;
 - (void)start;
 - (void)main;
@@ -93,7 +95,10 @@ FOUNDATION_EXPORT NSString * const NSInvocationOperationCancelledException;
     _NSOperationQueueInternal *_internal;
 
     BOOL _isMainQueue;
+    NSQualityOfService _qualityOfService;
 }
+
+@property NSQualityOfService qualityOfService;
 
 + (id)currentQueue;
 + (id)mainQueue;

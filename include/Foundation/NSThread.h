@@ -38,7 +38,10 @@ typedef enum {
     NSMutableDictionary *_sharedObjects;
     NSLock *_sharedObjectLock;
 #endif
+    NSQualityOfService _qualityOfService;
 }
+
+@property NSQualityOfService qualityOfService;
 
 + (NSThread *)currentThread;
 + (void)detachNewThreadSelector:(SEL)selector toTarget:(id)target withObject:(id)argument;
