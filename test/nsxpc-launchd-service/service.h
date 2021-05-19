@@ -80,3 +80,5 @@
 - (void)wait: (NSUInteger)secondsToWait reply: (void(^)(void))reply;
 
 @end
+
+NSXPCInterface* generateServiceInterface(void);

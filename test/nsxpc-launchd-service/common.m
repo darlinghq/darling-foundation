@@ -1,6 +1,13 @@
 #import "service.h"
 
+#ifndef TEST_SECURE_CODING
+	#define TEST_SECURE_CODING 0
+#endif
+
 @implementation SomeCodableObject
+
+@synthesize someString = _someString;
+@synthesize someOtherCodableObjects = _someOtherCodableObjects;
 
 + (BOOL)supportsSecureCoding
 {
@@ -52,3 +59,28 @@
 }
 
 @end
+
+NSXPCInterface* generateServiceInterface(void) {
+	NSXPCInterface* serviceInterface = [NSXPCInterface interfaceWithProtocol: @protocol(Service)];
+	NSXPCInterface* counterInterface = [NSXPCInterface interfaceWithProtocol: @protocol(Counter)];
+
+	[serviceInterface setInterface: counterInterface forSelector: @selector(fetchSharedCounter:) argumentIndex: 0 ofReply: YES];
+
+	[serviceInterface setClasses: [NSSet setWithObjects: [NSNumber class], [NSString class], [NSArray class], [NSDictionary class], [SomeCodableObject class], nil]
+	                 forSelector: @selector(findAllWithDetails:callback:)
+	               argumentIndex: 0
+	                     ofReply: YES];
+
+#if TEST_SECURE_CODING
+	// purposefully set the wrong classes to see if our de/serialization will catch it
+
+	// validate outgoing object; not sure if NSXPC should catch this
+	// currently, we don't catch this; TODO: check official NSXPC behavior
+	[serviceInterface setClasses: [NSSet setWithObjects: [NSNumber class], nil] forSelector: @selector(greet:) argumentIndex: 0 ofReply: NO];
+
+	// validate incoming object; definitely supposed to be caught
+	[serviceInterface setClasses: [NSSet setWithObjects: [NSNumber class], nil] forSelector: @selector(generateNonsense:) argumentIndex: 0 ofReply: YES];
+#endif
+
+	return serviceInterface;
+};

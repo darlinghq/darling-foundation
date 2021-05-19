@@ -24,6 +24,8 @@
  * Thus, for NSXPC, NSXPCInterface mainly acts as an information store describing the messages that can be sent across the connection.
  */
 
+// TODO: the parameter and reply parameter whitelists are supposed to be pre-populated when method info is derived
+
 extern const char* _protocol_getMethodTypeEncoding(Protocol* proto, SEL sel, BOOL isRequiredMethod, BOOL isInstanceMethod);
 
 @implementation _NSXPCInterfaceMethodInfo
