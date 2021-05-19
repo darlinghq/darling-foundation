@@ -104,6 +104,7 @@ int main(int argc, char** argv) {
 	__block NSXPCConnection* server = [[NSXPCConnection alloc] initWithMachServiceName: @NSXPC_TEST_LAUNCHD_SERVICE_NAME];
 	NSXPCInterface* serviceInterface = generateServiceInterface();
 	__block id<Service, NSObject, NSXPCProxyWithTimeout> service = nil;
+	__block BOOL anonConnection = NO;
 
 	server.remoteObjectInterface = serviceInterface;
 
@@ -123,6 +124,7 @@ int main(int argc, char** argv) {
 			}
 
 			anonServer = [[NSXPCConnection alloc] initWithListenerEndpoint: endpoint];
+			anonConnection = YES;
 
 			[server release];
 			server = anonServer;
@@ -166,6 +168,11 @@ int main(int argc, char** argv) {
 		if (!counter) {
 			NSLog(@"Server didn't have a counter for us");
 			dispatch_semaphore_signal(waiter);
+			dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), ^{
+				dispatch_semaphore_signal(synchronizer);
+				dispatch_semaphore_wait(waiter2, DISPATCH_TIME_FOREVER);
+				dispatch_semaphore_signal(waiter2);
+			});
 			return;
 		}
 
@@ -210,6 +217,12 @@ int main(int argc, char** argv) {
 	dispatch_semaphore_signal(waiter2);
 
 	dispatch_semaphore_wait(waiter2, DISPATCH_TIME_FOREVER);
+
+	if (anonConnection) {
+		// anonymous connections cannot be reconnected automatically
+		NSLog(@"Connection was anonymous, so invalidating it causes it to actually be invalidated (not interrupted).");
+		return 0;
+	}
 
 	// now let's try sending a message back over the connection to see if it will reconnect
 
