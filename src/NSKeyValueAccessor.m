@@ -42,6 +42,8 @@ CFSetCallBacks _NSKVOSetterCallbacks = {
     .hash = &NSKVOSetterHash
 };
 
+static Method NSKeyValueMethodForPattern(Class cls, const char* pattern, const char* key);
+
 @implementation NSKeyValueAccessor
 
 - (id)initWithContainerClassID:(Class)cls key:(NSString *)key implementation:(IMP)implementation selector:(SEL)selector extraArguments:(void *[3])extraArgs count:(NSUInteger)count
@@ -1000,9 +1002,10 @@ static Ivar __NSKeyValueIvarForPattern(Class cls, NSString *key, char *keyStr, N
     char *keyStr = NULL;
     NSUInteger prefixLen = __NSSetupKeyBuffer("_get", key, "", &keyStr); // "_get"
     char firstCharOriginal = keyStr[4];
+    char firstCharUpper = toupper(keyStr[4]);
 
     do {
-        keyStr[4] = toupper(keyStr[4]);
+        keyStr[4] = firstCharUpper;
         SEL selector = sel_registerName(&keyStr[1]); // _"getFoo"
         Method m = class_getInstanceMethod(cls, selector);
         if (m != NULL)
@@ -1022,7 +1025,7 @@ static Ivar __NSKeyValueIvarForPattern(Class cls, NSString *key, char *keyStr, N
 
         keyStr[2] = 'i';
         keyStr[3] = 's';
-        keyStr[4] = toupper(keyStr[4]);
+        keyStr[4] = firstCharUpper;
         selector = sel_registerName(&keyStr[2]); // _g"isFoo"
         m = class_getInstanceMethod(cls, selector);
         if (m != NULL)
@@ -1048,6 +1051,53 @@ static Ivar __NSKeyValueIvarForPattern(Class cls, NSString *key, char *keyStr, N
         if (m != NULL)
         {
             getter = [[NSKeyValueMethodGetter alloc] initWithContainerClassID:cls key:key method:m];
+            break;
+        }
+
+        keyStr[4] = firstCharUpper;
+        Method countOf = NSKeyValueMethodForPattern(cls, "countOf%s", &keyStr[4]);
+        Method objectIn = NSKeyValueMethodForPattern(cls, "objectIn%sAtIndex:", &keyStr[4]);
+        Method indexIn = NSKeyValueMethodForPattern(cls, "indexIn%sOfObject:", &keyStr[4]);
+        Method enumeratorOf = NSKeyValueMethodForPattern(cls, "enumeratorOf%s", &keyStr[4]);
+        Method memberOf = NSKeyValueMethodForPattern(cls, "memberOf%s:", &keyStr[4]);
+        Method getRange = NSKeyValueMethodForPattern(cls, "get%s:range:", &keyStr[4]);
+
+        keyStr[4] = firstCharOriginal;
+        Method atIndexes = NSKeyValueMethodForPattern(cls, "%sAtIndexes:", &keyStr[4]);
+
+        if (countOf && indexIn && (objectIn || atIndexes)) {
+            NSKeyValueNonmutatingOrderedSetMethodSet* methodSet = [[NSKeyValueNonmutatingOrderedSetMethodSet alloc] init];
+            methodSet->count = countOf;
+            methodSet->objectAtIndex = objectIn;
+            methodSet->indexOfObject = indexIn;
+            methodSet->objectsAtIndexes = atIndexes;
+            methodSet->getObjectsRange = getRange;
+
+            getter = [[NSKeyValueCollectionGetter alloc] initWithContainerClassID: cls key: key methods: methodSet proxyClass: [NSKeyValueOrderedSet class]];
+            [methodSet release];
+            break;
+        }
+
+        if (countOf && (objectIn || atIndexes)) {
+            NSKeyValueNonmutatingArrayMethodSet* methodSet = [[NSKeyValueNonmutatingArrayMethodSet alloc] init];
+            methodSet->count = countOf;
+            methodSet->objectAtIndex = objectIn;
+            methodSet->objectsAtIndexes = atIndexes;
+            methodSet->getObjectsRange = getRange;
+
+            getter = [[NSKeyValueCollectionGetter alloc] initWithContainerClassID: cls key: key methods: methodSet proxyClass: [NSKeyValueArray class]];
+            [methodSet release];
+            break;
+        }
+
+        if (countOf && enumeratorOf && memberOf) {
+            NSKeyValueNonmutatingSetMethodSet* methodSet = [[NSKeyValueNonmutatingSetMethodSet alloc] init];
+            methodSet->count = countOf;
+            methodSet->enumerator = enumeratorOf;
+            methodSet->member = memberOf;
+
+            getter = [[NSKeyValueCollectionGetter alloc] initWithContainerClassID: cls key: key methods: methodSet proxyClass: [NSKeyValueSet class]];
+            [methodSet release];
             break;
         }
 
