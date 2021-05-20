@@ -1230,8 +1230,8 @@ const NSMapTableValueCallBacks NSOwnedPointerMapValueCallBacks =
 
 - (id) init
 {
-  return [self initWithKeyPointerFunctions: nil
-		     valuePointerFunctions: nil
+  return [self initWithKeyOptions: 0
+		     valueOptions: 0
 				  capacity: 0];
 }
 
@@ -1246,6 +1246,10 @@ const NSMapTableValueCallBacks NSOwnedPointerMapValueCallBacks =
 			  capacity: (NSUInteger)initialCapacity
 {
   legacy = NO;
+
+  if (!keyFunctions || !valueFunctions) {
+    [NSException raise: NSInvalidArgumentException format: @"%@ requires key and value functions", _cmd];
+  }
 
   self->cb.pf.k.acquireFunction = keyFunctions.acquireFunction;
   self->cb.pf.k.descriptionFunction = keyFunctions.descriptionFunction;
