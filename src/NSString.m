@@ -34,6 +34,14 @@
 #import <unicode/uchar.h>
 #import <unicode/ucsdet.h>
 
+NSString* const NSStringEncodingDetectionAllowLossyKey = @"NSStringEncodingDetectionAllowLossyKey";
+NSString* const NSStringEncodingDetectionDisallowedEncodingsKey = @"NSStringEncodingDetectionDisallowedEncodingsKey";
+NSString* const NSStringEncodingDetectionFromWindowsKey = @"NSStringEncodingDetectionFromWindowsKey";
+NSString* const NSStringEncodingDetectionLikelyLanguageKey = @"NSStringEncodingDetectionLikelyLanguageKey";
+NSString* const NSStringEncodingDetectionLossySubstitutionKey = @"NSStringEncodingDetectionLossySubstitutionKey";
+NSString* const NSStringEncodingDetectionSuggestedEncodingsKey = @"NSStringEncodingDetectionSuggestedEncodingsKey";
+NSString* const NSStringEncodingDetectionUseOnlySuggestedEncodingsKey = @"NSStringEncodingDetectionUseOnlySuggestedEncodingsKey";
+
 static NSUInteger NSStringEncodingConversionFailOnPartial = 4;
 
 @interface __NSStringRegexPatternKey : NSObject {
