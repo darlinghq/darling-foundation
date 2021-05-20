@@ -25,6 +25,7 @@ static NSBundle *mainBundle = nil;
 static NSMutableDictionary *classToBundle = nil;
 static NSMutableDictionary<NSString *, NSBundle *> *bundlesByPath = nil;
 static NSMutableDictionary<NSString *, NSBundle *> *frameworkBundlesByPath = nil;
+static NSMutableDictionary<NSString *, NSBundle *> *otherBundlesByPath = nil;
 
 __attribute__((visibility("hidden")))
 NSString * _NSFrameworkPathFromLibraryPath(NSString *path)
@@ -100,8 +101,9 @@ static NSString* frameworkPathForPath(NSString *filePath) {
     dispatch_once(&once, ^{
         bundlesByIdentifier = [[NSMutableDictionary alloc] init];
         classToBundle = [[NSMutableDictionary alloc] init];
-        bundlesByPath = [NSMutableDictionary dictionary];
-        frameworkBundlesByPath = [NSMutableDictionary dictionary];
+        bundlesByPath = [NSMutableDictionary new];
+        frameworkBundlesByPath = [NSMutableDictionary new];
+        otherBundlesByPath = [NSMutableDictionary new];
     });
 }
 
@@ -158,6 +160,11 @@ static NSString* frameworkPathForPath(NSString *filePath) {
             @synchronized(frameworkBundlesByPath) {
                 frameworkBundlesByPath[bundlePath] = self;
             }
+        } else if (self != [NSBundle mainBundle]) {
+            // otherwise, it's not a framework and not the main bundle; it's some other bundle of code
+            @synchronized(otherBundlesByPath) {
+                otherBundlesByPath[bundlePath] = self;
+            }
         }
     }
 
@@ -185,6 +192,9 @@ static NSString* frameworkPathForPath(NSString *filePath) {
         }
         @synchronized(frameworkBundlesByPath) {
             [frameworkBundlesByPath removeObjectForKey: bundlePath];
+        }
+        @synchronized(otherBundlesByPath) {
+            [otherBundlesByPath removeObjectForKey: bundlePath];
         }
     }
 }
@@ -256,9 +266,9 @@ static NSString* frameworkPathForPath(NSString *filePath) {
 + (NSArray *)allBundles
 {
     NSArray *allBundles = nil;
-    @synchronized(bundlesByIdentifier)
+    @synchronized(otherBundlesByPath)
     {
-        allBundles = [[bundlesByIdentifier allValues] copy];
+        allBundles = [[otherBundlesByPath allValues] copy];
     }
     return [allBundles autorelease];
 }
@@ -285,7 +295,7 @@ static NSString* frameworkPathForPath(NSString *filePath) {
     });
 
     NSArray *allFrameworks = nil;
-    @synchronized(allFrameworks) {
+    @synchronized(frameworkBundlesByPath) {
         allFrameworks = [[frameworkBundlesByPath allValues] copy];
     }
 
@@ -570,7 +580,7 @@ static void __NSBundleMainBundleDealloc()
 
 - (NSURL *)executableURL
 {
-    return [[self bundleURL] URLByAppendingPathComponent:[[self infoDictionary] objectForKey:@"CFBundleExecutable"]];
+    return [(NSURL*)CFBundleCopyExecutableURL(_cfBundle) autorelease];
 }
 
 - (NSURL *)URLForAuxiliaryExecutable:(NSString *)executableName
