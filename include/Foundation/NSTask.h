@@ -11,23 +11,6 @@ typedef NS_ENUM(NSInteger, NSTaskTerminationReason) {
 };
 
 @interface NSTask : NSObject
-{
-	NSURL *_executableURL;
-	NSArray<NSString *> *_arguments;
-	NSDictionary<NSString *, NSString *> *_environment;
-	NSURL *_currentDirectoryURL;
-	id _standardInput;
-	id _standardOutput;
-	id _standardError;
-	int _processIdentifier;
-	BOOL _running;
-	int _terminationStatus;
-	NSTaskTerminationReason _terminationReason;
-	void (^_terminationHandler)(NSTask *);
-	NSQualityOfService _qualityOfService;
-	NSString *_launchPath;
-	NSString *_currentDirectoryPath;
-}
 
 @property (nullable, copy) NSURL *executableURL;
 @property (nullable, copy) NSArray<NSString *> *arguments;
