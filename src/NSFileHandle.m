@@ -1413,10 +1413,88 @@ SINGLETON_RR()
 
 @end
 
+CF_PRIVATE
+@interface NSConcretePipe : NSPipe {
+	NSFileHandle* _readHandle;
+	NSFileHandle* _writeHandle;
+}
+
+@end
+
+@implementation NSConcretePipe
+
+- (void)dealloc
+{
+	[_readHandle release];
+	[_writeHandle release];
+	[super dealloc];
+}
+
+- (instancetype)init
+{
+	if (self = [super init]) {
+		int fds[2];
+
+		if (pipe(fds) < 0) {
+			[self release];
+			return nil;
+		}
+
+		_readHandle = [[NSFileHandle alloc] initWithFileDescriptor: fds[0] closeOnDealloc: YES];
+		if (!_readHandle) {
+			close(fds[0]);
+			close(fds[1]);
+			[self release];
+			return nil;
+		}
+
+		_writeHandle = [[NSFileHandle alloc] initWithFileDescriptor: fds[1] closeOnDealloc: YES];
+		if (!_writeHandle) {
+			close(fds[1]);
+			[self release];
+			return nil;
+		}
+	}
+	return self;
+}
+
+- (NSFileHandle*)fileHandleForReading
+{
+	return [[_readHandle retain] autorelease];
+}
+
+- (NSFileHandle*)fileHandleForWriting
+{
+	return [[_writeHandle retain] autorelease];
+}
+
+@end
+
 @implementation NSPipe
+
++ (id)allocWithZone:(NSZone *)zone
+{
+	Class class = [self class];
+	if (class == [NSPipe class]) {
+		class = [NSConcretePipe class];
+	}
+	return NSAllocateObject(class, 0, zone);
+}
 
 + (NSPipe *)pipe {
 	return [[NSPipe alloc] init];
+}
+
+- (NSFileHandle*)fileHandleForReading
+{
+	NSRequestConcreteImplementation();
+	return nil;
+}
+
+- (NSFileHandle*)fileHandleForWriting
+{
+	NSRequestConcreteImplementation();
+	return nil;
 }
 
 @end
