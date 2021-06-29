@@ -60,10 +60,6 @@ OBJC_PROTOCOL_IMPL_POP
 
 @end
 
-
-@interface NSCalendarDate : NSDate
-@end
-
 @implementation NSCalendarDate
 
 - (id)allocWithZone:(NSZone *)zone

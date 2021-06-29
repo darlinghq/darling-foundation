@@ -48,3 +48,7 @@ typedef double NSTimeInterval;
 - (instancetype)initWithTimeInterval:(NSTimeInterval)ti sinceDate:(NSDate *)other;
 
 @end
+
+@interface NSCalendarDate : NSDate
+
+@end

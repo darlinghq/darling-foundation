@@ -2,7 +2,7 @@
 #import <Foundation/NSCoder.h>
 #import <Foundation/NSValue.h>
 
-#include <CoreGraphics/CoreGraphics.h>
+#include <CoreGraphics/CGBase.h>
 
 typedef struct CGPoint CGPoint;
 typedef struct CGRect CGRect;

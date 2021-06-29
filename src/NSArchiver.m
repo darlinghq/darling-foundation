@@ -5,6 +5,7 @@
 #import <Foundation/NSByteOrder.h>
 #import <Foundation/NSGeometry.h>
 #include <string.h>
+#include <dispatch/dispatch.h>
 
 @implementation NSObject (NSArchiverCallBack)
 

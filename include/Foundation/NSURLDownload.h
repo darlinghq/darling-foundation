@@ -114,7 +114,7 @@ extern "C" {
 /**
  * Protocol for delegate used to report the progress of the download.
  */
-@interface NSObject (NSURLDownloadDelegate)
+@protocol NSURLDownloadDelegate <NSObject>
 
 /**
  * Called immediately once the download has started.

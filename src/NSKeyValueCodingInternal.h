@@ -5,7 +5,7 @@
 @class NSKeyValueSetter;
 @class NSKeyValueProxyGetter;
 
-CF_PRIVATE
+//CF_PRIVATE
 extern NSString * const NSUnknownKeyException;
 
 CF_PRIVATE

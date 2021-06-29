@@ -12,6 +12,7 @@ Copyright (C) 2020 Lubos Dolezel
 #import <Foundation/NSGeometry.h>
 #include <CoreFoundation/CFSet.h>
 #include <string.h>
+#include <dispatch/dispatch.h>
 
 static NSMutableDictionary<NSString*,NSString*>* globalClassNameMap;
 
