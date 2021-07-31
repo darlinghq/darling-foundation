@@ -136,6 +136,7 @@ pointerFunctionsAcquire(PFInfo *PF, void **dst, void *src)
   // operations.  Acquire is for copy-in operations (i.e. retain / copy),
   // assign is for move operations of already-owned pointers.  Combining them
   // like this is Just Plain Wrong™
+  *dst = NULL; // prevent weak writes from thinking there's an old value there.
   pointerFunctionsAssign(PF, dst, src);
   return src;
 }
