@@ -731,7 +731,7 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
         [encoder release];
     }
 
-    os_log_debug(nsxpc_get_log(), "sending invocation with flags %zu", options);
+    os_log_debug(nsxpc_get_log(), "sending invocation with flags %lu", (unsigned long)options);
 
     // if we want a reply, then we've got some more work to do
     if (options & NSXPCConnectionMessageOptionsExpectsReply) {
@@ -759,7 +759,7 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
         // generate a new reply sequence
         sequence = [_expectedReplies sequenceForProgress: progress];
 
-        os_log_debug(nsxpc_get_log(), "sending invocation expecting reply, with sequence %zu", sequence);
+        os_log_debug(nsxpc_get_log(), "sending invocation expecting reply, with sequence %lu", (unsigned long)sequence);
 
         xpc_dictionary_set_uint64(request, "f", options);
         xpc_dictionary_set_uint64(request, "sequence", sequence);
@@ -784,7 +784,7 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
         replyHandler = ^(xpc_object_t reply) {
             xpc_type_t type = xpc_get_type(reply);
 
-            os_log_debug(nsxpc_get_log(), "recevied reply for sequence %zu with raw XPC content: %@", sequence, reply);
+            os_log_debug(nsxpc_get_log(), "recevied reply for sequence %lu with raw XPC content: %@", (unsigned long)sequence, reply);
 
             // alright, we're done with this reply sequence
             [_expectedReplies removeProgressSequence: sequence];
@@ -907,11 +907,11 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
 
     [decoder setConnection: self];
 
-    os_log_debug(nsxpc_get_log(), "decoding and invoking message with flags %zu and raw XPC content %@", flags, event);
+    os_log_debug(nsxpc_get_log(), "decoding and invoking message with flags %lu and raw XPC content %@", (unsigned long)flags, event);
 
     if (!exportedObject || !interface) {
         // bad proxy number; invalidate this connection (the peer probably has outdated info)
-        os_log_fault(nsxpc_get_log(), "no exported interface or object was found for the given proxy number (%zu)", proxyNumber);
+        os_log_fault(nsxpc_get_log(), "no exported interface or object was found for the given proxy number (%lu)", (unsigned long)proxyNumber);
         [self invalidate];
         return;
     }
@@ -933,7 +933,7 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
         NSUInteger parameterCount = signature.numberOfArguments;
         BOOL foundReplyBlock = NO;
 
-        os_log_debug(nsxpc_get_log(), "received invocation expecting reply for sequence %zu", sequence);
+        os_log_debug(nsxpc_get_log(), "received invocation expecting reply for sequence %lu", (unsigned long)sequence);
 
         // if we've got progress tracking, setup a special NSProgress instance
         if (flags & NSXPCConnectionMessageOptionsTracksProgress) {
