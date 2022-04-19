@@ -67,6 +67,14 @@ OBJC_PROTOCOL_IMPL_PUSH
     return [timer autorelease];
 }
 
++ (NSTimer *)timerWithTimeInterval:(NSTimeInterval)ti 
+                                    repeats:(BOOL)yesOrNo 
+                                      block:(void (^)(NSTimer *))block
+{
+    NSTimer *timer = [[self alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:ti] interval:ti repeats:yesOrNo block:block];
+    return [timer autorelease];
+}
+
 - (id)initWithFireDate:(NSDate *)date interval:(NSTimeInterval)ti target:(id)t selector:(SEL)s userInfo:(id)ui repeats:(BOOL)rep
 {
     NSRequestConcreteImplementation();
