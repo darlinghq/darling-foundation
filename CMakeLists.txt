@@ -1,5 +1,7 @@
 project(foundation)
 
+remove_sdk_framework(Foundation)
+
 add_subdirectory(services/filecoordinationd)
 
 if(ENABLE_TESTS)
@@ -272,12 +274,19 @@ set_source_files_properties(src/NSPredicateParser.tab.c PROPERTIES COMPILE_FLAGS
 set(DYLIB_COMPAT_VERSION "300.0.0")
 set(DYLIB_CURRENT_VERSION "1349.0.0")
 
+set(FRAMEWORK_VERSION "C")
+
+generate_sdk_framework(Foundation
+    VERSION ${FRAMEWORK_VERSION}
+    HEADER "include/Foundation"
+)
+
 add_separated_framework(Foundation
     FAT
 	CURRENT_VERSION
 	SOURCES
 		${foundation_sources}
-	VERSION "C"
+	VERSION ${FRAMEWORK_VERSION}
 	DEPENDENCIES
 		objc
 		system
