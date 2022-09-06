@@ -26,10 +26,6 @@
 // threading behavior around NSFileCoordinator is a little unclear
 // TODO: check if we're doing it correctly
 
-// ugly hack to prevent the compiler from interpreting XPC objects as Objective-C objects
-// because our libxpc currently defines them in plain C
-typedef void* block_safe_xpc_object_t;
-
 //
 // logging and debugging function adapted from the file coordination daemon
 //
@@ -147,17 +143,16 @@ static void handle_xpc_notification(xpc_object_t message) {
 	FCDebug(@"Recieved notification: %@", xpc_nsdescription(message));
 
 	xpc_object_t notifications = xpc_dictionary_get_value(message, DaemonPresenterNotificationArrayKey);
-	block_safe_xpc_object_t reply = xpc_dictionary_create_reply(message);
-	block_safe_xpc_object_t responseArray = xpc_array_create(NULL, 0);
+	xpc_object_t reply = xpc_dictionary_create_reply(message);
+	xpc_object_t responseArray = xpc_array_create(NULL, 0);
 	size_t notificationCount = xpc_array_get_count(notifications);
 	__block _Atomic size_t completedNotifications = 0;
 
-	block_safe_xpc_object_t _daemonConnection = daemonConnection;
 	void (^singleNotificationDelivered)(void) = [[^{
 		FCDebug(@"single notification was delivered");
 		if (atomic_fetch_add(&completedNotifications, 1) + 1 >= notificationCount) {
 			FCDebug(@"all notifications have been delivered; replying to daemon now with message: %@", xpc_nsdescription(reply));
-			xpc_connection_send_message(_daemonConnection, reply);
+			xpc_connection_send_message(daemonConnection, reply);
 			xpc_release(reply);
 		}
 	} copy] autorelease];
@@ -175,7 +170,7 @@ static void handle_xpc_notification(xpc_object_t message) {
 	xpc_array_apply(notifications, ^bool (size_t index, xpc_object_t notification) {
 		DaemonPresenterNotificationItemType itemType = xpc_dictionary_get_uint64(notification, DaemonPresenterNotificationItemTypeKey);
 		NSString* path = [NSString stringWithUTF8String: xpc_dictionary_get_string(notification, DaemonPresenterNotificationItemPathKey)];
-		block_safe_xpc_object_t response = xpc_dictionary_create(NULL, NULL, 0);
+		xpc_object_t response = xpc_dictionary_create(NULL, NULL, 0);
 		NSMutableSet<id<NSFilePresenter>>* mutablePresentersForPath = nil;
 		NSSet<id<NSFilePresenter>>* presentersForPath = nil;
 		NSUInteger presenterCount = 0;
@@ -275,8 +270,6 @@ static void handle_xpc_notification(xpc_object_t message) {
 		return true;
 	});
 
-	xpc_release(message);
-
 	FCDebug(@"notification handler returning (this does NOT mean the notification(s) has/have been fully processed)");
 };
 
@@ -346,7 +339,7 @@ static void handle_xpc_notification(xpc_object_t message) {
 	dispatch_semaphore_t waiter = NULL;
 	BOOL blocking = queue == nil;
 	__block NSError* errorPointer = nil;
-	__block block_safe_xpc_object_t replyObject = NULL;
+	__block xpc_object_t replyObject = NULL;
 	block = [[block copy] autorelease];
 
 	FCDebug(@"submitting intent for path %@ with options %llu", [intent.URL path], (long long unsigned)intent.options);
@@ -390,14 +383,14 @@ static void handle_xpc_notification(xpc_object_t message) {
 
 		FCDebug(@"daemon replied to intent message with message: %@", xpc_nsdescription(reply));
 
-		replyObject = xpc_retain(reply);
-
-		if (xpc_dictionary_get_uint64(reply, DaemonIntentReplyResultKey) != DaemonIntentReplyResultOk) {
+		if (xpc_get_type(reply) == XPC_TYPE_ERROR || xpc_dictionary_get_uint64(reply, DaemonIntentReplyResultKey) != DaemonIntentReplyResultOk) {
 			FCDebug(@"daemon indicated failure/denial to perform operation");
 			// TODO: more detailed errors
 			errorPointer = [[NSError alloc] initWithDomain: @"org.darlinghq.Foundation.FileCoordination" // bogus error domain
 			                                          code: 1
 			                                      userInfo: nil];
+		} else {
+			replyObject = xpc_retain(reply);
 		}
 
 		if (blocking) {
@@ -406,9 +399,12 @@ static void handle_xpc_notification(xpc_object_t message) {
 			[queue addOperationWithBlock: ^{
 				FCDebug(@"invoking user block %p on user queue %p with error %p", (void*)block, (void*)queue, (void*)errorPointer);
 				block(errorPointer);
-				[errorPointer release];
 				FCDebug(@"user block complete");
-				completeBlock();
+				if (errorPointer) {
+					[errorPointer release];
+				} else {
+					completeBlock();
+				}
 			}];
 		}
 	});
@@ -419,11 +415,14 @@ static void handle_xpc_notification(xpc_object_t message) {
 
 		FCDebug(@"invoking user block %p synchronously with error %p", (void*)block, (void*)errorPointer);
 		block(errorPointer);
-		[errorPointer release];
 		FCDebug(@"user block complete");
-		completeBlock();
+		if (errorPointer) {
+			[errorPointer release];
+		} else {
+			completeBlock();
 
-		dispatch_semaphore_wait(waiter, DISPATCH_TIME_FOREVER);
+			dispatch_semaphore_wait(waiter, DISPATCH_TIME_FOREVER);
+		}
 		dispatch_release(waiter);
 	}
 
@@ -493,10 +492,8 @@ static void handle_xpc_notification(xpc_object_t message) {
 			handle_xpc_error(object);
 		} else {
 			// all other messages are not replies, so they should be about notifying presenters
-			xpc_retain(object);
-			block_safe_xpc_object_t _object = object;
 			dispatch_async(notificationQueue, ^{
-				handle_xpc_notification(_object);
+				handle_xpc_notification(object);
 			});
 		}
 	});
