@@ -230,7 +230,7 @@ static inline void addIndexesInRange(NSIndexSet *self, NSRange range)
         }
         else
         {
-            DL_INSERT(MULTIPLE_RANGE_DATA(self), ptr->next, newRange);
+            DL_INSERT(MULTIPLE_RANGE_DATA(self), ptr, newRange);
         }
         
         [self _mergeOverlappingRangesStartingAtIndex:(ptr ?: MULTIPLE_RANGE_DATA(self))];
@@ -2036,7 +2036,7 @@ static NSIndexSet *__NSEnumerateIndexesMultipleIndexRangesWithNonZeroOptions(NSI
                 second->range.location = end + 1;
                 second->range.length = rangeEnd - end;
                 
-                DL_INSERT(MULTIPLE_RANGE_DATA(self), ptr->next, second);
+                DL_INSERT(MULTIPLE_RANGE_DATA(self), ptr, second);
                 break;
             }
         }
