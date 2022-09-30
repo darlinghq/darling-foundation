@@ -1023,6 +1023,21 @@ OBJC_PROTOCOL_IMPL_PUSH
 
 - (void)encodeWithCoder:(NSCoder *)aCoder
 {
+    if ([aCoder allowsKeyedCoding])
+    {
+        if ([aCoder isKindOfClass:[NSKeyedArchiver class]])
+        {
+            [aCoder _encodePropertyList:self forKey:@"NS.data"];
+        }
+        else
+        {
+            [aCoder encodeBytes:[self bytes] length:[self length] forKey:@"NS.bytes"];
+        }
+    }
+    else
+    {
+        [aCoder encodeBytes:[self bytes] length:[self length]];
+    }
 
 }
 OBJC_PROTOCOL_IMPL_POP

@@ -29,6 +29,11 @@
     return [NSMethodSignature signatureWithObjCTypes: "v@:"];
 }
 
+- (id)initWithCoder:(NSCoder *)coder {
+    NSLog(@"Stub called: initWithCoder in NSLayoutConstraint");
+    return self;
+}
+
 - (void)forwardInvocation:(NSInvocation *)anInvocation {
     NSLog(@"Stub called: %@ in %@", NSStringFromSelector([anInvocation selector]), [self class]);
 }

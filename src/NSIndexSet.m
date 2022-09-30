@@ -9,6 +9,8 @@
 #import <Foundation/NSString.h>
 #import <Foundation/NSIndexSet.h>
 #import <Foundation/NSException.h>
+#import <Foundation/NSCoder.h>
+#import <Foundation/NSMutableData.h>
 #import <CoreFoundation/CFArray.h>
 #import <dispatch/dispatch.h>
 #import "utlist.h"
@@ -375,6 +377,74 @@ static inline CFComparisonResult NSIndexSetCompareEntry(RangeList *r1, RangeList
         }
     }
     return self;
+}
+
+- (void) encodeWithCoder: (NSCoder*)aCoder
+{
+    if ([aCoder allowsKeyedCoding])
+    {
+        NSUInteger count = [self rangeCount];
+        [aCoder encodeInt64:count forKey:@"NSRangeCount"];
+        if (count == 1)
+        {
+            [aCoder encodeInt64:SINGLE_RANGE(self).location forKey:@"NSLocation"];
+            [aCoder encodeInt64:SINGLE_RANGE(self).length forKey:@"NSLength"];
+        }
+        else if (count > 1)
+        {
+            NSMutableData *data = [[NSMutableData alloc] init];
+            RangeList *ptr = NULL;
+            DL_FOREACH(MULTIPLE_RANGE_DATA(self), ptr)
+            {
+                [data appendBytes:&ptr->range.location length:sizeof(NSUInteger)];
+                [data appendBytes:&ptr->range.length length:sizeof(NSUInteger)];
+            }
+            [aCoder encodeObject:data forKey:@"NSRangeData"];
+        }
+    }
+    else 
+    {
+        #warning TODO : implement support for non keyed archives
+    }
+}
+
+- (id)initWithCoder:(NSCoder *)coder {
+    if ([coder allowsKeyedCoding])
+    {
+        NSUInteger count = [coder decodeInt64ForKey:@"NSRangeCount"];
+        if (count == 1)
+        {
+            NSRange range = NSMakeRange([coder decodeInt64ForKey:@"NSLocation"], [coder decodeInt64ForKey:@"NSLength"]);
+            return [self initWithIndexesInRange:range];
+        }
+        else if (count > 1)
+        {
+            [self _init];
+            if (self)
+            {
+                NSData *data = [coder decodeObjectForKey:@"NSRangeData"];
+                // increase the by two since ranges always come in pair
+                for (int i = 1; i <= count; i = i+2)
+                {
+                    NSUInteger location;
+                    [data getBytes:&location length:sizeof(NSUInteger)];
+                    NSUInteger length;
+                    [data getBytes:&length length:sizeof(NSUInteger)];
+                    addIndexesInRange(self, NSMakeRange(location, length));
+                }  
+            }
+            return self;
+        }
+        else
+        {
+            return [self init];
+        }
+    }
+    else 
+    {
+        #warning TODO : implement support for non keyed archives
+        return self;
+    }
 }
 
 - (BOOL)isEqual:(id)other
