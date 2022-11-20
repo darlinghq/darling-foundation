@@ -340,7 +340,7 @@ static BOOL findObject(
                 self,
                 &_deserializer,
                 item,
-                [interface _allowedClassesForSelector: (isReply ? replySelector : selector) reply: (isReply ? replySelector : selector)],
+                [interface _allowedClassesForSelector: (isReply ? replySelector : selector) reply: (isReply ? replySelector != nil : selector != nil)],
                 isReply
             );
             _collection = savedCollection;

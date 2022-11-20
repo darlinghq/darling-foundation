@@ -44,7 +44,7 @@
 
 - (BOOL)retainWeakReference
 {
-	return _CFTryRetain(self);
+	return _CFTryRetain(self) != nil;
 }
 
 @end

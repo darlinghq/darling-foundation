@@ -5,6 +5,8 @@
 //  Copyright (c) 2014 Apportable. All rights reserved.
 //
 
+#import <CoreFoundation/CFPropertyList.h>
+
 #import <Foundation/NSKeyedArchiver.h>
 #import "NSArchiver.h"
 #import <Foundation/NSArray.h>
