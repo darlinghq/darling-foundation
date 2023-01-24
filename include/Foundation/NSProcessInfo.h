@@ -52,6 +52,13 @@ NSOperatingSystemVersion;
 
 @end
 
+@interface NSProcessInfo (NSProcessInfoPlatform)
+-(BOOL)isMacCatalystApp;
+-(BOOL)isiOSAppOnMac;
+@property(readonly, getter=isMacCatalystApp) BOOL macCatalystApp;
+@property(readonly, getter=isiOSAppOnMac) BOOL iOSAppOnMac;
+@end
+
 #ifdef DARLING
 FOUNDATION_EXPORT void __NSInitializeProcess(int argc,const char *argv[]);
 #endif

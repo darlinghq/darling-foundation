@@ -354,6 +354,17 @@ SINGLETON_RR()
 
 @end
 
+@implementation NSProcessInfo (NSProcessInfoPlatform)
+-(BOOL)isMacCatalystApp {
+    return NO;
+}
+
+-(BOOL)isiOSAppOnMac {
+    return NO;
+}
+
+@end
+
 #ifdef DARLING
 
 FOUNDATION_EXPORT
