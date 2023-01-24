@@ -67,6 +67,7 @@
 #import <Foundation/NSURL.h>
 #import <Foundation/NSURLAuthenticationChallenge.h>
 #import <Foundation/NSURLCache.h>
+#import <Foundation/NSURLComponents.h>
 #import <Foundation/NSURLConnection.h>
 #import <Foundation/NSURLCredential.h>
 #import <Foundation/NSURLCredentialStorage.h>
