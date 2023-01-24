@@ -1171,6 +1171,10 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
     [super dealloc];
 }
 
+- (void)_setTargetUserIdentifier:(uid_t)client {
+     NSLog(@"Stub called: _setTargetUserIdentifier: in %@", [self class]);
+}
+
 @end
 
 @implementation NSXPCListener

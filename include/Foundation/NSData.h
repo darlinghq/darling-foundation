@@ -67,6 +67,7 @@ typedef NS_OPTIONS(NSUInteger, NSDataBase64DecodingOptions) {
 
 @interface NSData (NSDataCreation)
 
++ (id)_newZeroingDataWithBytes:(void const*)bytes length:(size_t)len;
 + (id)data;
 + (id)dataWithBytes:(const void *)bytes length:(NSUInteger)length;
 + (id)dataWithBytesNoCopy:(void *)bytes length:(NSUInteger)length;

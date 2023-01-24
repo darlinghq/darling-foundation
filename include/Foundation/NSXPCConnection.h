@@ -83,6 +83,8 @@ typedef NS_OPTIONS(NSUInteger, NSXPCConnectionOptions) {
 - (instancetype) initWithMachServiceName: (NSString *) serviceName
                                  options: (NSXPCConnectionOptions) options;
 
+- (void)_setTargetUserIdentifier:(uid_t)client;
+
 - (void) invalidate;
 - (void) resume;
 - (void) suspend;
@@ -109,6 +111,7 @@ typedef NS_OPTIONS(NSUInteger, NSXPCConnectionOptions) {
 + (NSXPCListener *)serviceListener;
 
 - (instancetype)initWithMachServiceName:(NSString*)serviceName;
+
 
 - (void)invalidate;
 - (void)resume;

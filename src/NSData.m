@@ -1240,6 +1240,10 @@ static uint8_t base64EncodeLookup[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklm
     return outputData;
 }
 
++ (id)_newZeroingDataWithBytes:(void const*)bytes length:(size_t)len {
+     NSLog(@"Stub called: _newZeroingDataWithBytes: in NSData(NSData)");
+}
+
 @end
 
 
