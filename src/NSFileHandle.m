@@ -628,7 +628,7 @@ if ((_flags & NSConcreteFileHandleClosed) != 0) \
     {
         const size_t READ_SIZE = 4096;
         size_t totalReadSize = 0;
-        size_t bufSize = READ_SIZE;
+        size_t bufSize = MIN(READ_SIZE, length);
         char *buf = malloc(bufSize);
         if (buf == NULL)
         {
