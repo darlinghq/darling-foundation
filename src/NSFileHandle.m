@@ -626,9 +626,9 @@ if ((_flags & NSConcreteFileHandleClosed) != 0) \
     }
     else
     {
-        const size_t READ_SIZE = 4096;
+        const size_t READ_SIZE = MIN(4096, length);
         size_t totalReadSize = 0;
-        size_t bufSize = MIN(READ_SIZE, length);
+        size_t bufSize = READ_SIZE;
         char *buf = malloc(bufSize);
         if (buf == NULL)
         {
@@ -637,7 +637,7 @@ if ((_flags & NSConcreteFileHandleClosed) != 0) \
         }
         ssize_t readSize;
         do {
-            size_t maxReadSize = MIN(READ_SIZE, bufSize - totalReadSize);
+            size_t maxReadSize = MIN(READ_SIZE, bufSize) - totalReadSize;
             readSize = _NSReadFromFileDescriptor(_fd, buf + totalReadSize, maxReadSize);
             if (readSize < 0)
             {
