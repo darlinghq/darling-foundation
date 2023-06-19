@@ -13,6 +13,8 @@
 #import "NSConcreteScanner.h"
 #import <Foundation/NSString.h>
 
+#import <math.h>
+
 /*
  *	Constant structs
  */

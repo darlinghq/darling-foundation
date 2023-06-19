@@ -20,6 +20,7 @@
 #import <dispatch/dispatch.h>
 #import <libkern/OSAtomic.h>
 
+#import "CFSortFunctions.h"
 #import "ForFoundationOnly.h"
 
 enum __NSOperationState {

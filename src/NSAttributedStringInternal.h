@@ -1,5 +1,6 @@
 #import "NSCFType.h"
 #import <Foundation/NSAttributedString.h>
+#import <CoreFoundation/CFAttributedString.h>
 
 @interface __NSPlaceholderAttributedString : NSAttributedString
 
@@ -43,3 +44,5 @@
 - (id)retain;
 
 @end
+
+void _CFAttributedStringSetMutable(CFAttributedStringRef aStr, Boolean isMutable);
