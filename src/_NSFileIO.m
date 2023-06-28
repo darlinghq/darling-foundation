@@ -14,6 +14,7 @@
 #import <Foundation/NSDictionary.h>
 #import <fcntl.h>
 #import <errno.h>
+#import <unistd.h>
 #import <libkern/OSAtomic.h>
 #import <stdio.h>
 #import <sys/mman.h>
