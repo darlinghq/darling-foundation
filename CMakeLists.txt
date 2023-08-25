@@ -87,6 +87,7 @@ set(foundation_sources
 	src/NSIndexPath.m
 	src/NSIndexSet.m
 	src/NSInPredicateOperator.m
+	src/NSItemProvider.m
 	src/NSJSONSerialization.m
 	src/NSKeyedArchiver.m
 	src/_NSKeyedCoderOldStyleArray.m
