@@ -9,7 +9,8 @@ typedef NS_OPTIONS(NSUInteger, NSJSONReadingOptions) {
 };
 
 typedef NS_OPTIONS(NSUInteger, NSJSONWritingOptions) {
-    NSJSONWritingPrettyPrinted = (1UL << 0)
+    NSJSONWritingPrettyPrinted = (1UL << 0),
+    NSJSONWritingSortedKeys = (1UL << 1), // TODO: figure out the actual value
 };
 
 @interface NSJSONSerialization : NSObject
