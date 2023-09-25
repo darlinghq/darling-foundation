@@ -39,6 +39,10 @@
     while (search.length > 0)
     {
         NSRange found = [escaped rangeOfCharacterFromSet:regexCharacters options:0 range:search];
+        if (found.location == NSNotFound)
+        {
+            break;
+        }
         [escaped insertString:@"\\" atIndex:found.location];
         search.location = NSMaxRange(found) + 1;
         search.length += 1;
