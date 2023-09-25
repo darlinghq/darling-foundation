@@ -402,7 +402,8 @@ static NSExpression *coerceObjectToExpression(argBlock args, NSString *formatTyp
 
     if ([formatType isEqualToString:@"@"] ||
         [formatType isEqualToString:@"d"] ||
-        [formatType isEqualToString:@"f"])
+        [formatType isEqualToString:@"f"] ||
+        [formatType isEqualToString:@"lu"])
     {
         return [[[NSConstantValueExpression alloc] initWithObject:object] autorelease];
     }
@@ -444,15 +445,19 @@ NSPredicate *_parsePredicateVarArgs(NSString *format, va_list originalArgs)
         if ([formatType isEqualToString:@"@"] ||
             [formatType isEqualToString:@"K"])
         {
-            object = va_arg(args.va_args, id);
+            object = va_arg(args.va_list, id);
         }
         else if ([formatType isEqualToString:@"d"])
         {
-            object = [NSNumber numberWithInt:va_arg(args.va_args, int)];
+            object = [NSNumber numberWithInt:va_arg(args.va_list, int)];
         }
         else if ([formatType isEqualToString:@"f"])
         {
-            object = [NSNumber numberWithDouble:va_arg(args.va_args, double)];
+            object = [NSNumber numberWithDouble:va_arg(args.va_list, double)];
+        }
+        else if ([formatType isEqualToString:@"lu"])
+        {
+            object = [NSNumber numberWithUnsignedLong:va_arg(args.va_list, unsigned long)];
         }
         if (object == nil)
         {

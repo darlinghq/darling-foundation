@@ -180,7 +180,7 @@
 
 
 /* Copy the first part of user declarations.  */
-// #line 1 "NSPredicateParser.ym"
+#line 1 "NSPredicateParser.ym"
 
     #import <Foundation/NSPredicate.h>
     #import <Foundation/NSCompoundPredicate.h>
@@ -253,7 +253,7 @@
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-// #line 66 "NSPredicateParser.ym"
+#line 66 "NSPredicateParser.ym"
 {
     NSPredicate *predicate;
     NSExpression *expression;
@@ -274,7 +274,7 @@ typedef union YYSTYPE
     NSPredicateOperatorType operatorType;
 }
 /* Line 193 of yacc.c.  */
-// #line 278 "NSPredicateParser.tab.c"
+#line 278 "NSPredicateParser.tab.c"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
@@ -287,7 +287,7 @@ typedef union YYSTYPE
 
 
 /* Line 216 of yacc.c.  */
-// #line 291 "NSPredicateParser.tab.c"
+#line 291 "NSPredicateParser.tab.c"
 
 #ifdef short
 # undef short
@@ -1630,343 +1630,343 @@ yyreduce:
   switch (yyn)
     {
         case 2:
-// #line 177 "NSPredicateParser.ym"
-    { *predicate = (yyvsp[(1) - (1)].predicate); }
+#line 177 "NSPredicateParser.ym"
+    { *predicate = (yyvsp[(1) - (1)].predicate); ;}
     break;
 
   case 3:
-// #line 180 "NSPredicateParser.ym"
-    { (yyval.predicate) = (yyvsp[(1) - (1)].predicate); }
+#line 180 "NSPredicateParser.ym"
+    { (yyval.predicate) = (yyvsp[(1) - (1)].predicate); ;}
     break;
 
   case 4:
-// #line 181 "NSPredicateParser.ym"
-    { (yyval.predicate) = (yyvsp[(1) - (1)].predicate); }
+#line 181 "NSPredicateParser.ym"
+    { (yyval.predicate) = (yyvsp[(1) - (1)].predicate); ;}
     break;
 
   case 5:
-// #line 182 "NSPredicateParser.ym"
-    { (yyval.predicate) = truePredicate; }
+#line 182 "NSPredicateParser.ym"
+    { (yyval.predicate) = truePredicate; ;}
     break;
 
   case 6:
-// #line 183 "NSPredicateParser.ym"
-    { (yyval.predicate) = falsePredicate; }
+#line 183 "NSPredicateParser.ym"
+    { (yyval.predicate) = falsePredicate; ;}
     break;
 
   case 7:
-// #line 184 "NSPredicateParser.ym"
-    { (yyval.predicate) = (yyvsp[(2) - (3)].predicate); }
+#line 184 "NSPredicateParser.ym"
+    { (yyval.predicate) = (yyvsp[(2) - (3)].predicate); ;}
     break;
 
   case 8:
-// #line 187 "NSPredicateParser.ym"
-    { (yyval.predicate) = [NSCompoundPredicate andPredicateWithSubpredicates:[NSArray arrayWithObjects:(yyvsp[(1) - (3)].predicate), (yyvsp[(3) - (3)].predicate), nil]]; }
+#line 187 "NSPredicateParser.ym"
+    { (yyval.predicate) = [NSCompoundPredicate andPredicateWithSubpredicates:[NSArray arrayWithObjects:(yyvsp[(1) - (3)].predicate), (yyvsp[(3) - (3)].predicate), nil]]; ;}
     break;
 
   case 9:
-// #line 188 "NSPredicateParser.ym"
-    { (yyval.predicate) = [NSCompoundPredicate orPredicateWithSubpredicates:[NSArray arrayWithObjects:(yyvsp[(1) - (3)].predicate), (yyvsp[(3) - (3)].predicate), nil]]; }
+#line 188 "NSPredicateParser.ym"
+    { (yyval.predicate) = [NSCompoundPredicate orPredicateWithSubpredicates:[NSArray arrayWithObjects:(yyvsp[(1) - (3)].predicate), (yyvsp[(3) - (3)].predicate), nil]]; ;}
     break;
 
   case 10:
-// #line 189 "NSPredicateParser.ym"
-    { (yyval.predicate) = [NSCompoundPredicate notPredicateWithSubpredicate:(yyvsp[(2) - (2)].predicate)]; }
+#line 189 "NSPredicateParser.ym"
+    { (yyval.predicate) = [NSCompoundPredicate notPredicateWithSubpredicate:(yyvsp[(2) - (2)].predicate)]; ;}
     break;
 
   case 11:
-// #line 192 "NSPredicateParser.ym"
-    { (yyval.predicate) = [NSComparisonPredicate predicateWithLeftExpression:(yyvsp[(1) - (1)].comparison).lhs rightExpression:(yyvsp[(1) - (1)].comparison).rhs modifier:NSDirectPredicateModifier type:(yyvsp[(1) - (1)].comparison).type options:(yyvsp[(1) - (1)].comparison).options]; }
+#line 192 "NSPredicateParser.ym"
+    { (yyval.predicate) = [NSComparisonPredicate predicateWithLeftExpression:(yyvsp[(1) - (1)].comparison).lhs rightExpression:(yyvsp[(1) - (1)].comparison).rhs modifier:NSDirectPredicateModifier type:(yyvsp[(1) - (1)].comparison).type options:(yyvsp[(1) - (1)].comparison).options]; ;}
     break;
 
   case 12:
-// #line 193 "NSPredicateParser.ym"
-    { (yyval.predicate) = [NSComparisonPredicate predicateWithLeftExpression:(yyvsp[(2) - (2)].comparison).lhs rightExpression:(yyvsp[(2) - (2)].comparison).rhs modifier:NSAnyPredicateModifier type:(yyvsp[(2) - (2)].comparison).type options:(yyvsp[(2) - (2)].comparison).options]; }
+#line 193 "NSPredicateParser.ym"
+    { (yyval.predicate) = [NSComparisonPredicate predicateWithLeftExpression:(yyvsp[(2) - (2)].comparison).lhs rightExpression:(yyvsp[(2) - (2)].comparison).rhs modifier:NSAnyPredicateModifier type:(yyvsp[(2) - (2)].comparison).type options:(yyvsp[(2) - (2)].comparison).options]; ;}
     break;
 
   case 13:
-// #line 194 "NSPredicateParser.ym"
-    { (yyval.predicate) = [NSComparisonPredicate predicateWithLeftExpression:(yyvsp[(2) - (2)].comparison).lhs rightExpression:(yyvsp[(2) - (2)].comparison).rhs modifier:NSAnyPredicateModifier type:(yyvsp[(2) - (2)].comparison).type options:(yyvsp[(2) - (2)].comparison).options]; }
+#line 194 "NSPredicateParser.ym"
+    { (yyval.predicate) = [NSComparisonPredicate predicateWithLeftExpression:(yyvsp[(2) - (2)].comparison).lhs rightExpression:(yyvsp[(2) - (2)].comparison).rhs modifier:NSAnyPredicateModifier type:(yyvsp[(2) - (2)].comparison).type options:(yyvsp[(2) - (2)].comparison).options]; ;}
     break;
 
   case 14:
-// #line 195 "NSPredicateParser.ym"
-    { (yyval.predicate) = [NSComparisonPredicate predicateWithLeftExpression:(yyvsp[(2) - (2)].comparison).lhs rightExpression:(yyvsp[(2) - (2)].comparison).rhs modifier:NSAllPredicateModifier type:(yyvsp[(2) - (2)].comparison).type options:(yyvsp[(2) - (2)].comparison).options]; }
+#line 195 "NSPredicateParser.ym"
+    { (yyval.predicate) = [NSComparisonPredicate predicateWithLeftExpression:(yyvsp[(2) - (2)].comparison).lhs rightExpression:(yyvsp[(2) - (2)].comparison).rhs modifier:NSAllPredicateModifier type:(yyvsp[(2) - (2)].comparison).type options:(yyvsp[(2) - (2)].comparison).options]; ;}
     break;
 
   case 15:
-// #line 196 "NSPredicateParser.ym"
-    { (yyval.predicate) = [NSCompoundPredicate notPredicateWithSubpredicate:[NSComparisonPredicate predicateWithLeftExpression:(yyvsp[(2) - (2)].comparison).lhs rightExpression:(yyvsp[(2) - (2)].comparison).rhs modifier:NSAnyPredicateModifier type:(yyvsp[(2) - (2)].comparison).type options:(yyvsp[(2) - (2)].comparison).options]]; }
+#line 196 "NSPredicateParser.ym"
+    { (yyval.predicate) = [NSCompoundPredicate notPredicateWithSubpredicate:[NSComparisonPredicate predicateWithLeftExpression:(yyvsp[(2) - (2)].comparison).lhs rightExpression:(yyvsp[(2) - (2)].comparison).rhs modifier:NSAnyPredicateModifier type:(yyvsp[(2) - (2)].comparison).type options:(yyvsp[(2) - (2)].comparison).options]]; ;}
     break;
 
   case 16:
-// #line 199 "NSPredicateParser.ym"
-    { (yyval.comparison).lhs = (yyvsp[(1) - (3)].expression); (yyval.comparison).rhs = (yyvsp[(3) - (3)].expression); (yyval.comparison).type = (yyvsp[(2) - (3)].operator).type; (yyval.comparison).options = (yyvsp[(2) - (3)].operator).options; }
+#line 199 "NSPredicateParser.ym"
+    { (yyval.comparison).lhs = (yyvsp[(1) - (3)].expression); (yyval.comparison).rhs = (yyvsp[(3) - (3)].expression); (yyval.comparison).type = (yyvsp[(2) - (3)].operator).type; (yyval.comparison).options = (yyvsp[(2) - (3)].operator).options; ;}
     break;
 
   case 17:
-// #line 202 "NSPredicateParser.ym"
-    { (yyval.operator).type = NSBetweenPredicateOperatorType; (yyval.operator).options = 0; }
+#line 202 "NSPredicateParser.ym"
+    { (yyval.operator).type = NSBetweenPredicateOperatorType; (yyval.operator).options = 0; ;}
     break;
 
   case 18:
-// #line 203 "NSPredicateParser.ym"
-    { (yyval.operator) = (yyvsp[(1) - (1)].operator); }
+#line 203 "NSPredicateParser.ym"
+    { (yyval.operator) = (yyvsp[(1) - (1)].operator); ;}
     break;
 
   case 19:
-// #line 206 "NSPredicateParser.ym"
-    { (yyval.operator).type = (yyvsp[(1) - (1)].operatorType); (yyval.operator).options = 0; }
+#line 206 "NSPredicateParser.ym"
+    { (yyval.operator).type = (yyvsp[(1) - (1)].operatorType); (yyval.operator).options = 0; ;}
     break;
 
   case 20:
-// #line 207 "NSPredicateParser.ym"
-    { (yyval.operator).type = (yyvsp[(1) - (4)].operatorType); (yyval.operator).options = parseComparisonOptions((yyvsp[(3) - (4)].string)); }
+#line 207 "NSPredicateParser.ym"
+    { (yyval.operator).type = (yyvsp[(1) - (4)].operatorType); (yyval.operator).options = parseComparisonOptions((yyvsp[(3) - (4)].string)); ;}
     break;
 
   case 21:
-// #line 210 "NSPredicateParser.ym"
-    { (yyval.operatorType) = NSEqualToPredicateOperatorType; }
+#line 210 "NSPredicateParser.ym"
+    { (yyval.operatorType) = NSEqualToPredicateOperatorType; ;}
     break;
 
   case 22:
-// #line 211 "NSPredicateParser.ym"
-    { (yyval.operatorType) = NSNotEqualToPredicateOperatorType; }
+#line 211 "NSPredicateParser.ym"
+    { (yyval.operatorType) = NSNotEqualToPredicateOperatorType; ;}
     break;
 
   case 23:
-// #line 212 "NSPredicateParser.ym"
-    { (yyval.operatorType) = NSLessThanPredicateOperatorType; }
+#line 212 "NSPredicateParser.ym"
+    { (yyval.operatorType) = NSLessThanPredicateOperatorType; ;}
     break;
 
   case 24:
-// #line 213 "NSPredicateParser.ym"
-    { (yyval.operatorType) = NSGreaterThanPredicateOperatorType; }
+#line 213 "NSPredicateParser.ym"
+    { (yyval.operatorType) = NSGreaterThanPredicateOperatorType; ;}
     break;
 
   case 25:
-// #line 214 "NSPredicateParser.ym"
-    { (yyval.operatorType) = NSLessThanOrEqualToPredicateOperatorType; }
+#line 214 "NSPredicateParser.ym"
+    { (yyval.operatorType) = NSLessThanOrEqualToPredicateOperatorType; ;}
     break;
 
   case 26:
-// #line 215 "NSPredicateParser.ym"
-    { (yyval.operatorType) = NSGreaterThanOrEqualToPredicateOperatorType; }
+#line 215 "NSPredicateParser.ym"
+    { (yyval.operatorType) = NSGreaterThanOrEqualToPredicateOperatorType; ;}
     break;
 
   case 27:
-// #line 216 "NSPredicateParser.ym"
-    { (yyval.operatorType) = NSContainsPredicateOperatorType; }
+#line 216 "NSPredicateParser.ym"
+    { (yyval.operatorType) = NSContainsPredicateOperatorType; ;}
     break;
 
   case 28:
-// #line 217 "NSPredicateParser.ym"
-    { (yyval.operatorType) = NSInPredicateOperatorType; }
+#line 217 "NSPredicateParser.ym"
+    { (yyval.operatorType) = NSInPredicateOperatorType; ;}
     break;
 
   case 29:
-// #line 218 "NSPredicateParser.ym"
-    { (yyval.operatorType) = NSBeginsWithPredicateOperatorType; }
+#line 218 "NSPredicateParser.ym"
+    { (yyval.operatorType) = NSBeginsWithPredicateOperatorType; ;}
     break;
 
   case 30:
-// #line 219 "NSPredicateParser.ym"
-    { (yyval.operatorType) = NSEndsWithPredicateOperatorType; }
+#line 219 "NSPredicateParser.ym"
+    { (yyval.operatorType) = NSEndsWithPredicateOperatorType; ;}
     break;
 
   case 31:
-// #line 220 "NSPredicateParser.ym"
-    { (yyval.operatorType) = NSLikePredicateOperatorType; }
+#line 220 "NSPredicateParser.ym"
+    { (yyval.operatorType) = NSLikePredicateOperatorType; ;}
     break;
 
   case 32:
-// #line 221 "NSPredicateParser.ym"
-    { (yyval.operatorType) = NSMatchesPredicateOperatorType; }
+#line 221 "NSPredicateParser.ym"
+    { (yyval.operatorType) = NSMatchesPredicateOperatorType; ;}
     break;
 
   case 33:
-// #line 224 "NSPredicateParser.ym"
-    { (yyval.expression) = (yyvsp[(1) - (1)].expression); }
+#line 224 "NSPredicateParser.ym"
+    { (yyval.expression) = (yyvsp[(1) - (1)].expression); ;}
     break;
 
   case 34:
-// #line 225 "NSPredicateParser.ym"
-    { (yyval.expression) = [[[NSFunctionExpression alloc] initWithSelector:selectorFromIdentifier((yyvsp[(1) - (3)].string)) argumentArray:[NSArray array]] autorelease]; }
+#line 225 "NSPredicateParser.ym"
+    { (yyval.expression) = [[[NSFunctionExpression alloc] initWithSelector:selectorFromIdentifier((yyvsp[(1) - (3)].string)) argumentArray:[NSArray array]] autorelease]; ;}
     break;
 
   case 35:
-// #line 226 "NSPredicateParser.ym"
-    { (yyval.expression) = [[[NSFunctionExpression alloc] initWithSelector:selectorFromIdentifier((yyvsp[(1) - (4)].string)) argumentArray:(yyvsp[(3) - (4)].mutableArray)] autorelease]; }
+#line 226 "NSPredicateParser.ym"
+    { (yyval.expression) = [[[NSFunctionExpression alloc] initWithSelector:selectorFromIdentifier((yyvsp[(1) - (4)].string)) argumentArray:(yyvsp[(3) - (4)].mutableArray)] autorelease]; ;}
     break;
 
   case 36:
-// #line 227 "NSPredicateParser.ym"
-    { (yyval.expression) = [[[NSVariableAssignmentExpression alloc] initWithAssignmentVariable:(yyvsp[(1) - (3)].string) expression:(yyvsp[(3) - (3)].expression)] autorelease]; }
+#line 227 "NSPredicateParser.ym"
+    { (yyval.expression) = [[[NSVariableAssignmentExpression alloc] initWithAssignmentVariable:(yyvsp[(1) - (3)].string) expression:(yyvsp[(3) - (3)].expression)] autorelease]; ;}
     break;
 
   case 37:
-// #line 228 "NSPredicateParser.ym"
-    { (yyval.expression) = (yyvsp[(1) - (1)].expression); }
+#line 228 "NSPredicateParser.ym"
+    { (yyval.expression) = (yyvsp[(1) - (1)].expression); ;}
     break;
 
   case 38:
-// #line 229 "NSPredicateParser.ym"
-    { (yyval.expression) = (yyvsp[(1) - (1)].expression); }
+#line 229 "NSPredicateParser.ym"
+    { (yyval.expression) = (yyvsp[(1) - (1)].expression); ;}
     break;
 
   case 39:
-// #line 230 "NSPredicateParser.ym"
-    { (yyval.expression) = (yyvsp[(2) - (3)].expression); }
+#line 230 "NSPredicateParser.ym"
+    { (yyval.expression) = (yyvsp[(2) - (3)].expression); ;}
     break;
 
   case 40:
-// #line 233 "NSPredicateParser.ym"
-    { (yyval.expression) = binaryFunc(raise_toPower_, (yyvsp[(1) - (3)].expression), (yyvsp[(3) - (3)].expression)); }
+#line 233 "NSPredicateParser.ym"
+    { (yyval.expression) = binaryFunc(raise_toPower_, (yyvsp[(1) - (3)].expression), (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 41:
-// #line 234 "NSPredicateParser.ym"
-    { (yyval.expression) = binaryFunc(multiply_by_, (yyvsp[(1) - (3)].expression), (yyvsp[(3) - (3)].expression)); }
+#line 234 "NSPredicateParser.ym"
+    { (yyval.expression) = binaryFunc(multiply_by_, (yyvsp[(1) - (3)].expression), (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 42:
-// #line 235 "NSPredicateParser.ym"
-    { (yyval.expression) = binaryFunc(divide_by_, (yyvsp[(1) - (3)].expression), (yyvsp[(3) - (3)].expression)); }
+#line 235 "NSPredicateParser.ym"
+    { (yyval.expression) = binaryFunc(divide_by_, (yyvsp[(1) - (3)].expression), (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 43:
-// #line 236 "NSPredicateParser.ym"
-    { (yyval.expression) = binaryFunc(add_to_, (yyvsp[(1) - (3)].expression), (yyvsp[(3) - (3)].expression)); }
+#line 236 "NSPredicateParser.ym"
+    { (yyval.expression) = binaryFunc(add_to_, (yyvsp[(1) - (3)].expression), (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 44:
-// #line 237 "NSPredicateParser.ym"
-    { (yyval.expression) = binaryFunc(from_subtract_, (yyvsp[(1) - (3)].expression), (yyvsp[(3) - (3)].expression)); }
+#line 237 "NSPredicateParser.ym"
+    { (yyval.expression) = binaryFunc(from_subtract_, (yyvsp[(1) - (3)].expression), (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 45:
-// #line 238 "NSPredicateParser.ym"
-    { (yyval.expression) = binaryFunc(from_subtract_, zeroExpression, (yyvsp[(2) - (2)].expression)); }
+#line 238 "NSPredicateParser.ym"
+    { (yyval.expression) = binaryFunc(from_subtract_, zeroExpression, (yyvsp[(2) - (2)].expression)); ;}
     break;
 
   case 46:
-// #line 239 "NSPredicateParser.ym"
-    { (yyval.expression) = binaryFunc(objectFrom_withIndex_, (yyvsp[(1) - (4)].expression), (yyvsp[(3) - (4)].expression)); }
+#line 239 "NSPredicateParser.ym"
+    { (yyval.expression) = binaryFunc(objectFrom_withIndex_, (yyvsp[(1) - (4)].expression), (yyvsp[(3) - (4)].expression)); ;}
     break;
 
   case 47:
-// #line 242 "NSPredicateParser.ym"
-    { (yyval.expression) = (yyvsp[(1) - (1)].expression); }
+#line 242 "NSPredicateParser.ym"
+    { (yyval.expression) = (yyvsp[(1) - (1)].expression); ;}
     break;
 
   case 48:
-// #line 243 "NSPredicateParser.ym"
-    { (yyval.expression) = firstExpression; }
+#line 243 "NSPredicateParser.ym"
+    { (yyval.expression) = firstExpression; ;}
     break;
 
   case 49:
-// #line 244 "NSPredicateParser.ym"
-    { (yyval.expression) = lastExpression; }
+#line 244 "NSPredicateParser.ym"
+    { (yyval.expression) = lastExpression; ;}
     break;
 
   case 50:
-// #line 245 "NSPredicateParser.ym"
-    { (yyval.expression) = sizeExpression; }
+#line 245 "NSPredicateParser.ym"
+    { (yyval.expression) = sizeExpression; ;}
     break;
 
   case 51:
-// #line 248 "NSPredicateParser.ym"
-    { (yyval.expression) = [NSExpression expressionForKeyPath:(yyvsp[(1) - (1)].string)]; }
+#line 248 "NSPredicateParser.ym"
+    { (yyval.expression) = [NSExpression expressionForKeyPath:(yyvsp[(1) - (1)].string)]; ;}
     break;
 
   case 52:
-// #line 249 "NSPredicateParser.ym"
-    { (yyval.expression) = [NSExpression expressionForKeyPath:[(yyvsp[(1) - (2)].string) stringByAppendingString:(yyvsp[(2) - (2)].string)]]; }
+#line 249 "NSPredicateParser.ym"
+    { (yyval.expression) = [NSExpression expressionForKeyPath:[(yyvsp[(1) - (2)].string) stringByAppendingString:(yyvsp[(2) - (2)].string)]]; ;}
     break;
 
   case 53:
-// #line 250 "NSPredicateParser.ym"
-    { (yyval.expression) = concatKeypathExpressions((yyvsp[(1) - (3)].expression), (yyvsp[(3) - (3)].expression)); }
+#line 250 "NSPredicateParser.ym"
+    { (yyval.expression) = concatKeypathExpressions((yyvsp[(1) - (3)].expression), (yyvsp[(3) - (3)].expression)); ;}
     break;
 
   case 54:
-// #line 253 "NSPredicateParser.ym"
-    { (yyval.expression) = [[[NSConstantValueExpression alloc] initWithObject:(yyvsp[(1) - (1)].string)] autorelease]; }
+#line 253 "NSPredicateParser.ym"
+    { (yyval.expression) = [[[NSConstantValueExpression alloc] initWithObject:(yyvsp[(1) - (1)].string)] autorelease]; ;}
     break;
 
   case 55:
-// #line 254 "NSPredicateParser.ym"
-    { (yyval.expression) = [[[NSConstantValueExpression alloc] initWithObject:(yyvsp[(1) - (1)].number)] autorelease]; }
+#line 254 "NSPredicateParser.ym"
+    { (yyval.expression) = [[[NSConstantValueExpression alloc] initWithObject:(yyvsp[(1) - (1)].number)] autorelease]; ;}
     break;
 
   case 56:
-// #line 255 "NSPredicateParser.ym"
-    { (yyval.expression) = (yyvsp[(2) - (2)].expression); }
+#line 255 "NSPredicateParser.ym"
+    { (yyval.expression) = (yyvsp[(2) - (2)].expression); ;}
     break;
 
   case 57:
-// #line 256 "NSPredicateParser.ym"
-    { (yyval.expression) = [[[NSVariableExpression alloc] initWithObject:(yyvsp[(1) - (1)].string)] autorelease]; }
+#line 256 "NSPredicateParser.ym"
+    { (yyval.expression) = [[[NSVariableExpression alloc] initWithObject:(yyvsp[(1) - (1)].string)] autorelease]; ;}
     break;
 
   case 58:
-// #line 257 "NSPredicateParser.ym"
-    { (yyval.expression) = nullExpression; }
+#line 257 "NSPredicateParser.ym"
+    { (yyval.expression) = nullExpression; ;}
     break;
 
   case 59:
-// #line 258 "NSPredicateParser.ym"
-    { (yyval.expression) = yesExpression; }
+#line 258 "NSPredicateParser.ym"
+    { (yyval.expression) = yesExpression; ;}
     break;
 
   case 60:
-// #line 259 "NSPredicateParser.ym"
-    { (yyval.expression) = noExpression; }
+#line 259 "NSPredicateParser.ym"
+    { (yyval.expression) = noExpression; ;}
     break;
 
   case 61:
-// #line 260 "NSPredicateParser.ym"
-    { (yyval.expression) = selfExpression; }
+#line 260 "NSPredicateParser.ym"
+    { (yyval.expression) = selfExpression; ;}
     break;
 
   case 62:
-// #line 261 "NSPredicateParser.ym"
-    { (yyval.expression) = [[[NSAggregateExpression alloc] initWithCollection:[NSArray array]] autorelease]; }
+#line 261 "NSPredicateParser.ym"
+    { (yyval.expression) = [[[NSAggregateExpression alloc] initWithCollection:[NSArray array]] autorelease]; ;}
     break;
 
   case 63:
-// #line 262 "NSPredicateParser.ym"
-    { (yyval.expression) = [[[NSAggregateExpression alloc] initWithCollection:(yyvsp[(2) - (3)].mutableArray)] autorelease]; }
+#line 262 "NSPredicateParser.ym"
+    { (yyval.expression) = [[[NSAggregateExpression alloc] initWithCollection:(yyvsp[(2) - (3)].mutableArray)] autorelease]; ;}
     break;
 
   case 64:
-// #line 265 "NSPredicateParser.ym"
-    { (yyval.mutableArray) = [NSMutableArray arrayWithObject:(yyvsp[(1) - (1)].expression)]; }
+#line 265 "NSPredicateParser.ym"
+    { (yyval.mutableArray) = [NSMutableArray arrayWithObject:(yyvsp[(1) - (1)].expression)]; ;}
     break;
 
   case 65:
-// #line 266 "NSPredicateParser.ym"
-    { [(yyvsp[(1) - (3)].mutableArray) addObject:(yyvsp[(3) - (3)].expression)]; (yyval.mutableArray) = (yyvsp[(1) - (3)].mutableArray); }
+#line 266 "NSPredicateParser.ym"
+    { [(yyvsp[(1) - (3)].mutableArray) addObject:(yyvsp[(3) - (3)].expression)]; (yyval.mutableArray) = (yyvsp[(1) - (3)].mutableArray); ;}
     break;
 
   case 66:
-// #line 269 "NSPredicateParser.ym"
-    { (yyval.expression) = coerceObjectToExpression(args, (yyvsp[(1) - (1)].string)); }
+#line 269 "NSPredicateParser.ym"
+    { (yyval.expression) = coerceObjectToExpression(args, (yyvsp[(1) - (1)].string)); ;}
     break;
 
   case 67:
-// #line 270 "NSPredicateParser.ym"
-    { (yyval.expression) = coerceObjectToExpression(args, (yyvsp[(1) - (1)].string)); }
+#line 270 "NSPredicateParser.ym"
+    { (yyval.expression) = coerceObjectToExpression(args, (yyvsp[(1) - (1)].string)); ;}
     break;
 
   case 68:
-// #line 273 "NSPredicateParser.ym"
-    { (yyval.string) = (yyvsp[(2) - (2)].string); }
+#line 273 "NSPredicateParser.ym"
+    { (yyval.string) = (yyvsp[(2) - (2)].string); ;}
     break;
 
 
 /* Line 1267 of yacc.c.  */
-// #line 1970 "NSPredicateParser.tab.c"
+#line 1970 "NSPredicateParser.tab.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -2180,7 +2180,7 @@ yyreturn:
 }
 
 
-// #line 275 "NSPredicateParser.ym"
+#line 275 "NSPredicateParser.ym"
 
 
 #pragma clang diagnostic pop
@@ -2311,7 +2311,8 @@ static NSExpression *coerceObjectToExpression(argBlock args, NSString *formatTyp
 
     if ([formatType isEqualToString:@"@"] ||
         [formatType isEqualToString:@"d"] ||
-        [formatType isEqualToString:@"f"])
+        [formatType isEqualToString:@"f"] ||
+        [formatType isEqualToString:@"lu"])
     {
         return [[[NSConstantValueExpression alloc] initWithObject:object] autorelease];
     }
@@ -2362,6 +2363,10 @@ NSPredicate *_parsePredicateVarArgs(NSString *format, va_list originalArgs)
         else if ([formatType isEqualToString:@"f"])
         {
             object = [NSNumber numberWithDouble:va_arg(args.va_list, double)];
+        }
+        else if ([formatType isEqualToString:@"lu"])
+        {
+            object = [NSNumber numberWithUnsignedLong:va_arg(args.va_list, unsigned long)];
         }
         if (object == nil)
         {
