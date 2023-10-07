@@ -7,6 +7,7 @@
 
 #import <Foundation/NSFormatter.h>
 #import <Foundation/NSException.h>
+#import <Foundation/NSRaise.h>
 #import "NSObjectInternal.h"
 
 @implementation NSFormatter
@@ -103,6 +104,12 @@
     NSLog(@"Stub called: %@ in %@", NSStringFromSelector([anInvocation selector]), [self class]);
 }
 
+- (instancetype)initWithCoder:(NSCoder *)aCoder
+{
+    NSUnimplementedMethod();
+    return self;
+}
+
 @end
 
 @interface NSLengthFormatter : NSFormatter
@@ -118,6 +125,12 @@
     NSLog(@"Stub called: %@ in %@", NSStringFromSelector([anInvocation selector]), [self class]);
 }
 
+- (instancetype)initWithCoder:(NSCoder *)aCoder
+{
+    NSUnimplementedMethod();
+    return self;
+}
+
 @end
 
 @interface NSMassFormatter : NSFormatter
@@ -131,6 +144,12 @@
 
 - (void)forwardInvocation:(NSInvocation *)anInvocation {
     NSLog(@"Stub called: %@ in %@", NSStringFromSelector([anInvocation selector]), [self class]);
+}
+
+- (instancetype)initWithCoder:(NSCoder *)aCoder
+{
+    NSUnimplementedMethod();
+    return self;
 }
 
 @end

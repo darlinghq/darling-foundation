@@ -51,7 +51,7 @@ enum {
 
 @implementation NSXMLParser
 
-- initWithData: (NSData *) data {
+- (instancetype) initWithData: (NSData *) data {
     _data = [data retain];
 
     _bytes = [data bytes];
@@ -71,7 +71,7 @@ enum {
     return self;
 }
 
-- initWithContentsofURL: (NSURL *) url {
+- (instancetype) initWithContentsOfURL: (NSURL *) url {
     NSData *data = [NSData dataWithContentsOfURL: url];
 
     if (data == nil) {

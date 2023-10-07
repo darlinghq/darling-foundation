@@ -87,6 +87,7 @@ FOUNDATION_EXPORT NSString *const NSKeyValueChangeNotificationIsPriorKey;
 
 + (NSSet *)keyPathsForValuesAffectingValueForKey:(NSString *)key;
 + (BOOL)automaticallyNotifiesObserversForKey:(NSString *)key;
++ (void)setKeys:(NSArray *)keys triggerChangeNotificationsForDependentKey:(NSString *)dependentKey;
 - (void)setObservationInfo:(void *)observationInfo;
 - (void *)observationInfo NS_RETURNS_INNER_POINTER;
 

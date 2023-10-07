@@ -35,6 +35,7 @@
 #import <Foundation/NSLock.h>
 #import <Foundation/NSIndexSet.h>
 #import <CoreGraphics/CoreGraphics.h>
+#include <os/lock.h>
 
 static void NSKVOForwardInvocation(id self, SEL _cmd, NSInvocation *invocation);
 static void NSKVONotifyingSetMethodImplementation(NSKVONotifyingInfo *notifyingInfo, SEL selector, IMP newImplementation, NSString *optionalKey);
@@ -854,6 +855,9 @@ static void NSKVODeallocate(id self, SEL _cmd)
 
 @end
 
+static CFMutableDictionaryRef kvoLegacyDependentKeys = NULL;
+static os_unfair_lock kvoLegacyDependentKeysLock = OS_UNFAIR_LOCK_INIT;
+
 @implementation NSObject (NSKeyValueObservingCustomization)
 
 + (NSSet *)keyPathsForValuesAffectingValueForKey:(NSString *)key
@@ -870,7 +874,30 @@ static void NSKVODeallocate(id self, SEL _cmd)
     {
         return (NSSet *)((NSSet * (*)(id, SEL))objc_msgSend(self, action));
     }
-    return [NSSet set];
+
+    // i've checked and verified this is what happens:
+    // if `keyPathsForValuesAffecting<Key>:` exists, it overrides keys set by the deprecated
+    // `setKeys:triggerChangeNotificationsForDependentKey` method. however, when *not* present,
+    // the values set with that deprecated method are returned by this method.
+
+    NSSet* result = [NSSet set];
+
+    os_unfair_lock_lock(&kvoLegacyDependentKeysLock);
+    if (kvoLegacyDependentKeys)
+    {
+        CFDictionaryRef classDict = CFDictionaryGetValue(kvoLegacyDependentKeys, self);
+        if (classDict)
+        {
+            NSArray* keys = CFDictionaryGetValue(classDict, key);
+            if (keys)
+            {
+                result = [NSSet setWithArray: keys];
+            }
+        }
+    }
+    os_unfair_lock_unlock(&kvoLegacyDependentKeysLock);
+
+    return result;
 }
 
 + (BOOL)automaticallyNotifiesObserversForKey:(NSString *)key
@@ -887,6 +914,31 @@ static void NSKVODeallocate(id self, SEL _cmd)
     }
     
     return YES;
+}
+
++ (void)setKeys:(NSArray *)keys triggerChangeNotificationsForDependentKey:(NSString *)dependentKey
+{
+    NSArray* keysCopy = [[keys copy] autorelease];
+    NSString* dependentKeyCopy = [[dependentKey copy] autorelease];
+
+    os_unfair_lock_lock(&kvoLegacyDependentKeysLock);
+
+    if (!kvoLegacyDependentKeys)
+    {
+        kvoLegacyDependentKeys = CFDictionaryCreateMutable(NULL, 0, NULL, &kCFTypeDictionaryValueCallBacks);
+    }
+
+    CFMutableDictionaryRef classDict = (CFMutableDictionaryRef)CFDictionaryGetValue(kvoLegacyDependentKeys, self);
+    if (!classDict)
+    {
+        classDict = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+        CFDictionarySetValue(kvoLegacyDependentKeys, self, classDict);
+        CFRelease(classDict); // owned by `kvoLegacyDependentKeys` now
+    }
+
+    CFDictionarySetValue(classDict, dependentKeyCopy, keysCopy);
+
+    os_unfair_lock_unlock(&kvoLegacyDependentKeysLock);
 }
 
 static CFMutableDictionaryRef _NSKeyValueGlobalObservationInfo = NULL;
