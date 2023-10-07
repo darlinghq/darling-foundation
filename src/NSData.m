@@ -1244,6 +1244,22 @@ static uint8_t base64EncodeLookup[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklm
      NSLog(@"Stub called: _newZeroingDataWithBytes: in NSData(NSData)");
 }
 
+- (dispatch_data_t)_createDispatchData
+{
+    __block dispatch_data_t result = dispatch_data_empty;
+
+    [self enumerateByteRangesUsingBlock: ^(const void *bytes, NSRange byteRange, BOOL *stop)
+    {
+        dispatch_data_t rangeData = dispatch_data_create(bytes + byteRange.location, byteRange.length, NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+        dispatch_data_t oldResult = result;
+        result = dispatch_data_create_concat(result, rangeData);
+        dispatch_release(oldResult);
+        dispatch_release(rangeData);
+    }];
+
+    return result;
+}
+
 @end
 
 
