@@ -266,12 +266,21 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
 - (NSArray *)directoryContentsAtPath:(NSString *)path matchingExtension:(NSString *)extension options:(NSDirectoryEnumerationOptions)options keepExtension:(BOOL)keepExtension error:(NSError **)error
 {
     NSMutableArray *files = [NSMutableArray array];
+    NSError* localError = nil;
     [self _directoryContentsAtPath:path 
                 matchingExtension:extension
                 options:options
                 keepExtension:keepExtension
-                error:error
+                error:&localError
                 toResult:files];
+    if (localError != nil)
+    {
+        if (error)
+        {
+            *error = localError;
+        }
+        return nil;
+    }
     if (options & NSDirectoryEnumerationGenerateURLs)
     {
         return [files sortedArrayUsingComparator:^(NSURL *url1, NSURL *url2){
