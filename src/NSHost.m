@@ -449,6 +449,12 @@ myHostName()
 	  host = [[self alloc] _initWithHostEntry: 0 key: localHostName];
 	  IF_NO_GC([host autorelease];)
 	}
+      // short circuit the lookup for our own hostname so that `+[NSHost currentHost]` works even without a network connection
+      else if ([name isEqualToString: myHostName()] == YES)
+	{
+	  host = [self hostWithAddress: @"127.0.0.1"];
+	  [host _addName: name];
+	}
       else
 	{
 	  struct hostent	*h;
