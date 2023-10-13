@@ -146,7 +146,6 @@ static CFKeyedArchiverUIDRef _NSKeyedArchiverUIDCreateCached(NSKeyedArchiver *ar
 #warning TODO find CFRelease point for UID cache
 }
 
-
 static void _encodeObject(NSKeyedArchiver *archiver, id object, NSString *key)
 {
     BOOL visited = NO;
@@ -155,16 +154,22 @@ static void _encodeObject(NSKeyedArchiver *archiver, id object, NSString *key)
         visited = YES;
     }
 
-    if (archiver->_replacementMap != nil && CFDictionaryContainsKey((CFDictionaryRef)archiver->_replacementMap, object))
+    id replacement = nil;
+
+    if (!CFDictionaryGetValueIfPresent(archiver->_replacementMap, object, &replacement))
     {
-        // TODO
+        replacement = [object replacementObjectForKeyedArchiver:archiver];
+        if (replacement)
+        {
+            [archiver replaceObject:object withObject:replacement];
+        }
     }
 
-    id old = [object replacementObjectForKeyedArchiver:archiver];
-    if (old)
+    if (replacement)
     {
-        [archiver replaceObject:old withObject:object];
+        object = replacement;
     }
+
     Class class = [object classForKeyedArchiver];
     if ([archiver requiresSecureCoding])
     {
@@ -186,6 +191,7 @@ static void _encodeObject(NSKeyedArchiver *archiver, id object, NSString *key)
         {
             // This object has already been encoded
             uidIndex = (int)mapObject;
+            visited = YES;
         }
         else
         {
@@ -561,8 +567,16 @@ static void _release(CFAllocatorRef allocator, const void *value)
             NULL,
             NULL
         };
+        CFDictionaryValueCallBacks valueCallbacks = {
+            0,
+            &_retain,
+            &_release,
+            NULL,
+            NULL,
+        };
         _objRefMap = CFDictionaryCreateMutable(kCFAllocatorDefault, 0, &callbacks, NULL);
         _conditionals = CFDictionaryCreateMutable(kCFAllocatorDefault, 0, &callbacks, NULL);
+        _replacementMap = CFDictionaryCreateMutable(kCFAllocatorDefault, 0, &callbacks, &valueCallbacks);
 
         _containers = [NSMutableArray new];
         NSMutableDictionary *dict = [NSMutableDictionary new];
@@ -1032,6 +1046,11 @@ static size_t _encodeValueOfObjCType(NSKeyedArchiver *self, const char *type, co
     {
         index--;
         id obj = CFArrayGetValueAtIndex((CFArrayRef)_containers, index);
+        if (obj != copyOfObjects)
+        {
+            // this should be impossible
+            DEBUG_BREAK();
+        }
         CFRetain(obj);
         [_containers removeObjectAtIndex:index];
         encodeFinalValue(self, obj, escapeKey(key));
@@ -1082,14 +1101,14 @@ static size_t _encodeValueOfObjCType(NSKeyedArchiver *self, const char *type, co
         [_delegate archiver:self willReplaceObject:object withObject:replacement];
     }
 
-    id objectRef = [(NSMutableDictionary *)_objRefMap objectForKey:object];
-    if (objectRef != nil)
+    id objectRef = nil;
+    if (CFDictionaryGetValueIfPresent(_objRefMap, object, &objectRef))
     {
-        [(NSMutableDictionary *)_objRefMap removeObjectForKey:object];
-        [(NSMutableDictionary *)_objRefMap setObject:objectRef forKey:replacement];
+        CFDictionaryRemoveValue(_objRefMap, object);
+        CFDictionarySetValue(_objRefMap, replacement, objectRef);
     }
 
-    [(NSMutableDictionary *)_objRefMap setObject:replacement forKey:object];
+    CFDictionarySetValue(_replacementMap, object, replacement);
 }
 
 - (void)finishEncoding
