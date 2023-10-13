@@ -295,6 +295,19 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 	return result;
 }
 
+- (BOOL)   writeToURL: (NSURL *) url
+              options: (NSFileWrapperWritingOptions) options
+  originalContentsURL: (NSURL *) originalContentsURL
+                error: (NSError **)error
+{
+	BOOL result = [[self regularFileContents] writeToURL: url
+	                                             options: (options & NSFileWrapperWritingAtomic) != 0 ? NSDataWritingAtomic : 0
+	                                               error: error];
+	if (result && (options & NSFileWrapperWritingWithNameUpdating) != 0) {
+		[NSException raise: NSInvalidArgumentException format: @"TODO: NSFileWrapperWritingWithNameUpdating"];
+	}
+	return result;
+}
 
 - (void) dealloc
 {
