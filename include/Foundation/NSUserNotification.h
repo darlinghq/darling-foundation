@@ -25,10 +25,19 @@
 @interface NSUserNotificationAction : NSObject <NSCopying>
 @end
 
-@interface NSUserNotificationCenter : NSObject
+@protocol NSUserNotificationCenterDelegate <NSObject>
 @end
 
-@protocol NSUserNotificationCenterDelegate <NSObject>
+@interface NSUserNotificationCenter : NSObject {
+    id<NSUserNotificationCenterDelegate> _delegate;
+}
+
+@property(class, readonly, strong) NSUserNotificationCenter *defaultUserNotificationCenter;
+@property(assign) id<NSUserNotificationCenterDelegate> delegate;
+
+- (void)deliverNotification:(NSUserNotification *)notification;
+- (void)removeDeliveredNotification:(NSUserNotification *)notification;
+
 @end
 
 FOUNDATION_EXPORT NSString * const NSUserNotificationDefaultSoundName;

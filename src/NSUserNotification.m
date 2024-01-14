@@ -40,6 +40,27 @@
 @end
 
 @implementation NSUserNotificationCenter
+
+static NSUserNotificationCenter *_defaultUserNotificationCenter = nil;
+
+@synthesize delegate = _delegate;
+
++ (NSUserNotificationCenter *)defaultUserNotificationCenter {
+	if (_defaultUserNotificationCenter == nil) {
+		_defaultUserNotificationCenter = [[NSUserNotificationCenter alloc] init];
+	}
+
+	return _defaultUserNotificationCenter;
+}
+
+- (void)deliverNotification:(NSUserNotification *)notification {
+	NSLog(@"[NSUserNotificationCenter deliverNotification:]");
+}
+
+- (void)removeDeliveredNotification:(NSUserNotification *)notification {
+	NSLog(@"[NSUserNotificationCenter removeDeliveredNotification:]");
+}
+
 @end
 
 NSString * const NSUserNotificationDefaultSoundName = @"DefaultSoundName";
