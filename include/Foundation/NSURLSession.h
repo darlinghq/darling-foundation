@@ -145,9 +145,10 @@ FOUNDATION_EXPORT NSString * const NSURLSessionDownloadTaskResumeData;
 
 @interface NSURLSessionConfiguration : NSObject <NSCopying>
 
-+ (NSURLSessionConfiguration *)defaultSessionConfiguration;
 + (NSURLSessionConfiguration *)ephemeralSessionConfiguration;
 + (NSURLSessionConfiguration *)backgroundSessionConfiguration:(NSString *)identifier;
+
+@property(class, readonly, strong) NSURLSessionConfiguration *defaultSessionConfiguration;
 
 @property (readonly, copy) NSString *identifier;
 @property NSURLRequestCachePolicy requestCachePolicy;
