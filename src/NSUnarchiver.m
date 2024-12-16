@@ -13,6 +13,7 @@ Copyright (C) 2020 Lubos Dolezel
 #include <CoreFoundation/CFSet.h>
 #include <string.h>
 #include <dispatch/dispatch.h>
+#include <objc/runtime.h>
 
 static NSMutableDictionary<NSString*,NSString*>* globalClassNameMap;
 
@@ -722,6 +723,7 @@ static unsigned int roundUp(unsigned int size, unsigned int align);
         case '*':
         case '%':
         case ':':
+        case '#':
         {
             NSString* string;
             if(![self decodeSharedString:&string])
@@ -755,6 +757,11 @@ static unsigned int roundUp(unsigned int size, unsigned int align);
             {
                *((SEL*) data) = sel_registerName(cString);
                free(cString);
+            }
+            else if (ch == '#')
+            {
+                *((Class*) data) = objc_getClass(cString);
+                free(cString);
             }
             break;
         }
