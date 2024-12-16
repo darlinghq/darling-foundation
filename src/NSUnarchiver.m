@@ -725,8 +725,11 @@ static unsigned int roundUp(unsigned int size, unsigned int align);
         {
             NSString* string;
             if(![self decodeString:&string])
-                return NO;
-            
+            {
+                rv = NO;
+                break;
+            }
+
             // Freeing of the string seems to be the responsibilty of the caller.
             // NSCoding implementations of Foundation classes all seem to do this.
             char* cString = malloc(string.length + 1);  // +1 because of null-termination
