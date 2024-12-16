@@ -724,7 +724,7 @@ static unsigned int roundUp(unsigned int size, unsigned int align);
         case ':':
         {
             NSString* string;
-            if(![self decodeString:&string])
+            if(![self decodeSharedString:&string])
             {
                 rv = NO;
                 break;
