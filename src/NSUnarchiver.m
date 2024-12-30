@@ -237,6 +237,12 @@ static unsigned int roundUp(unsigned int size, unsigned int align);
                 object2 = objectAfterAwake;
             
             _sharedObjects[label] = object2;
+
+            // We want to have _sharedObjects be the owner of this object. Whether we allocated it ourselves via [objectClass alloc],
+            // or if a different object was allocated in initWithCoder/awakeAfterUsingCoder, we need to release it, as inserting it
+            // into _sharedObjects doesn't transfer ownership, but increases the retain count further.
+            [object2 release];
+
             NSUDEBUG(@"Saving %p into outObject at %p\n", object2, outObject);
             *outObject = object2;
             
@@ -872,7 +878,13 @@ static unsigned int roundUp(unsigned int size, unsigned int align);
         return;
     }
     
-    [self readType:str data:data];
+    BOOL isObject = str[0] == '@';
+    BOOL didRead = [self readType:str data:data];
+
+    if (didRead && isObject)
+    {
+        [*((id*)data) retain];
+    }
 }
 
 - (void)decodeValuesOfObjCTypes:(const char*)types, ...
@@ -897,8 +909,14 @@ static unsigned int roundUp(unsigned int size, unsigned int align);
     while(*type != '\0')
     {
         void* data = va_arg(argList, void*);
+        BOOL isObject = type[0] == '@';
         NSUDEBUG(@"next type is %c, data is %p\n", *type, data);
-        [self readType:type data:data outType:&type];
+        BOOL didRead = [self readType:type data:data outType:&type];
+
+        if (didRead && isObject)
+        {
+            [*((id*)data) retain];
+        }
     }
     
     va_end (argList);
