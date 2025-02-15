@@ -450,26 +450,26 @@ static inline const char *nextType(const char *type)
 
 - (CGRect)decodeRect
 {
-    CGRect r;
-    [self decodeValuesOfObjCTypes:@encode(CGRect), &r];
-    return r;
+    float x, y, width, height;
+    [self decodeValuesOfObjCTypes:"ffff", &x, &y, &width, &height];
+    return CGRectMake(x, y, width, height);
 }
 
 - (void)encodeRect:(CGRect)r
 {
-    [self encodeValuesOfObjCTypes:@encode(CGRect), &r];
+    [self encodeValuesOfObjCTypes:"ffff", (float)r.origin.x, (float)r.origin.y, (float)r.size.width, (float)r.size.height];
 }
 
 - (CGSize)decodeSize
 {
-    CGSize sz;
-    [self decodeValuesOfObjCTypes:@encode(CGSize), &sz];
-    return sz;
+    float width, height;
+    [self decodeValuesOfObjCTypes:"ff", &width, &height];
+    return CGSizeMake(width, height);
 }
 
 - (void)encodeSize:(CGSize)sz
 {
-    [self encodeValuesOfObjCTypes:@encode(CGSize), &sz];
+    [self encodeValuesOfObjCTypes:"ff", (float)sz.width, (float)sz.height];
 }
 
 - (CGPoint)decodePoint
