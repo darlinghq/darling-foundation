@@ -41,17 +41,6 @@ static void NSThreadInitialize()
     NSMainThread = [NSThread currentThread];
 }
 
-#ifdef APPORTABLE
-extern void __do_backtrace(int, int, int, int(*)(int, void *, char *, int, void *), void *);
-#endif
-
-#ifdef DARLING
-void __do_backtrace(int xxx, ...)
-{
-#	warning Missing __do_backtrace implementation
-}
-#endif
-
 CF_PRIVATE
 @interface _NSThreadPerformInfo : NSObject
 {
@@ -175,19 +164,20 @@ static void NSThreadEnd(NSThread *thread)
     return [callStackReturnAddresses autorelease];
 }
 
-static int array_add_backtrace_step(int depth, void *pc, char *cfname, int offset, void *data) 
-{
-    NSMutableArray *array = (NSMutableArray *)data;
-    NSString *str = [[NSString alloc] initWithFormat:@"%x : (%s+0x%x)", (int)pc, cfname, offset];
-    [array addObject:str];
-    [str release];
-    return 1;
-}
-
 + (NSArray *)callStackSymbols
 {
     NSMutableArray *array = [NSMutableArray array];
-    __do_backtrace(50, 2, 1, &array_add_backtrace_step, array);
+
+    void *callstack[128];
+    int frames = backtrace(callstack, 128);
+    char **strs = backtrace_symbols(callstack, frames);
+
+    for (int i = 1; i < frames; ++i) {
+        [array addObject: [NSString stringWithFormat:@"%s", strs[i]]];
+    }
+
+    free(strs);
+
     return array;
 }
 
