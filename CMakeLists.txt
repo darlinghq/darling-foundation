@@ -249,6 +249,8 @@ set(foundation_sources
 	src/NSScriptCommand.m
 	src/NSScriptCommandDescription.m
 	src/NSScriptClassDescription.m
+	src/NSScriptExecutionContext.m
+	src/NSScriptStandardSuiteCommands.m
 	src/NSScriptSuiteRegistry.m
 	src/NSUserNotification.m
 	src/NSUserScriptTask.m
