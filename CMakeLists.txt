@@ -245,10 +245,13 @@ set(foundation_sources
 	src/NSExtensionContext.m
 	src/NSISO8601DateFormatter.m
 	src/NSScriptObjectSpecifiers.m
+	src/NSScriptCoercionHandler.m
 	src/NSScriptCommand.m
 	src/NSScriptCommandDescription.m
 	src/NSScriptClassDescription.m
+	src/NSScriptSuiteRegistry.m
 	src/NSUserNotification.m
+	src/NSUserScriptTask.m
 	src/NSDateInterval.m
 	src/NSGarbageCollector.m
 	src/NSUnarchiver.m
