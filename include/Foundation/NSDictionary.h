@@ -24,6 +24,7 @@
 - (BOOL)isEqualToDictionary:(NSDictionary *)otherDictionary;
 - (NSEnumerator<ObjectType> *)objectEnumerator;
 - (NSArray<ObjectType> *)objectsForKeys:(NSArray<KeyType> *)keys notFoundMarker:(id)marker;
+- (BOOL)writeToURL:(NSURL*)url error:(NSError**)error;
 - (BOOL)writeToFile:(NSString *)path atomically:(BOOL)useAuxiliaryFile;
 - (BOOL)writeToURL:(NSURL *)url atomically:(BOOL)atomically;
 - (NSArray<KeyType> *)keysSortedByValueUsingSelector:(SEL)comparator;
