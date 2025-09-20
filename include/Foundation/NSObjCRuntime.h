@@ -238,8 +238,14 @@
 #define _CF_TYPED_EXTENSIBLE_ENUM
 #endif
 
+#define _NS_TYPED_ENUM _CF_TYPED_ENUM
 #define _NS_TYPED_EXTENSIBLE_ENUM _CF_TYPED_EXTENSIBLE_ENUM
+
+#define NS_STRING_ENUM _NS_TYPED_ENUM
 #define NS_EXTENSIBLE_STRING_ENUM _NS_TYPED_EXTENSIBLE_ENUM
+
+#define NS_TYPED_ENUM _NS_TYPED_ENUM
+#define NS_TYPED_EXTENSIBLE_ENUM _NS_TYPED_EXTENSIBLE_ENUM
 
 #if (__cplusplus && __cplusplus >= 201103L && (__has_extension(cxx_strong_enums) || __has_feature(objc_fixed_enum))) || (!__cplusplus && __has_feature(objc_fixed_enum))
 #define NS_ENUM(_type, _name) enum _name : _type _name; enum _name : _type
@@ -252,8 +258,6 @@
 #define NS_ENUM(_type, _name) _type _name; enum
 #define NS_OPTIONS(_type, _name) _type _name; enum
 #endif
-
-#define NS_STRING_ENUM CF_STRING_ENUM
 
 FOUNDATION_EXPORT double NSFoundationVersionNumber;
 
