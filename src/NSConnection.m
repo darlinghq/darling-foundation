@@ -51,6 +51,7 @@
 const NSRunLoopMode NSConnectionReplyMode = @"NSConnectionReplyMode";
 const NSNotificationName NSConnectionDidInitializeNotification = @"NSConnectionDidInitializeNotification";
 const NSNotificationName NSConnectionDidDieNotification = @"NSConnectionDidDieNotification";
+NSString *const NSFailedAuthenticationException = @"NSFailedAuthenticationException";
 
 BOOL NSDOLoggingEnabled = NO;
 static atomic_uint lastSequenceNumber = 0;
