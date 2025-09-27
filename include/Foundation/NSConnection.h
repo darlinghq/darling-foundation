@@ -51,6 +51,7 @@
 FOUNDATION_EXPORT const NSRunLoopMode NSConnectionReplyMode;
 FOUNDATION_EXPORT const NSNotificationName NSConnectionDidInitializeNotification;
 FOUNDATION_EXPORT const NSNotificationName NSConnectionDidDieNotification;
+FOUNDATION_EXPORT NSString *const NSFailedAuthenticationException;
 
 // We store info about each released proxy (or rather, each proxy release) as an
 // array with two ints: the id and the release count. This is also the format

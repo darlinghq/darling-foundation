@@ -42,7 +42,6 @@
 // For compatibility, also import concrete name server types.
 #import <Foundation/NSMachBootstrapServer.h>
 
-// #import <Foundation/NSSocketPortNameServer.h>
 @interface NSSocketPortNameServer : NSPortNameServer
 @end
 
