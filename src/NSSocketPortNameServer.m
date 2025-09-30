@@ -17,7 +17,7 @@
  along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#import <Foundation/NSSocketPortNameServer.h>
+#import <Foundation/NSPortNameServer.h>
 #import <Foundation/NSMethodSignature.h>
 #import <Foundation/NSInvocation.h>
 
