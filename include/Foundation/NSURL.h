@@ -95,6 +95,9 @@ FOUNDATION_EXPORT NSString * const NSURLUbiquitousItemPercentDownloadedKey;
 FOUNDATION_EXPORT NSString * const NSURLUbiquitousItemPercentUploadedKey;
 
 typedef NSString * NSURLResourceKey;
+typedef NSString* NSURLUbiquitousItemDownloadingStatus;
+
+FOUNDATION_EXPORT NSURLUbiquitousItemDownloadingStatus const NSURLUbiquitousItemDownloadingStatusNotDownloaded;
 
 typedef NS_OPTIONS(NSUInteger, NSURLBookmarkCreationOptions) {
     NSURLBookmarkCreationPreferFileIDResolution           = ( 1UL << 8 ),
