@@ -172,6 +172,7 @@ typedef NSUInteger NSURLBookmarkFileCreationOptions;
 
 @interface NSString (NSURLUtilities)
 
+- (NSString *)stringByRemovingPercentEncoding;
 - (NSString *)stringByAddingPercentEscapesUsingEncoding:(NSStringEncoding)enc;
 - (NSString *)stringByReplacingPercentEscapesUsingEncoding:(NSStringEncoding)enc;
 
