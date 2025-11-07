@@ -242,6 +242,7 @@ set(foundation_sources
 	src/NSMeasurementFormatter.m
 	src/NSAppleScript.m
 	src/NSMetadata.m
+	src/NSLayoutAnchor.m
 	src/NSLayoutConstraint.m
 	src/NSExtensionContext.m
 	src/NSISO8601DateFormatter.m
