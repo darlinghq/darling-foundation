@@ -2481,6 +2481,11 @@ static BOOL _NSScanStringValue(NSString *self, NSNumericValueType type, NSNumeri
     return [self lengthOfBytesUsingEncoding:__NSDefaultCStringEncoding()];
 }
 
+- (NSString *) stringByRemovingPercentEncoding
+{
+    return [self stringByReplacingPercentEscapesUsingEncoding: NSUTF8StringEncoding];
+}
+
 - (NSString *)stringByAddingPercentEscapesUsingEncoding:(NSStringEncoding)enc
 {
     CFStringEncoding cfEnc = CFStringConvertNSStringEncodingToEncoding(enc);
