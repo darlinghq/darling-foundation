@@ -24,4 +24,12 @@ static NSAppleEventManager* instance = nil;
     NSLog(@"Stub called: %@ in %@", NSStringFromSelector([anInvocation selector]), [self class]);
 }
 
+- (void) setEventHandler: (id) handler
+             andSelector: (SEL) selector
+           forEventClass: (AEEventClass) eventClass
+              andEventID: (AEEventID) eventID
+{
+    printf("STUB %s\n", __PRETTY_FUNCTION__);
+}
+
 @end
