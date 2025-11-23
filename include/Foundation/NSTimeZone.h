@@ -1,5 +1,6 @@
 #import <Foundation/NSObject.h>
 #import <Foundation/NSDate.h>
+#import <Foundation/NSNotification.h>
 
 @class NSString, NSArray, NSDictionary, NSDate, NSData, NSLocale;
 
@@ -12,7 +13,7 @@ typedef NS_ENUM(NSInteger, NSTimeZoneNameStyle) {
     NSTimeZoneNameStyleShortGeneric
 };
 
-FOUNDATION_EXPORT NSString * const NSSystemTimeZoneDidChangeNotification;
+FOUNDATION_EXPORT NSNotificationName const NSSystemTimeZoneDidChangeNotification;
 
 @interface NSTimeZone : NSObject <NSCopying, NSSecureCoding>
 
