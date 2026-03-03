@@ -95,7 +95,7 @@ static NSString * const NSVariantKey = @"NSVariant";
     }
     else
     {
-        comp = (NSComparisonResult)objc_msgSend(lhs, [self selector], rhs);
+        comp = (NSComparisonResult)((NSInteger (*)(id, SEL, id))objc_msgSend)(lhs, [self selector], rhs);
     }
 
     switch (_variant)

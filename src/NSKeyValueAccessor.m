@@ -553,11 +553,20 @@ static id _NSGet ## INFIX ##ValueWithMethod(id obj, SEL cmd, Method method) \
     return [NSNumber numberWith##INFIX:((TYPE(*)(id, Method))method_invoke)(obj, method)]; \
 }
 
+#if defined(__arm64__) || defined(__aarch64__)
+// ARM64 has no stret variant; struct returns use the same calling convention
+#define DEFINE_GET_VALUE_WITH_METHOD(INFIX, TYPE) \
+static id _NSGet ## INFIX ##ValueWithMethod(id obj, SEL cmd, Method method) \
+{ \
+    return [NSValue valueWith##INFIX:((TYPE(*)(id, Method))method_invoke)(obj, method)]; \
+}
+#else
 #define DEFINE_GET_VALUE_WITH_METHOD(INFIX, TYPE) \
 static id _NSGet ## INFIX ##ValueWithMethod(id obj, SEL cmd, Method method) \
 { \
     return [NSValue valueWith##INFIX:((TYPE(*)(id, Method))method_invoke_stret)(obj, method)]; \
 }
+#endif
 
 DEFINE_GET_NUMBER_WITH_METHOD(Char, char)
 DEFINE_GET_NUMBER_WITH_METHOD(UnsignedChar, unsigned char)

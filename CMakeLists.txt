@@ -320,6 +320,12 @@ set_property(
 	LINK_FLAGS " -Wl,-reexported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/reexport_x86_64.exp"
 )
 endif (TARGET_x86_64)
+if (TARGET_ARM64)
+set_property(
+	TARGET Foundation_arm64 APPEND_STRING PROPERTY
+	LINK_FLAGS " -Wl,-reexported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/reexport_arm64.exp"
+)
+endif (TARGET_ARM64)
 
 add_darling_executable(defaults tools/defaults.m)
 target_link_libraries(defaults Foundation)
