@@ -36,7 +36,7 @@ static NSString * const NSSelectorNameKey = @"NSSelectorName";
         return NO;
     }
 
-    return (BOOL)objc_msgSend(target, [self selector], arg);
+    return ((BOOL (*)(id, SEL, id))objc_msgSend)(target, [self selector], arg);
 }
 
 - (id)symbol

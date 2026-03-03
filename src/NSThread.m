@@ -394,7 +394,7 @@ static void *__NSThread__main__(NSThread *thread)
 {
     if (_target && _selector)
     {
-        objc_msgSend(_target, _selector, _argument);
+        ((void (*)(id, SEL, id))objc_msgSend)(_target, _selector, _argument);
     }
 }
 
@@ -471,7 +471,7 @@ static void NSThreadPerform(id self, SEL aSelector, NSThread *thr, id arg, BOOL 
 {
     if ([NSThread currentThread] == thr && waitUntilDone)
     {
-        objc_msgSend(self, aSelector, arg);
+        ((void (*)(id, SEL, id))objc_msgSend)(self, aSelector, arg);
         return;
     }
     BOOL signalled = NO;
