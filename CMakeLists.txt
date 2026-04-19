@@ -67,7 +67,8 @@ set(foundation_sources
 	src/NSDictionary.m
 	src/NSDirectoryEnumerator.m
 	src/NSDistributedLock.m
-	src/NSDistributedNotificationCenter.m	src/NSEqualityPredicateOperator.m
+	src/NSDistributedNotificationCenter.m
+	src/NSEqualityPredicateOperator.m
 	src/NSException.m
 	src/NSExpression.m
 	src/NSExternals.m

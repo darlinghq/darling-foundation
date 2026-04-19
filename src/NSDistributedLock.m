@@ -1,3 +1,22 @@
+/*
+ This file is part of Darling.
+
+ Copyright (C) 2026 redminote11tech
+
+ Darling is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ Darling is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with Darling.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #import <Foundation/NSDistributedLock.h>
 #import <Foundation/NSString.h>
 #import <Foundation/NSDate.h>
@@ -109,12 +128,7 @@
     if (stat(cPath, &st) == 0) {
         // Return the modification or creation time
         // Apple docs say "date the lock was created"
-#ifdef __APPLE__
         struct timespec ts = st.st_ctimespec;
-#else
-        // Use mtime on Linux/others as a close approximation of creation time for directories
-        struct timespec ts = st.st_mtim;
-#endif
         return [NSDate dateWithTimeIntervalSince1970:(NSTimeInterval)ts.tv_sec + ((NSTimeInterval)ts.tv_nsec / 1000000000.0)];
     }
     
