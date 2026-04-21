@@ -63,7 +63,7 @@
 
 - (BOOL)tryLock {
     if (_isLocked) {
-        return YES; // We already hold it
+        return NO; // Apple's implementation returns NO if called twice on the same lock object
     }
 
     // Atomically create the directory
