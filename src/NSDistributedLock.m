@@ -85,7 +85,6 @@
 
 - (void)unlock {
     if (!_isLocked) {
-        [NSException raise:NSGenericException format:@"NSDistributedLock: Attempt to unlock a lock not held by this instance (path: %@)", _path];
         return;
     }
 
