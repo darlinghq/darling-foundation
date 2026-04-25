@@ -89,14 +89,7 @@
     }
 
     const char *cPath = [_path fileSystemRepresentation];
-    if (rmdir(cPath) != 0) {
-        // It's possible another process forcefully broke our lock
-        if (errno == ENOENT) {
-             _isLocked = NO;
-             return;
-        }
-        [NSException raise:NSGenericException format:@"NSDistributedLock: Failed to remove lock directory at path: %@, error: %s", _path, strerror(errno)];
-    }
+    rmdir(cPath); // Ignore errors, as Apple's implementation does not raise exceptions here either
 
     _isLocked = NO;
 }
