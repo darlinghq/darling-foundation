@@ -71,7 +71,7 @@ NS_AUTOMATED_REFCOUNT_WEAK_UNAVAILABLE
     id _delegate;
     NSUInteger _flags;
     uint32_t _machPort;
-    NSUInteger _reserved;
+    int32_t _reserved;
 }
 
 + (NSPort *) portWithMachPort: (uint32_t) machPort;

@@ -11,6 +11,7 @@
 #import <Foundation/NSArray.h>
 #import <Foundation/NSPort.h>
 #import <Foundation/NSNotification.h>
+#import <Foundation/NSTimer.h>
 #import "CFInternal.h"
 #import <libkern/OSAtomic.h>
 
@@ -26,7 +27,7 @@ typedef struct {
     CFRunLoopTimerRef timer;
     NSArray<NSRunLoopMode> *modes;
     int retainCount;
-    NSMutableArray *allTimers;
+    NSMutableArray<NSTimer*> *allTimers;
 } NSDelayedPerformer;
 
 static const void *NSDelayedPerformerRetain(const void *info)
@@ -44,7 +45,7 @@ static void NSDelayedPerformerRelease(const void *info)
         [performer->object release];
         [performer->argument release];
         @synchronized(performer->allTimers) {
-            [performer->allTimers removeObject: performer->timer];
+            [performer->allTimers removeObject: (NSTimer*)performer->timer];
         }
         [performer->allTimers release];
         free(performer);

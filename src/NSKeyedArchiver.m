@@ -156,7 +156,7 @@ static void _encodeObject(NSKeyedArchiver *archiver, id object, NSString *key)
 
     id replacement = nil;
 
-    if (!CFDictionaryGetValueIfPresent(archiver->_replacementMap, object, &replacement))
+    if (!CFDictionaryGetValueIfPresent(archiver->_replacementMap, object, (const void**)&replacement))
     {
         replacement = [object replacementObjectForKeyedArchiver:archiver];
         if (replacement)
@@ -1102,7 +1102,7 @@ static size_t _encodeValueOfObjCType(NSKeyedArchiver *self, const char *type, co
     }
 
     id objectRef = nil;
-    if (CFDictionaryGetValueIfPresent(_objRefMap, object, &objectRef))
+    if (CFDictionaryGetValueIfPresent(_objRefMap, object, (const void**)&objectRef))
     {
         CFDictionaryRemoveValue(_objRefMap, object);
         CFDictionarySetValue(_objRefMap, replacement, objectRef);

@@ -14,6 +14,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #import <Foundation/NSFileManager.h>
 #import <Foundation/NSAutoreleasePool.h>
 #import <Foundation/NSData.h>
+#import <Foundation/NSDate.h>
 #import <Foundation/NSException.h>
 
 @interface NSFileWrapperFile : NSFileWrapper {
@@ -47,7 +48,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 {
     [_path release];
     _path = [path copy];
-    _fileAttributes = [attrs retain];
+    _fileAttributes = [[attrs mutableCopy] retain];
     return attrs != nil;
 }
 

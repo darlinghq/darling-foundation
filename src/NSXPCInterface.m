@@ -84,9 +84,9 @@ extern const char* _protocol_getMethodTypeEncoding(Protocol* proto, SEL sel, BOO
         _parameterInterfaces = [NSMutableArray new];
         _parameterXPCWhitelist = [NSMutableArray new];
         for (NSUInteger i = 2; i < parameterCount; ++i) {
-            [_parameterClassesWhitelist addObject: [NSNull null]];
-            [_parameterInterfaces addObject: [NSNull null]];
-            [_parameterXPCWhitelist addObject: [NSNull null]];
+            [_parameterClassesWhitelist addObject: (NSSet<Class>*)[NSNull null]];
+            [_parameterInterfaces addObject: (NSXPCInterface*)[NSNull null]];
+            [_parameterXPCWhitelist addObject: (Class)[NSNull null]];
         }
 
         if (_replyBlockSignature) {
@@ -95,9 +95,9 @@ extern const char* _protocol_getMethodTypeEncoding(Protocol* proto, SEL sel, BOO
             _replyParameterXPCWhitelist = [NSMutableArray new];
             parameterCount = _replyBlockSignature.numberOfArguments;
             for (NSUInteger i = 1; i < parameterCount; ++i) {
-                [_replyParameterClassesWhitelist addObject: [NSNull null]];
-                [_replyParameterInterfaces addObject: [NSNull null]];
-                [_replyParameterXPCWhitelist addObject: [NSNull null]];
+                [_replyParameterClassesWhitelist addObject: (NSSet<Class>*)[NSNull null]];
+                [_replyParameterInterfaces addObject: (NSXPCInterface*)[NSNull null]];
+                [_replyParameterXPCWhitelist addObject: (Class)[NSNull null]];
             }
         }
 
@@ -286,7 +286,7 @@ extern const char* _protocol_getMethodTypeEncoding(Protocol* proto, SEL sel, BOO
 - (xpc_type_t) XPCTypeForSelector: (SEL)selector argumentIndex: (NSUInteger)argumentIndex ofReply: (BOOL)isReply
 {
     _NSXPCInterfaceMethodInfo* info = nil;
-    NSMutableArray<Class>* target = nil;
+    NSMutableArray<NSSet<Class>*>* target = nil;
 
     @synchronized(self) {
         info = _methods[NSStringFromSelector(selector)];

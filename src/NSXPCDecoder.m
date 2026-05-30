@@ -188,7 +188,7 @@ static BOOL findObject(
     // these ones that have their own "if" conditions require the whole marker to be checked because they're differentiated based on length
     if (marker == NSXPC_FLOAT32 || marker == NSXPC_FLOAT64 || marker == NSXPC_UINT64) {
         [self _validateAllowedClass: [NSNumber class] forKey: @"<no key>" allowingInvocations: YES];
-        result = _NSXPCSerializationNumberForObject(&_deserializer, object);
+        result = (id)_NSXPCSerializationNumberForObject(&_deserializer, object);
     } else {
         // for everything else, the type is the only thing that differentiates them
         switch (marker & 0xf0) {
@@ -196,7 +196,7 @@ static BOOL findObject(
             case NSXPC_FALSE: // fallthrough
             case NSXPC_INTEGER: {
                 [self _validateAllowedClass: [NSNumber class] forKey: @"<no key>" allowingInvocations: YES];
-                result = _NSXPCSerializationNumberForObject(&_deserializer, object);
+                result = (id)_NSXPCSerializationNumberForObject(&_deserializer, object);
             } break;
 
             case NSXPC_NULL: {
@@ -205,12 +205,12 @@ static BOOL findObject(
 
             case NSXPC_DATA: {
                 [self _validateAllowedClass: [NSData class] forKey: @"<no key>" allowingInvocations: YES];
-                result = _NSXPCSerializationDataForObject(&_deserializer, object);
+                result = (id)_NSXPCSerializationDataForObject(&_deserializer, object);
             } break;
 
             case NSXPC_STRING: {
                 [self _validateAllowedClass: [NSString class] forKey: @"<no key>" allowingInvocations: YES];
-                result = _NSXPCSerializationStringForObject(&_deserializer, object);
+                result = (id)_NSXPCSerializationStringForObject(&_deserializer, object);
             } break;
 
             case NSXPC_DICT: {

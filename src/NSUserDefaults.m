@@ -79,7 +79,7 @@ static void initQueues() {
     // set interval
     dispatch_source_set_timer(_synchronizeTimer, dispatch_time(DISPATCH_TIME_NOW, SYNC_INTERVAL * NSEC_PER_SEC), SYNC_INTERVAL * NSEC_PER_SEC, 0);
 
-    NSString* appName = APP_NAME;
+    CFStringRef appName = APP_NAME;
     dispatch_source_set_event_handler(_synchronizeTimer, ^{
         CFPreferencesAppSynchronize(appName);
     });

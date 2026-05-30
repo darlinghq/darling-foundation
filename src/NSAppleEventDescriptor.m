@@ -1,5 +1,7 @@
 #import <Foundation/NSObject.h>
 
+#import <Foundation/NSInvocation.h>
+
 // DUMMY
 
 @interface NSAppleEventDescriptor : NSObject

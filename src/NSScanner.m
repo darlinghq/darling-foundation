@@ -120,9 +120,9 @@ static inline NSUInteger skipLeading(unichar** ptrRef, NSUInteger length, NSChar
 - (BOOL)scanInteger:(NSInteger *)value
 {
     if (sizeof(NSInteger) == sizeof(int)) {
-        return [self scanInt:value];
+        return [self scanInt:(int*)value];
     } else if (sizeof(NSInteger) == sizeof(long long)) {
-        return [self scanLongLong:value];
+        return [self scanLongLong:(long long*)value];
     } else {
         DEBUG_BREAK(); // unimplemented
     }

@@ -19,6 +19,8 @@
 
 #import <Foundation/NSScriptClassDescription.h>
 
+#import <Foundation/NSInvocation.h>
+
 @implementation NSScriptClassDescription
 
 - (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector

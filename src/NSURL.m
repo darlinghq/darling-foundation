@@ -112,7 +112,7 @@ OBJC_PROTOCOL_IMPL_POP
 {
     if (self == [NSURL class])
     {
-        return (NSURL *)CFURLCreateWithString(kCFAllocatorDefault, @"", NULL);
+        return (NSURL *)CFURLCreateWithString(kCFAllocatorDefault, CFSTR(""), NULL);
     }
     else
     {
@@ -573,7 +573,7 @@ OBJC_PROTOCOL_IMPL_PUSH
     if ([self class] == [NSURL class])
     {
 		[self release];
-        self = CFURLCreateWithString(kCFAllocatorDefault, (CFStringRef)string, [url _cfurl]);
+        self = (NSURL*)CFURLCreateWithString(kCFAllocatorDefault, (CFStringRef)string, [url _cfurl]);
     }
     else
     {
