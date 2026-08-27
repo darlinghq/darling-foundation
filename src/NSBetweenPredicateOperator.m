@@ -39,15 +39,15 @@
 
     SEL comp = [self selector];
 
-    if ((NSComparisonResult)objc_msgSend(upperBound, comp, lowerBound) == NSOrderedAscending)
+    if ((NSComparisonResult)((NSInteger (*)(id, SEL, id))objc_msgSend)(upperBound, comp, lowerBound) == NSOrderedAscending)
     {
         id temp = upperBound;
         upperBound = lowerBound;
         lowerBound = temp;
     }
 
-    if ((NSComparisonResult)objc_msgSend(upperBound, comp, obj) ==  NSOrderedAscending ||
-        (NSComparisonResult)objc_msgSend(obj, comp, lowerBound) ==  NSOrderedAscending)
+    if ((NSComparisonResult)((NSInteger (*)(id, SEL, id))objc_msgSend)(upperBound, comp, obj) ==  NSOrderedAscending ||
+        (NSComparisonResult)((NSInteger (*)(id, SEL, id))objc_msgSend)(obj, comp, lowerBound) ==  NSOrderedAscending)
     {
         return NO;
     }

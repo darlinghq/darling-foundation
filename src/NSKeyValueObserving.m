@@ -304,7 +304,7 @@ static Class _NSKVOClass(id self, SEL _cmd)
     else
     {
         Method originalClassMethod = class_getInstanceMethod(ret, @selector(class));
-        return method_invoke(self, originalClassMethod);
+        return ((id (*)(id, Method))method_invoke)(self, originalClassMethod);
     }
 }
 
@@ -483,7 +483,7 @@ id __NSKeyValueRetainedObservationInfoForObject(NSObject *object, NSKeyValueCont
     if (containerClass != nil)
     {
         IMP cachedIMP = containerClass.cachedObservationInfoImplementation;
-        observationInfo = cachedIMP(object, @selector(observationInfo));
+        observationInfo = ((id (*)(id, SEL))cachedIMP)(object, @selector(observationInfo));
     }
     else
     {
@@ -734,7 +734,7 @@ static void NSKVODeallocate(id self, SEL _cmd)
     NSArray *observances = [[observationInfo observances] retain];
     struct objc_super super = {self, class_getSuperclass(object_getClass(self))};
     const char *name = object_getClassName(self);
-    (void)(void (*)(id, SEL))objc_msgSendSuper(&super, _cmd);
+    ((void (*)(struct objc_super *, SEL))objc_msgSendSuper)(&super, _cmd);
     if (observances.count > 0)
     {
         NSKVODeallocateBreak(self, name);
@@ -872,7 +872,7 @@ static os_unfair_lock kvoLegacyDependentKeysLock = OS_UNFAIR_LOCK_INIT;
     [methodName release];
     if ([self respondsToSelector:action])
     {
-        return (NSSet *)((NSSet * (*)(id, SEL))objc_msgSend(self, action));
+        return ((NSSet * (*)(id, SEL))objc_msgSend)(self, action);
     }
 
     // i've checked and verified this is what happens:
@@ -1209,7 +1209,7 @@ static void NSKVOForwardInvocation(id self, SEL _cmd, NSInvocation *invocation)
             .super_class = class_getSuperclass(object_getClass(self))
 #endif
         };
-        (void)(void (*)(id, SEL))objc_msgSendSuper(&super, _cmd);
+        ((void (*)(struct objc_super *, SEL))objc_msgSendSuper)(&super, _cmd);
     }
 }
 
@@ -1540,7 +1540,7 @@ static BOOL __NSKeyValueCheckObservationInfoForPendingNotification(NSObject *ori
     NSKeyValueContainerClass *kvcon = observance.property.containerClass;
     if (kvcon != nil)
     {
-        observationInfo = kvcon.cachedObservationInfoImplementation(originalObservable, @selector(observationInfo));
+        observationInfo = ((id (*)(id, SEL))kvcon.cachedObservationInfoImplementation)(originalObservable, @selector(observationInfo));
     }
     else
     {
