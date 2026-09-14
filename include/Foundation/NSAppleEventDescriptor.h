@@ -19,7 +19,7 @@ typedef int DescType;
 struct AEDesc;
 */
 
-@interface NSAppleEventDescriptor : NSObject
+@interface NSAppleEventDescriptor : NSObject <NSCopying>
 
 + (NSAppleEventDescriptor *)appleEventWithEventClass:(AEEventClass)eventClass
                                              eventID:(AEEventID)eventID
