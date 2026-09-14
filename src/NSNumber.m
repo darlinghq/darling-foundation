@@ -731,9 +731,26 @@ static inline id newDecodedNumber(NSCoder *coder)
     return (id)CFNumberCreate(kCFAllocatorDefault, kCFNumberFloatType, &val);
 }
 
+// CoreFoundation's private 128-bit storage (CFNumber.c kCFNumberSInt128Type / CFSInt128Struct), which
+// keeps unsigned values above INT64_MAX distinct from negative ones, as on macOS.
+enum { kCFNumberSInt128Type = 17 };
+typedef struct { int64_t high; uint64_t low; } CFSInt128Value;
+_Static_assert(sizeof(CFSInt128Value) == 16, "CFSInt128Struct layout");
+
+static CFNumberRef createUnsignedNumber(uint64_t val)
+{
+    if (val <= INT64_MAX)
+    {
+        SInt64 v = val;
+        return CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt64Type, &v);
+    }
+    CFSInt128Value v128 = { 0, val };
+    return CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt128Type, &v128);
+}
+
 - (id)initWithUnsignedLongLong:(unsigned long long)val
 {
-    return (id)CFNumberCreate(kCFAllocatorDefault, kCFNumberLongLongType, &val);
+    return (id)createUnsignedNumber(val);
 }
 
 - (id)initWithLongLong:(long long)val
@@ -743,8 +760,7 @@ static inline id newDecodedNumber(NSCoder *coder)
 
 - (id)initWithUnsignedLong:(unsigned long)val
 {
-    SInt64 v = val;
-    return (id)CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt64Type, &v);
+    return (id)createUnsignedNumber(val);
 }
 
 - (id)initWithLong:(long)val
@@ -754,8 +770,7 @@ static inline id newDecodedNumber(NSCoder *coder)
 
 - (id)initWithUnsignedInteger:(NSUInteger)val
 {
-    SInt64 v = val; // this is valid only on iOS. On MacOS where NSUInteger is 64 bits, this will produce incorrect behavior.
-    return (id)CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt64Type, &v);
+    return (id)createUnsignedNumber(val);
 }
 
 - (id)initWithInteger:(NSInteger)val
