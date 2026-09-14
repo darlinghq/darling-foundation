@@ -1,0 +1,14 @@
+---
+# Swift API notes for Darling's Foundation (private Swift-overlay build SDK).
+# SwiftBridge tells the Clang importer which Swift value types the Objective-C classes bridge to, so
+# APIs taking or returning them import with the Swift types (NSString * -> String).
+Name: Foundation
+Classes:
+- Name: NSString
+  SwiftBridge: Swift.String
+- Name: NSArray
+  SwiftBridge: Swift.Array
+- Name: NSDictionary
+  SwiftBridge: Swift.Dictionary
+- Name: NSSet
+  SwiftBridge: Swift.Set
