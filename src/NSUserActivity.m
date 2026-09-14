@@ -21,6 +21,8 @@
 #import <Foundation/NSMethodSignature.h>
 #import <Foundation/NSInvocation.h>
 
+NSString * const NSUserActivityTypeBrowsingWeb = @"NSUserActivityTypeBrowsingWeb";
+
 @implementation NSUserActivity
 
 - (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector

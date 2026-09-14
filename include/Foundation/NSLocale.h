@@ -21,6 +21,8 @@ FOUNDATION_EXPORT NSString * const NSLocaleExemplarCharacterSet;
 FOUNDATION_EXPORT NSString * const NSLocaleCalendar;
 FOUNDATION_EXPORT NSString * const NSLocaleCollationIdentifier;
 FOUNDATION_EXPORT NSString * const NSLocaleUsesMetricSystem;
+FOUNDATION_EXPORT NSString * const NSLocaleLanguageConfidenceHigh;
+FOUNDATION_EXPORT NSString * const NSLocaleLanguageConfidenceMedium;
 FOUNDATION_EXPORT NSString * const NSLocaleMeasurementSystem;
 FOUNDATION_EXPORT NSString * const NSLocaleDecimalSeparator;
 FOUNDATION_EXPORT NSString * const NSLocaleGroupingSeparator;
