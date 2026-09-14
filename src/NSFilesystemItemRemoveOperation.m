@@ -7,6 +7,7 @@
 
 #import "NSFilesystemItemRemoveOperation.h"
 #import <ftw.h>
+#import <sys/stat.h>
 #import <errno.h>
 #import <unistd.h>
 #import <stdlib.h>
@@ -96,16 +97,27 @@ static int NSFilesystemItemRemoveOperationFunction(const char *path, const struc
 {
     @autoreleasepool
     {
-        // extern int _nftw_context(const char *path, int (*fn)(const char *, const struct stat *, int, struct FTW *, void *), int nfds, int ftwflags, void *ctx);
         ctx = self;
 
-        int err = nftw(
-            [_removePath cString],
-            NSFilesystemItemRemoveOperationFunction,
-            1, // ignored by the implementation, but values less than 1 and
-               // more than OPEN_MAX result in EINVAL
-            FTW_DEPTH
-        );
+        const char *path = [_removePath fileSystemRepresentation];
+        struct stat st;
+        int err;
+        if (lstat(path, &st) == 0 && !S_ISDIR(st.st_mode))
+        {
+            // nftw() rejects a non-directory root with ENOTDIR, so remove files and symlinks directly.
+            err = NSFilesystemItemRemoveOperationFunction(path, &st, FTW_F, NULL);
+        }
+        else
+        {
+            // FTW_PHYS: remove symlinks inside the tree instead of descending into what they point to.
+            err = nftw(
+                path,
+                NSFilesystemItemRemoveOperationFunction,
+                1, // ignored by the implementation, but values less than 1 and
+                   // more than OPEN_MAX result in EINVAL
+                FTW_DEPTH | FTW_PHYS
+            );
+        }
 
         ctx = NULL;
         if (_error == nil && err != 0)
