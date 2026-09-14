@@ -313,8 +313,13 @@ add_separated_framework(Foundation
 		CFNetwork_firstpass
 		xml2
 	LINK_FLAGS " -Wl,-reexport_library,${CMAKE_BINARY_DIR}/src/external/corefoundation/CoreFoundation \
-				-Wl,-reexport_library,${CMAKE_BINARY_DIR}/src/external/objc4/runtime/libobjc.A.dylib"
+				-Wl,-reexport_library,${CMAKE_BINARY_DIR}/src/external/objc4/runtime/libobjc.A.dylib \
+				-Wl,-reexport_library,${CMAKE_SOURCE_DIR}/src/external/swift/libswiftFoundation.dylib"
 )
+
+# Since macOS 14 the Swift Foundation overlay is part of Foundation.framework, so apps bind symbols such as
+# $sSS10FoundationE19_bridgeToObjectiveCSo8NSStringCyF to Foundation. Re-exporting the overlay from
+# src/external/swift (installed as /usr/lib/swift/libswiftFoundation.dylib) makes those binds resolve.
 
 # if (TARGET_i386)
 # set_property(
