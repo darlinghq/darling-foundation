@@ -39,6 +39,7 @@
 #import <Foundation/NSProgress.h>
 #import "NSProgressInternal.h"
 #import "NSXPCCoderInternal.h"
+#import <CoreFoundation/NSObjCRuntimeInternal.h>
 
 CF_PRIVATE
 os_log_t nsxpc_get_log(void) {
@@ -581,7 +582,7 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
     if (parameterCount > 2) {
         for (NSUInteger i = 0; i < parameterCount - 2; ++i) {
             @autoreleasepool {
-                const char* paramType = [signature getArgumentTypeAtIndex: i + 2];
+                const char* paramType = stripQualifiersAndComments([signature getArgumentTypeAtIndex: i + 2]);
                 size_t paramTypeLen = strlen(paramType);
 
                 if (paramTypeLen > 1 && paramType[0] == '@' && paramType[1] == '?') {
@@ -611,7 +612,7 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
 
                     blockSig = [NSMethodSignature signatureWithObjCTypes: rawBlockSig];
 
-                    if (blockSig.methodReturnType[0] != 'v') {
+                    if (stripQualifiersAndComments(blockSig.methodReturnType)[0] != 'v') {
                         [NSException raise: NSInvalidArgumentException format: @"Reply block for %s must return void", sel_getName(selector)];
                     }
 
@@ -673,7 +674,8 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
 
     // methods are usually required to return void;
     // the only other thing they can return is NSProgress, and that's only when they have reply blocks
-    if (signature.methodReturnType[0] != 'v') {
+    // (oneway void methods are encoded "Vv")
+    if (stripQualifiersAndComments(signature.methodReturnType)[0] != 'v') {
         if (replyInfo) {
             Class retClass = [proxy._remoteInterface _returnClassForSelector: selector];
             if (!retClass || ![retClass isSubclassOfClass: [NSProgress class]]) {
@@ -947,7 +949,7 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
         if (parameterCount > 2) {
             for (NSUInteger i = 0; i < parameterCount - 2; ++i) {
                 @autoreleasepool {
-                    const char* paramType = [signature getArgumentTypeAtIndex: i + 2];
+                    const char* paramType = stripQualifiersAndComments([signature getArgumentTypeAtIndex: i + 2]);
                     size_t paramTypeLen = strlen(paramType);
 
                     if (paramTypeLen > 1 && paramType[0] == '@' && paramType[1] == '?') {
@@ -995,7 +997,7 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
                                 if (parameterCount > 1) {
                                     for (NSUInteger i = 0; i < parameterCount - 1; ++i) {
                                         @autoreleasepool {
-                                            const char* paramType = [invocation.methodSignature getArgumentTypeAtIndex: i + 1];
+                                            const char* paramType = stripQualifiersAndComments([invocation.methodSignature getArgumentTypeAtIndex: i + 1]);
                                             size_t paramTypeLen = strlen(paramType);
 
                                             if (paramTypeLen > 0 && paramType[0] == '@') {
@@ -1058,7 +1060,7 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
 
     if (progressShouldBecomeCurrent) {
         [progress resignCurrent];
-    } else if (signature.methodReturnType[0] == '@') {
+    } else if (stripQualifiersAndComments(signature.methodReturnType)[0] == '@') {
         NSProgress* ret = nil;
         [invocation getReturnValue: &ret];
         if ([ret isKindOfClass: [NSProgress class]]) {
