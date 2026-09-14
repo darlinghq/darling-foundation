@@ -537,6 +537,9 @@ NSString *const NSUndoManagerDidRedoChangeNotification =
             [[_NSUndoHandlerAction alloc] initWithTarget: target handler: undoHandler];
     [_currentGroup addInvocation: (NSInvocation *) action];
     [action release];
+
+    if (_state == NSUndoManagerNormal)
+        [_redoStack removeAllObjects];
 }
 
 @end

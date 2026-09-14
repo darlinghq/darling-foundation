@@ -445,6 +445,19 @@ static BOOL _getUIDFromData(uint8_t *ptr, NSUInteger *returnVal)
     return YES;
 }
 
+// A class is allowed if it is one of the allowed classes or a subclass of one.
+static BOOL _classIsAllowed(Class class, NSSet *allowedClasses)
+{
+    for (Class allowedClass in allowedClasses)
+    {
+        if ([class isSubclassOfClass:allowedClass])
+        {
+            return YES;
+        }
+    }
+    return NO;
+}
+
 static id _decodeObjectBinary(NSKeyedUnarchiver *unarchiver, NSUInteger uid1) NS_RETURNS_RETAINED
 {
     uint64_t voffset = unarchiver->_offsetData->valueOffset;
@@ -571,7 +584,7 @@ static id _decodeObjectBinary(NSKeyedUnarchiver *unarchiver, NSUInteger uid1) NS
         if ([unarchiver requiresSecureCoding])
         {
             NSSet *allowedClassSet = [unarchiver allowedClasses];
-            if (![allowedClassSet containsObject:class]) {
+            if (!_classIsAllowed(class, allowedClassSet)) {
                 exception = [NSException exceptionWithName:NSInvalidUnarchiveOperationException
                                         reason:[NSString stringWithFormat:@"%@ was unexpected. The expected classes are %@", className, allowedClassSet]
                                       userInfo: @{@"__NSCoderInternalErrorCode" : @4864}];
@@ -725,7 +738,7 @@ static id _decodeObjectXML(NSKeyedUnarchiver *unarchiver, NSString *key)
     if ([unarchiver requiresSecureCoding])
     {
         NSSet *allowedClassSet = [unarchiver allowedClasses];
-        if (![allowedClassSet containsObject:class]) {
+        if (!_classIsAllowed(class, allowedClassSet)) {
             [[NSException exceptionWithName:NSInvalidUnarchiveOperationException
                                     reason:[NSString stringWithFormat:@"%@ was unexpected. The expected classes are %@", className, allowedClassSet]
                                     userInfo: @{@"__NSCoderInternalErrorCode" : @4864} ] raise];
@@ -1813,8 +1826,9 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 
 @end
 
-// Decodes the root object and checks that it is an instance of one of the given
-// classes. Objects nested inside the root aren't class-checked.
+// Decodes the root object with secure coding, as on macOS: every decoded object must be of
+// one of the given classes or a property list class, and the root must be an instance of one
+// of the given classes.
 @implementation NSKeyedUnarchiver (NSUnarchivingOfClasses)
 
 static NSError *unarchivingError(NSInteger code, NSString *description)
@@ -1828,17 +1842,22 @@ static NSError *unarchivingError(NSInteger code, NSString *description)
 {
     if (error)
         *error = nil;
-    if (data == nil) {
+    if (data == nil || [classes count] == 0) {
         if (error)
             *error = unarchivingError(4864 /* NSCoderReadCorruptError */, @"The data isn't in the correct format.");
         return nil;
     }
 
+    NSMutableSet *decodableClasses = [NSMutableSet setWithSet: classes];
+    [decodableClasses addObjectsFromArray: @[ [NSArray class], [NSDictionary class], [NSString class],
+                                              [NSNumber class], [NSData class], [NSDate class] ]];
+
     id object = nil;
     NSKeyedUnarchiver *unarchiver = nil;
     @try {
         unarchiver = [[NSKeyedUnarchiver alloc] initForReadingWithData: data];
-        object = [[unarchiver decodeObjectForKey: NSKeyedArchiveRootObjectKey] retain];
+        [unarchiver setRequiresSecureCoding: YES];
+        object = [[unarchiver decodeObjectOfClasses: decodableClasses forKey: NSKeyedArchiveRootObjectKey] retain];
         [unarchiver finishDecoding];
     } @catch (NSException *exception) {
         [object release];
@@ -1854,7 +1873,7 @@ static NSError *unarchivingError(NSInteger code, NSString *description)
         return nil;
     }
 
-    BOOL allowed = (classes == nil);
+    BOOL allowed = NO;
     for (Class cls in classes) {
         if ([object isKindOfClass: cls]) {
             allowed = YES;
