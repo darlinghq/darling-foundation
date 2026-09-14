@@ -1812,3 +1812,69 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 }
 
 @end
+
+// Decodes the root object and checks that it is an instance of one of the given
+// classes. Objects nested inside the root aren't class-checked.
+@implementation NSKeyedUnarchiver (NSUnarchivingOfClasses)
+
+static NSError *unarchivingError(NSInteger code, NSString *description)
+{
+    return [NSError errorWithDomain: NSCocoaErrorDomain
+                               code: code
+                           userInfo: @{ NSLocalizedDescriptionKey : description }];
+}
+
++ (id)unarchivedObjectOfClasses:(NSSet *)classes fromData:(NSData *)data error:(NSError **)error
+{
+    if (error)
+        *error = nil;
+    if (data == nil) {
+        if (error)
+            *error = unarchivingError(4864 /* NSCoderReadCorruptError */, @"The data isn't in the correct format.");
+        return nil;
+    }
+
+    id object = nil;
+    NSKeyedUnarchiver *unarchiver = nil;
+    @try {
+        unarchiver = [[NSKeyedUnarchiver alloc] initForReadingWithData: data];
+        object = [[unarchiver decodeObjectForKey: NSKeyedArchiveRootObjectKey] retain];
+        [unarchiver finishDecoding];
+    } @catch (NSException *exception) {
+        [object release];
+        object = nil;
+        if (error)
+            *error = unarchivingError(4864 /* NSCoderReadCorruptError */, [exception reason] ?: @"The data couldn't be read because it isn't in the correct format.");
+    }
+    [unarchiver release];
+
+    if (object == nil) {
+        if (error && *error == nil)
+            *error = unarchivingError(4865 /* NSCoderValueNotFoundError */, @"The data doesn't contain a root object.");
+        return nil;
+    }
+
+    BOOL allowed = (classes == nil);
+    for (Class cls in classes) {
+        if ([object isKindOfClass: cls]) {
+            allowed = YES;
+            break;
+        }
+    }
+    if (!allowed) {
+        if (error)
+            *error = unarchivingError(4864 /* NSCoderReadCorruptError */, [NSString stringWithFormat: @"The root object's class %@ isn't one of the allowed classes.", [object class]]);
+        [object release];
+        return nil;
+    }
+    return [object autorelease];
+}
+
++ (id)unarchivedObjectOfClass:(Class)cls fromData:(NSData *)data error:(NSError **)error
+{
+    return [self unarchivedObjectOfClasses: cls ? [NSSet setWithObject: cls] : nil
+                                  fromData: data
+                                     error: error];
+}
+
+@end

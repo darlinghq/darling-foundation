@@ -83,6 +83,9 @@ FOUNDATION_EXPORT NSString *const NSUndoManagerDidRedoChangeNotification;
 - (void) removeAllActions;
 - (void) removeAllActionsWithTarget: (id) target;
 
+- (void) registerUndoWithTarget: (id) target
+                        handler: (void (^)(id target)) undoHandler;
+
 - (id) prepareWithInvocationTarget: (id) target;
 - (void) forwardInvocation: (NSInvocation *) invocation;
 
