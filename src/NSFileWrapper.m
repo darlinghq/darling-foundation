@@ -16,6 +16,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #import <Foundation/NSData.h>
 #import <Foundation/NSDate.h>
 #import <Foundation/NSException.h>
+#import <Foundation/NSError.h>
+#import <Foundation/NSURL.h>
+#import <Foundation/FoundationErrors.h>
 
 @interface NSFileWrapperFile : NSFileWrapper {
 	NSData* contentData;
@@ -93,6 +96,22 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 	
 	[pool release];
 	return self;
+}
+
+- (id) initWithURL: (NSURL*) url options: (NSFileWrapperReadingOptions) options error: (NSError**) outError
+{
+	NSString* path = [url isFileURL] ? [url path] : nil;
+	NSInteger code = path ? NSFileReadNoSuchFileError : NSFileReadUnsupportedSchemeError;
+	if (path && [[NSFileManager defaultManager] fileAttributesAtPath: path traverseLink: NO] != nil) {
+		return [self initWithPath: path];
+	}
+	if (outError) {
+		*outError = [NSError errorWithDomain: NSCocoaErrorDomain
+		                                code: code
+		                            userInfo: url ? [NSDictionary dictionaryWithObject: url forKey: NSURLErrorKey] : nil];
+	}
+	// self is the shared +alloc placeholder, which is never released (see initWithPath:)
+	return nil;
 }
 
 - (NSData*) regularFileContents
