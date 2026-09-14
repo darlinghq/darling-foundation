@@ -22,3 +22,15 @@
 @interface NSCreateCommand : NSScriptCommand
 
 @end
+
+@interface NSCloneCommand : NSScriptCommand
+
+@end
+
+@interface NSDeleteCommand : NSScriptCommand
+
+@end
+
+@interface NSMoveCommand : NSScriptCommand
+
+@end
