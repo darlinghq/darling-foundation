@@ -146,6 +146,32 @@ static CFKeyedArchiverUIDRef _NSKeyedArchiverUIDCreateCached(NSKeyedArchiver *ar
 #warning TODO find CFRelease point for UID cache
 }
 
+// Conditional references to an object that has not been encoded (yet) are written as $null and
+// remembered in _conditionals (object -> retained CFArray of [container, key] pairs). If the object
+// is later encoded unconditionally, the recorded keys are pointed at it.
+static void resolveConditionalReferences(NSKeyedArchiver *archiver, id object, int uidIndex)
+{
+    CFArrayRef pending = NULL;
+    if (!CFDictionaryGetValueIfPresent(archiver->_conditionals, object, (const void **)&pending))
+    {
+        return;
+    }
+
+    CFKeyedArchiverUIDRef cka = _NSKeyedArchiverUIDCreateCached(archiver, uidIndex);
+    CFIndex count = CFArrayGetCount(pending);
+    for (CFIndex i = 0; i < count; i++)
+    {
+        NSArray *reference = (NSArray *)CFArrayGetValueAtIndex(pending, i);
+        [(NSMutableDictionary *)[reference objectAtIndex:0] setObject:(id)cka forKey:[reference objectAtIndex:1]];
+    }
+    CFRelease(cka);
+
+    CFRetain(pending);
+    CFDictionaryRemoveValue(archiver->_conditionals, object);
+    CFRelease(pending); // the reference held by _conditionals
+    CFRelease(pending);
+}
+
 static void _encodeObject(NSKeyedArchiver *archiver, id object, NSString *key)
 {
     BOOL visited = NO;
@@ -195,13 +221,10 @@ static void _encodeObject(NSKeyedArchiver *archiver, id object, NSString *key)
         }
         else
         {
-            if (CFDictionaryGetValueIfPresent(archiver->_conditionals, object, (const void **)&mapObject))
-            {
-                // TODO
-            }
             CFArrayAppendValue((CFMutableArrayRef)archiver->_objects, @"$null"); // placeholder
             CFDictionarySetValue(archiver->_objRefMap, object, (const void *)end);
             uidIndex = end;
+            resolveConditionalReferences(archiver, object, uidIndex);
         }
         CFKeyedArchiverUIDRef cka = _NSKeyedArchiverUIDCreateCached(archiver, uidIndex);
         encodeFinalValue(archiver, (id)cka, key);
@@ -313,8 +336,41 @@ static void _encodeObject(NSKeyedArchiver *archiver, id object, NSString *key)
 
 static void encodeConditionalObject(NSKeyedArchiver *archiver, id object, NSString *key)
 {
-#warning TODO
-    DEBUG_BREAK();
+    id mapObject;
+    if (object != nil && CFDictionaryGetValueIfPresent(archiver->_objRefMap, object, (const void **)&mapObject))
+    {
+        // Already encoded unconditionally: reference it.
+        CFKeyedArchiverUIDRef cka = _NSKeyedArchiverUIDCreateCached(archiver, (int)mapObject);
+        encodeFinalValue(archiver, (id)cka, key);
+        CFRelease(cka);
+        return;
+    }
+
+    // Not (yet) part of the archive: encode nil for now.
+    CFKeyedArchiverUIDRef null = _NSKeyedArchiverUIDCreateCached(archiver, 0);
+    encodeFinalValue(archiver, (id)null, key);
+    CFRelease(null);
+
+    id container = [archiver->_containers lastObject];
+    if (object == nil || key == nil || ![container isKindOfClass:[NSMutableDictionary class]])
+    {
+        return;
+    }
+
+    CFMutableArrayRef pending = NULL;
+    if (!CFDictionaryGetValueIfPresent(archiver->_conditionals, object, (const void **)&pending))
+    {
+        pending = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
+        CFDictionarySetValue(archiver->_conditionals, object, pending); // takes the create reference
+    }
+    NSArray *reference = [[NSArray alloc] initWithObjects:container, key, nil];
+    CFArrayAppendValue(pending, reference);
+    [reference release];
+}
+
+static void releaseConditionalReferences(const void *key, const void *value, void *context)
+{
+    CFRelease(value);
 }
 
 static void encodeBytes(NSKeyedArchiver *archiver, const uint8_t *buffer, NSUInteger len, NSString *key)
@@ -592,6 +648,7 @@ static void _release(CFAllocatorRef allocator, const void *value)
     [_containers release];
     [_objects release];
     CFRelease(_objRefMap);
+    CFDictionaryApplyFunction(_conditionals, releaseConditionalReferences, NULL);
     CFRelease(_conditionals);
     if (_visited != nil)
     {
