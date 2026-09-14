@@ -326,7 +326,12 @@ static double _decodeDouble(NSKeyedUnarchiver *unarchiver, NSString *key)
         memmove(&swapped32, ptr + 1, 4);
         return (double)CFConvertFloat32SwappedToHost(swapped32);
     }
-    DEBUG_BREAK(); // Should never get here
+    // Archives from other encoders (e.g. nibs) store integral values such as NSPriority as integers.
+    if ((*ptr & 0xf0) == kCFBinaryPlistMarkerInt)
+    {
+        return (double)_getInt(&ptr);
+    }
+    [NSException raise:NSInvalidUnarchiveOperationException format:@"Did not find number for key %@", key];
     return 0.0;
 }
 
