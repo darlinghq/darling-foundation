@@ -167,19 +167,19 @@ static int64_t _getInt(uint8_t **ptrptr)
     if (encodeKey == (kCFBinaryPlistMarkerInt | 2))
     {
         *ptrptr += 5;
-        return ((*ptr << 24) + (*(ptr + 1) << 16) + (*(ptr + 2) << 8) + *(ptr + 3));
+        return ((uint32_t)ptr[0] << 24) | ((uint32_t)ptr[1] << 16) | ((uint32_t)ptr[2] << 8) | ptr[3];
     }
     if  (encodeKey == (kCFBinaryPlistMarkerInt | 3)) {  // long long encoding, including all negative values
         *ptrptr += 9;
-        int64_t acc = 0;
+        uint64_t acc = 0;
         for (int i = 0; i < 8; i++)
         {
             acc <<= 8;
             acc += ptr[i];
         }
-        return acc;
+        return (int64_t)acc;
     }
-    DEBUG_BREAK();  // unrecognized key
+    [NSException raise:NSInvalidUnarchiveOperationException format:@"Did not find integer, marker 0x%02x", encodeKey];
     return 0;
 }
 
@@ -255,6 +255,12 @@ static BOOL _decodeBool(NSKeyedUnarchiver *unarchiver, NSString *key)
         {
             return NO;
         }
+        if (CFGetTypeID(val) == CFNumberGetTypeID() && !CFNumberIsFloatType((CFNumberRef)val))
+        {
+            int64_t intVal = 0;
+            CFNumberGetValue((CFNumberRef)val, kCFNumberSInt64Type, &intVal);
+            return intVal != 0;
+        }
         if (CFGetTypeID(val) != CFBooleanGetTypeID())
         {
             [NSException raise:NSInvalidUnarchiveOperationException format:@"Did not find bool value for key %@", key];
@@ -277,7 +283,12 @@ static BOOL _decodeBool(NSKeyedUnarchiver *unarchiver, NSString *key)
     {
         return NO;
     }
-    DEBUG_BREAK();  // Should never get here
+    if (encodedVal >= kCFBinaryPlistMarkerInt && encodedVal <= (kCFBinaryPlistMarkerInt | 3))
+    {
+        uint8_t *ptr = (uint8_t *)(unarchiver->_bytes + voffset);
+        return _getInt(&ptr) != 0;
+    }
+    [NSException raise:NSInvalidUnarchiveOperationException format:@"Did not find bool value for key %@", key];
     return NO;
 }
 
@@ -294,11 +305,6 @@ static double _decodeDouble(NSKeyedUnarchiver *unarchiver, NSString *key)
         if (CFGetTypeID(val) != CFNumberGetTypeID())
         {
             [NSException raise:NSInvalidUnarchiveOperationException format:@"Did not find number for key %@", key];
-            return 0;
-        }
-        if (!CFNumberIsFloatType((CFNumberRef)val))
-        {
-            [NSException raise:NSInvalidUnarchiveOperationException format:@"Did not find floating point typed number for key %@", key];
             return 0;
         }
         double doubleVal = -1.0;
@@ -327,7 +333,7 @@ static double _decodeDouble(NSKeyedUnarchiver *unarchiver, NSString *key)
         return (double)CFConvertFloat32SwappedToHost(swapped32);
     }
     // Archives from other encoders (e.g. nibs) store integral values such as NSPriority as integers.
-    if ((*ptr & 0xf0) == kCFBinaryPlistMarkerInt)
+    if (*ptr >= kCFBinaryPlistMarkerInt && *ptr <= (kCFBinaryPlistMarkerInt | 3))
     {
         return (double)_getInt(&ptr);
     }
@@ -374,11 +380,12 @@ static const uint8_t *_decodeBytes(NSKeyedUnarchiver *unarchiver, NSString * key
         {
             return nil; // bad encoding
         }
-        if (CFEqual(@"$null", string))
+        BOOL isNull = CFEqual(@"$null", string);
+        CFRelease(string);
+        if (isNull)
         {
             return nil;
         }
-        DEBUG_BREAK(); // $null should be the only string (kCFBinaryPlistMarkerASCIIString) possible here
     }
     else if ((encodeKey & 0xf0) == kCFBinaryPlistMarkerData)
     {
@@ -393,7 +400,7 @@ static const uint8_t *_decodeBytes(NSKeyedUnarchiver *unarchiver, NSString * key
             return ptr;
         }
     }
-    DEBUG_BREAK(); // Should never get here
+    [NSException raise:NSInvalidUnarchiveOperationException format:@"Did not find byte array for key %@", key];
     return NULL;
 }
 
@@ -1532,9 +1539,8 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 
     if ((encodeKey & 0xf0) != kCFBinaryPlistMarkerArray)
     {
-        DEBUG_BREAK();
+        [NSException raise:NSInvalidUnarchiveOperationException format:@"Did not find array for key %@", key];
         return nil;
-        // TODO
     }
     int len = encodeKey & 0xf;
     if (len == 0xf)
