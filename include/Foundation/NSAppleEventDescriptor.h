@@ -20,6 +20,9 @@ struct AEDesc;
 */
 
 @interface NSAppleEventDescriptor : NSObject <NSCopying>
+{
+    AEDesc _desc;
+}
 
 + (NSAppleEventDescriptor *)appleEventWithEventClass:(AEEventClass)eventClass
                                              eventID:(AEEventID)eventID

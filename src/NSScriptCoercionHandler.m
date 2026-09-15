@@ -8,10 +8,7 @@
 #include <dispatch/dispatch.h>
 #include <objc/message.h>
 
-@implementation NSScriptCoercionHandler {
-    // class pointer -> (class pointer -> NSValue holding {coercer, selector})
-    NSMutableDictionary *_coercers;
-}
+@implementation NSScriptCoercionHandler
 
 struct NSScriptCoercer {
     id coercer;

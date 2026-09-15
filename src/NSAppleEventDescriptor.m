@@ -83,9 +83,7 @@ static void loadAE(void)
     }
 }
 
-@implementation NSAppleEventDescriptor {
-    AEDesc _desc;
-}
+@implementation NSAppleEventDescriptor
 
 // Takes ownership of desc; returns nil and disposes it when err isn't noErr.
 + (NSAppleEventDescriptor *) _descriptorTakingDesc: (AEDesc *) desc error: (OSErr) err {
