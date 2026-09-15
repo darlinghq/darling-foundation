@@ -757,9 +757,13 @@ static unsigned int roundUp(unsigned int size, unsigned int align);
             *((char**)data) = string ? strdup(string.UTF8String) : NULL;
             break;
         }
+        case '#':
+            // a class value is a class record, as for an object's class
+            rv = [self readClass:(Class*)data];
+            break;
+
         case '%':
         case ':':
-        case '#':
         {
             NSString* string;
             if(![self decodeSharedString:&string])
@@ -789,11 +793,6 @@ static unsigned int roundUp(unsigned int size, unsigned int align);
             {
                *((SEL*) data) = sel_registerName(cString);
                free(cString);
-            }
-            else if (ch == '#')
-            {
-                *((Class*) data) = objc_getClass(cString);
-                free(cString);
             }
             break;
         }
