@@ -1012,6 +1012,11 @@ static unsigned int roundUp(unsigned int size, unsigned int align);
 	return className;
 }
 
+// Private API apps send before decoding. NSUnarchiver doesn't restrict the classes it decodes, so the
+// set is accepted and ignored.
+-(void)_setAllowedClasses:(NSSet *)classes {
+}
+
 -(void)replaceObject:original withObject:replacement {
    NSUnimplementedMethod();
 }
