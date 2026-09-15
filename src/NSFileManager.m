@@ -945,7 +945,16 @@ static NSError *_NSErrorWithFilePathAndErrno(id path, int code)
             return NO;
         }
     }
-    copyfile_flags_t flags = COPYFILE_DATA;
+    if ([self attributesOfItemAtPath:dstPath error:NULL] != nil)
+    {
+        if (error)
+        {
+            *error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileWriteFileExistsError
+                                     userInfo:@{NSFilePathErrorKey: dstPath}];
+        }
+        return NO;
+    }
+    copyfile_flags_t flags = COPYFILE_ALL | COPYFILE_RECURSIVE | COPYFILE_NOFOLLOW_SRC | COPYFILE_EXCL;
     if (error != NULL)
     {
         *error = nil;
