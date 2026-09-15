@@ -688,7 +688,24 @@ static unsigned int roundUp(unsigned int size, unsigned int align);
             *((int*)data) = value;
             break;
         }
-            
+
+        // long long values use the same integer encoding as int.
+        case 'q':
+        case 'Q':
+        {
+            int value;
+            if(![self decodeInt:&value])
+            {
+                rv = NO;
+                break;
+            }
+            if(ch == 'q')
+                *((long long*)data) = value;
+            else
+                *((unsigned long long*)data) = (unsigned int)value;
+            break;
+        }
+
         case 'f':
         {
             float value;
@@ -727,6 +744,17 @@ static unsigned int roundUp(unsigned int size, unsigned int align);
         }
             
         case '*':
+        {
+            // A C string is a shared object (a label, then a shared string), not a bare shared string.
+            NSString* string;
+            if(![self decodeString:&string])
+            {
+                rv = NO;
+                break;
+            }
+            *((char**)data) = string ? strdup(string.UTF8String) : NULL;
+            break;
+        }
         case '%':
         case ':':
         case '#':
@@ -750,11 +778,7 @@ static unsigned int roundUp(unsigned int size, unsigned int align);
               remainingRange:NULL];
             cString[string.length] = '\0';
 
-            if (ch == '*')
-            {
-               *((const char**)data) = cString;
-            }
-            else if (ch == '%')
+            if (ch == '%')
             {
                *((const char**)data) = uniqueString(cString);
                free(cString);
@@ -1081,6 +1105,8 @@ const char* sizeofType(const char* type, unsigned int* size, unsigned int* align
       simpleCase('!', int);
       simpleCase('l', int);
       simpleCase('L', int);
+      simpleCase('q', long long);
+      simpleCase('Q', long long);
       simpleCase('f', float);
       simpleCase('d', double);
       simpleCase('@', id);
