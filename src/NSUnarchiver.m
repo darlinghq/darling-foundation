@@ -946,6 +946,51 @@ static unsigned int roundUp(unsigned int size, unsigned int align);
     va_end (argList);
 }
 
+// Archives written by 32-bit code store points and sizes as "ff" and rects as "ffff".
+- (void)_decodeGeometry:(CGFloat*)values count:(unsigned)count type:(const char*)type legacyType:(const char*)legacyType
+{
+    NSString* string;
+    const char* str = [self decodeSharedString:&string] ? [string cStringUsingEncoding:NSASCIIStringEncoding] : NULL;
+    BOOL legacy = str && strcmp(str, legacyType) == 0;
+    BOOL ok = legacy || (str && strcmp(str, type) == 0);
+
+    for(unsigned i = 0; i < count && ok; i++)
+    {
+        if(legacy)
+        {
+            float value;
+            if((ok = [self decodeFloat:&value]))
+                values[i] = value;
+        }
+        else
+            ok = [self readType:@encode(CGFloat) data:&values[i]];
+    }
+
+    if(!ok)
+        [NSException raise:NSInvalidArgumentException format:@"NSUnarchiver: cannot decode geometry of type '%s', expected '%s' or '%s'", str ? str : "", type, legacyType];
+}
+
+- (CGPoint)decodePoint
+{
+    CGFloat v[2];
+    [self _decodeGeometry:v count:2 type:@encode(CGPoint) legacyType:"ff"];
+    return CGPointMake(v[0], v[1]);
+}
+
+- (CGSize)decodeSize
+{
+    CGFloat v[2];
+    [self _decodeGeometry:v count:2 type:@encode(CGSize) legacyType:"ff"];
+    return CGSizeMake(v[0], v[1]);
+}
+
+- (CGRect)decodeRect
+{
+    CGFloat v[4];
+    [self _decodeGeometry:v count:4 type:@encode(CGRect) legacyType:"ffff"];
+    return CGRectMake(v[0], v[1], v[2], v[3]);
+}
+
 - (void*)decodeBytesWithReturnedLength:(NSUInteger*)outLength
 {
     NSParameterAssert(outLength);
