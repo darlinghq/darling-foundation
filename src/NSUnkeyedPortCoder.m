@@ -910,6 +910,7 @@ static unsigned int encodeReturnValueType(const char *type) {
         decodeInteger(self, &range.length, sizeof(range.length));
         range.location = _readingOffset;
         NSData *data = [_components[_componentIndex] subdataWithRange: range];
+        _readingOffset += range.length;
         advanceComponentIfNeeded(self);
         return data;
     }

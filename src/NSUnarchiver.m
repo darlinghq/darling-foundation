@@ -61,10 +61,12 @@ static unsigned int roundUp(unsigned int size, unsigned int align);
 
 - (NSData *)decodeDataObject
 {
-   int length;
+   int length = 0;
    NSMutableData* data;
 
    [self decodeValuesOfObjCTypes: "i", &length];
+   if (length < 0)
+      [NSException raise:NSInvalidArgumentException format:@"NSUnarchiver decodeDataObject: negative length %d", length];
 
    data = [[NSMutableData alloc] initWithLength: length];
 

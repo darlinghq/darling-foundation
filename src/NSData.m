@@ -1014,8 +1014,7 @@ OBJC_PROTOCOL_IMPL_PUSH
     }
     else
     {
-        bytes = [coder decodeBytesWithReturnedLength:&length];
-        self = [self initWithBytes:bytes length:length];
+        self = [self initWithData:[coder decodeDataObject]];
     }
 
     return self;
@@ -1036,7 +1035,7 @@ OBJC_PROTOCOL_IMPL_PUSH
     }
     else
     {
-        [aCoder encodeBytes:[self bytes] length:[self length]];
+        [aCoder encodeDataObject:self];
     }
 
 }
