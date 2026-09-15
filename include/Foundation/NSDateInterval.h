@@ -2,6 +2,7 @@
  This file is part of Darling.
 
  Copyright (C) 2019 Lubos Dolezel
+ Copyright (C) 2026 Darling Team
 
  Darling is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -20,8 +21,29 @@
 #import <Foundation/NSObject.h>
 #import <Foundation/NSDate.h>
 
-@interface NSDateInterval : NSObject <NSCopying, NSSecureCoding>
+NS_ASSUME_NONNULL_BEGIN
 
+@interface NSDateInterval : NSObject <NSCopying, NSSecureCoding>
+{
+    NSDate *_startDate;
+    NSTimeInterval _duration;
+}
+
+@property (readonly, copy) NSDate *startDate;
+@property (readonly, copy) NSDate *endDate;
 @property (readonly) NSTimeInterval duration;
 
+- (instancetype)init;
+- (instancetype)initWithStartDate:(NSDate *)startDate duration:(NSTimeInterval)duration;
+- (instancetype)initWithStartDate:(NSDate *)startDate endDate:(NSDate *)endDate;
+- (nullable instancetype)initWithCoder:(NSCoder *)coder;
+
+- (NSComparisonResult)compare:(NSDateInterval *)dateInterval;
+- (BOOL)isEqualToDateInterval:(NSDateInterval *)dateInterval;
+- (BOOL)intersectsDateInterval:(NSDateInterval *)dateInterval;
+- (nullable NSDateInterval *)intersectionWithDateInterval:(NSDateInterval *)dateInterval;
+- (BOOL)containsDate:(NSDate *)date;
+
 @end
+
+NS_ASSUME_NONNULL_END
