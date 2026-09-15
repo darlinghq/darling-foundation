@@ -12,3 +12,9 @@ Classes:
   SwiftBridge: Swift.Dictionary
 - Name: NSSet
   SwiftBridge: Swift.Set
+Typedefs:
+# Like the macOS SDK (NS_TYPED_EXTENSIBLE_ENUM): NSURLResourceKey imports as the struct URLResourceKey, which Swift
+# mangles as `So16NSURLResourceKeya`.
+- Name: NSURLResourceKey
+  SwiftWrapper: struct
+  SwiftName: URLResourceKey
