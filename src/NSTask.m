@@ -527,17 +527,17 @@ static void waiterCallback(void* info) {
 
 		posix_spawn_file_actions_init(&actions);
 
-		if (cStdin != -1) {
+		if (cStdin != -1 && cStdin != 0) {
 			posix_spawn_file_actions_addclose(&actions, 0);
 			posix_spawn_file_actions_adddup2(&actions, cStdin, 0);
 		}
 
-		if (cStdout != -1) {
+		if (cStdout != -1 && cStdout != 1) {
 			posix_spawn_file_actions_addclose(&actions, 1);
 			posix_spawn_file_actions_adddup2(&actions, cStdout, 1);
 		}
 
-		if (cStderr != -1) {
+		if (cStderr != -1 && cStderr != 2) {
 			posix_spawn_file_actions_addclose(&actions, 2);
 			posix_spawn_file_actions_adddup2(&actions, cStderr, 2);
 		}
@@ -561,13 +561,24 @@ static void waiterCallback(void* info) {
 		os_log_debug(nstask_get_log(), "going to spawn process %s", cArgs[0]);
 
 		// alright, it's finally time to start the process
-		spawned = posix_spawn(&_pid, cArgs[0], &actions, &attrs, cArgs, cEnv) == 0;
-		savedErrno = errno;
+		int spawn_rc = posix_spawn(&_pid, cArgs[0], &actions, &attrs, cArgs, cEnv);
+		spawned = (spawn_rc == 0);
+		savedErrno = spawned ? 0 : spawn_rc;
 
 		// do some cleanup regardless of whether we failed or not
-		[stdin closeFile];
-		[stdout closeFile];
-		[stderr closeFile];
+		// If the caller supplied an NSPipe, close the child-side handle in the parent process
+		// so that readDataToEndOfFile gets EOF when the child terminates.
+		// If the caller supplied an NSFileHandle (including standard I/O singletons),
+		// do not close it — caller retains ownership.
+		if ([info[kStdin] isKindOfClass: [NSPipe class]]) {
+			[stdin closeFile];
+		}
+		if ([info[kStdout] isKindOfClass: [NSPipe class]]) {
+			[stdout closeFile];
+		}
+		if ([info[kStderr] isKindOfClass: [NSPipe class]]) {
+			[stderr closeFile];
+		}
 
 		posix_spawn_file_actions_destroy(&actions);
 		posix_spawnattr_destroy(&attrs);
