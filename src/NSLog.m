@@ -8,6 +8,7 @@
 #import <Foundation/NSObjCRuntime.h>
 #import "CFInternal.h"
 #import <Foundation/NSException.h>
+#include <stdio.h>
 #include <sys/time.h>
 
 typedef void (*CFLogFunc)(int32_t lev, const char *message, size_t length, char withBanner);
@@ -35,11 +36,11 @@ static void __NSLogCString(int32_t lev, const char *message, size_t length, char
 
     if (message[length - 1] == '\n')
     {
-        printf("%s.%03d %s[%d:%x] %.*s", dateFormat, millis, processName, pid, uid, (int)length, message);
+        fprintf(stderr, "%s.%03d %s[%d:%x] %.*s", dateFormat, millis, processName, pid, uid, (int)length, message);
     }
     else
     {
-        printf("%s.%03d %s[%d:%x] %.*s\n", dateFormat, millis, processName, pid, uid, (int)length, message);
+        fprintf(stderr, "%s.%03d %s[%d:%x] %.*s\n", dateFormat, millis, processName, pid, uid, (int)length, message);
     }
 
 }
