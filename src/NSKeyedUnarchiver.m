@@ -1563,6 +1563,8 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
         }
     }
     BOOL error = NO;
+    int errorIndex = 0;
+    const int elementCount = len;   // len is truncated to the failing index below
 
     for (int i = 0; i < len; i++)
     {
@@ -1572,18 +1574,21 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
             error = YES;
         }
         NSUInteger uid1 = 0;
-        if (!_getUIDFromData((uint8_t *)(_bytes + offset2), &uid1))
+        if (!error && !_getUIDFromData((uint8_t *)(_bytes + offset2), &uid1))
         {
             error = YES;
         }
-        elements[i] = _decodeObjectBinary(self, uid1);
-        if (elements[i] == nil)
+        if (!error)
         {
-            error = YES;
+            elements[i] = _decodeObjectBinary(self, uid1);
+            if (elements[i] == nil)
+            {
+                error = YES;
+            }
         }
         if (error)
         {
-            RELEASE_LOG("failed to decode array element");
+            errorIndex = i;
             len = i;
             break;
         }
@@ -1598,6 +1603,14 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
     if (elements != &objs[0])
     {
         free(elements);
+    }
+    if (error)
+    {
+        // Callers pair this array with another decoded array by index, so returning a short
+        // one lets a decode failure read as data and surface much later as a range exception.
+        [NSException raise:NSInvalidUnarchiveOperationException
+                    format:@"Failed to decode element %d of %d in array for key %@",
+                           errorIndex, elementCount, key];
     }
     return [array autorelease];
 }
