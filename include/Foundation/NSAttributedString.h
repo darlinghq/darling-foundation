@@ -21,25 +21,32 @@ typedef NSUInteger NSAttributedStringFormattingOptions;
 
 @interface NSAttributedString : NSObject <NSCopying, NSMutableCopying, NSCoding>
 
-- (NSString *)string;
-- (NSDictionary *)attributesAtIndex:(NSUInteger)index effectiveRange:(NSRangePointer)range;
+- (NSDictionary<NSAttributedStringKey, id> * _Nonnull)attributesAtIndex:(NSUInteger)index effectiveRange:(NSRangePointer)range;
+
+@end
+
+// Declared on the category that implements it, not on the primary interface: -string is a class
+// cluster primitive, and a primary-interface property would auto-synthesize an _string ivar.
+@interface NSAttributedString (NSAttributedString)
+
+@property (readonly, copy) NSString * _Nonnull string;
 
 @end
 
 @interface NSAttributedString (NSExtendedAttributedString)
 
-- (NSUInteger)length;
-- (id)attribute:(NSString *)attrName atIndex:(NSUInteger)index effectiveRange:(NSRangePointer)range;
+@property (readonly) NSUInteger length;
+- (id)attribute:(NSAttributedStringKey)attrName atIndex:(NSUInteger)index effectiveRange:(NSRangePointer)range;
 - (NSAttributedString *)attributedSubstringFromRange:(NSRange)range;
-- (NSDictionary *)attributesAtIndex:(NSUInteger)index longestEffectiveRange:(NSRangePointer)range inRange:(NSRange)rangeLimit;
-- (id)attribute:(NSString *)attrName atIndex:(NSUInteger)index longestEffectiveRange:(NSRangePointer)range inRange:(NSRange)rangeLimit;
+- (NSDictionary<NSAttributedStringKey, id> * _Nonnull)attributesAtIndex:(NSUInteger)index longestEffectiveRange:(NSRangePointer)range inRange:(NSRange)rangeLimit;
+- (id)attribute:(NSAttributedStringKey)attrName atIndex:(NSUInteger)index longestEffectiveRange:(NSRangePointer)range inRange:(NSRange)rangeLimit;
 - (BOOL)isEqualToAttributedString:(NSAttributedString *)other;
 - (nonnull instancetype)initWithString:(nonnull NSString *)str;
-- (nonnull instancetype)initWithString:(nonnull NSString *)str attributes:(nullable NSDictionary *)attrs;
+- (nonnull instancetype)initWithString:(nonnull NSString *)str attributes:(nullable NSDictionary<NSAttributedStringKey, id> *)attrs;
 - (nonnull instancetype)initWithAttributedString:(nonnull NSAttributedString *)attrStr;
 #if NS_BLOCKS_AVAILABLE
-- (void)enumerateAttributesInRange:(NSRange)enumerationRange options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(NSDictionary * _Nonnull attrs, NSRange range, BOOL * _Nonnull stop))block;
-- (void)enumerateAttribute:(NSString *)attrName inRange:(NSRange)enumerationRange options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(id value, NSRange range, BOOL * _Nonnull stop))block;
+- (void)enumerateAttributesInRange:(NSRange)enumerationRange options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(NSDictionary<NSAttributedStringKey, id> * _Nonnull attrs, NSRange range, BOOL * _Nonnull stop))block;
+- (void)enumerateAttribute:(NSAttributedStringKey)attrName inRange:(NSRange)enumerationRange options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(id value, NSRange range, BOOL * _Nonnull stop))block;
 #endif
 
 @end
@@ -47,16 +54,16 @@ typedef NSUInteger NSAttributedStringFormattingOptions;
 @interface NSMutableAttributedString : NSAttributedString
 
 - (void)replaceCharactersInRange:(NSRange)range withString:(NSString *)str;
-- (void)setAttributes:(NSDictionary *)attrs range:(NSRange)range;
+- (void)setAttributes:(NSDictionary<NSAttributedStringKey, id> *)attrs range:(NSRange)range;
 
 @end
 
 @interface NSMutableAttributedString (NSExtendedMutableAttributedString)
 
 - (NSMutableString *)mutableString;
-- (void)addAttribute:(NSString *)name value:(id)value range:(NSRange)range;
-- (void)addAttributes:(NSDictionary *)attrs range:(NSRange)range;
-- (void)removeAttribute:(NSString *)name range:(NSRange)range;
+- (void)addAttribute:(NSAttributedStringKey)name value:(id)value range:(NSRange)range;
+- (void)addAttributes:(NSDictionary<NSAttributedStringKey, id> *)attrs range:(NSRange)range;
+- (void)removeAttribute:(NSAttributedStringKey)name range:(NSRange)range;
 - (void)replaceCharactersInRange:(NSRange)range withAttributedString:(NSAttributedString *)attrString;
 - (void)insertAttributedString:(NSAttributedString *)attrString atIndex:(NSUInteger)loc;
 - (void)appendAttributedString:(NSAttributedString *)attrString;
