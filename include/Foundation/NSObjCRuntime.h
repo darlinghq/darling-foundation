@@ -232,6 +232,12 @@
 #define NS_ASSUME_NONNULL_BEGIN _Pragma("clang assume_nonnull begin")
 #define NS_ASSUME_NONNULL_END   _Pragma("clang assume_nonnull end")
 
+// Headers from recent macOS SDKs open with NS_HEADER_AUDIT_BEGIN(nullability, sendability)
+// instead of NS_ASSUME_NONNULL_BEGIN. Of the audit categories only nullability affects the
+// C and Objective-C parse; sendability is a Swift concurrency audit and has no effect here.
+#define NS_HEADER_AUDIT_BEGIN(...) NS_ASSUME_NONNULL_BEGIN
+#define NS_HEADER_AUDIT_END(...)   NS_ASSUME_NONNULL_END
+
 #if __has_attribute(swift_wrapper)
 #define _CF_TYPED_EXTENSIBLE_ENUM __attribute__((swift_wrapper(struct)))
 #else
