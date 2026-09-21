@@ -43,7 +43,7 @@ typedef enum {
 
 @property NSQualityOfService qualityOfService;
 
-+ (NSThread *)currentThread;
+@property (class, readonly, retain) NSThread *currentThread;
 + (void)detachNewThreadSelector:(SEL)selector toTarget:(id)target withObject:(id)argument;
 + (BOOL)isMultiThreaded;
 + (void)sleepUntilDate:(NSDate *)date;
@@ -53,8 +53,8 @@ typedef enum {
 + (BOOL)setThreadPriority:(double)p;
 + (NSArray *)callStackReturnAddresses;
 + (NSArray *)callStackSymbols;
-+ (BOOL)isMainThread;
-+ (NSThread *)mainThread;
+@property (class, readonly) BOOL isMainThread;
+@property (class, readonly, retain) NSThread *mainThread;
 - (id)init;
 - (id)initWithTarget:(id)target selector:(SEL)selector object:(id)argument;
 - (NSMutableDictionary *)threadDictionary;
@@ -64,7 +64,7 @@ typedef enum {
 - (NSString *)name;
 - (NSUInteger)stackSize;
 - (void)setStackSize:(NSUInteger)s;
-- (BOOL)isMainThread;
+@property (readonly) BOOL isMainThread;
 - (BOOL)isExecuting;
 - (BOOL)isFinished;
 - (BOOL)isCancelled;

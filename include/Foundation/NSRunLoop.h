@@ -23,7 +23,7 @@ FOUNDATION_EXPORT const NSRunLoopMode NSRunLoopCommonModes;
 
 @interface NSRunLoop (NSRunLoop)
 
-+ (NSRunLoop *)currentRunLoop;
+@property (class, readonly, retain) NSRunLoop *currentRunLoop;
 + (NSRunLoop *)mainRunLoop;
 
 - (NSRunLoopMode) currentMode;

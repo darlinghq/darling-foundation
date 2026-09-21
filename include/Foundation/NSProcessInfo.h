@@ -38,14 +38,13 @@ typedef NS_ENUM(NSInteger, NSProcessInfoThermalState) {
     NSInteger automaticTerminationOptOutCounter;
 }
 
-+ (NSProcessInfo *)processInfo;
+@property (class, readonly, retain) NSProcessInfo *processInfo;
 
 - (NSDictionary *)environment;
 - (NSArray *)arguments;
 - (NSString *)hostName;
-- (NSString *)processName;
+@property (copy) NSString *processName;
 - (int)processIdentifier;
-- (void)setProcessName:(NSString *)newName;
 - (NSString *)globallyUniqueString;
 - (NSUInteger)operatingSystem;
 - (NSString *)operatingSystemName;
