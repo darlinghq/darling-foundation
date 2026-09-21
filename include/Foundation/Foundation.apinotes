@@ -12,6 +12,38 @@ Classes:
   SwiftBridge: Swift.Dictionary
 - Name: NSSet
   SwiftBridge: Swift.Set
+# SwiftName renames an Objective-C class to the name Swift code written against a recent macOS SDK
+# spells it. The class is unchanged; only the Swift-facing name is added. Without these the Swift
+# spelling does not resolve at all, and the diagnostic ("cannot find type 'RunLoop' in scope")
+# points at the caller rather than at the missing rename.
+- Name: NSRunLoop
+  SwiftName: RunLoop
+- Name: NSUserDefaults
+  SwiftName: UserDefaults
+- Name: NSThread
+  SwiftName: Thread
+- Name: NSScanner
+  SwiftName: Scanner
+- Name: NSURLSession
+  SwiftName: URLSession
+- Name: NSFileManager
+  SwiftName: FileManager
+- Name: NSProcessInfo
+  SwiftName: ProcessInfo
+- Name: NSTimer
+  SwiftName: Timer
+- Name: NSFormatter
+  SwiftName: Formatter
+- Name: NSNumberFormatter
+  SwiftName: NumberFormatter
+- Name: NSDateComponentsFormatter
+  SwiftName: DateComponentsFormatter
+- Name: NSISO8601DateFormatter
+  SwiftName: ISO8601DateFormatter
+- Name: NSMeasurementFormatter
+  SwiftName: MeasurementFormatter
+- Name: NSJSONSerialization
+  SwiftName: JSONSerialization
 Typedefs:
 # Like the macOS SDK (NS_TYPED_EXTENSIBLE_ENUM): NSURLResourceKey imports as the struct URLResourceKey, which Swift
 # mangles as `So16NSURLResourceKeya`.
