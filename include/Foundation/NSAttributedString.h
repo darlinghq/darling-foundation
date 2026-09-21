@@ -6,6 +6,19 @@ typedef NS_OPTIONS(NSUInteger, NSAttributedStringEnumerationOptions) {
     NSAttributedStringEnumerationLongestEffectiveRangeNotRequired = (1UL << 20)
 };
 
+// The type modern headers use for attribute dictionary keys.
+typedef NSString *NSAttributedStringKey NS_TYPED_EXTENSIBLE_ENUM;
+
+// Declared with no options, deliberately. This type exists so that declarations taking it can be
+// parsed; its option bit values are not publicly derivable. That is absence of knowledge, not
+// knowledge that the type has no options -- do not read the lack of members as a statement that
+// there are none. Inventing a bit would compile cleanly and misbehave at runtime, whereas with
+// nothing declared any use of an option is a compile error naming the option that is missing.
+// Apple declares this as an NS_OPTIONS; a memberless NS_OPTIONS is not legal C, hence the plain
+// typedef. When a verified reference is available, restore the NS_OPTIONS form and add the
+// members from it -- never from memory.
+typedef NSUInteger NSAttributedStringFormattingOptions;
+
 @interface NSAttributedString : NSObject <NSCopying, NSMutableCopying, NSCoding>
 
 - (NSString *)string;
