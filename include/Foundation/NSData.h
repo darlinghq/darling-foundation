@@ -8,8 +8,12 @@ typedef NS_OPTIONS(NSUInteger, NSDataReadingOptions) {
     NSDataReadingUncached     = 1UL << 1,
     NSDataReadingMappedAlways = 1UL << 3,
     NSDataReadingMapped       = NSDataReadingMappedIfSafe,
-    NSMappedRead              = NSDataReadingMapped,
-    NSUncachedRead            = NSDataReadingUncached
+
+    // Legacy spellings, kept for existing Objective-C callers. NS_SWIFT_UNAVAILABLE takes them out of
+    // the Clang importer's common-prefix computation, which would otherwise shrink to "NS" and import
+    // the options above as .dataReadingMappedIfSafe rather than macOS's .mappedIfSafe.
+    NSMappedRead   NS_SWIFT_UNAVAILABLE("Use NSDataReadingMappedIfSafe") = NSDataReadingMapped,
+    NSUncachedRead NS_SWIFT_UNAVAILABLE("Use NSDataReadingUncached")     = NSDataReadingUncached
 };
 
 typedef NS_OPTIONS(NSUInteger, NSDataWritingOptions) {
@@ -20,7 +24,9 @@ typedef NS_OPTIONS(NSUInteger, NSDataWritingOptions) {
     NSDataWritingFileProtectionCompleteUnlessOpen                   = 0x30000000,
     NSDataWritingFileProtectionCompleteUntilFirstUserAuthentication = 0x40000000,
     NSDataWritingFileProtectionMask                                 = 0xf0000000,
-    NSAtomicWrite = NSDataWritingAtomic
+
+    // Legacy spelling; see the note on NSMappedRead above.
+    NSAtomicWrite NS_SWIFT_UNAVAILABLE("Use NSDataWritingAtomic") = NSDataWritingAtomic
 };
 
 typedef NS_OPTIONS(NSUInteger, NSDataSearchOptions) {
