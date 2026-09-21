@@ -50,3 +50,35 @@ Typedefs:
 - Name: NSURLResourceKey
   SwiftWrapper: struct
   SwiftName: URLResourceKey
+# The importer does not infer nesting from NS_TYPED_EXTENSIBLE_ENUM or NS_ENUM, so without the
+# four entries below the macOS spellings NSAttributedString.Key, NSCalendar.Unit,
+# NumberFormatter.Style and RunLoop.Mode do not resolve at all.
+- Name: NSAttributedStringKey
+  SwiftName: NSAttributedString.Key
+- Name: NSRunLoopMode
+  SwiftName: RunLoop.Mode
+Tags:
+- Name: NSCalendarUnit
+  SwiftName: NSCalendar.Unit
+- Name: NSNumberFormatterStyle
+  SwiftName: NumberFormatter.Style
+Enumerators:
+# Nesting an enum does not re-derive its cases: the importer strips the common NSNumberFormatter
+# prefix but not the trailing Style, leaving .decimalStyle rather than macOS's .decimal.
+- Name: NSNumberFormatterNoStyle
+  SwiftName: none
+- Name: NSNumberFormatterDecimalStyle
+  SwiftName: decimal
+- Name: NSNumberFormatterCurrencyStyle
+  SwiftName: currency
+- Name: NSNumberFormatterPercentStyle
+  SwiftName: percent
+- Name: NSNumberFormatterScientificStyle
+  SwiftName: scientific
+- Name: NSNumberFormatterSpellOutStyle
+  SwiftName: spellOut
+Globals:
+- Name: NSDefaultRunLoopMode
+  SwiftName: RunLoop.Mode.default
+- Name: NSRunLoopCommonModes
+  SwiftName: RunLoop.Mode.common
