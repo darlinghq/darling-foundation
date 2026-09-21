@@ -40,7 +40,9 @@ extern CFMachPortContext *_CFMachPortGetContext(CFMachPortRef mp);
 
 const NSNotificationName NSPortDidBecomeInvalidNotification = @"NSPortDidBecomeInvalidNotification";
 
-@implementation NSPort
+// The class itself lives in CoreFoundation, which is where macOS exports
+// _OBJC_CLASS_$_NSPort from; this category supplies the implementation.
+@implementation NSPort (NSPort)
 
 + (id)allocWithZone:(NSZone *)zone
 {
