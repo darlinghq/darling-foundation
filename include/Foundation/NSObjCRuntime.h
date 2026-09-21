@@ -253,12 +253,21 @@
 #define NS_TYPED_ENUM _NS_TYPED_ENUM
 #define NS_TYPED_EXTENSIBLE_ENUM _NS_TYPED_EXTENSIBLE_ENUM
 
+// flag_enum is what tells the Clang importer an enum is a bit-flag set, so Swift sees the type as an
+// OptionSet rather than a plain raw-value struct. CFAvailability.h already applies both attributes in
+// __CF_OPTIONS_ATTRIBUTES; NS_OPTIONS was the one that did not.
+#if __has_attribute(enum_extensibility)
+#define __NS_OPTIONS_ATTRIBUTES __attribute__((flag_enum,enum_extensibility(open)))
+#else
+#define __NS_OPTIONS_ATTRIBUTES
+#endif
+
 #if (__cplusplus && __cplusplus >= 201103L && (__has_extension(cxx_strong_enums) || __has_feature(objc_fixed_enum))) || (!__cplusplus && __has_feature(objc_fixed_enum))
 #define NS_ENUM(_type, _name) enum _name : _type _name; enum _name : _type
 #if (__cplusplus)
-#define NS_OPTIONS(_type, _name) _type _name; enum : _type
+#define NS_OPTIONS(_type, _name) _type _name; enum __NS_OPTIONS_ATTRIBUTES : _type
 #else
-#define NS_OPTIONS(_type, _name) enum _name : _type _name; enum _name : _type
+#define NS_OPTIONS(_type, _name) enum __NS_OPTIONS_ATTRIBUTES _name : _type _name; enum _name : _type
 #endif
 #else
 #define NS_ENUM(_type, _name) _type _name; enum
