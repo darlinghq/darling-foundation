@@ -47,18 +47,14 @@ typedef NS_ENUM(NSUInteger, NSDateIntervalFormatterStyle) {
     NSDateIntervalFormatterStyle _timeStyle;
 }
 
-- (NSLocale *)locale;
-- (void)setLocale:(NSLocale *)locale;
-- (NSCalendar *)calendar;
-- (void)setCalendar:(NSCalendar *)calendar;
-- (NSTimeZone *)timeZone;
-- (void)setTimeZone:(NSTimeZone *)timeZone;
-- (NSString *)dateTemplate;
-- (void)setDateTemplate:(NSString *)dateTemplate;
-- (NSDateIntervalFormatterStyle)dateStyle;
-- (void)setDateStyle:(NSDateIntervalFormatterStyle)dateStyle;
-- (NSDateIntervalFormatterStyle)timeStyle;
-- (void)setTimeStyle:(NSDateIntervalFormatterStyle)timeStyle;
+// (copy) rather than (retain): these setters genuinely copy, unlike
+// NSDateFormatter's, which store into a dictionary or a CF property.
+@property (copy) NSLocale *locale;
+@property (copy) NSCalendar *calendar;
+@property (copy) NSTimeZone *timeZone;
+@property (copy) NSString *dateTemplate;
+@property NSDateIntervalFormatterStyle dateStyle;
+@property NSDateIntervalFormatterStyle timeStyle;
 
 - (NSString *)stringFromDate:(NSDate *)fromDate toDate:(NSDate *)toDate;
 - (NSString *)stringFromDateInterval:(NSDateInterval *)dateInterval;
