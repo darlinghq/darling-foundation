@@ -12,6 +12,11 @@ Classes:
   SwiftBridge: Swift.Dictionary
 - Name: NSSet
   SwiftBridge: Swift.Set
+# NSData bridges to the Data value type, so `NSData *` in an Objective-C signature imports as
+# Data. Without it JSONSerialization.data(withJSONObject:) returns NSData and nothing downstream
+# that expects Data accepts it.
+- Name: NSData
+  SwiftBridge: Foundation.Data
 # SwiftName renames an Objective-C class to the name Swift code written against a recent macOS SDK
 # spells it. The class is unchanged; only the Swift-facing name is added. Without these the Swift
 # spelling does not resolve at all, and the diagnostic ("cannot find type 'RunLoop' in scope")
