@@ -45,7 +45,7 @@ typedef struct __CFNumberFormatter* CFNumberFormatterRef;
 + (NSString *)localizedStringFromNumber:(NSNumber *)num numberStyle:(NSNumberFormatterStyle)nstyle;
 + (NSNumberFormatterBehavior)defaultFormatterBehavior;
 + (void)setDefaultFormatterBehavior:(NSNumberFormatterBehavior)behavior;
-- (id)init;
+- (id _Nonnull)init;
 - (BOOL)getObjectValue:(out id *)obj forString:(NSString *)string range:(inout NSRange *)rangep error:(out NSError **)error;
 - (NSString *)stringFromNumber:(NSNumber *)number;
 - (NSNumber *)numberFromString:(NSString *)string;
