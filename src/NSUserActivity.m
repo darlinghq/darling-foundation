@@ -35,12 +35,6 @@ NSString * const NSUserActivityTypeBrowsingWeb = @"NSUserActivityTypeBrowsingWeb
 static NSUserActivity *currentActivity = nil;
 
 @implementation NSUserActivity
-{
-    id _delegate;
-    BOOL _needsSave;
-    BOOL _invalidated;
-    BOOL _saveScheduled;
-}
 
 @synthesize activityType = _activityType;
 @synthesize title = _title;

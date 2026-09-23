@@ -29,6 +29,27 @@ typedef NSString *NSUserActivityPersistentIdentifier;
 FOUNDATION_EXPORT NSString * const NSUserActivityTypeBrowsingWeb;
 
 @interface NSUserActivity : NSObject
+{
+    NSString *_activityType;
+    NSString *_title;
+    NSDictionary *_userInfo;
+    NSSet *_requiredUserInfoKeys;
+    NSURL *_webpageURL;
+    NSURL *_referrerURL;
+    NSDate *_expirationDate;
+    NSSet *_keywords;
+    BOOL _supportsContinuationStreams;
+    id _delegate;
+    NSString *_targetContentIdentifier;
+    NSUserActivityPersistentIdentifier _persistentIdentifier;
+    BOOL _eligibleForHandoff;
+    BOOL _eligibleForSearch;
+    BOOL _eligibleForPublicIndexing;
+    BOOL _eligibleForPrediction;
+    BOOL _needsSave;
+    BOOL _invalidated;
+    BOOL _saveScheduled;
+}
 
 - (instancetype)initWithActivityType:(NSString *)activityType NS_DESIGNATED_INITIALIZER;
 - (instancetype)init;
