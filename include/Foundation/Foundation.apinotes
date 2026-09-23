@@ -12,6 +12,55 @@ Classes:
   SwiftBridge: Swift.Dictionary
 - Name: NSSet
   SwiftBridge: Swift.Set
+# As on macOS, the -initWith<Type>: initializers are all NSNumber(value:). -initWithLong: and
+# -initWithUnsignedLong: are hidden: they would duplicate init(value: Int) and init(value: UInt).
+- Name: NSNumber
+  Methods:
+  - Selector: 'initWithChar:'
+    MethodKind: Instance
+    SwiftName: 'init(value:)'
+  - Selector: 'initWithUnsignedChar:'
+    MethodKind: Instance
+    SwiftName: 'init(value:)'
+  - Selector: 'initWithShort:'
+    MethodKind: Instance
+    SwiftName: 'init(value:)'
+  - Selector: 'initWithUnsignedShort:'
+    MethodKind: Instance
+    SwiftName: 'init(value:)'
+  - Selector: 'initWithInt:'
+    MethodKind: Instance
+    SwiftName: 'init(value:)'
+  - Selector: 'initWithUnsignedInt:'
+    MethodKind: Instance
+    SwiftName: 'init(value:)'
+  - Selector: 'initWithLongLong:'
+    MethodKind: Instance
+    SwiftName: 'init(value:)'
+  - Selector: 'initWithUnsignedLongLong:'
+    MethodKind: Instance
+    SwiftName: 'init(value:)'
+  - Selector: 'initWithFloat:'
+    MethodKind: Instance
+    SwiftName: 'init(value:)'
+  - Selector: 'initWithDouble:'
+    MethodKind: Instance
+    SwiftName: 'init(value:)'
+  - Selector: 'initWithBool:'
+    MethodKind: Instance
+    SwiftName: 'init(value:)'
+  - Selector: 'initWithInteger:'
+    MethodKind: Instance
+    SwiftName: 'init(value:)'
+  - Selector: 'initWithUnsignedInteger:'
+    MethodKind: Instance
+    SwiftName: 'init(value:)'
+  - Selector: 'initWithLong:'
+    MethodKind: Instance
+    Availability: nonswift
+  - Selector: 'initWithUnsignedLong:'
+    MethodKind: Instance
+    Availability: nonswift
 # NSData bridges to the Data value type, so `NSData *` in an Objective-C signature imports as
 # Data. Without it JSONSerialization.data(withJSONObject:) returns NSData and nothing downstream
 # that expects Data accepts it.
