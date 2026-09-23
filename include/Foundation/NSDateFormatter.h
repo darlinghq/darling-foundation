@@ -44,6 +44,7 @@ typedef NS_ENUM(NSUInteger, NSDateFormatterBehavior) {
 // Set and get all CFDate formatter property keys except kCFDateFormatterCalendarName
 - (NSString *)dateFormat;
 - (void)setDateFormat:(NSString *)string;
+- (void)setLocalizedDateFormatFromTemplate:(NSString *)dateFormatTemplate;
 @property (retain) NSTimeZone *timeZone;
 @property (retain) NSCalendar *calendar;
 - (BOOL)isLenient;

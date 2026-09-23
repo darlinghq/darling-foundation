@@ -131,6 +131,14 @@ static NSDateFormatterBehavior defaultBehavior = NSDateFormatterBehaviorDefault;
     [self _reset];
 }
 
+- (void)setLocalizedDateFormatFromTemplate:(NSString *)dateFormatTemplate
+{
+    NSString *format = [[self class] dateFormatFromTemplate:dateFormatTemplate
+                                                   options:0
+                                                    locale:[self locale]];
+    [self setDateFormat:format];
+}
+
 - (NSLocale *)locale
 {
     [self _regenerateFormatter];
