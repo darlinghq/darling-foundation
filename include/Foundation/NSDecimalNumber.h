@@ -46,7 +46,7 @@ FOUNDATION_EXPORT NSString * const NSDecimalNumberDivideByZeroException;
 - (id)initWithString:(NSString *)numberValue;
 - (id)initWithString:(NSString *)numberValue locale:(id)locale;
 - (NSString *)descriptionWithLocale:(id)locale;
-- (NSDecimal)decimalValue;
+@property (readonly) NSDecimal decimalValue;
 - (NSDecimalNumber *)decimalNumberByAdding:(NSDecimalNumber *)decimalNumber;
 - (NSDecimalNumber *)decimalNumberByAdding:(NSDecimalNumber *)decimalNumber withBehavior:(id <NSDecimalNumberBehaviors>)behavior;
 - (NSDecimalNumber *)decimalNumberBySubtracting:(NSDecimalNumber *)decimalNumber;
@@ -76,7 +76,7 @@ FOUNDATION_EXPORT NSString * const NSDecimalNumberDivideByZeroException;
 
 @interface NSNumber (NSDecimalNumberExtensions)
 
-- (NSDecimal)decimalValue;
+@property (readonly) NSDecimal decimalValue;
 
 @end
 
