@@ -3,6 +3,8 @@
 #import <Foundation/NSDictionary.h>
 
 @class NSNumber;
+@class NSMutableSet;
+@class NSMutableDictionary;
 
 typedef NSString * NSProgressKind NS_TYPED_EXTENSIBLE_ENUM;
 typedef NSString * NSProgressUserInfoKey NS_TYPED_EXTENSIBLE_ENUM;
