@@ -27,7 +27,8 @@ FOUNDATION_EXPORT const NSRunLoopMode NSRunLoopCommonModes;
 + (NSRunLoop *)mainRunLoop;
 
 - (NSRunLoopMode) currentMode;
-- (CFRunLoopRef) getCFRunLoop;
+// NSRunLoop owns this run loop; callers receive a borrowed reference.
+- (CFRunLoopRef) getCFRunLoop CF_RETURNS_NOT_RETAINED;
 
 - (void) addTimer: (NSTimer *) timer forMode: (NSRunLoopMode) mode;
 
