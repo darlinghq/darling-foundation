@@ -36,7 +36,7 @@ FOUNDATION_EXPORT NSString * const NSInvocationOperationCancelledException;
 - (BOOL)isExecuting;
 - (BOOL)isFinished;
 - (BOOL)isConcurrent;
-- (BOOL)isReady;
+@property (readonly, getter=isReady) BOOL ready;
 - (void)addDependency:(NSOperation *)op;
 - (void)removeDependency:(NSOperation *)op;
 - (NSArray *)dependencies;
@@ -60,6 +60,8 @@ FOUNDATION_EXPORT NSString * const NSInvocationOperationCancelledException;
 }
 
 #if NS_BLOCKS_AVAILABLE
+// Implemented by NSBlockOperation; expose it to Swift as BlockOperation(block:).
+- (instancetype)initWithBlock:(void (^)(void))block;
 + (id)blockOperationWithBlock:(void (^)(void))block;
 - (void)addExecutionBlock:(void (^)(void))block;
 - (NSArray *)executionBlocks;
