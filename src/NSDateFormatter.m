@@ -8,6 +8,7 @@
 #import <Foundation/NSDateFormatter.h>
 #import <Foundation/NSDictionary.h>
 #import <Foundation/NSError.h>
+#import <Foundation/FoundationErrors.h>
 #import <Foundation/NSString.h>
 #import <Foundation/NSDate.h>
 #import <Foundation/NSArray.h>
@@ -92,14 +93,65 @@ static NSDateFormatterBehavior defaultBehavior = NSDateFormatterBehaviorDefault;
     [super dealloc];
 }
 
+static NSError *invalidValueError(NSString *string)
+{
+    NSString *description = [NSString stringWithFormat:@"The value \u201c%@\u201d is invalid.", string];
+    return [NSError errorWithDomain:NSCocoaErrorDomain code:NSFormattingError
+                           userInfo:@{NSLocalizedDescriptionKey: description}];
+}
+
+- (NSString *)stringForObjectValue:(id)obj
+{
+    if (![obj isKindOfClass:[NSDate class]])
+    {
+        return nil;
+    }
+    return [self stringFromDate:obj];
+}
+
+- (BOOL)getObjectValue:(out id *)obj forString:(NSString *)string range:(inout NSRange *)rangep error:(out NSError **)error
+{
+    NSRange range = rangep != NULL ? *rangep : NSMakeRange(0, [string length]);
+    CFRange cfRange = CFRangeMake(range.location, range.length);
+    CFAbsoluteTime time = 0;
+    [self _regenerateFormatter];
+    if (_formatter == NULL || !CFDateFormatterGetAbsoluteTimeFromString(_formatter, (CFStringRef)string, &cfRange, &time))
+    {
+        if (error != NULL)
+        {
+            *error = invalidValueError(string);
+        }
+        return NO;
+    }
+    if (rangep != NULL)
+    {
+        *rangep = NSMakeRange(cfRange.location, cfRange.length);
+    }
+    if (obj != NULL)
+    {
+        *obj = [NSDate dateWithTimeIntervalSinceReferenceDate:time];
+    }
+    return YES;
+}
+
 - (BOOL)getObjectValue:(out id *)obj forString:(NSString *)string errorDescription:(out NSString **)error
 {
     NSError *err = nil;
-    NSRange r;
-    BOOL success = [self getObjectValue:obj forString:string range:&r error:&err];
-    if (error != NULL)
+    NSRange r = NSMakeRange(0, [string length]);
+    id value = nil;
+    BOOL success = [self getObjectValue:&value forString:string range:&r error:&err];
+    if (success && r.length != [string length])
     {
-        *error= [err localizedDescription];
+        success = NO;
+        err = invalidValueError(string);
+    }
+    if (success && obj != NULL)
+    {
+        *obj = value;
+    }
+    if (!success && error != NULL)
+    {
+        *error = [err localizedDescription];
     }
     return success;
 }
@@ -142,12 +194,26 @@ static NSDateFormatterBehavior defaultBehavior = NSDateFormatterBehaviorDefault;
 
 - (NSString *)dateFormat
 {
-    return _attributes[@"dateFormat"];
+    NSString *format = _attributes[@"dateFormat"];
+    if (format != nil)
+    {
+        return format;
+    }
+    // null_resettable: without an explicit format, report the one the date and time styles produce.
+    [self _regenerateFormatter];
+    return _formatter != NULL ? (NSString *)CFDateFormatterGetFormat(_formatter) : nil;
 }
 
 - (void)setDateFormat:(NSString *)string
 {
-    _attributes[@"dateFormat"] = string;
+    if (string != nil)
+    {
+        _attributes[@"dateFormat"] = [[string copy] autorelease];
+    }
+    else
+    {
+        [_attributes removeObjectForKey:@"dateFormat"];
+    }
     [self _reset];
 }
 

@@ -31,29 +31,21 @@ typedef NS_ENUM(NSUInteger, NSDateFormatterBehavior) {
 - (BOOL)getObjectValue:(out id *)obj forString:(NSString *)string range:(inout NSRange *)rangep error:(out NSError **)error;
 - (NSString *)stringFromDate:(NSDate *)date;
 - (NSDate *)dateFromString:(NSString *)string;
-- (NSDateFormatterStyle)dateStyle;
-- (void)setDateStyle:(NSDateFormatterStyle)style;
-- (NSDateFormatterStyle)timeStyle;
-- (void)setTimeStyle:(NSDateFormatterStyle)style;
+@property NSDateFormatterStyle dateStyle;
+@property NSDateFormatterStyle timeStyle;
 @property (retain) NSLocale *locale;
 @property NSFormattingContext formattingContext;
-- (BOOL)generatesCalendarDates;
-- (void)setGeneratesCalendarDates:(BOOL)generate;
-- (NSDateFormatterBehavior)formatterBehavior;
-- (void)setFormatterBehavior:(NSDateFormatterBehavior)behavior;
+@property BOOL generatesCalendarDates;
+@property NSDateFormatterBehavior formatterBehavior;
 
 // Set and get all CFDate formatter property keys except kCFDateFormatterCalendarName
-- (NSString *)dateFormat;
-- (void)setDateFormat:(NSString *)string;
+@property (null_resettable, copy) NSString *dateFormat;
 - (void)setLocalizedDateFormatFromTemplate:(NSString *)dateFormatTemplate;
 @property (retain) NSTimeZone *timeZone;
 @property (retain) NSCalendar *calendar;
-- (BOOL)isLenient;
-- (void)setLenient:(BOOL)lenient;
-- (NSDate *)twoDigitStartDate;
-- (void)setTwoDigitStartDate:(NSDate *)date;
-- (NSDate *)defaultDate;
-- (void)setDefaultDate:(NSDate *)date;
+@property (getter=isLenient) BOOL lenient;
+@property (copy) NSDate *twoDigitStartDate;
+@property (copy) NSDate *defaultDate;
 - (NSArray *)eraSymbols;
 - (void)setEraSymbols:(NSArray *)symbols;
 - (NSArray *)monthSymbols;
@@ -94,9 +86,7 @@ typedef NS_ENUM(NSUInteger, NSDateFormatterBehavior) {
 - (void)setStandaloneQuarterSymbols:(NSArray *)array;
 - (NSArray *)shortStandaloneQuarterSymbols;
 - (void)setShortStandaloneQuarterSymbols:(NSArray *)array;
-- (NSDate *)gregorianStartDate;
-- (void)setGregorianStartDate:(NSDate *)date;
-- (BOOL)doesRelativeDateFormatting;
-- (void)setDoesRelativeDateFormatting:(BOOL)b;
+@property (copy) NSDate *gregorianStartDate;
+@property BOOL doesRelativeDateFormatting;
 
 @end
