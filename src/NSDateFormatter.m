@@ -14,6 +14,26 @@
 #import <Foundation/NSTimeZone.h>
 #import <Foundation/NSCalendar.h>
 #import <Foundation/NSLocale.h>
+#include <unicode/udisplaycontext.h>
+
+static UDisplayContext displayContextForFormattingContext(NSFormattingContext context)
+{
+    switch (context)
+    {
+        case NSFormattingContextStandalone:
+            return UDISPCTX_CAPITALIZATION_FOR_STANDALONE;
+        case NSFormattingContextListItem:
+            return UDISPCTX_CAPITALIZATION_FOR_UI_LIST_OR_MENU;
+        case NSFormattingContextBeginningOfSentence:
+            return UDISPCTX_CAPITALIZATION_FOR_BEGINNING_OF_SENTENCE;
+        case NSFormattingContextMiddleOfSentence:
+            return UDISPCTX_CAPITALIZATION_FOR_MIDDLE_OF_SENTENCE;
+        case NSFormattingContextUnknown:
+        case NSFormattingContextDynamic:
+        default:
+            return UDISPCTX_CAPITALIZATION_NONE;
+    }
+}
 
 @implementation NSDateFormatter
 
@@ -151,6 +171,17 @@ static NSDateFormatterBehavior defaultBehavior = NSDateFormatterBehaviorDefault;
     [self _reset];
 }
 
+- (NSFormattingContext)formattingContext
+{
+    return (NSFormattingContext)[_attributes[@"formattingContext"] integerValue];
+}
+
+- (void)setFormattingContext:(NSFormattingContext)context
+{
+    _attributes[@"formattingContext"] = @(context);
+    [self _reset];
+}
+
 - (BOOL)generatesCalendarDates
 {
     return [_attributes[@"generatesCalendarDates"] boolValue];
@@ -185,6 +216,14 @@ static NSDateFormatterBehavior defaultBehavior = NSDateFormatterBehaviorDefault;
     if (_attributes[@"dateFormat"])
     {
         CFDateFormatterSetFormat(_formatter, (CFStringRef)_attributes[@"dateFormat"]);
+    }
+
+    if (_attributes[@"formattingContext"])
+    {
+        // CoreFoundation already passes this private property through to ICU.
+        // Its key is currently private, so use the same string as CFDateFormatter.
+        NSNumber *icuContext = @(displayContextForFormattingContext([self formattingContext]));
+        CFDateFormatterSetProperty(_formatter, CFSTR("kCFDateFormatterFormattingContextKey"), (CFTypeRef)icuContext);
     }
 
     if (_attributes[(id)kCFDateFormatterIsLenient])

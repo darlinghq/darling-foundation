@@ -39,6 +39,24 @@ int main(void)
         NSString *rendered = [formatter stringFromDate:date];
         expect([rendered rangeOfString:@"2024"].location != NSNotFound, @"formatted year");
         expect([rendered rangeOfString:@"19"].location != NSNotFound, @"formatted day");
+
+        expect(formatter.formattingContext == NSFormattingContextUnknown, @"default formatting context");
+        formatter.locale = [[[NSLocale alloc] initWithLocaleIdentifier:@"fr_FR"] autorelease];
+        formatter.dateFormat = @"MMMM";
+        formatter.formattingContext = NSFormattingContextStandalone;
+        expect(formatter.formattingContext == NSFormattingContextStandalone, @"standalone context getter");
+        NSString *standalone = [formatter stringFromDate:date];
+        formatter.formattingContext = NSFormattingContextBeginningOfSentence;
+        NSString *beginning = [formatter stringFromDate:date];
+        formatter.formattingContext = NSFormattingContextMiddleOfSentence;
+        NSString *middle = [formatter stringFromDate:date];
+        expect(![beginning isEqualToString:middle], @"sentence context changes French capitalization");
+        formatter.formattingContext = NSFormattingContextBeginningOfSentence;
+        NSDateFormatter *copy = [formatter copy];
+        expect(copy.formattingContext == NSFormattingContextBeginningOfSentence, @"copy preserves context");
+        expect([standalone length] > 0 && [beginning length] > 0, @"contextual date formatting");
+        NSLog(@"French month context: standalone=%@ beginning=%@ middle=%@", standalone, beginning, middle);
+        [copy release];
         NSLog(@"PASS: calendar components and localized date template: %@", rendered);
         [formatter release];
         [parts release];

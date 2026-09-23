@@ -36,6 +36,7 @@ typedef NS_ENUM(NSUInteger, NSDateFormatterBehavior) {
 - (NSDateFormatterStyle)timeStyle;
 - (void)setTimeStyle:(NSDateFormatterStyle)style;
 @property (retain) NSLocale *locale;
+@property NSFormattingContext formattingContext;
 - (BOOL)generatesCalendarDates;
 - (void)setGeneratesCalendarDates:(BOOL)generate;
 - (NSDateFormatterBehavior)formatterBehavior;
