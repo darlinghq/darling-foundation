@@ -229,6 +229,15 @@
 
 #define NS_SWIFT_UNAVAILABLE(_msg) CF_SWIFT_UNAVAILABLE(_msg)
 
+// Import an Objective-C declaration with Swift's Sendable annotation.
+#ifndef NS_SWIFT_SENDABLE
+#if __has_attribute(swift_attr)
+#define NS_SWIFT_SENDABLE __attribute__((swift_attr("@Sendable")))
+#else
+#define NS_SWIFT_SENDABLE
+#endif
+#endif
+
 #define NS_ASSUME_NONNULL_BEGIN _Pragma("clang assume_nonnull begin")
 #define NS_ASSUME_NONNULL_END   _Pragma("clang assume_nonnull end")
 
