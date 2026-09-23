@@ -2,52 +2,72 @@
 #import <Foundation/NSString.h>
 #import <Foundation/NSDictionary.h>
 
-FOUNDATION_EXPORT NSString * const NSProgressEstimatedTimeRemainingKey;
-FOUNDATION_EXPORT NSString * const NSProgressThroughputKey;
-FOUNDATION_EXPORT NSString * const NSProgressKindFile;
-FOUNDATION_EXPORT NSString * const NSProgressFileOperationKindKey;
-FOUNDATION_EXPORT NSString * const NSProgressFileOperationKindDownloading;
-FOUNDATION_EXPORT NSString * const NSProgressFileOperationKindDecompressingAfterDownloading;
-FOUNDATION_EXPORT NSString * const NSProgressFileOperationKindReceiving;
-FOUNDATION_EXPORT NSString * const NSProgressFileOperationKindCopying;
-FOUNDATION_EXPORT NSString * const NSProgressFileURLKey;
-FOUNDATION_EXPORT NSString * const NSProgressFileTotalCountKey;
-FOUNDATION_EXPORT NSString * const NSProgressFileCompletedCountKey;
-FOUNDATION_EXPORT NSString * const NSProgressFileAnimationImageKey;
-FOUNDATION_EXPORT NSString * const NSProgressFileAnimationImageOriginalRectKey;
-FOUNDATION_EXPORT NSString * const NSProgressFileIconKey;
+@class NSNumber;
 
-@interface NSProgress : NSObject {
-	void (^_cancellationHandler)(void);
-	void (^_pausingHandler)(void);
-	void (^_resumingHandler)(void);
-	int64_t _completedUnitCount;
-	int64_t _totalUnitCount;
-	BOOL _cancelled;
-	BOOL _paused;
-	BOOL _cancellable;
-	BOOL _pausable;
-}
+typedef NSString * NSProgressKind NS_TYPED_EXTENSIBLE_ENUM;
+typedef NSString * NSProgressUserInfoKey NS_TYPED_EXTENSIBLE_ENUM;
+typedef NSString * NSProgressFileOperationKind NS_TYPED_EXTENSIBLE_ENUM;
 
-+ (instancetype)currentProgress;
-+ (instancetype)progressWithTotalUnitCount:(int64_t)unitCount;
-+ (instancetype)discreteProgressWithTotalUnitCount: (int64_t)unitCount;
+NS_ASSUME_NONNULL_BEGIN
 
-- (instancetype)initWithParent: (NSProgress*)parent userInfo: (NSDictionary<NSString*, id>*)userInfo;
+@interface NSProgress : NSObject
 
-@property(readonly, getter=isCancelled) BOOL cancelled;
-@property(readonly, getter=isPaused) BOOL paused;
-@property(getter=isCancellable) BOOL cancellable;
-@property(getter=isPausable) BOOL pausable;
-@property int64_t completedUnitCount;
++ (nullable NSProgress *)currentProgress;
++ (NSProgress *)progressWithTotalUnitCount:(int64_t)unitCount;
++ (NSProgress *)discreteProgressWithTotalUnitCount:(int64_t)unitCount;
++ (NSProgress *)progressWithTotalUnitCount:(int64_t)unitCount parent:(NSProgress *)parent pendingUnitCount:(int64_t)portionOfParentTotalUnitCount;
+
+- (instancetype)initWithParent:(nullable NSProgress *)parentProgressOrNil userInfo:(nullable NSDictionary<NSProgressUserInfoKey, id> *)userInfoOrNil NS_DESIGNATED_INITIALIZER;
+
+- (void)becomeCurrentWithPendingUnitCount:(int64_t)unitCount;
+- (void)resignCurrent;
+- (void)addChild:(NSProgress *)child withPendingUnitCount:(int64_t)inUnitCount;
+
 @property int64_t totalUnitCount;
+@property int64_t completedUnitCount;
 
-@property(copy) void (^cancellationHandler)(void);
-@property(copy) void (^pausingHandler)(void);
-@property(copy) void (^resumingHandler)(void);
+@property (null_resettable, copy) NSString *localizedDescription;
+@property (null_resettable, copy) NSString *localizedAdditionalDescription;
+
+@property (getter=isCancellable) BOOL cancellable;
+@property (getter=isPausable) BOOL pausable;
+@property (readonly, getter=isCancelled) BOOL cancelled;
+@property (readonly, getter=isPaused) BOOL paused;
+
+@property (nullable, copy) void (^cancellationHandler)(void);
+@property (nullable, copy) void (^pausingHandler)(void);
+@property (nullable, copy) void (^resumingHandler)(void);
+
+- (void)setUserInfoObject:(nullable id)objectOrNil forKey:(NSProgressUserInfoKey)key;
+
+@property (readonly, getter=isIndeterminate) BOOL indeterminate;
+@property (readonly) double fractionCompleted;
+@property (readonly, getter=isFinished) BOOL finished;
 
 - (void)cancel;
 - (void)pause;
 - (void)resume;
 
+@property (readonly, copy) NSDictionary<NSProgressUserInfoKey, id> *userInfo;
+@property (nullable, copy) NSProgressKind kind;
+@property (nullable, copy) NSNumber *estimatedTimeRemaining;
+@property (nullable, copy) NSNumber *throughput;
+
 @end
+
+FOUNDATION_EXPORT NSProgressUserInfoKey const NSProgressEstimatedTimeRemainingKey;
+FOUNDATION_EXPORT NSProgressUserInfoKey const NSProgressThroughputKey;
+FOUNDATION_EXPORT NSProgressKind const NSProgressKindFile;
+FOUNDATION_EXPORT NSProgressUserInfoKey const NSProgressFileOperationKindKey;
+FOUNDATION_EXPORT NSProgressFileOperationKind const NSProgressFileOperationKindDownloading;
+FOUNDATION_EXPORT NSProgressFileOperationKind const NSProgressFileOperationKindDecompressingAfterDownloading;
+FOUNDATION_EXPORT NSProgressFileOperationKind const NSProgressFileOperationKindReceiving;
+FOUNDATION_EXPORT NSProgressFileOperationKind const NSProgressFileOperationKindCopying;
+FOUNDATION_EXPORT NSProgressUserInfoKey const NSProgressFileURLKey;
+FOUNDATION_EXPORT NSProgressUserInfoKey const NSProgressFileTotalCountKey;
+FOUNDATION_EXPORT NSProgressUserInfoKey const NSProgressFileCompletedCountKey;
+FOUNDATION_EXPORT NSProgressUserInfoKey const NSProgressFileAnimationImageKey;
+FOUNDATION_EXPORT NSProgressUserInfoKey const NSProgressFileAnimationImageOriginalRectKey;
+FOUNDATION_EXPORT NSProgressUserInfoKey const NSProgressFileIconKey;
+
+NS_ASSUME_NONNULL_END
