@@ -31,6 +31,18 @@ Classes:
   SwiftName: Scanner
 - Name: NSURLSession
   SwiftName: URLSession
+- Name: NSNotificationCenter
+  SwiftName: NotificationCenter
+- Name: NSOperationQueue
+  SwiftName: OperationQueue
+- Name: NSOperation
+  SwiftName: Operation
+- Name: NSBlockOperation
+  SwiftName: BlockOperation
+- Name: NSURLResponse
+  SwiftName: URLResponse
+- Name: NSURLSessionDataTask
+  SwiftName: URLSessionDataTask
 - Name: NSFileManager
   SwiftName: FileManager
 - Name: NSProcessInfo
