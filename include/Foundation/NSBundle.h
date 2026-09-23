@@ -1,4 +1,5 @@
 #import <Foundation/NSObject.h>
+#import <Foundation/NSArray.h>
 
 enum {
     NSBundleExecutableArchitectureI386   = 0x00000007,
@@ -74,10 +75,10 @@ typedef struct __CFBundle *CFBundleRef;
 - (Class)classNamed:(NSString *)className;
 - (Class)principalClass;
 - (NSArray *)localizations;
-- (NSArray *)preferredLocalizations;
+@property (readonly, copy) NSArray<NSString *> *preferredLocalizations;
 - (NSString *)developmentLocalization;
-+ (NSArray *)preferredLocalizationsFromArray:(NSArray *)localizationsArray;
-+ (NSArray *)preferredLocalizationsFromArray:(NSArray *)localizationsArray forPreferences:(NSArray *)preferencesArray;
++ (NSArray<NSString *> *)preferredLocalizationsFromArray:(NSArray<NSString *> *)localizationsArray;
++ (NSArray<NSString *> *)preferredLocalizationsFromArray:(NSArray<NSString *> *)localizationsArray forPreferences:(NSArray<NSString *> *)preferencesArray;
 - (NSArray *)executableArchitectures;
 
 @end
