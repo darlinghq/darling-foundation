@@ -68,6 +68,7 @@ set(foundation_sources
 	src/NSDirectoryEnumerator.m
 	src/NSDistributedLock.m
 	src/NSDistributedNotificationCenter.m
+	src/NSEnergyFormatter.m
 	src/NSEqualityPredicateOperator.m
 	src/NSException.m
 	src/NSExpression.m
@@ -108,6 +109,7 @@ set(foundation_sources
 	src/NSKeyValueObserving.m
 	src/NSKeyValueProperty.m
 	src/NSKeyValueUnnestedProperty.m
+	src/NSLengthFormatter.m
 	src/NSLikePredicateOperator.m
 	src/NSLinguisticTagger.m
 	src/NSLinkCheckingResult.m
@@ -116,6 +118,7 @@ set(foundation_sources
 	src/NSLock.m
 	src/NSLog.m
 	src/NSMapTable.m
+	src/NSMassFormatter.m
 	src/NSMatchingPredicateOperator.m
 	src/NSMutableStringProxy.m
 	#src/NSMutableStringProxyForMutableAttributedString.m # duplicate?!
