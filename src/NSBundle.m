@@ -718,7 +718,8 @@ static void __NSBundleMainBundleDealloc()
     {
         *error = nil;
     }
-    Boolean loaded = false;
+    // Already-loaded code counts as success, as on macOS.
+    Boolean loaded = true;
     // synchronize this entire block to prevent simultaneous loads
     @synchronized(self)
     {
