@@ -21,6 +21,22 @@ Classes:
 # URLSession.dataTask(with:completionHandler:) through its Objective-C bridge.
 - Name: NSURLRequest
   SwiftBridge: Foundation.URLRequest
+# The overlay's value types, as in the macOS SDK. Without these, `NSDate *`, `NSURL *`, ... in an
+# Objective-C signature import as the classes and Swift callers passing Date, URL, ... fail to type-check.
+- Name: NSDate
+  SwiftBridge: Foundation.Date
+- Name: NSDateInterval
+  SwiftBridge: Foundation.DateInterval
+- Name: NSLocale
+  SwiftBridge: Foundation.Locale
+- Name: NSTimeZone
+  SwiftBridge: Foundation.TimeZone
+- Name: NSCalendar
+  SwiftBridge: Foundation.Calendar
+- Name: NSURL
+  SwiftBridge: Foundation.URL
+- Name: NSCharacterSet
+  SwiftBridge: Foundation.CharacterSet
 # SwiftName renames an Objective-C class to the name Swift code written against a recent macOS SDK
 # spells it. The class is unchanged; only the Swift-facing name is added. Without these the Swift
 # spelling does not resolve at all, and the diagnostic ("cannot find type 'RunLoop' in scope")
