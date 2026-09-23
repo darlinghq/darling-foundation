@@ -133,6 +133,14 @@ Classes:
   SwiftName: Formatter
 - Name: NSNumberFormatter
   SwiftName: NumberFormatter
+- Name: NSDateFormatter
+  SwiftName: DateFormatter
+  Methods:
+  # Keeps macOS's timeStyle: label; the importer would prune it to time: because the parameter's
+  # type name also ends in Style.
+  - Selector: "localizedStringFromDate:dateStyle:timeStyle:"
+    MethodKind: Class
+    SwiftName: "localizedString(from:dateStyle:timeStyle:)"
 - Name: NSDateComponentsFormatter
   SwiftName: DateComponentsFormatter
 - Name: NSISO8601DateFormatter
@@ -186,6 +194,10 @@ Tags:
   SwiftName: PropertyListSerialization.PropertyListFormat
 - Name: NSPropertyListMutabilityOptions
   SwiftName: PropertyListSerialization.MutabilityOptions
+- Name: NSDateFormatterStyle
+  SwiftName: DateFormatter.Style
+- Name: NSDateFormatterBehavior
+  SwiftName: DateFormatter.Behavior
 Enumerators:
 # Nesting an enum does not re-derive its cases: the importer strips the common NSNumberFormatter
 # prefix but not the trailing Style, leaving .decimalStyle rather than macOS's .decimal.
@@ -246,6 +258,20 @@ Enumerators:
   SwiftName: forcedOrdering
 - Name: NSRegularExpressionSearch
   SwiftName: regularExpression
+- Name: NSDateFormatterNoStyle
+  SwiftName: none
+- Name: NSDateFormatterShortStyle
+  SwiftName: short
+- Name: NSDateFormatterMediumStyle
+  SwiftName: medium
+- Name: NSDateFormatterLongStyle
+  SwiftName: long
+- Name: NSDateFormatterFullStyle
+  SwiftName: full
+- Name: NSDateFormatterBehaviorDefault
+  SwiftName: default
+- Name: NSDateFormatterBehavior10_4
+  SwiftName: behavior10_4
 Globals:
 - Name: NSDefaultRunLoopMode
   SwiftName: RunLoop.Mode.default
