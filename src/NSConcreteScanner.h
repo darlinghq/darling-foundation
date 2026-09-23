@@ -15,8 +15,6 @@ CF_PRIVATE
 }
 
 - (void)dealloc;
-- (BOOL)scanLongLong:(long long *)longLong;
-- (BOOL)scanInt:(int *)anInt;
 - (id)locale;
 - (void)setLocale:(id)locale;
 - (BOOL)caseSensitive;

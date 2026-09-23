@@ -280,6 +280,167 @@ static inline NSUInteger skipLeading(unichar** ptrRef, NSUInteger length, NSChar
     return foundInt;
 }
 
+- (NSCharacterSet *)_invertedSkipSet
+{
+    return [[self charactersToBeSkipped] invertedSet];
+}
+
+- (BOOL)scanLongLong:(long long *)value
+{
+    NSString *scanString = [self string];
+    NSUInteger scanLocation = [self scanLocation];
+    NSUInteger length = [scanString length] - scanLocation;
+    if (length == 0)
+    {
+        return NO;
+    }
+    unichar *buf = malloc((length+1) * sizeof(unichar));
+    buf[length] = (unichar)0x0;
+    unichar *ptr = buf;
+    [scanString getCharacters:ptr range:NSMakeRange(scanLocation, length)];
+
+    length -= skipLeading(&ptr, length, [self charactersToBeSkipped]);
+    if (length == 0)
+    {
+        free(buf);
+        return NO;
+    }
+
+    BOOL isNegative;
+    if (*ptr == '-') {
+        isNegative = YES;
+        ptr++;
+    }
+    else
+    {
+        isNegative = NO;
+    }
+    long long counter = 0;
+    BOOL foundInt = NO;
+    BOOL overflow = NO;
+
+    while (*ptr >= '0' && *ptr <= '9')
+    {
+        if (!overflow)
+        {
+            foundInt = YES;
+            int increment = *ptr - '0';
+            if (counter > LONG_LONG_MAX / 10 ||
+                (counter == LONG_LONG_MAX / 10 && increment > LONG_LONG_MAX % 10))
+            {
+                overflow = YES;
+            }
+            counter = counter * 10 + increment;
+        }
+        ptr++;
+    }
+    if (foundInt)
+    {
+        [self setScanLocation:scanLocation + (ptr - buf)];
+        if (value)
+        {
+            if (overflow)
+            {
+                *value = isNegative ? LONG_LONG_MIN : LONG_LONG_MAX;
+            }
+            else
+            {
+                *value = isNegative ? -counter : counter;
+            }
+        }
+    }
+    free(buf);
+    return foundInt;
+}
+
+- (BOOL)scanInt:(int *)value
+{
+    NSString *scanString = [self string];
+    NSUInteger scanLocation = [self scanLocation];
+    NSUInteger length = [scanString length] - scanLocation;
+    if (length == 0)
+    {
+        return NO;
+    }
+    unichar *buf = malloc((length+1) * sizeof(unichar));
+    buf[length] = (unichar)0x0;
+    unichar *ptr = buf;
+    [scanString getCharacters:ptr range:NSMakeRange(scanLocation, length)];
+
+    length -= skipLeading(&ptr, length, [self charactersToBeSkipped]);
+    if (length == 0)
+    {
+        free(buf);
+        return NO;
+    }
+
+    BOOL isNegative;
+    if (*ptr == '-') {
+        isNegative = YES;
+        ptr++;
+    }
+    else
+    {
+        isNegative = NO;
+    }
+    long long counter = 0;
+    BOOL foundInt = NO;
+    BOOL overflow = NO;
+    NSCharacterSet *digits = [NSCharacterSet decimalDigitCharacterSet];
+    while ([digits characterIsMember:*ptr])
+    {
+        foundInt = YES;
+        counter = counter * 10 + *ptr - '0';
+        ptr++;
+        if (counter > (long long)INT_MAX)
+        {
+            overflow = YES;
+        }
+    }
+    if (foundInt)
+    {
+        [self setScanLocation:scanLocation + (ptr - buf)];
+        if (value)
+        {
+            if (overflow)
+            {
+                *value = isNegative ? INT_MIN : INT_MAX;
+            }
+            else
+            {
+                *value = (int)(isNegative ? -counter : counter);
+            }
+        }
+    }
+    free(buf);
+    return foundInt;
+}
+
+- (BOOL)scanDouble:(double *)value
+{
+#warning TODO : implement non-naive IEEE 754 implementation -- Issue #301
+    NSDecimal decimal = { 0 };
+    BOOL scanned = [self scanDecimal:&decimal];
+    if (scanned && value)
+    {
+        NSDecimalNumber *number = [[NSDecimalNumber alloc] initWithDecimal:decimal];
+        *value = [number doubleValue];
+        [number release];
+    }
+    return scanned;
+}
+
+- (BOOL)scanFloat:(float *)value
+{
+    double d = 0.0;
+    BOOL scanned = [self scanDouble:&d];
+    if (scanned && value)
+    {
+        *value = (float)d;
+    }
+    return scanned;
+}
+
 static inline NSUInteger skipSkipSet(NSScanner *self, NSString *s)
 {
     NSUInteger strLength = [s length];
@@ -623,158 +784,6 @@ static inline NSUInteger skipSkipSet(NSScanner *self, NSString *s)
     [skipSet release];
     [invertedSkipSet release];
     [super dealloc];
-}
-
-- (BOOL)scanLongLong:(long long *)value
-{
-    NSUInteger length = [scanString length] - scanLocation;
-    if (length == 0)
-    {
-        return NO;
-    }
-    unichar *buf = malloc((length+1) * sizeof(unichar));
-    buf[length] = (unichar)0x0;
-    unichar *ptr = buf;
-    [scanString getCharacters:ptr range:NSMakeRange(scanLocation, length)];
-
-    length -= skipLeading(&ptr, length, skipSet);
-    if (length == 0)
-    {
-        free(buf);
-        return NO;
-    }
-
-    BOOL isNegative;
-    if (*ptr == '-') {
-        isNegative = YES;
-        ptr++;
-    }
-    else
-    {
-        isNegative = NO;
-    }
-    long long counter = 0;
-    BOOL foundInt = NO;
-    BOOL overflow = NO;
-
-    while (*ptr >= '0' && *ptr <= '9')
-    {
-        if (!overflow)
-        {
-            foundInt = YES;
-            int increment = *ptr - '0';
-            if (counter > LONG_LONG_MAX / 10 ||
-                (counter == LONG_LONG_MAX / 10 && increment > LONG_LONG_MAX % 10))
-            {
-                overflow = YES;
-            }
-            counter = counter * 10 + increment;
-        }
-        ptr++;
-    }
-    if (foundInt)
-    {
-        scanLocation += (ptr - buf);
-        if (value)
-        {
-            if (overflow)
-            {
-                *value = isNegative ? LONG_LONG_MIN : LONG_LONG_MAX;
-            }
-            else
-            {
-                *value = isNegative ? -counter : counter;
-            }
-        }
-    }
-    free(buf);
-    return foundInt;
-}
-
-- (BOOL)scanInt:(int *)value
-{
-    NSUInteger length = [scanString length] - scanLocation;
-    if (length == 0)
-    {
-        return NO;
-    }
-    unichar *buf = malloc((length+1) * sizeof(unichar));
-    buf[length] = (unichar)0x0;
-    unichar *ptr = buf;
-    [scanString getCharacters:ptr range:NSMakeRange(scanLocation, length)];
-
-    length -= skipLeading(&ptr, length, skipSet);
-    if (length == 0)
-    {
-        free(buf);
-        return NO;
-    }
-
-    BOOL isNegative;
-    if (*ptr == '-') {
-        isNegative = YES;
-        ptr++;
-    }
-    else
-    {
-        isNegative = NO;
-    }
-    long long counter = 0;
-    BOOL foundInt = NO;
-    BOOL overflow = NO;
-    NSCharacterSet *digits = [NSCharacterSet decimalDigitCharacterSet];
-    while ([digits characterIsMember:*ptr])
-    {
-        foundInt = YES;
-        counter = counter * 10 + *ptr - '0';
-        ptr++;
-        if (counter > (long long)INT_MAX)
-        {
-            overflow = YES;
-        }
-    }
-    if (foundInt)
-    {
-        scanLocation += (ptr - buf);
-        if (value)
-        {
-            if (overflow)
-            {
-                *value = isNegative ? INT_MIN : INT_MAX;
-            }
-            else
-            {
-                *value = (int)(isNegative ? -counter : counter);
-            }
-        }
-    }
-    free(buf);
-    return foundInt;
-}
-
-- (BOOL)scanDouble:(double *)value
-{
-#warning TODO : implement non-naive IEEE 754 implementation -- Issue #301
-    NSDecimal decimal = { 0 };
-    BOOL scanned = [self scanDecimal:&decimal];
-    if (scanned && value)
-    {
-        NSDecimalNumber *number = [[NSDecimalNumber alloc] initWithDecimal:decimal];
-        *value = [number doubleValue];
-        [number release];
-    }
-    return scanned;
-}
-
-- (BOOL)scanFloat:(float *)value
-{
-    double d = 0.0;
-    BOOL scanned = [self scanDouble:&d];
-    if (scanned && value)
-    {
-        *value = (float)d;
-    }
-    return scanned;
 }
 
 - (id)locale
