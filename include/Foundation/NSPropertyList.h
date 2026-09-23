@@ -15,7 +15,7 @@ typedef NS_ENUM(NSUInteger, NSPropertyListFormat) {
     NSPropertyListBinaryFormat_v1_0 = kCFPropertyListBinaryFormat_v1_0
 };
 
-typedef NSUInteger NSPropertyListReadOptions;
+typedef NSPropertyListMutabilityOptions NSPropertyListReadOptions;
 typedef NSUInteger NSPropertyListWriteOptions;
 
 @interface NSPropertyListSerialization : NSObject
