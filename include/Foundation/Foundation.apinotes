@@ -17,6 +17,10 @@ Classes:
 # that expects Data accepts it.
 - Name: NSData
   SwiftBridge: Foundation.Data
+# Pass the Swift URLRequest value type to NSURLRequest-taking APIs such as
+# URLSession.dataTask(with:completionHandler:) through its Objective-C bridge.
+- Name: NSURLRequest
+  SwiftBridge: Foundation.URLRequest
 # SwiftName renames an Objective-C class to the name Swift code written against a recent macOS SDK
 # spells it. The class is unchanged; only the Swift-facing name is added. Without these the Swift
 # spelling does not resolve at all, and the diagnostic ("cannot find type 'RunLoop' in scope")
