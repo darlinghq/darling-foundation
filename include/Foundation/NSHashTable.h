@@ -30,8 +30,10 @@
 
 /**** Included Headers *******************************************************/
 
+#import <Foundation/NSArray.h>
 #import <Foundation/NSEnumerator.h>
 #import <Foundation/NSPointerFunctions.h>
+#import <Foundation/NSSet.h>
 #import	<Foundation/NSString.h>
 
 #define GS_EXPORT extern
@@ -60,18 +62,18 @@ enum {
 
 typedef NSUInteger NSHashTableOptions;
 
-@interface NSHashTable : NSObject <NSCopying, NSCoding, NSFastEnumeration>
+@interface NSHashTable<__covariant ObjectType> : NSObject <NSCopying, NSCoding, NSFastEnumeration>
 
-+ (id) hashTableWithOptions: (NSPointerFunctionsOptions)options;
++ (NSHashTable<ObjectType> *) hashTableWithOptions: (NSPointerFunctionsOptions)options;
 
-+ (id) hashTableWithWeakObjects;
++ (NSHashTable<ObjectType> *) hashTableWithWeakObjects;
 /**
  * Creates a hash table that uses zeroing weak references (either using the
  * automatic reference counting or garbage collection mechanism, depending on
  * which mode this framework is compiled in) so that objects are removed when
  * their last other reference disappears.
  */
-+ (id) weakObjectsHashTable;
++ (NSHashTable<ObjectType> *) weakObjectsHashTable NS_SWIFT_NAME(weakObjects());
 
 
 - (id) initWithOptions: (NSPointerFunctionsOptions)options
@@ -82,55 +84,55 @@ typedef NSUInteger NSHashTableOptions;
 
 /** Adds the object to the receiver.
  */
-- (void) addObject: (id)object;
+- (void) addObject: (nullable ObjectType)object;
 
 /** Returns an array containing all objects in the receiver.
  */
-- (NSArray*) allObjects;
+@property (readonly, copy) NSArray<ObjectType> *allObjects;
 
 /** Returns any objct from the receiver, or nil if the receiver contains no
  * objects.
  */
-- (id) anyObject;
+- (nullable ObjectType) anyObject;
 
 /** Returns YES if the receiver contains an item equal to anObject, or NO
  * otherwise.
  */
-- (BOOL) containsObject: (id)anObject;
+- (BOOL) containsObject: (nullable ObjectType)anObject;
 
 /** Return the number of items atored in the receiver.
  */
-- (NSUInteger) count;
+@property (readonly) NSUInteger count;
 
 /** Removes from the receiver any items which are not also present in 'other'.
  */
-- (void) intersectHashTable: (NSHashTable*)other;
+- (void) intersectHashTable: (NSHashTable<ObjectType>*)other;
 
 /** Returns YES if the receiver and 'other' contain any items in common.
  */
-- (BOOL) intersectsHashTable: (NSHashTable*)other;
+- (BOOL) intersectsHashTable: (NSHashTable<ObjectType>*)other;
 
 /** Returns YES if the receiver and 'other' contain equal sets of items.
  */
-- (BOOL) isEqualToHashTable: (NSHashTable*)other;
+- (BOOL) isEqualToHashTable: (NSHashTable<ObjectType>*)other;
 
 /** Returns YES fi all the items in the receiver are also present in 'other'
  */
-- (BOOL) isSubsetOfHashTable: (NSHashTable*)other;
+- (BOOL) isSubsetOfHashTable: (NSHashTable<ObjectType>*)other;
 
 /** Returns an item stored in the receiver which is equal to the supplied
  * object argument, or nil if no matchi is found.
  */
-- (id) member: (id)object;
+- (nullable ObjectType) member: (nullable ObjectType)object;
 
 /** Removes from the receivr all those items which are prsent in both
  * the receiver and in 'other'.
  */
-- (void) minusHashTable: (NSHashTable*)other;
+- (void) minusHashTable: (NSHashTable<ObjectType>*)other;
 
 /** Return an enumerator for the receiver.
  */
-- (NSEnumerator*) objectEnumerator;
+- (NSEnumerator<ObjectType>*) objectEnumerator;
 
 /** Return an NSPointerFunctions value describing the functions used by the
  * receiver to handle its contents.
@@ -143,16 +145,16 @@ typedef NSUInteger NSHashTableOptions;
 
 /** Remove the object (or any equal object) from the receiver.
  */
-- (void) removeObject: (id)object;
+- (void) removeObject: (nullable ObjectType)object;
 
 /** Returns a set containing all the objects in the receiver.
  */
-- (NSSet*) setRepresentation; 
+@property (readonly, copy) NSSet<ObjectType> *setRepresentation;
 
 /** Adds to the receiver thse items present in 'other' which were
  * not present in the receiver.
  */
-- (void) unionHashTable: (NSHashTable*)other;
+- (void) unionHashTable: (NSHashTable<ObjectType>*)other;
 
 
 @end
