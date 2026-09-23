@@ -429,3 +429,4 @@ typedef NS_ENUM(NSInteger, NSQualityOfService) {
 };
 
 #define NS_SWIFT_NAME(_name) CF_SWIFT_NAME(_name)
+#define NS_REFINED_FOR_SWIFT CF_REFINED_FOR_SWIFT
