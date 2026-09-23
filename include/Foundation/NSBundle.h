@@ -21,7 +21,7 @@ typedef struct __CFBundle *CFBundleRef;
     Class _principalClass;
 }
 
-@property (class, readonly, retain) NSBundle *mainBundle;
+@property (class, readonly, retain) NSBundle * _Nonnull mainBundle;
 + (NSBundle *)bundleWithPath:(NSString *)path;
 + (NSBundle *)bundleWithURL:(NSURL *)url;
 + (NSBundle *)bundleForClass:(Class)aClass;
