@@ -73,3 +73,19 @@ typedef NSUInteger NSAttributedStringFormattingOptions;
 - (void)endEditing;
 
 @end
+
+typedef NS_OPTIONS(NSUInteger, NSInlinePresentationIntent) {
+    NSInlinePresentationIntentEmphasized         = 1 << 0,
+    NSInlinePresentationIntentStronglyEmphasized = 1 << 1,
+    NSInlinePresentationIntentCode               = 1 << 2,
+    NSInlinePresentationIntentStrikethrough      = 1 << 5,
+    NSInlinePresentationIntentSoftBreak          = 1 << 6,
+    NSInlinePresentationIntentLineBreak          = 1 << 7,
+    NSInlinePresentationIntentInlineHTML         = 1 << 8,
+    NSInlinePresentationIntentBlockHTML          = 1 << 9
+} NS_SWIFT_NAME(InlinePresentationIntent);
+
+// Value: an NSNumber wrapping an NSInlinePresentationIntent.
+FOUNDATION_EXPORT const NSAttributedStringKey NSInlinePresentationIntentAttributeName NS_SWIFT_NAME(inlinePresentationIntent);
+// Value: an NSString holding a BCP-47 language identifier.
+FOUNDATION_EXPORT const NSAttributedStringKey NSLanguageIdentifierAttributeName NS_SWIFT_NAME(languageIdentifier);

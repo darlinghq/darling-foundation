@@ -11,6 +11,11 @@
 #import <Foundation/NSPortCoder.h>
 #import <dispatch/dispatch.h>
 
+// The keys are stored in archives and AttributedString encodings, so they must match macOS.
+// Sources: swift-foundation's LanguageIdentifierAttribute.name; OpenSwiftUI's non-Darwin shim.
+NSAttributedStringKey const NSInlinePresentationIntentAttributeName = @"NSInlinePresentationIntent";
+NSAttributedStringKey const NSLanguageIdentifierAttributeName = @"NSLanguage";
+
 @implementation NSAttributedString
 
 @end
