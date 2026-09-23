@@ -80,7 +80,14 @@ Typedefs:
   SwiftName: NSAttributedString.Key
 - Name: NSRunLoopMode
   SwiftName: RunLoop.Mode
+# As on macOS: Swift spells NSDecimal as Decimal but still mangles it as `So9NSDecimala`.
+- Name: NSDecimal
+  SwiftName: Decimal
 Tags:
+- Name: NSRoundingMode
+  SwiftName: NSDecimalNumber.RoundingMode
+- Name: NSCalculationError
+  SwiftName: NSDecimalNumber.CalculationError
 - Name: NSCalendarUnit
   SwiftName: NSCalendar.Unit
 - Name: NSNumberFormatterStyle
@@ -100,6 +107,25 @@ Enumerators:
   SwiftName: scientific
 - Name: NSNumberFormatterSpellOutStyle
   SwiftName: spellOut
+# The importer strips only NS from these, leaving .RoundPlain and .CalculationNoError.
+- Name: NSRoundPlain
+  SwiftName: plain
+- Name: NSRoundDown
+  SwiftName: down
+- Name: NSRoundUp
+  SwiftName: up
+- Name: NSRoundBankers
+  SwiftName: bankers
+- Name: NSCalculationNoError
+  SwiftName: noError
+- Name: NSCalculationLossOfPrecision
+  SwiftName: lossOfPrecision
+- Name: NSCalculationUnderflow
+  SwiftName: underflow
+- Name: NSCalculationOverflow
+  SwiftName: overflow
+- Name: NSCalculationDivideByZero
+  SwiftName: divideByZero
 Globals:
 - Name: NSDefaultRunLoopMode
   SwiftName: RunLoop.Mode.default
