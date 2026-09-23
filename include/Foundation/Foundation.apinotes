@@ -27,6 +27,8 @@ Classes:
 # points at the caller rather than at the missing rename.
 - Name: NSRunLoop
   SwiftName: RunLoop
+- Name: NSBundle
+  SwiftName: Bundle
 - Name: NSUserDefaults
   SwiftName: UserDefaults
 - Name: NSThread
