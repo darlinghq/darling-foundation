@@ -6,6 +6,7 @@
 //
 
 #import <Foundation/NSDateFormatter.h>
+#import "NSFormatterInternal.h"
 #import <Foundation/NSDictionary.h>
 #import <Foundation/NSError.h>
 #import <Foundation/FoundationErrors.h>
@@ -93,13 +94,6 @@ static NSDateFormatterBehavior defaultBehavior = NSDateFormatterBehaviorDefault;
     [super dealloc];
 }
 
-static NSError *invalidValueError(NSString *string)
-{
-    NSString *description = [NSString stringWithFormat:@"The value \u201c%@\u201d is invalid.", string];
-    return [NSError errorWithDomain:NSCocoaErrorDomain code:NSFormattingError
-                           userInfo:@{NSLocalizedDescriptionKey: description}];
-}
-
 - (NSString *)stringForObjectValue:(id)obj
 {
     if (![obj isKindOfClass:[NSDate class]])
@@ -119,7 +113,7 @@ static NSError *invalidValueError(NSString *string)
     {
         if (error != NULL)
         {
-            *error = invalidValueError(string);
+            *error = _NSFormatterInvalidValueError(string);
         }
         return NO;
     }
@@ -143,7 +137,7 @@ static NSError *invalidValueError(NSString *string)
     if (success && r.length != [string length])
     {
         success = NO;
-        err = invalidValueError(string);
+        err = _NSFormatterInvalidValueError(string);
     }
     if (success && obj != NULL)
     {

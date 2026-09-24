@@ -13,6 +13,9 @@
 #import <Foundation/NSLocale.h>
 #import <Foundation/NSException.h>
 #import <Foundation/NSArray.h>
+#import <Foundation/NSDecimalNumber.h>
+#import "NSFormatterInternal.h"
+#include <math.h>
 
 // Splits a number pattern at the semicolons outside '...' quotes.
 static NSArray *patternSegments(NSString *pattern)
@@ -121,12 +124,84 @@ static NSNumberFormatterBehavior defaultBehavior = NSNumberFormatterBehaviorDefa
     [super dealloc];
 }
 
+- (NSString *)stringForObjectValue:(id)obj
+{
+    if (obj == nil)
+    {
+        return [self nilSymbol];
+    }
+    if (![obj isKindOfClass:[NSNumber class]])
+    {
+        return nil;
+    }
+    return [self stringFromNumber:obj];
+}
+
+- (BOOL)getObjectValue:(out id *)obj forString:(NSString *)string range:(inout NSRange *)rangep error:(out NSError **)error
+{
+    NSRange range = rangep != NULL ? *rangep : NSMakeRange(0, [string length]);
+    NSUInteger length = [string length];
+    if (range.location > length || range.length > length - range.location)
+    {
+        [NSException raise:NSRangeException format:@"range %@ out of bounds for string of length %lu", NSStringFromRange(range), (unsigned long)length];
+    }
+    NSString *nilSymbol = [self nilSymbol];
+    if (nilSymbol != nil && string != nil && [[string substringWithRange:range] isEqualToString:nilSymbol])
+    {
+        if (obj != NULL)
+        {
+            *obj = nil;
+        }
+        return YES;
+    }
+
+    CFRange cfRange = CFRangeMake(range.location, range.length);
+    NSNumber *number = nil;
+    [self _regenerateFormatter];
+    if (string != nil && _formatter != NULL)
+    {
+        CFOptionFlags options = [_attributes[@"parseIntegersOnly"] boolValue] ? kCFNumberFormatterParseIntegersOnly : 0;
+        number = [(NSNumber *)CFNumberFormatterCreateNumberFromString(kCFAllocatorDefault, _formatter, (CFStringRef)string, &cfRange, options) autorelease];
+    }
+    if (number != nil && ![self allowsFloats] && [number doubleValue] != trunc([number doubleValue]))
+    {
+        number = nil;
+    }
+    if (number == nil)
+    {
+        if (error != NULL)
+        {
+            *error = _NSFormatterInvalidValueError(string ?: @"");
+        }
+        return NO;
+    }
+    if (rangep != NULL)
+    {
+        *rangep = NSMakeRange(cfRange.location, cfRange.length);
+    }
+    if (obj != NULL)
+    {
+        *obj = [self generatesDecimalNumbers] ? [NSDecimalNumber decimalNumberWithDecimal:[number decimalValue]] : number;
+    }
+    return YES;
+}
+
 - (BOOL)getObjectValue:(out id *)obj forString:(NSString *)string errorDescription:(out NSString **)errorStr
 {
     NSError *error = nil;
-    NSRange r;
-    BOOL success = [self getObjectValue:obj forString:string range:&r error:&error];
-    if (errorStr != NULL)
+    NSRange r = NSMakeRange(0, [string length]);
+    id value = nil;
+    BOOL success = [self getObjectValue:&value forString:string range:&r error:&error];
+    if (success && r.length != [string length])
+    {
+        success = NO;
+        error = _NSFormatterInvalidValueError(string ?: @"");
+    }
+    if (success && obj != NULL)
+    {
+        *obj = value;
+    }
+    if (!success && errorStr != NULL)
     {
         *errorStr = [error localizedDescription];
     }

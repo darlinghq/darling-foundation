@@ -10,6 +10,16 @@
 #import <Foundation/NSInvocation.h>
 #import <Foundation/NSRaise.h>
 #import "NSObjectInternal.h"
+#import "NSFormatterInternal.h"
+#import <Foundation/NSDictionary.h>
+#import <Foundation/FoundationErrors.h>
+
+NSError *_NSFormatterInvalidValueError(NSString *string)
+{
+    NSString *description = [NSString stringWithFormat:@"The value \u201c%@\u201d is invalid.", string];
+    return [NSError errorWithDomain:NSCocoaErrorDomain code:NSFormattingError
+                           userInfo:@{NSLocalizedDescriptionKey: description}];
+}
 
 @implementation NSFormatter
 
