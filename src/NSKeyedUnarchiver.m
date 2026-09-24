@@ -825,20 +825,21 @@ static void createArchiverClasses(void)
 static Class classForClassName(NSString *codedName)
 {
     createArchiverClasses();
-    Class cls = [archiverClasses objectForKey:codedName];
-
-    if (cls == Nil)
-    {
-        cls = NSClassFromString(codedName);
-    }
-
-    return cls;
+    return [archiverClasses objectForKey:codedName];
 }
 
+// A nil class removes the mapping.
 static void setClassForClassName(Class cls, NSString *codedName)
 {
     createArchiverClasses();
-    [archiverClasses setObject:cls forKey:codedName];
+    if (cls != Nil)
+    {
+        [archiverClasses setObject:cls forKey:codedName];
+    }
+    else
+    {
+        [archiverClasses removeObjectForKey:codedName];
+    }
 }
 
 + (Class)classForClassName:(NSString *)codedName
@@ -1779,19 +1780,19 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 
 - (Class)classForClassName:(NSString *)className
 {
-    Class cls = CFDictionaryGetValue(_nameClassMap, className);
-    
-    if (cls == Nil)
-    {
-        cls = [NSKeyedUnarchiver classForClassName:className];
-    }
-
-    return cls;
+    return (Class)CFDictionaryGetValue(_nameClassMap, className);
 }
 
 - (void)setClass:(Class)cls forClassName:(NSString *)name
 {
-    CFDictionarySetValue(_nameClassMap, name, cls);
+    if (cls != Nil)
+    {
+        CFDictionarySetValue(_nameClassMap, name, cls);
+    }
+    else
+    {
+        CFDictionaryRemoveValue(_nameClassMap, name);
+    }
 }
 
 - (id)delegate

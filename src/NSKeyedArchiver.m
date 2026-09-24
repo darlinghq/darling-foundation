@@ -60,6 +60,18 @@ NSString *const NSKeyedArchiveRootObjectKey = @"root";
 static dispatch_once_t archiverClassesOnce = 0L;
 static NSMutableDictionary *archiverClasses = nil;
 
+static void setOrRemoveClassName(NSMutableDictionary *map, NSString *codedName, Class cls)
+{
+    if (codedName != nil)
+    {
+        [map setObject:codedName forKey:(id<NSCopying>)cls];
+    }
+    else
+    {
+        [map removeObjectForKey:cls];
+    }
+}
+
 @implementation NSKeyedArchiver
 
 static NSString *escapeKey(NSString *key)
@@ -96,6 +108,18 @@ static BOOL raiseIfFinished(NSKeyedArchiver *archiver)
         return YES;
     }
     return NO;
+}
+
+// The name a class is archived under: the archiver's own mapping, then the
+// class-wide one, then the real class name.
+static NSString *codedClassName(NSKeyedArchiver *archiver, Class class)
+{
+    NSString *name = [archiver classNameForClass:class];
+    if (name == nil)
+    {
+        name = [[archiver class] classNameForClass:class];
+    }
+    return name != nil ? name : NSStringFromClass(class);
 }
 
 static void encodeFinalValue(NSKeyedArchiver *archiver, id value, NSString *key)
@@ -235,10 +259,6 @@ static void _encodeObject(NSKeyedArchiver *archiver, id object, NSString *key)
             return;
         }
 
-        //if ([archiver classNameForClass:class] == nil && [NSKeyedArchiver classNameForClass:class])
-        //{
-            // TODO
-        //}
         if ([object isNSString__])
         {
             if ([object length] == 5)
@@ -295,12 +315,12 @@ static void _encodeObject(NSKeyedArchiver *archiver, id object, NSString *key)
                 [archiver->_containers addObject:dict];
                 [dict release];
 
-                encodeFinalValue(archiver, NSStringFromClass(class), @"$classname");
+                encodeFinalValue(archiver, codedClassName(archiver, class), @"$classname");
 
                 NSMutableArray *classes = [NSMutableArray new];
                 do
                 {
-                    CFArrayAppendValue((CFMutableArrayRef)classes, NSStringFromClass(class));
+                    CFArrayAppendValue((CFMutableArrayRef)classes, codedClassName(archiver, class));
                     class = [class superclass];
                 } 
                 while (class != nil);
@@ -461,7 +481,21 @@ static void encodeDouble(NSKeyedArchiver *archiver, double d, NSString *key)
     dispatch_once(&archiverClassesOnce, ^{
         archiverClasses = [[NSMutableDictionary alloc] init];
     });
-    [archiverClasses setObject:codedName forKey:(id<NSCopying>)cls];
+    setOrRemoveClassName(archiverClasses, codedName, cls);
+}
+
+- (NSString *)classNameForClass:(Class)cls
+{
+    return [_classNameMap objectForKey:cls];
+}
+
+- (void)setClassName:(NSString *)codedName forClass:(Class)cls
+{
+    if (_classNameMap == nil)
+    {
+        _classNameMap = [[NSMutableDictionary alloc] init];
+    }
+    setOrRemoveClassName(_classNameMap, codedName, cls);
 }
 
 + (BOOL)archiveRootObject:(id)rootObject toFile:(NSString *)path
@@ -645,6 +679,7 @@ static void _release(CFAllocatorRef allocator, const void *value)
 - (void)dealloc
 {
     CFRelease(_stream);
+    [_classNameMap release];
     [_containers release];
     [_objects release];
     CFRelease(_objRefMap);
