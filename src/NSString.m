@@ -1250,7 +1250,7 @@ SINGLETON_RR()
     rv = [NSString stringWithUTF8String: resolved];
     free(resolved);
 
-    return rv;
+    return rv ?: self;
 }
 
 - (NSString *)stringByAppendingString:(NSString *)str

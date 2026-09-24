@@ -16,6 +16,9 @@
 
 @implementation NSString (NSStringPathExtensions)
 
+// Implemented in NSString.m.
+@dynamic stringByResolvingSymlinksInPath;
+
 + (NSString *)pathWithComponents:(NSArray *)components
 {
     return [NSPathStore2 pathWithComponents:components];
