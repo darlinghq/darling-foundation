@@ -9,15 +9,13 @@ typedef NS_OPTIONS(NSUInteger, NSAttributedStringEnumerationOptions) {
 // The type modern headers use for attribute dictionary keys.
 typedef NSString *NSAttributedStringKey NS_TYPED_EXTENSIBLE_ENUM;
 
-// Declared with no options, deliberately. This type exists so that declarations taking it can be
-// parsed; its option bit values are not publicly derivable. That is absence of knowledge, not
-// knowledge that the type has no options -- do not read the lack of members as a statement that
-// there are none. Inventing a bit would compile cleanly and misbehave at runtime, whereas with
-// nothing declared any use of an option is a compile error naming the option that is missing.
-// Apple declares this as an NS_OPTIONS; a memberless NS_OPTIONS is not legal C, hence the plain
-// typedef. When a verified reference is available, restore the NS_OPTIONS form and add the
-// members from it -- never from memory.
-typedef NSUInteger NSAttributedStringFormattingOptions;
+// Values as published in dotnet/macios src/Foundation/Enums.cs (MIT), generated from Apple's SDK headers.
+typedef NS_OPTIONS(NSUInteger, NSAttributedStringFormattingOptions) {
+    NSAttributedStringFormattingInsertArgumentAttributesWithoutMerging = 1 << 0,
+    NSAttributedStringFormattingApplyReplacementIndexAttribute = 1 << 1,
+};
+
+@class NSLocale;
 
 @interface NSAttributedString : NSObject <NSCopying, NSMutableCopying, NSCoding>
 
@@ -48,6 +46,18 @@ typedef NSUInteger NSAttributedStringFormattingOptions;
 - (void)enumerateAttributesInRange:(NSRange)enumerationRange options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(NSDictionary<NSAttributedStringKey, id> * _Nonnull attrs, NSRange range, BOOL * _Nonnull stop))block;
 - (void)enumerateAttribute:(NSAttributedStringKey)attrName inRange:(NSRange)enumerationRange options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(id value, NSRange range, BOOL * _Nonnull stop))block;
 #endif
+
+@end
+
+// Value: an NSNumber with the 1-based argument position of a formatted replacement.
+FOUNDATION_EXPORT const NSAttributedStringKey NSReplacementIndexAttributeName NS_SWIFT_NAME(replacementIndex);
+
+@interface NSAttributedString (NSAttributedStringFormatting)
+
+- (instancetype)initWithFormat:(NSAttributedString *)format options:(NSAttributedStringFormattingOptions)options locale:(NSLocale *)locale, ...;
+- (instancetype)initWithFormat:(NSAttributedString *)format options:(NSAttributedStringFormattingOptions)options locale:(NSLocale *)locale arguments:(va_list)arguments;
++ (instancetype)localizedAttributedStringWithFormat:(NSAttributedString *)format, ...;
++ (instancetype)localizedAttributedStringWithFormat:(NSAttributedString *)format options:(NSAttributedStringFormattingOptions)options, ...;
 
 @end
 
@@ -89,3 +99,9 @@ typedef NS_OPTIONS(NSUInteger, NSInlinePresentationIntent) {
 FOUNDATION_EXPORT const NSAttributedStringKey NSInlinePresentationIntentAttributeName NS_SWIFT_NAME(inlinePresentationIntent);
 // Value: an NSString holding a BCP-47 language identifier.
 FOUNDATION_EXPORT const NSAttributedStringKey NSLanguageIdentifierAttributeName NS_SWIFT_NAME(languageIdentifier);
+
+@interface NSMutableAttributedString (NSMutableAttributedStringFormatting)
+
+- (void)appendLocalizedFormat:(NSAttributedString *)format, ...;
+
+@end

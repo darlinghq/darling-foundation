@@ -4,6 +4,13 @@
 
 CF_EXPORT CFStringRef _CFStringCreateWithFormatAndArgumentsAux(CFAllocatorRef alloc, CFStringRef (*copyDescFunc)(void *, const void *), CFDictionaryRef formatOptions, CFStringRef format, va_list arguments);
 CF_EXPORT void _CFStringAppendFormatAndArgumentsAux(CFMutableStringRef outputString, CFStringRef (*copyDescFunc)(void *, const void *), CFDictionaryRef formatOptions, CFStringRef formatString, va_list args);
+CF_EXPORT const CFStringRef _kCFStringFormatMetadataReplacementIndexKey;
+CF_EXPORT const CFStringRef _kCFStringFormatMetadataSpecifierRangeLocationInFormatStringKey;
+CF_EXPORT const CFStringRef _kCFStringFormatMetadataSpecifierRangeLengthInFormatStringKey;
+CF_EXPORT const CFStringRef _kCFStringFormatMetadataReplacementRangeLocationKey;
+CF_EXPORT const CFStringRef _kCFStringFormatMetadataReplacementRangeLengthKey;
+CF_EXPORT const CFStringRef _kCFStringFormatMetadataArgumentObjectKey;
+CF_EXPORT CFStringRef _CFStringCreateWithFormatAndArgumentsReturningMetadata(CFAllocatorRef alloc, CFStringRef (*copyDescFunc)(void *, const void *), CFStringRef (*contextDescFunc)(void *, const void *, const void *, bool, bool *), CFDictionaryRef formatOptions, CFDictionaryRef formatConfiguration, CFStringRef format, CFArrayRef *outMetadata, va_list arguments);
 CF_EXPORT Boolean _CFStringIsMutable(CFStringRef str);
 CF_EXPORT CFIndex __CFStringEncodeByteStream(CFStringRef string, CFIndex rangeLoc, CFIndex rangeLen, Boolean generatingExternalFile, CFStringEncoding encoding, char lossByte, uint8_t *buffer, CFIndex max, CFIndex *usedBufLen);
 
