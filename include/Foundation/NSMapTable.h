@@ -129,11 +129,11 @@ typedef NSUInteger NSMapTableOptions;
 
 /** Return a dictionary containing the keys and values in the receiver.
  */
-- (NSDictionary*) dictionaryRepresentation;
+- (NSDictionary<KeyType, ObjectType> *) dictionaryRepresentation;
 
 /** Return an enumerator able to enumerate the keys in the receiver.
  */
-- (NSEnumerator*) keyEnumerator;
+- (NSEnumerator<KeyType> *) keyEnumerator;
 
 /** Return an NSPointerFunctions value describind the functions used by the
  * receiver to handle keys.
@@ -146,7 +146,7 @@ typedef NSUInteger NSMapTableOptions;
 
 /** Return the object stored under the specified key.
  */
-- (id) objectForKey: (id)aKey;
+- (nullable ObjectType) objectForKey: (KeyType)aKey;
 
 /** Empty the receiver of all stored values.
  */
@@ -154,12 +154,12 @@ typedef NSUInteger NSMapTableOptions;
 
 /** Remove the object stored under the specified key.
  */
-- (void) removeObjectForKey: (id)aKey;
+- (void) removeObjectForKey: (KeyType)aKey;
 
 /** Store the object under the specified key, replacing any object which
  * was previously stored under that key.
  */
-- (void) setObject: (id)anObject forKey: (id)aKey;
+- (void) setObject: (ObjectType)anObject forKey: (KeyType)aKey;
 
 /** Return an NSPointerFunctions value describind the functions used by the
  * receiver to handle values.
