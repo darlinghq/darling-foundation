@@ -17,15 +17,7 @@ Copyright (C) 2020 Lubos Dolezel
 
 static NSMutableDictionary<NSString*,NSString*>* globalClassNameMap;
 
-static signed char const Long2Label         = -127;     // 0x81
-static signed char const Long4Label         = -126;     // 0x82
-static signed char const RealLabel          = -125;     // 0x83
-static signed char const NewLabel           = -124;     // 0x84
-static signed char const NullLabel          = -123;     // 0x85
-static signed char const EndOfObjectLabel   = -122;     // 0x86
-static signed char const SmallestLabel      = -110;     // 0x92
-
-#define BIAS(x) (x - SmallestLabel)
+#import "NSTypedStream.h"
 
 //#define DEBUG_NSUNARCHIVER
 #ifndef DEBUG_NSUNARCHIVER
@@ -35,9 +27,6 @@ static signed char const SmallestLabel      = -110;     // 0x92
 #endif
 
 static const char* uniqueString(const char* str);
-static const char* sizeofType(const char* type, unsigned int* size, unsigned int* align);
-static const char* skipStructName(const char* str);
-static unsigned int roundUp(unsigned int size, unsigned int align);
 
 @implementation NSUnarchiver
 
@@ -462,16 +451,14 @@ static unsigned int roundUp(unsigned int size, unsigned int align);
     if(![self finishDecodeInt:&length
                      withChar:charValue])
         return NO;
-    if(length <= 0)
+    if(length < 0)
         return NO;
     
-    char bytes[length];
-    if(![self readBytes:bytes length:length])
+    NSData* bytes;
+    if(![self readData:&bytes length:length])
         return NO;
-    *outString = [[NSString alloc] initWithBytes:bytes
-                                          length:length
-                                        encoding:NSASCIIStringEncoding];
-    return YES;
+    *outString = [[[NSString alloc] initWithData:bytes encoding:NSUTF8StringEncoding] autorelease];
+    return *outString != nil;
 }
 
 - (BOOL)decodeString:(NSString**)outString
@@ -589,7 +576,7 @@ static unsigned int roundUp(unsigned int size, unsigned int align);
             short value;
             if(![self readBytes:&value length:2])
                 return NO;
-            *outInt = [self swappedShort:value];
+            *outInt = (short)[self swappedShort:value];
             break;
         }
             
@@ -772,28 +759,11 @@ static unsigned int roundUp(unsigned int size, unsigned int align);
                 break;
             }
 
-            // Freeing of the string seems to be the responsibilty of the caller.
-            // NSCoding implementations of Foundation classes all seem to do this.
-            char* cString = malloc(string.length + 1);  // +1 because of null-termination
-            [string getBytes:cString
-                   maxLength:string.length
-                  usedLength:NULL
-                    encoding:NSASCIIStringEncoding
-                     options:0
-                       range:NSMakeRange(0, string.length)
-              remainingRange:NULL];
-            cString[string.length] = '\0';
-
+            const char* cString = string.UTF8String;
             if (ch == '%')
-            {
-               *((const char**)data) = uniqueString(cString);
-               free(cString);
-            }
-            else if (ch == ':')
-            {
-               *((SEL*) data) = sel_registerName(cString);
-               free(cString);
-            }
+               *((const char**)data) = cString ? uniqueString(cString) : NULL;
+            else
+               *((SEL*) data) = cString ? sel_registerName(cString) : NULL;
             break;
         }
 
@@ -844,7 +814,6 @@ static unsigned int roundUp(unsigned int size, unsigned int align);
         case '(':
         {
             unsigned int s, a;
-            type = skipStructName(type);
             type = sizeofType(type - 1, &s, &a);
 
             for (unsigned int i = 0; i < s; i++)
@@ -1112,126 +1081,3 @@ static const char* uniqueString(const char* str)
 
    return (const char*) CFSetGetValue(atoms, str);
 }
-
-static unsigned int roundUp(unsigned int size, unsigned int align)
-{
-   return ((size + align - 1) / align) * align;
-}
-
-static const char* skipStructName(const char* str)
-{
-   const char* type = str;
-
-   while (TRUE)
-   {
-      switch (*type++)
-      {
-         case '=':
-            return type;
-         case '}':
-         case '{':
-         case ')':
-         case '(':
-         case 0:
-            return str;
-      }
-   }
-}
-
-// This is NOT a duplicate of NSGetSizeAndAlignment. This function just stops after the 1st type it finds.
-const char* sizeofType(const char* type, unsigned int* size, unsigned int* align)
-{
-   char c = *type++;
-
-#define simpleCase(cc, type) case cc: *size = sizeof(type); *align = __alignof(type); break
-
-   switch (c)
-   {
-      simpleCase('c', char);
-      simpleCase('C', char);
-      simpleCase('s', short);
-      simpleCase('S', short);
-      simpleCase('i', int);
-      simpleCase('I', int);
-      simpleCase('!', int);
-      simpleCase('l', int);
-      simpleCase('L', int);
-      simpleCase('q', long long);
-      simpleCase('Q', long long);
-      simpleCase('f', float);
-      simpleCase('d', double);
-      simpleCase('@', id);
-      simpleCase('*', char*);
-      simpleCase('%', char*);
-      simpleCase(':', SEL);
-      simpleCase('#', Class);
-      case '[':
-      {
-         unsigned int count = 0;
-         unsigned s, a;
-
-         while ('0' <= *type && *type <= '9')
-            count = 10 * count + (*type++ - '0');
-
-         type = sizeofType(type, &s, &a);
-
-         *size = count * roundUp(s, a);
-         *align = a;
-
-         c = *type++;
-         if (c != ']')
-            [NSException raise:NSInvalidArgumentException format:@"Invalid char found in array encoding, expected ], found %c", c];
-
-         break;
-      }
-      case '(':
-      {
-         unsigned int unionSize = 0;
-         unsigned int unionAlign = 1;
-
-         type = skipStructName(type);
-
-         while (*type != ')')
-         {
-            unsigned int s, a;
-
-            type = sizeofType(type, &s, &a);
-
-            if (s > unionSize)
-               unionSize = s;
-            if (a > unionAlign)
-               unionAlign = a;
-         }
-
-         *size = roundUp(unionSize, unionAlign);
-         *align = unionAlign;
-         break;
-      }
-      case '{':
-      {
-         unsigned int structSize = 0;
-         unsigned int structAlign = 1;
-
-         type = skipStructName(type);
-
-         while (*type != '}')
-         {
-            unsigned int s, a;
-
-            type = sizeofType(type, &s, &a);
-            structSize = roundUp(structSize, a);
-            structSize += s;
-            if (a > structAlign)
-               structAlign = a;
-         }
-
-         *size = roundUp(structSize, structAlign);
-         *align = structAlign;
-         break;
-      }
-   }
-
-#undef simpleCase
-    return type;
-}
-
