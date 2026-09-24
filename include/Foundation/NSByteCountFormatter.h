@@ -32,6 +32,7 @@ typedef NS_ENUM(NSInteger, NSByteCountFormatterCountStyle) {
     BOOL _includesActualByteCount;
     BOOL _adaptive;
     BOOL _zeroPadsFractionDigits;
+    NSFormattingContext _formattingContext;
 }
 
 @property NSByteCountFormatterUnits allowedUnits;
@@ -42,6 +43,7 @@ typedef NS_ENUM(NSInteger, NSByteCountFormatterCountStyle) {
 @property BOOL includesActualByteCount;
 @property (getter=isAdaptive) BOOL adaptive;
 @property BOOL zeroPadsFractionDigits;
+@property NSFormattingContext formattingContext;
 
 + (NSString *)stringFromByteCount:(long long)byteCount countStyle:(NSByteCountFormatterCountStyle)style;
 - (NSString *)stringFromByteCount:(long long)byteCount;
