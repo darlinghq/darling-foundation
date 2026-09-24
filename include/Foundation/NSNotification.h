@@ -7,16 +7,16 @@ typedef NSString *NSNotificationName NS_EXTENSIBLE_STRING_ENUM;
 
 @interface NSNotification : NSObject <NSCopying, NSCoding>
 
-- (NSString *)name;
-- (id)object;
-- (NSDictionary *)userInfo;
+- (NSNotificationName _Nonnull)name;
+- (id _Nullable)object;
+- (NSDictionary * _Nullable)userInfo;
 
 @end
 
 @interface NSNotification (NSNotificationCreation)
 
-+ (instancetype)notificationWithName:(NSString *)aName object:(id)anObject;
-+ (instancetype)notificationWithName:(NSString *)aName object:(id)anObject userInfo:(NSDictionary *)aUserInfo;
++ (instancetype _Nonnull)notificationWithName:(NSNotificationName _Nonnull)aName object:(id _Nullable)anObject;
++ (instancetype _Nonnull)notificationWithName:(NSNotificationName _Nonnull)aName object:(id _Nullable)anObject userInfo:(NSDictionary * _Nullable)aUserInfo;
 
 @end
 
@@ -26,15 +26,15 @@ typedef NSString *NSNotificationName NS_EXTENSIBLE_STRING_ENUM;
     pthread_mutex_t _observersLock;
 }
 
-+ (id)defaultCenter;
-- (void)addObserver:(id)observer selector:(SEL)aSelector name:(NSString *)aName object:(id)anObject;
-- (void)postNotification:(NSNotification *)notification;
-- (void)postNotificationName:(NSString *)aName object:(id)anObject;
-- (void)postNotificationName:(NSString *)aName object:(id)anObject userInfo:(NSDictionary *)aUserInfo;
-- (void)removeObserver:(id)observer;
-- (void)removeObserver:(id)observer name:(NSString *)aName object:(id)anObject;
+@property (class, readonly, retain) NSNotificationCenter * _Nonnull defaultCenter;
+- (void)addObserver:(id _Nonnull)observer selector:(SEL _Nonnull)aSelector name:(NSNotificationName _Nullable)aName object:(id _Nullable)anObject;
+- (void)postNotification:(NSNotification * _Nonnull)notification;
+- (void)postNotificationName:(NSNotificationName _Nonnull)aName object:(id _Nullable)anObject;
+- (void)postNotificationName:(NSNotificationName _Nonnull)aName object:(id _Nullable)anObject userInfo:(NSDictionary * _Nullable)aUserInfo;
+- (void)removeObserver:(id _Nonnull)observer;
+- (void)removeObserver:(id _Nonnull)observer name:(NSNotificationName _Nullable)aName object:(id _Nullable)anObject;
 #if NS_BLOCKS_AVAILABLE
-- (id)addObserverForName:(NSString *)name object:(id)obj queue:(NSOperationQueue *)queue usingBlock:(void (^)(NSNotification *note))block NS_AVAILABLE(10_6, 4_0);
+- (id <NSObject> _Nonnull)addObserverForName:(NSNotificationName _Nullable)name object:(id _Nullable)obj queue:(NSOperationQueue * _Nullable)queue usingBlock:(void (^ _Nonnull)(NSNotification * _Nonnull note))block NS_AVAILABLE(10_6, 4_0);
 #endif
 
 @end

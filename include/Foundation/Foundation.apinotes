@@ -12,6 +12,8 @@ Classes:
   SwiftBridge: Swift.Dictionary
 - Name: NSSet
   SwiftBridge: Swift.Set
+- Name: NSNotification
+  SwiftBridge: Foundation.Notification
 # As on macOS, the -initWith<Type>: initializers are all NSNumber(value:). -initWithLong: and
 # -initWithUnsignedLong: are hidden: they would duplicate init(value: Int) and init(value: UInt).
 - Name: NSNumber
@@ -104,6 +106,13 @@ Classes:
   SwiftName: URLSession
 - Name: NSNotificationCenter
   SwiftName: NotificationCenter
+  Methods:
+  - Selector: 'postNotificationName:object:'
+    MethodKind: Instance
+    SwiftName: 'post(name:object:)'
+  - Selector: 'postNotificationName:object:userInfo:'
+    MethodKind: Instance
+    SwiftName: 'post(name:object:userInfo:)'
 - Name: NSOperationQueue
   SwiftName: OperationQueue
 - Name: NSOperation
