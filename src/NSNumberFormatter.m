@@ -113,7 +113,7 @@ static NSNumberFormatterBehavior defaultBehavior = NSNumberFormatterBehaviorDefa
 {
     NSNumberFormatter *formatter = [[NSNumberFormatter alloc] init];
     [formatter->_attributes release];
-    formatter->_attributes = [_attributes copy];
+    formatter->_attributes = [_attributes mutableCopy];
     return formatter;
 }
 
