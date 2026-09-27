@@ -68,6 +68,7 @@ typedef struct __CFBundle *CFBundleRef;
 - (NSArray *)pathsForResourcesOfType:(NSString *)ext inDirectory:(NSString *)subpath forLocalization:(NSString *)localizationName;
 - (NSString *)localizedStringForKey:(NSString *)key value:(NSString *)value table:(NSString *)tableName NS_FORMAT_ARGUMENT(1);
 - (NSString *)bundleIdentifier;
+- (NSDictionary *)localizedStringsForTable:(NSString *)tableName localization:(NSString *)localizationName;
 - (NSDictionary *)infoDictionary;
 - (NSDictionary *)localizedInfoDictionary;
 - (id)objectForInfoDictionaryKey:(NSString *)key;
