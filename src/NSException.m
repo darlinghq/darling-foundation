@@ -32,7 +32,10 @@ BOOL NSHangOnUncaughtException = NO;
 
 static void printExceptionInformation(id exception)
 {
-    NSLog(@"Terminating app due to uncaught exception '%@', reason: '%@'", NSStringFromClass([exception class]), [exception reason]);
+    // The stack is the only thing that says where it came from: by the time an
+    // uncaught exception is reported the app is gone, and without it a crash
+    // in guest code is a bare message.
+    NSLog(@"Terminating app due to uncaught exception '%@', reason: '%@', stack: %@", NSStringFromClass([exception class]), [exception reason], [exception callStackSymbols]);
 }
 
 __attribute__((constructor))
