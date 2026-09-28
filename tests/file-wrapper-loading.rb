@@ -8,6 +8,9 @@ root=File.expand_path('..', __dir__)
 header=File.read("#{root}/include/Foundation/NSFileWrapper.h").gsub(/^#import.*\n/, '')
 source=File.read("#{root}/src/NSFileWrapper.m").gsub(/^#import.*\n/, '')
 wrapper=(header+source).gsub('NSFileWrapper', 'ProbeFileWrapper')
+# Count concrete allocations and base deallocations without changing ownership.
+wrapper.gsub!('return NSAllocateObject(self, 0, NULL);', 'liveWrappers++; return NSAllocateObject(self, 0, NULL);')
+abort 'base dealloc unavailable' unless wrapper.sub!(/(- \(void\) dealloc\s*\{\s*)(\[_path release\];)/, '\1liveWrappers--; \2')
 manager=File.read("#{root}/src/NSFileManager.m")
 link_methods=%w[destinationOfSymbolicLinkAtPath pathContentOfSymbolicLinkAtPath].map do |name|
   manager[/^- \(NSString \*\)#{name}:.*?^\}/m] or abort "missing #{name}"
@@ -24,6 +27,10 @@ program=<<~'OBJC'
   #define NSDataReadingMappedIfSafe 1
   #define NSDataWritingAtomic 1
   static NSUInteger reads, lastOptions;
+  static NSInteger liveWrappers;
+  static NSString *failedPath;
+  static int failureKind;
+  static NSError *injectedError;
   @interface NSData (ProbeOptions)
   + (id)dataWithContentsOfURL:(NSURL*)url options:(NSUInteger)options error:(NSError**)error;
   - (id)initWithContentsOfFile:(NSString*)path options:(NSUInteger)options error:(NSError**)error;
@@ -34,6 +41,10 @@ program=<<~'OBJC'
   }
   - (id)initWithContentsOfFile:(NSString*)path options:(NSUInteger)options error:(NSError**)error {
     reads++; lastOptions=options;
+    if (failureKind==3 && [path isEqual:failedPath]) {
+      if (error) *error=injectedError;
+      [self release]; return nil;
+    }
     id result=[self initWithContentsOfFile:path];
     if (!result && error) *error=[NSError errorWithDomain:NSPOSIXErrorDomain code:EIO userInfo:nil];
     return result;
@@ -42,6 +53,18 @@ program=<<~'OBJC'
   @interface ProbeManager : NSFileManager @end
   @implementation ProbeManager
   + (id)defaultManager { static id manager; if (!manager) manager=[self new]; return manager; }
+  - (NSDictionary*)attributesOfItemAtPath:(NSString*)path error:(NSError**)error {
+    if (failureKind==1 && [path isEqual:failedPath]) {
+      if (error) *error=injectedError; return nil;
+    }
+    return [super attributesOfItemAtPath:path error:error];
+  }
+  - (NSArray*)contentsOfDirectoryAtPath:(NSString*)path error:(NSError**)error {
+    if (failureKind==2 && [path isEqual:failedPath]) {
+      if (error) *error=injectedError; return nil;
+    }
+    return [[super contentsOfDirectoryAtPath:path error:error] sortedArrayUsingSelector:@selector(compare:)];
+  }
   LINK_METHODS
   @end
   #define NSFileManager ProbeManager
@@ -97,6 +120,27 @@ program=<<~'OBJC'
       error=nil;
       assert([[ProbeFileWrapper alloc] initWithURL:[NSURL URLWithString:@"https://example.invalid/file"] options:0 error:&error]==nil);
       assert([error code]==NSFileReadUnsupportedSchemeError);
+      // Sorted child names guarantee a complete first child before the failure.
+      NSString *faultDir=[root stringByAppendingPathComponent:@"faults"];
+      assert(mkdir([faultDir fileSystemRepresentation],0700)==0);
+      NSString *first=[faultDir stringByAppendingPathComponent:@"a-good"];
+      NSString *second=[faultDir stringByAppendingPathComponent:@"b-failing"];
+      assert([before writeToFile:first atomically:NO]);
+      assert([before writeToFile:second atomically:NO]);
+      injectedError=[NSError errorWithDomain:NSPOSIXErrorDomain code:EACCES userInfo:nil];
+      for (failureKind=1;failureKind<=3;failureKind++) {
+        NSInteger baseline=liveWrappers;
+        @autoreleasepool {
+          failedPath=failureKind==2 ? faultDir : second;
+          error=nil;
+          assert(load(faultDir,3,&error)==nil && error==injectedError);
+          assert(load(faultDir,3,NULL)==nil);
+          assert([ProbeFileWrapper alloc]==placeholder);
+        }
+        assert(liveWrappers==baseline);
+      }
+      failureKind=0; failedPath=nil;
+      snapshot=load(faultDir,3,NULL); assert(snapshot); [snapshot release];
       puts("PASS: actual wrapper class cluster; snapshots; deferred option forwarding; recursive failure; repeated placeholder reuse");
     }
   }
