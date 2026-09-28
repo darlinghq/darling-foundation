@@ -906,18 +906,25 @@ static NSError *_NSErrorWithFilePathAndErrno(id path, int code)
 
 - (NSString *)destinationOfSymbolicLinkAtPath:(NSString *)path error:(NSError **)error
 {
-    char resolved[PATH_MAX];
-    if (realpath([path fileSystemRepresentation], resolved) == NULL)
+    char destination[PATH_MAX];
+    ssize_t length = readlink([path fileSystemRepresentation], destination, sizeof(destination));
+    if (length < 0 || (size_t)length == sizeof(destination))
     {
+        int savedError = length < 0 ? errno : ENAMETOOLONG;
         if (error)
         {
-            *error = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:@{
-                NSLocalizedDescriptionKey: [NSString stringWithUTF8String:strerror(errno)]
+            *error = [NSError errorWithDomain:NSPOSIXErrorDomain code:savedError userInfo:@{
+                NSLocalizedDescriptionKey: [NSString stringWithUTF8String:strerror(savedError)]
             }];
         }
         return nil;
     }
-    return [NSString stringWithUTF8String:resolved];
+    return [self stringWithFileSystemRepresentation:destination length:(NSUInteger)length];
+}
+
+- (NSString *)pathContentOfSymbolicLinkAtPath:(NSString *)path
+{
+    return [self destinationOfSymbolicLinkAtPath:path error:NULL];
 }
 
 
