@@ -456,28 +456,37 @@ static void initQueues() {
 }
 
 - (NSArray *) persistentDomainNames {
-    CFStringRef userName = (CFStringRef) NSUserName();
-    NSArray *domains = (NSArray *) _CFPreferencesCreateDomainList(userName, kCFPreferencesAnyHost);
+    NSArray *domains = (NSArray *) _CFPreferencesCreateDomainList(
+        kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
     return [domains autorelease];
 }
 
 - (NSDictionary *) persistentDomainForName: (NSString *) domainName {
-    CFStringRef userName = (CFStringRef) NSUserName();
-    CFPreferencesDomainRef domain = _CFPreferencesStandardDomain((CFStringRef) domainName, userName, kCFPreferencesAnyHost);
+    CFPreferencesDomainRef domain = _CFPreferencesStandardDomain((CFStringRef) domainName,
+        kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+    if (domain == NULL) {
+        return nil;
+    }
     NSDictionary *res = (NSDictionary *) _CFPreferencesDomainDeepCopyDictionary(domain);
     return [res autorelease];
 }
 
 - (void) setPersistentDomain: (NSDictionary *) domain forName: (NSString *) domainName {
-    // Create a different defaults object.
-    NSUserDefaults *defaults = [[NSUserDefaults alloc] initWithSuiteName: domainName];
-
-    for (id key in [[defaults dictionaryRepresentation] allKeys]) {
-        [defaults removeObjectForKey: key];
-    }
-
-    [defaults registerDefaults: domain];
-    [defaults synchronize];
+    dispatch_sync(synchronizeQueue, ^{
+        CFArrayRef existingKeys = CFPreferencesCopyKeyList((CFStringRef) domainName,
+            kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+        if (existingKeys != NULL) {
+            CFPreferencesSetMultiple(NULL, existingKeys, (CFStringRef) domainName,
+                kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+        }
+        CFPreferencesSetMultiple((CFDictionaryRef) domain, NULL, (CFStringRef) domainName,
+            kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+        if (existingKeys != NULL) {
+            CFRelease(existingKeys);
+        }
+        CFPreferencesSynchronize((CFStringRef) domainName,
+            kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+    });
 
     // Post a notification on self.
     [[NSNotificationCenter defaultCenter] postNotificationName:NSUserDefaultsDidChangeNotification object:self userInfo:nil];
@@ -485,11 +494,7 @@ static void initQueues() {
 
 - (void) removePersistentDomainForName: (NSString *) domainName
 {
-    NSDictionary *defaultsDictionary = [self dictionaryRepresentation];
-    for (NSString *key in [defaultsDictionary allKeys]) {
-        [self removeObjectForKey:key];
-    }
-    [self synchronize];
+    [self setPersistentDomain:@{} forName:domainName];
 }
 
 - (void) addSuiteNamed: (NSString *) suiteName {
