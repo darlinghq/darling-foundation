@@ -19,11 +19,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #import <Foundation/NSError.h>
 #import <Foundation/NSURL.h>
 #import <Foundation/FoundationErrors.h>
+#include <errno.h>
 
 @interface NSFileWrapperFile : NSFileWrapper {
 	NSData* contentData;
+    NSFileWrapperReadingOptions readingOptions;
 }
 
+- (void) setReadingPath: (NSString*) path options: (NSFileWrapperReadingOptions) options;
 @end
 
 @interface NSFileWrapperDirectory : NSFileWrapper {
@@ -101,17 +104,61 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 - (id) initWithURL: (NSURL*) url options: (NSFileWrapperReadingOptions) options error: (NSError**) outError
 {
 	NSString* path = [url isFileURL] ? [url path] : nil;
-	NSInteger code = path ? NSFileReadNoSuchFileError : NSFileReadUnsupportedSchemeError;
-	if (path && [[NSFileManager defaultManager] fileAttributesAtPath: path traverseLink: NO] != nil) {
-		return [self initWithPath: path];
-	}
-	if (outError) {
-		*outError = [NSError errorWithDomain: NSCocoaErrorDomain
-		                                code: code
-		                            userInfo: url ? [NSDictionary dictionaryWithObject: url forKey: NSURLErrorKey] : nil];
-	}
-	// self is the shared +alloc placeholder, which is never released (see initWithPath:)
-	return nil;
+    NSError* error = nil;
+    NSFileWrapper* result = nil;
+    NSFileManager* manager = [NSFileManager defaultManager];
+    if (!path) {
+        error = [NSError errorWithDomain: NSCocoaErrorDomain code: NSFileReadUnsupportedSchemeError
+                               userInfo: url ? @{ NSURLErrorKey: url } : nil];
+    } else {
+        NSDictionary* attributes = [manager attributesOfItemAtPath: path error: &error];
+        NSString* type = [attributes objectForKey: NSFileType];
+        if ([type isEqualToString: NSFileTypeDirectory]) {
+            NSArray* names = [manager contentsOfDirectoryAtPath: path error: &error];
+            if (names) {
+                NSMutableDictionary* children = [NSMutableDictionary dictionary];
+                BOOL complete = YES;
+                for (NSString* name in names) {
+                    NSFileWrapper* child = [[NSFileWrapper alloc]
+                        initWithURL: [url URLByAppendingPathComponent: name] options: options error: &error];
+                    if (!child) { complete = NO; break; }
+                    [children setObject: child forKey: name];
+                    [child release];
+                }
+                if (complete) result = [self initDirectoryWithFileWrappers: children];
+            }
+        } else if ([type isEqualToString: NSFileTypeRegular]) {
+            NSData* data = nil;
+            if (options & NSFileWrapperReadingImmediate) {
+                data = [NSData dataWithContentsOfURL: url
+                    options: (options & NSFileWrapperReadingWithoutMapping) ? 0 : NSDataReadingMappedIfSafe
+                    error: &error];
+            }
+            if (!(options & NSFileWrapperReadingImmediate) || data) {
+                result = [self initRegularFileWithContents: data];
+                [(NSFileWrapperFile*)result setReadingPath: path options: options];
+            }
+        } else if ([type isEqualToString: NSFileTypeSymbolicLink]) {
+            NSString* destination = [manager destinationOfSymbolicLinkAtPath: path error: &error];
+            if (destination) result = [self initSymbolicLinkWithDestination: destination];
+        }
+        if (result) {
+            [result setFileAttributes: attributes];
+            [result setFilename: [path lastPathComponent]];
+            [result setPreferredFilename: [result filename]];
+            return result;
+        }
+        // Preserve the existing missing-file Cocoa error while retaining its cause.
+        if ([[error domain] isEqualToString: NSPOSIXErrorDomain] && [error code] == ENOENT) {
+            error = [NSError errorWithDomain: NSCocoaErrorDomain code: NSFileReadNoSuchFileError
+                userInfo: @{ NSURLErrorKey: url, NSUnderlyingErrorKey: error }];
+        }
+        if (!error) error = [NSError errorWithDomain: NSCocoaErrorDomain code: NSFileReadUnknownError
+                                           userInfo: @{ NSURLErrorKey: url, NSFilePathErrorKey: path }];
+    }
+    if (outError) *outError = error;
+    // self is the shared +alloc placeholder, which must never be released.
+    return nil;
 }
 
 - (NSData*) regularFileContents
@@ -259,6 +306,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 @implementation NSFileWrapperFile
 
+- (void) setReadingPath: (NSString*) path options: (NSFileWrapperReadingOptions) options
+{
+    [_path release];
+    _path = [path copy];
+    readingOptions = options;
+}
+
 + (id) alloc
 {
 	return NSAllocateObject(self, 0, NULL);
@@ -293,8 +347,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 - (NSData*) regularFileContents
 {
     if (contentData == nil) {
-        unsigned long long length = [[self fileAttributes] fileSize];
-        contentData = length < 8192*160 ? [[NSData alloc] initWithContentsOfFile: _path] : [[NSData alloc] initWithContentsOfMappedFile: _path]; // use some treshhold to not thrash for big files - can we run out of file handles here?
+        contentData = [[NSData alloc] initWithContentsOfFile: _path
+            options: (readingOptions & NSFileWrapperReadingWithoutMapping) ? 0 : NSDataReadingMappedIfSafe
+            error: NULL];
     }
 	return contentData;
 }
