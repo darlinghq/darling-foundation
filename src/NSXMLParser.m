@@ -180,7 +180,8 @@ enum {
 
 - (void) didEndElement {
     NSString *elementName = [_elementNameStack lastObject];
-    [_delegate parser: self
+    if ([_delegate respondsToSelector:@selector(parser:didEndElement:namespaceURI:qualifiedName:)])
+        [_delegate parser: self
             didEndElement: elementName
              namespaceURI: nil
             qualifiedName: nil];

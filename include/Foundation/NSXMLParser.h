@@ -25,6 +25,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
         NSMutableDictionary;
 
 @protocol NSXMLParserDelegate
+@optional
 
 - (void) parserDidStartDocument: (NSXMLParser *) parser;
 - (void) parserDidEndDocument: (NSXMLParser *) parser;
