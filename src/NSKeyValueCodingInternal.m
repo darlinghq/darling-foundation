@@ -188,23 +188,23 @@ __NSKVCOperatorType __NSKVCOperatorTypeFromKey(const NSString *key)
     {
         return NSSumKeyValueOperatorType;
     }
-    else if ([key isEqualToString:NSDistinctUnionOfObjectsKeyValueOperator])
+    else if ([operatorName isEqualToString:NSDistinctUnionOfObjectsKeyValueOperator])
     {
         return NSDistinctUnionOfObjectsKeyValueOperatorType;
     }
-    else if ([key isEqualToString:NSUnionOfObjectsKeyValueOperator])
+    else if ([operatorName isEqualToString:NSUnionOfObjectsKeyValueOperator])
     {
         return NSUnionOfObjectsKeyValueOperatorType;
     }
-    else if ([key isEqualToString:NSDistinctUnionOfArraysKeyValueOperator])
+    else if ([operatorName isEqualToString:NSDistinctUnionOfArraysKeyValueOperator])
     {
         return NSDistinctUnionOfArraysKeyValueOperatorType;
     }
-    else if ([key isEqualToString:NSUnionOfArraysKeyValueOperator])
+    else if ([operatorName isEqualToString:NSUnionOfArraysKeyValueOperator])
     {
         return NSUnionOfArraysKeyValueOperatorType;
     }
-    else if ([key isEqualToString:NSDistinctUnionOfSetsKeyValueOperator])
+    else if ([operatorName isEqualToString:NSDistinctUnionOfSetsKeyValueOperator])
     {
         return NSDistinctUnionOfSetsKeyValueOperatorType;
     }

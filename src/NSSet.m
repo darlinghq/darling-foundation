@@ -178,12 +178,10 @@ OBJC_PROTOCOL_IMPL_POP
     NSEnumerator *enumerator = [self objectEnumerator];
     while ((anObj = [enumerator nextObject]) != NULL)
     {
-#warning TODO https://code.google.com/p/apportable/issues/detail?id=268
-        id aValue = [anObj valueForKey:keyPath];
-        if (aValue)
-        {
-            [resultSet addObject:aValue];
-        }
+        id aValue = [anObj valueForKeyPath:keyPath];
+        if (!aValue)
+            [NSException raise:NSInvalidArgumentException format:@"nil value for union key path %@", keyPath];
+        [resultSet addObject:aValue];
     }
     return resultSet;
 }

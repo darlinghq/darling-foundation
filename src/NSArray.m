@@ -217,6 +217,31 @@ OBJC_PROTOCOL_IMPL_POP
     return resultArray;
 }
 
+- (id)_unionOfObjectsForKeyPath:(id)keyPath
+{
+    NSMutableArray *result = [NSMutableArray arrayWithCapacity:[self count]];
+    for (id object in self)
+    {
+        id value = [object valueForKeyPath:keyPath];
+        if (!value)
+            [NSException raise:NSInvalidArgumentException format:@"nil value for union key path %@", keyPath];
+        [result addObject:value];
+    }
+    return [NSArray arrayWithArray:result];
+}
+
+- (id)_unionOfArraysForKeyPath:(id)keyPath
+{
+    NSMutableArray *result = [NSMutableArray array];
+    for (id array in self)
+    {
+        if (![array isKindOfClass:[NSArray class]])
+            [NSException raise:NSInvalidArgumentException format:@"argument is not an NSArray"];
+        [result addObjectsFromArray:[array _unionOfObjectsForKeyPath:keyPath]];
+    }
+    return [NSArray arrayWithArray:result];
+}
+
 - (id)_distinctUnionOfObjectsForKeyPath:(id)keyPath
 {
     NSMutableSet *resultSet=[NSMutableSet set];
@@ -225,12 +250,10 @@ OBJC_PROTOCOL_IMPL_POP
     NSEnumerator *enumerator = [self objectEnumerator];
     while ((anObj = [enumerator nextObject]) != NULL)
     {
-#warning TODO: valueForKey or valueForKeyPath ?
-        id aValue = [anObj valueForKey:keyPath];
-        if (aValue)
-        {
-            [resultSet addObject:aValue];
-        }
+        id aValue = [anObj valueForKeyPath:keyPath];
+        if (!aValue)
+            [NSException raise:NSInvalidArgumentException format:@"nil value for union key path %@", keyPath];
+        [resultSet addObject:aValue];
     }
     return [NSArray arrayWithArray:[resultSet allObjects]];
 }
