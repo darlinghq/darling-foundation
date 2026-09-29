@@ -890,7 +890,7 @@ static NSError *_NSErrorWithFilePathAndErrno(id path, int code)
     {
         return NO;
     }
-    int err = symlink([path UTF8String], [destPath UTF8String]);
+    int err = symlink([destPath UTF8String], [path UTF8String]);
     if (err == -1)
     {
         if (error)
