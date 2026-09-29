@@ -6,6 +6,7 @@
 //
 
 #import <Foundation/NSOperation.h>
+#import <objc/runtime.h>
 #import <Foundation/NSString.h>
 #import <Foundation/NSArray.h>
 #import <Foundation/NSLock.h>
@@ -491,10 +492,22 @@ static pthread_mutex_t _NSOperationLock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER;
 @end
 
 static NSString const *NSOperationQueueKey = @"NSOperationQueue";
+static char NSOperationNameKey;
 
 @implementation NSOperation
 
 @synthesize _internal=_internal;
+
+- (NSString *)name
+{
+    return objc_getAssociatedObject(self, &NSOperationNameKey);
+}
+
+- (void)setName:(NSString *)name
+{
+    // Use automatic KVO and copy ownership without changing the public layout.
+    objc_setAssociatedObject(self, &NSOperationNameKey, name, OBJC_ASSOCIATION_COPY);
+}
 
 + (BOOL)automaticallyNotifiesObserversForKey:(NSString *)key {
     if ([key isEqualToString:@"isExecuting"] || [key isEqualToString:@"isReady"] || [key isEqualToString:@"isFinished"])

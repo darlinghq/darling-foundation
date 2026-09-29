@@ -26,6 +26,7 @@ FOUNDATION_EXPORT NSString * const NSInvocationOperationCancelledException;
 }
 
 @property NSQualityOfService qualityOfService;
+@property (copy) NSString *name;
 
 - (id)init;
 - (void)start;
