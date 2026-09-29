@@ -12,6 +12,7 @@
 #import <Foundation/NSURL.h>
 #import <Foundation/NSError.h>
 #import <Foundation/NSDictionary.h>
+#import <Foundation/NSMutableDictionary.h>
 #import <fcntl.h>
 #import <errno.h>
 #import <unistd.h>
@@ -20,6 +21,29 @@
 #import <sys/mman.h>
 #import <sys/stat.h>
 #import "NSErrorInternal.h"
+
+static NSError *NSFileReadError(int errorCode, NSString *path)
+{
+    NSInteger code = NSFileReadUnknownError;
+    switch (errorCode) {
+        case ENOENT:
+        case ENOTDIR:
+            code = NSFileReadNoSuchFileError;
+            break;
+        case EACCES:
+        case EPERM:
+            code = NSFileReadNoPermissionError;
+            break;
+    }
+    NSError *underlying = [NSError errorWithDomain:NSPOSIXErrorDomain
+        code:errorCode userInfo:nil];
+    NSMutableDictionary *info = [NSMutableDictionary dictionaryWithObjectsAndKeys:
+        underlying, NSUnderlyingErrorKey,
+        [NSString stringWithUTF8String:strerror(errorCode)], NSLocalizedDescriptionKey,
+        nil];
+    if (path != nil) [info setObject:path forKey:NSFilePathErrorKey];
+    return [NSError errorWithDomain:NSCocoaErrorDomain code:code userInfo:info];
+}
 
 void *_NSReadBytesFromFile(NSString *path, NSDataReadingOptions readOptionsMask, NSUInteger *length, BOOL *vm, NSError **err)
 {
@@ -30,7 +54,7 @@ void *_NSReadBytesFromFile(NSString *path, NSDataReadingOptions readOptionsMask,
     {
         if (err != NULL)
         {
-            *err = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:strerror(errno)]}];
+            *err = NSFileReadError(errno, path);
         }
         return NULL;
     }
@@ -38,10 +62,11 @@ void *_NSReadBytesFromFile(NSString *path, NSDataReadingOptions readOptionsMask,
     int result = fstat(fd, &statInfo);
     if (UNLIKELY(result != 0))
     {
+        int errorCode = errno;
         close(fd);
         if (err != NULL)
         {
-            *err = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:strerror(errno)]}];
+            *err = NSFileReadError(errorCode, path);
         }
         return NULL;
     }
@@ -99,11 +124,12 @@ void *_NSReadBytesFromFile(NSString *path, NSDataReadingOptions readOptionsMask,
         ssize_t amt = read(fd, (char *)bytes + offset, buffer_size);
         if (amt < 0)
         {
+            int errorCode = errno;
             free(bytes);
             bytes = NULL;
             if (err != NULL)
             {
-                *err = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:strerror(errno)]}];
+                *err = NSFileReadError(errorCode, path);
             }
             break;
         }
