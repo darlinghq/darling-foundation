@@ -43,6 +43,29 @@ int main(void) {
         assert(close(fd) == 0);
         checkCommand(3, lint, "plutil: invalid property list\n");
         checkCommand(4, convert, "plutil: input is not a property list\n");
+        NSDictionary *expected = @{ @"answer": @42 };
+        NSData *xml = [NSPropertyListSerialization dataWithPropertyList:expected
+            format:NSPropertyListXMLFormat_v1_0 options:0 error:NULL];
+        assert(xml != nil);
+        NSString *inputPath = [NSString stringWithUTF8String:path];
+        assert([xml writeToFile:inputPath atomically:NO]);
+        assert(plutil_main(3, lint) == 0);
+        char output[256];
+        snprintf(output, sizeof(output), "%s/output", dir);
+        const char *binary[] = {"plutil", "-convert", "binary1", "-o", output, path};
+        assert(plutil_main(6, binary) == 0);
+        NSData *encoded = [NSData dataWithContentsOfFile:[NSString stringWithUTF8String:output]];
+        NSPropertyListFormat format = 0;
+        id decoded = [NSPropertyListSerialization propertyListWithData:encoded
+            options:NSPropertyListImmutable format:&format error:NULL];
+        assert([decoded isEqual:expected] && format == NSPropertyListBinaryFormat_v1_0);
+        const char *backToXML[] = {"plutil", "-convert", "xml1", output};
+        assert(plutil_main(4, backToXML) == 0);
+        encoded = [NSData dataWithContentsOfFile:[NSString stringWithUTF8String:output]];
+        decoded = [NSPropertyListSerialization propertyListWithData:encoded
+            options:NSPropertyListImmutable format:&format error:NULL];
+        assert([decoded isEqual:expected] && format == NSPropertyListXMLFormat_v1_0);
+        assert(unlink(output) == 0);
         assert(unlink(path) == 0);
         assert(rmdir(dir) == 0);
     }
