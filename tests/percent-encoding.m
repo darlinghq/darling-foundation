@@ -16,6 +16,14 @@ int main(void)
         NSString *withNul = [NSString stringWithCharacters:embedded length:3];
         assert([[withNul stringByAddingPercentEncodingWithAllowedCharacters:letters] isEqual:@"a%00b"]);
         assert([[ @"%20" stringByAddingPercentEncodingWithAllowedCharacters:letters] isEqual:@"%25%32%30"]);
+        const unichar invalidUnits[] = {0xd800};
+        NSString *invalid = [NSString stringWithCharacters:invalidUnits length:1];
+        assert(invalid != nil);
+        assert([invalid stringByAddingPercentEncodingWithAllowedCharacters:letters] == nil);
+        NSCharacterSet *path = [NSCharacterSet performSelector:NSSelectorFromString(@"URLPathAllowedCharacterSet")];
+        NSCharacterSet *query = [NSCharacterSet performSelector:NSSelectorFromString(@"URLQueryAllowedCharacterSet")];
+        assert([[ @"a/b;c?d" stringByAddingPercentEncodingWithAllowedCharacters:path] isEqual:@"a/b%3Bc%3Fd"]);
+        assert([[ @"a/b;c?d" stringByAddingPercentEncodingWithAllowedCharacters:query] isEqual:@"a/b;c?d"]);
     }
     puts("PASS: percent encoding ASCII, combining marks, non-ASCII and embedded NUL");
     return 0;
