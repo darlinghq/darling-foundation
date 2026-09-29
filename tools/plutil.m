@@ -24,8 +24,10 @@ int main(int argc, const char* argv[])
 			NSString* path = string_argument(argv[2]);
 			NSError* error = nil;
 			NSData* data = [NSData dataWithContentsOfFile:path options:0 error:&error];
-			id plist = data ? [NSPropertyListSerialization propertyListWithData:data
-				options:NSPropertyListImmutable format:NULL error:&error] : nil;
+			if (!data)
+				return fail("plutil: could not read input file\n", 1);
+			id plist = [NSPropertyListSerialization propertyListWithData:data
+				options:NSPropertyListImmutable format:NULL error:&error];
 			if (!plist || error)
 				return fail("plutil: invalid property list\n", 1);
 			write(STDOUT_FILENO, argv[2], strlen(argv[2]));
@@ -59,8 +61,10 @@ int main(int argc, const char* argv[])
 		NSError* error = nil;
 		NSData* input = [NSData dataWithContentsOfFile:string_argument(inputPath)
 			options:0 error:&error];
-		id plist = input ? [NSPropertyListSerialization propertyListWithData:input
-			options:NSPropertyListImmutable format:NULL error:&error] : nil;
+		if (!input)
+			return fail("plutil: could not read input file\n", 1);
+		id plist = [NSPropertyListSerialization propertyListWithData:input
+			options:NSPropertyListImmutable format:NULL error:&error];
 		if (!plist || error)
 			return fail("plutil: input is not a property list\n", 1);
 		NSData* output = [NSPropertyListSerialization dataWithPropertyList:plist
