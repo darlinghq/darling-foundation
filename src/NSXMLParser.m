@@ -253,6 +253,7 @@ static inline BOOL codeIsNameContinue(uint8_t code) {
     int createNewPool = 0;
     NSAutoreleasePool *pool = nil;
 
+    @try {
     while (NSMaxRange(_range) < _length) {
 
         if (pool == nil)
@@ -560,6 +561,10 @@ static inline BOOL codeIsNameContinue(uint8_t code) {
         }
     }
     return YES;
+    }
+    @finally {
+        [pool release];
+    }
 }
 
 - (void) abortParsing {
