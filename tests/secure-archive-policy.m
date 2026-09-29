@@ -21,6 +21,16 @@ static NSUInteger insecureEncodes;
 @implementation RefusingBox
 + (BOOL)supportsSecureCoding { return NO; }
 @end
+@interface SubstitutingChild : InsecureChild
+@end
+@implementation SubstitutingChild
+- (Class)classForKeyedArchiver { return [SecureBox class]; }
+@end
+@interface ReplacingBox : SecureBox
+@end
+@implementation ReplacingBox
+- (id)replacementObjectForKeyedArchiver:(NSKeyedArchiver *)archiver { return child; }
+@end
 
 int main(void) {
     @autoreleasepool {
@@ -43,6 +53,20 @@ int main(void) {
         assert([NSKeyedArchiver archivedDataWithRootObject:box requiringSecureCoding:YES error:NULL] != nil);
         box->child = [[[RefusingBox alloc] init] autorelease];
         assert([NSKeyedArchiver archivedDataWithRootObject:box requiringSecureCoding:YES error:NULL] == nil);
+        box->child = [[[SubstitutingChild alloc] init] autorelease];
+        assert([NSKeyedArchiver archivedDataWithRootObject:box requiringSecureCoding:YES error:NULL] == nil);
+        ReplacingBox *replacement = [[[ReplacingBox alloc] init] autorelease];
+        replacement->child = child;
+        box->child = replacement;
+        assert([NSKeyedArchiver archivedDataWithRootObject:box requiringSecureCoding:YES error:NULL] == nil);
+        assert(insecureEncodes == 2);
+        replacement->child = @"replacement string";
+        assert([NSKeyedArchiver archivedDataWithRootObject:box requiringSecureCoding:YES error:NULL] != nil);
+        box->child = @[@{ @"nested": child }];
+        assert([NSKeyedArchiver archivedDataWithRootObject:box requiringSecureCoding:YES error:NULL] == nil);
+        assert(insecureEncodes == 2);
+        box->child = @[@{ @"nested": @"allowed" }];
+        assert([NSKeyedArchiver archivedDataWithRootObject:box requiringSecureCoding:YES error:NULL] != nil);
         for (NSUInteger secure = 0; secure < 2; ++secure) {
             NSKeyedArchiver *archiver = [[NSKeyedArchiver alloc] initRequiringSecureCoding:secure];
             assert([archiver requiresSecureCoding] == secure);

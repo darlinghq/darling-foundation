@@ -223,12 +223,13 @@ static void _encodeObject(NSKeyedArchiver *archiver, id object, NSString *key)
     Class class = [object classForKeyedArchiver];
     if (object != nil && [archiver requiresSecureCoding])
     {
-        if (![class conformsToProtocol:@protocol(NSSecureCoding)] ||
-            ![class respondsToSelector:@selector(supportsSecureCoding)] ||
-            ![class supportsSecureCoding])
+        Class objectClass = [object class];
+        if (![object conformsToProtocol:@protocol(NSSecureCoding)] ||
+            ![objectClass respondsToSelector:@selector(supportsSecureCoding)] ||
+            ![objectClass supportsSecureCoding])
         {
             [NSException raise:NSInvalidArchiveOperationException
-                format:@"%@ does not support secure coding", NSStringFromClass(class)];
+                format:@"%@ does not support secure coding", NSStringFromClass(objectClass)];
         }
     }
     int end = CFArrayGetCount((CFArrayRef)archiver->_objects);
