@@ -114,6 +114,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
     NSMutableArray *_elementNameStack;
     NSString *_currentAttributeName;
     NSMutableDictionary *_currentAttributes;
+    BOOL _sawRootElement;
 }
 
 - (instancetype) initWithData: (NSData *) data;
