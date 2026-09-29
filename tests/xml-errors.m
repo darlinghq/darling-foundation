@@ -33,6 +33,11 @@ int main(void) {
         }
         NSArray *bad = @[@"", @"  ", @"<?xml version='1.0'?>", @"<a>", @"<a></b>",
             @"</a>", @"<a/><b/>", @"text<a/>", @"<a/>text", @"<a/>"];
+        const NSInteger codes[] = {4, 4, 4, 5, 76, 76, 86, 3, 86, 512};
+        assert(NSXMLParserInternalError == 1);
+        assert(NSXMLParserUnparsedEntityError == 28);
+        assert(NSXMLParserNoDTDError == 94);
+        assert(NSXMLParserDelegateAbortedParseError == 512);
         for (NSUInteger i = 0; i < [bad count]; ++i) {
             ErrorDelegate *delegate = [[ErrorDelegate alloc] init];
             delegate->abortOnStart = i == [bad count] - 1;
@@ -41,6 +46,8 @@ int main(void) {
             assert(![parser parse]);
             assert([parser parserError] != nil);
             assert([[[parser parserError] domain] isEqual:@"NSXMLParserErrorDomain"]);
+            assert([[[parser parserError] domain] isEqual:NSXMLParserErrorDomain]);
+            assert([[parser parserError] code] == codes[i]);
             assert(delegate->errors == 1 && delegate->ended == 0);
             [parser release]; [delegate release];
         }

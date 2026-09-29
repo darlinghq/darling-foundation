@@ -26,6 +26,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 #import <Foundation/NSError.h>
 #import <string.h>
 
+NSString * const NSXMLParserErrorDomain = @"NSXMLParserErrorDomain";
+
 enum {
     STATE_content,
     STATE_ignoreable_content,
@@ -52,10 +54,10 @@ enum {
 
 @implementation NSXMLParser
 
-- (void)recordParseFailure:(NSString *)reason {
+- (void)recordParseFailure:(NSString *)reason code:(NSXMLParserError)code {
     if (_parserError != nil) return;
-    _parserError = [[NSError alloc] initWithDomain:@"NSXMLParserErrorDomain"
-        code:1 userInfo:@{NSLocalizedDescriptionKey: reason}];
+    _parserError = [[NSError alloc] initWithDomain:NSXMLParserErrorDomain
+        code:code userInfo:@{NSLocalizedDescriptionKey: reason}];
     if ([_delegate respondsToSelector:@selector(parser:parseErrorOccurred:)])
         [_delegate parser:self parseErrorOccurred:_parserError];
 }
@@ -171,7 +173,7 @@ enum {
 - (void) sTag: (NSString *) sTag {
     if ([_elementNameStack count] == 0) {
         if (_sawRootElement) {
-            [self recordParseFailure:@"Document contains multiple root elements"];
+            [self recordParseFailure:@"Document contains multiple root elements" code:NSXMLParserExtraContentError];
             return;
         }
         _sawRootElement = YES;
@@ -210,7 +212,7 @@ enum {
 
 - (void) eTag: (NSString *) eTag {
     if (![[_elementNameStack lastObject] isEqualToString:eTag]) {
-        [self recordParseFailure:@"Closing tag does not match the open element"];
+        [self recordParseFailure:@"Closing tag does not match the open element" code:NSXMLParserTagNameMismatchError];
         return;
     }
     [self didEndElement];
@@ -264,7 +266,7 @@ static inline BOOL codeIsNameContinue(uint8_t code) {
 }
 
 - (void) unexpectedIn: (NSString *) state {
-    [self recordParseFailure:[NSString stringWithFormat:@"Unexpected character in %@", state]];
+    [self recordParseFailure:[NSString stringWithFormat:@"Unexpected character in %@", state] code:NSXMLParserNotWellBalancedError];
 }
 
 - (BOOL) parse {
@@ -282,7 +284,8 @@ static inline BOOL codeIsNameContinue(uint8_t code) {
         uint8_t code = _bytes[NSMaxRange(_range)];
         if ((_state == STATE_content || _state == STATE_ignoreable_content) &&
             [_elementNameStack count] == 0 && code != '<' && !codeIsWhitespace(code)) {
-            [self recordParseFailure:@"Character data outside the root element"];
+            [self recordParseFailure:@"Character data outside the root element"
+                code:(_sawRootElement ? NSXMLParserExtraContentError : NSXMLParserDocumentStartError)];
             break;
         }
         enum {
@@ -586,10 +589,10 @@ static inline BOOL codeIsNameContinue(uint8_t code) {
         }
     }
     if (_parserError == nil && !_sawRootElement)
-        [self recordParseFailure:@"Document has no root element"];
+        [self recordParseFailure:@"Document has no root element" code:NSXMLParserEmptyDocumentError];
     if (_parserError == nil && ([_elementNameStack count] != 0 ||
         (_state != STATE_content && _state != STATE_ignoreable_content)))
-        [self recordParseFailure:@"Document ended before markup was complete"];
+        [self recordParseFailure:@"Document ended before markup was complete" code:NSXMLParserPrematureDocumentEndError];
     if (_parserError != nil) return NO;
     if ([_delegate respondsToSelector:@selector(parserDidEndDocument:)])
         [_delegate parserDidEndDocument:self];
@@ -601,7 +604,7 @@ static inline BOOL codeIsNameContinue(uint8_t code) {
 }
 
 - (void) abortParsing {
-    [self recordParseFailure:@"Parsing aborted by delegate"];
+    [self recordParseFailure:@"Parsing aborted by delegate" code:NSXMLParserDelegateAbortedParseError];
 }
 
 - (NSError *) parserError {
