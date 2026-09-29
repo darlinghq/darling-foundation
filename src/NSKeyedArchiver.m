@@ -221,10 +221,15 @@ static void _encodeObject(NSKeyedArchiver *archiver, id object, NSString *key)
     }
 
     Class class = [object classForKeyedArchiver];
-    if ([archiver requiresSecureCoding])
+    if (object != nil && [archiver requiresSecureCoding])
     {
-        // TODO secureCoding
-        DEBUG_BREAK();
+        if (![class conformsToProtocol:@protocol(NSSecureCoding)] ||
+            ![class respondsToSelector:@selector(supportsSecureCoding)] ||
+            ![class supportsSecureCoding])
+        {
+            [NSException raise:NSInvalidArchiveOperationException
+                format:@"%@ does not support secure coding", NSStringFromClass(class)];
+        }
     }
     int end = CFArrayGetCount((CFArrayRef)archiver->_objects);
     if (object == nil)
@@ -542,7 +547,8 @@ static void encodeDouble(NSKeyedArchiver *archiver, double d, NSString *key)
             data_invalid = YES;
         }
         
-        else if (![[object class] supportsSecureCoding]) {
+        else if (![[object class] respondsToSelector:@selector(supportsSecureCoding)] ||
+                 ![[object class] supportsSecureCoding]) {
             [child_info
              setObject: [NSString stringWithFormat:@"%@ %@ %@",
                          [object className],
@@ -558,7 +564,17 @@ static void encodeDouble(NSKeyedArchiver *archiver, double d, NSString *key)
     
     if (!data_invalid) {
         @try {
-            return [NSKeyedArchiver archivedDataWithRootObject:object];
+            NSMutableData *data = [NSMutableData data];
+            NSKeyedArchiver *archiver = [[NSKeyedArchiver alloc] initForWritingWithMutableData:data];
+            @try {
+                [archiver setRequiresSecureCoding:requiresSecureCoding];
+                [archiver encodeObject:object forKey:NSKeyedArchiveRootObjectKey];
+                [archiver finishEncoding];
+                return data;
+            }
+            @finally {
+                [archiver release];
+            }
         }
         
         @catch (NSException *exception) {
@@ -612,8 +628,9 @@ static void encodeDouble(NSKeyedArchiver *archiver, double d, NSString *key)
 
 - (id)initRequiringSecureCoding:(BOOL)requiringSecureCoding
 {
-#warning TODO: [NSKeyedArchiver initRequiringSecureCoding:]
-    return [self init];
+    self = [self init];
+    if (self) [self setRequiresSecureCoding:requiringSecureCoding];
+    return self;
 }
 
 -(NSData *)encodedData
