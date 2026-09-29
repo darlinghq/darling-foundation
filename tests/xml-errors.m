@@ -15,6 +15,22 @@
 @end
 int main(void) {
     @autoreleasepool {
+        NSArray *good = @[@"<a/>", @"<a></a>", @"<a><b/></a>",
+            @" \n<a/>\t\n", @"<?xml version='1.0'?><a/>",
+            @"<!-- before --><a/><!-- after -->",
+            @"<a key='value'>text &amp; more</a>",
+            @"<a><![CDATA[text]]></a>"];
+        for (NSString *document in good) {
+            ErrorDelegate *delegate = [[ErrorDelegate alloc] init];
+            NSXMLParser *parser = [[NSXMLParser alloc] initWithData:[document dataUsingEncoding:NSUTF8StringEncoding]];
+            [parser setDelegate:delegate];
+            BOOL success = [parser parse];
+            if (!success) fprintf(stderr, "Valid XML rejected: %s\n", [document UTF8String]);
+            assert(success);
+            assert([parser parserError] == nil);
+            assert(delegate->errors == 0 && delegate->ended == 1);
+            [parser release]; [delegate release];
+        }
         NSArray *bad = @[@"", @"  ", @"<?xml version='1.0'?>", @"<a>", @"<a></b>",
             @"</a>", @"<a/><b/>", @"text<a/>", @"<a/>text", @"<a/>"];
         for (NSUInteger i = 0; i < [bad count]; ++i) {
