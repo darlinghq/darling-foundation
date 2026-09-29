@@ -32,8 +32,11 @@ int main(void) {
             [parser release]; [delegate release];
         }
         NSArray *bad = @[@"", @"  ", @"<?xml version='1.0'?>", @"<a>", @"<a></b>",
-            @"</a>", @"<a/><b/>", @"text<a/>", @"<a/>text", @"<a/>"];
-        const NSInteger codes[] = {4, 4, 4, 5, 76, 76, 86, 3, 86, 512};
+            @"</a>", @"<a/><b/>", @"text<a/>", @"<a/>text",
+            @"<a attr='", @"<a><!--", @"<a><![CDATA[text", @"<a>&amp",
+            @"<a>&#", @"<a></", @"<a/", @"<a/>"];
+        const NSInteger codes[] = {4, 4, 4, 5, 76, 76, 86, 3, 86,
+            5, 5, 5, 5, 5, 5, 5, 512};
         assert(NSXMLParserInternalError == 1);
         assert(NSXMLParserUnparsedEntityError == 28);
         assert(NSXMLParserNoDTDError == 94);
