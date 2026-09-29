@@ -529,6 +529,41 @@ static inline CFComparisonResult NSIndexSetCompareEntry(RangeList *r1, RangeList
     }
 }
 
+- (NSRange) rangeAtIndex: (NSUInteger) idx
+{
+    if (idx >= [self rangeCount])
+    {
+        return NSMakeRange(NSNotFound, 0);
+    }
+
+    if (IS_EMPTY(self))
+    {
+        return NSMakeRange(NSNotFound, 0);
+    }
+
+    if (HAS_SINGLE_RANGE(self))
+    {
+        return SINGLE_RANGE(self);
+    }
+
+    if (!BUILD_CACHE(self))
+    {
+        NSUInteger seen = 0;
+        RangeList *ptr = NULL;
+        DL_FOREACH(MULTIPLE_RANGE_DATA(self), ptr)
+        {
+            if (seen == idx)
+            {
+                return ptr->range;
+            }
+            seen++;
+        }
+        return NSMakeRange(NSNotFound, 0);
+    }
+
+    return *(NSRange *) CFArrayGetValueAtIndex(CACHE(self)->ranges, idx);
+}
+
 - (NSUInteger)firstIndex
 {
     if (IS_EMPTY(self))

@@ -36,6 +36,7 @@ typedef struct NSIndexSetCache NSIndexSetCache;
 - (NSUInteger)count;
 - (NSUInteger)firstIndex;
 - (NSUInteger)lastIndex;
+- (NSRange)rangeAtIndex: (NSUInteger)idx;
 - (NSUInteger)indexGreaterThanIndex:(NSUInteger)value;
 - (NSUInteger)indexLessThanIndex:(NSUInteger)value;
 - (NSUInteger)indexGreaterThanOrEqualToIndex:(NSUInteger)value;
