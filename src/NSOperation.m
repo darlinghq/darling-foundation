@@ -277,6 +277,15 @@ static pthread_mutex_t _NSOperationLock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER;
             return;
         }
 
+        if ([_operation isCancelled])
+        {
+            [_operation willChangeValueForKey:@"isFinished"];
+            _state = NSOperationStateFinished;
+            [_operation didChangeValueForKey:@"isFinished"];
+            [_operation release];
+            return;
+        }
+
         if (_state != NSOperationStateExecuting)
         {
             [_operation willChangeValueForKey:@"isExecuting"];
