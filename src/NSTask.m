@@ -110,7 +110,11 @@ static os_log_t nstask_get_log(void) {
 - (id)_getInfoForKey: (NSString*)key
 {
 	@synchronized(self) {
-		return [_launchInfo[key] copy];
+		id val = _launchInfo[key];
+		if ([val respondsToSelector: @selector(copyWithZone:)]) {
+			return [val copy];
+		}
+		return [val retain];
 	}
 }
 
