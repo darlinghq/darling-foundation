@@ -52,6 +52,14 @@ int main(void) {
             assert([[[parser parserError] domain] isEqual:NSXMLParserErrorDomain]);
             assert([[parser parserError] code] == codes[i]);
             assert(delegate->errors == 1 && delegate->ended == 0);
+            // A failed parser must not turn success on a later invocation or
+            // replace/notify its first error again. This does not specify
+            // successful-parser reuse or native diagnostic-code parity.
+            NSError *firstError = [[parser parserError] retain];
+            assert(![parser parse]);
+            assert([parser parserError] == firstError);
+            assert(delegate->errors == 1 && delegate->ended == 0);
+            [firstError release];
             [parser release]; [delegate release];
         }
     }
