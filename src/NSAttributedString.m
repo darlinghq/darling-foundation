@@ -249,6 +249,14 @@ OBJC_PROTOCOL_IMPL_POP
     return retVal;
 }
 
+static inline BOOL _NSAttrValuesEqual(id val1, id val2) {
+    if (val1 == val2)
+        return YES;
+    if (val1 == nil || val2 == nil)
+        return NO;
+    return [val1 isEqual:val2];
+}
+
 - (NSDictionary *)attributesAtIndex:(NSUInteger)index longestEffectiveRange:(NSRangePointer)aRange inRange:(NSRange)rangeLimit
 {
     NSDictionary *retVal = [self attributesAtIndex:index effectiveRange:aRange];
@@ -259,12 +267,18 @@ OBJC_PROTOCOL_IMPL_POP
     NSUInteger min = aRange->location;  // inclusive end
     NSUInteger max = aRange->location + aRange->length;  // exclusive end
     NSRange tempRange;
-    while (min > 0 && [retVal isEqualToDictionary:[self attributesAtIndex:min - 1 effectiveRange:&tempRange]])
+    while (min > 0)
     {
+        NSDictionary *compareVal = [self attributesAtIndex:min - 1 effectiveRange:&tempRange];
+        if (!_NSAttrValuesEqual(retVal, compareVal))
+            break;
         min = tempRange.location;
     }
-    while (max < [self length] && [retVal isEqualToDictionary:[self attributesAtIndex:max effectiveRange:&tempRange]])
+    while (max < [self length])
     {
+        NSDictionary *compareVal = [self attributesAtIndex:max effectiveRange:&tempRange];
+        if (!_NSAttrValuesEqual(retVal, compareVal))
+            break;
         max = tempRange.location + tempRange.length;
     }
     aRange->location = min;
@@ -283,12 +297,18 @@ OBJC_PROTOCOL_IMPL_POP
     NSUInteger min = aRange->location;  // inclusive end
     NSUInteger max = aRange->location + aRange->length;  // exclusive end
     NSRange tempRange;
-    while (min > 0 && retVal == [self attribute:attrName atIndex:min - 1 effectiveRange:&tempRange])
+    while (min > 0)
     {
+        id compareVal = [self attribute:attrName atIndex:min - 1 effectiveRange:&tempRange];
+        if (!_NSAttrValuesEqual(retVal, compareVal))
+            break;
         min = tempRange.location;
     }
-    while (max < [self length] && retVal == [self attribute:attrName atIndex:max effectiveRange:&tempRange])
+    while (max < [self length])
     {
+        id compareVal = [self attribute:attrName atIndex:max effectiveRange:&tempRange];
+        if (!_NSAttrValuesEqual(retVal, compareVal))
+            break;
         max = tempRange.location + tempRange.length;
     }
     aRange->location = min;
