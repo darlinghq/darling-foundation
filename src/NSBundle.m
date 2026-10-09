@@ -667,39 +667,13 @@ static void __NSBundleMainBundleDealloc()
 
 - (NSDictionary *)localizedStringsForTable:(NSString *)tableName localization:(NSString *)localizationName
 {
-    // CF has no table-level accessor - CFBundleCopyLocalizedString only ever
-    // returns one key - so locate the .strings resource through the same
-    // resource lookup the rest of NSBundle uses and parse it. Returning nil
-    // for a table that is not there matches the CF behaviour for a missing key.
     if ([tableName length] == 0)
         tableName = @"Localizable";
 
-    NSString *path = [self pathForResource: tableName
-                                   ofType: @"strings"
-                               inDirectory: nil
-                            forLocalization: localizationName];
-    if (path == nil)
-        path = [self pathForResource: tableName ofType: @"strings" inDirectory: nil];
-    if (path == nil)
-        return nil;
-
-    NSData *data = [NSData dataWithContentsOfFile: path];
-    if (data == nil)
-        return nil;
-
-    CFErrorRef error = NULL;
-    CFPropertyListRef plist = CFPropertyListCreateWithData(kCFAllocatorDefault,
-            (CFDataRef)data, kCFPropertyListImmutable, NULL, &error);
-    if (error != NULL)
-        CFRelease(error);
-    if (plist == NULL)
-        return nil;
-    if (CFGetTypeID(plist) != CFDictionaryGetTypeID()) {
-        CFRelease(plist);
-        return nil;
-    }
-
-    return [(NSDictionary *)plist autorelease];
+    CFDictionaryRef table = _CFBundleCopyStringTableForLocalization(_cfBundle, (CFStringRef)tableName, (CFStringRef)localizationName);
+    if (table == NULL && localizationName != nil)
+        table = _CFBundleCopyStringTableForLocalization(_cfBundle, (CFStringRef)tableName, NULL);
+    return [(NSDictionary *)table autorelease];
 }
 
 - (id)objectForInfoDictionaryKey:(NSString *)key
