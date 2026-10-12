@@ -352,6 +352,13 @@ SINGLETON_RR()
 	}
 }
 
+- (NSProcessInfoThermalState)thermalState
+{
+	/* No thermal-pressure source on Linux; report Nominal so clients
+	 * (e.g. Chromium's ThermalStateObserverMac) proceed normally. */
+	return NSProcessInfoThermalStateNominal;
+}
+
 @end
 
 @implementation NSProcessInfo (NSProcessInfoPlatform)
@@ -396,3 +403,5 @@ void __NSInitializeProcess(int argc,const char *argv[]) {
     }
 }
 #endif
+
+NSString *const NSProcessInfoThermalStateDidChangeNotification = @"NSProcessInfoThermalStateDidChangeNotification";
