@@ -691,8 +691,11 @@ SINGLETON_RR()
 
 + (id)localizedStringWithFormat:(NSString *)format, ...
 {
-#warning TODO https://code.google.com/p/apportable/issues/detail?id=269
-    return nil;
+    va_list args;
+    va_start(args, format);
+    NSString *str = [[self alloc] initWithFormat:format locale:[NSLocale currentLocale] arguments:args];
+    va_end(args);
+    return [str autorelease];
 }
 
 + (id)stringWithCString:(const char *)cString encoding:(NSStringEncoding)enc
