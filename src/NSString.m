@@ -443,7 +443,7 @@ static NSStringEncoding __NSDefaultCStringEncoding()
 
 - (id)initWithFormat:(NSString *)format locale:(id)locale arguments:(va_list)argList
 {
-    return (id)_CFStringCreateWithFormatAndArgumentsAux(kCFAllocatorDefault, &_NSCFCopyDescription2, NULL, (CFStringRef)format, argList);
+    return (id)_CFStringCreateWithFormatAndArgumentsAux(kCFAllocatorDefault, &_NSCFCopyDescription2, (CFDictionaryRef)locale, (CFStringRef)format, argList);
 }
 
 - (id)initWithString:(NSString *)str
@@ -531,7 +531,7 @@ SINGLETON_RR()
 - (id)initWithFormat:(NSString *)format locale:(id)locale arguments:(va_list)argList
 {
     CFMutableStringRef str = CFStringCreateMutable(kCFAllocatorDefault, 0);
-    _CFStringAppendFormatAndArgumentsAux(str, &_NSCFCopyDescription2, NULL, (CFStringRef)format, argList);
+    _CFStringAppendFormatAndArgumentsAux(str, &_NSCFCopyDescription2, (CFDictionaryRef)locale, (CFStringRef)format, argList);
     return (id)str;
 }
 
