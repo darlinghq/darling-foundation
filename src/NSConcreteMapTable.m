@@ -1382,9 +1382,13 @@ const NSMapTableValueCallBacks NSOwnedPointerMapValueCallBacks =
 
   if (aKey == nil)
     {
-      [NSException raise: NSInvalidArgumentException
-		  format: @"[%@-%@:] given nil argument",
-        NSStringFromClass([self class]), NSStringFromSelector(_cmd)];
+      NSWarnMLog(@"attempt to set object with nil key into map table %@", self);
+      return;
+    }
+  if (anObject == nil)
+    {
+      [self removeObjectForKey: aKey];
+      return;
     }
   node = GSIMapNodeForKey(self, (GSIMapKey)aKey);
   if (node)
