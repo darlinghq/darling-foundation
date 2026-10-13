@@ -23,7 +23,7 @@ typedef NS_OPTIONS(NSUInteger, NSAttributedStringEnumerationOptions) {
 - (BOOL)isEqualToAttributedString:(NSAttributedString *)other;
 - (id)initWithString:(NSString *)str;
 - (id)initWithString:(NSString *)str attributes:(NSDictionary *)attrs;
-- (id)initWithAttributedString:(NSAttributedString *)attrStr;
+- (nonnull instancetype)initWithAttributedString:(nonnull NSAttributedString *)attrStr;
 #if NS_BLOCKS_AVAILABLE
 - (void)enumerateAttributesInRange:(NSRange)enumerationRange options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(NSDictionary * _Nonnull attrs, NSRange range, BOOL * _Nonnull stop))block;
 - (void)enumerateAttribute:(NSString *)attrName inRange:(NSRange)enumerationRange options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(id value, NSRange range, BOOL * _Nonnull stop))block;
