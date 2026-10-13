@@ -18,8 +18,33 @@
 */
 
 #import <Foundation/NSString.h>
+#import <Foundation/NSDictionary.h>
 
-@interface NSUserNotification : NSObject <NSCopying>
+@interface NSUserNotification : NSObject <NSCopying> {
+@package
+    NSString *_identifier;
+    NSString *_title;
+    NSString *_subtitle;
+    NSString *_informativeText;
+    NSString *_actionButtonTitle;
+    NSString *_otherButtonTitle;
+    NSString *_soundName;
+    NSDictionary *_userInfo;
+    BOOL _hasActionButton;
+    BOOL _hasReplyButton;
+}
+
+@property (copy) NSString *identifier;
+@property (copy) NSString *title;
+@property (copy) NSString *subtitle;
+@property (copy) NSString *informativeText;
+@property (copy) NSString *actionButtonTitle;
+@property (copy) NSString *otherButtonTitle;
+@property (copy) NSString *soundName;
+@property (copy) NSDictionary *userInfo;
+@property BOOL hasActionButton;
+@property BOOL hasReplyButton;
+
 @end
 
 @interface NSUserNotificationAction : NSObject <NSCopying>

@@ -21,10 +21,43 @@
 
 @implementation NSUserNotification
 
+@synthesize identifier = _identifier;
+@synthesize title = _title;
+@synthesize subtitle = _subtitle;
+@synthesize informativeText = _informativeText;
+@synthesize actionButtonTitle = _actionButtonTitle;
+@synthesize otherButtonTitle = _otherButtonTitle;
+@synthesize soundName = _soundName;
+@synthesize userInfo = _userInfo;
+@synthesize hasActionButton = _hasActionButton;
+@synthesize hasReplyButton = _hasReplyButton;
+
+- (void)dealloc {
+    [_identifier release];
+    [_title release];
+    [_subtitle release];
+    [_informativeText release];
+    [_actionButtonTitle release];
+    [_otherButtonTitle release];
+    [_soundName release];
+    [_userInfo release];
+    [super dealloc];
+}
+
 - (id)copyWithZone:(NSZone *)zone
 {
-	NSLog(@"[NSUserNotification copyWithZone:]");
-	return nil;
+    NSUserNotification *copy = [[NSUserNotification allocWithZone:zone] init];
+    copy.identifier = self.identifier;
+    copy.title = self.title;
+    copy.subtitle = self.subtitle;
+    copy.informativeText = self.informativeText;
+    copy.actionButtonTitle = self.actionButtonTitle;
+    copy.otherButtonTitle = self.otherButtonTitle;
+    copy.soundName = self.soundName;
+    copy.userInfo = self.userInfo;
+    copy.hasActionButton = self.hasActionButton;
+    copy.hasReplyButton = self.hasReplyButton;
+    return copy;
 }
 
 @end
@@ -54,7 +87,7 @@ static NSUserNotificationCenter *_defaultUserNotificationCenter = nil;
 }
 
 - (void)deliverNotification:(NSUserNotification *)notification {
-	NSLog(@"[NSUserNotificationCenter deliverNotification:]");
+	NSLog(@"[NSUserNotificationCenter deliverNotification:] Title: '%@' Text: '%@'", [notification title], [notification informativeText]);
 }
 
 - (void)removeDeliveredNotification:(NSUserNotification *)notification {
