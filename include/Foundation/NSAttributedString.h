@@ -21,8 +21,8 @@ typedef NS_OPTIONS(NSUInteger, NSAttributedStringEnumerationOptions) {
 - (NSDictionary *)attributesAtIndex:(NSUInteger)index longestEffectiveRange:(NSRangePointer)range inRange:(NSRange)rangeLimit;
 - (id)attribute:(NSString *)attrName atIndex:(NSUInteger)index longestEffectiveRange:(NSRangePointer)range inRange:(NSRange)rangeLimit;
 - (BOOL)isEqualToAttributedString:(NSAttributedString *)other;
-- (id)initWithString:(NSString *)str;
-- (id)initWithString:(NSString *)str attributes:(NSDictionary *)attrs;
+- (nonnull instancetype)initWithString:(nonnull NSString *)str;
+- (nonnull instancetype)initWithString:(nonnull NSString *)str attributes:(nullable NSDictionary *)attrs;
 - (nonnull instancetype)initWithAttributedString:(nonnull NSAttributedString *)attrStr;
 #if NS_BLOCKS_AVAILABLE
 - (void)enumerateAttributesInRange:(NSRange)enumerationRange options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(NSDictionary * _Nonnull attrs, NSRange range, BOOL * _Nonnull stop))block;

@@ -1,10 +1,13 @@
 // swiftc -typecheck against the built Darling SDK.
-// NSAttributedString(string:) is still Optional in this SDK, so the base
-// string is force-unwrapped. The assertion is that
-// NSMutableAttributedString(attributedString:) is non-optional: with a
-// failable import `m` is Optional and `m.length` fails to typecheck.
+// The assertion is that NSAttributedString(string:),
+// NSAttributedString(string:attributes:) and
+// NSMutableAttributedString(attributedString:) are non-optional: with a
+// failable import `s`, `a` or `m` is Optional and `.length` fails to typecheck.
 import Foundation
 
-let s = NSAttributedString(string: "x")!
+let s = NSAttributedString(string: "x")
+let a = NSAttributedString(string: "x", attributes: nil)
 let m = NSMutableAttributedString(attributedString: s)
+_ = s.length
+_ = a.length
 _ = m.length
