@@ -287,7 +287,7 @@ SINGLETON_RR()
 {
     unsigned long long amt = 1;
     size_t len = sizeof(unsigned long long);
-    if (sysctlbyname("hw.physmem", &amt, &len, 0, 0) != 0)
+    if (sysctlbyname("hw.memsize", &amt, &len, 0, 0) != 0)
     {
         amt = 1;
     }
