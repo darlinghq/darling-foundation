@@ -251,7 +251,7 @@ SINGLETON_RR()
     }
 #else
 	NSDictionary* dict = (NSDictionary*) _CFCopySystemVersionDictionary();
-	NSString* string = [dict objectForKey: @"ProductVersion"];
+	NSString* string = [dict objectForKey: @"FullVersionString"];
 
 	[string retain];
 	[dict release];
@@ -309,8 +309,9 @@ SINGLETON_RR()
 {
 	NSOperatingSystemVersion version = { 0, 0, 0 };
 
-	NSString* string = [self operatingSystemVersionString];
-	NSArray* arr = [string componentsSeparatedByString:@"."];
+	NSDictionary* dict = (NSDictionary*) _CFCopySystemVersionDictionary();
+	NSArray* arr = [[dict objectForKey: @"ProductVersion"] componentsSeparatedByString:@"."];
+	[dict release];
 
 	if ([arr count] >= 1)
 	{
