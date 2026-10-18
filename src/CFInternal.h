@@ -41,7 +41,17 @@ static CFStringRef _NSCFCopyDescription(const void *value)
 
 static CFStringRef _NSCFCopyDescription2(void *value, const void *formatOpts)
 {
-    return (CFStringRef)[[(NSObject *)value description] copy];    
+    if (value == NULL) {
+        return (CFStringRef)CFRetain(CFSTR("(null)"));
+    }
+    if (formatOpts != NULL && [(NSObject *)value respondsToSelector:@selector(descriptionWithLocale:)]) {
+        NSString *desc = [(NSObject *)value descriptionWithLocale:(id)formatOpts];
+        if (desc != nil) {
+            return (CFStringRef)[desc copy];
+        }
+    }
+    NSString *desc = [(NSObject *)value description];
+    return desc ? (CFStringRef)[desc copy] : (CFStringRef)CFRetain(CFSTR(""));
 }
 
 static Boolean _NSCFEqual(const void *value1, const void *value2)

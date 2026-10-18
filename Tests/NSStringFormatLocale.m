@@ -49,6 +49,11 @@ int main(void)
         check_str("locale variadic, fr_FR %.1f", format_with_locale(@"%.1f", french, 1.5), @"1,5");
         check_str("locale variadic, nil", format_with_locale(@"%.1f", nil, 1.5), @"1.5");
 
+        NSNumber *number = [NSNumber numberWithDouble:1.5];
+        check_str("object %@, fr_FR", [[NSString alloc] initWithFormat:@"%@" locale:french, number], @"1,5");
+        check_str("object %@, nil locale", [[NSString alloc] initWithFormat:@"%@" locale:nil, number], @"1.5");
+        check_str("array %@, fr_FR", [[NSString alloc] initWithFormat:@"%@" locale:french, @[number]], @"(\n    1,5\n)");
+
         NSString *localized = [NSString localizedStringWithFormat:@"%d / %.2f", 1234567, 1234.5];
         NSString *current = [[NSString alloc] initWithFormat:@"%d / %.2f" locale:[NSLocale currentLocale], 1234567, 1234.5];
         check_str("localizedStringWithFormat is non-nil", localized ? @"ok" : @"nil", @"ok");
