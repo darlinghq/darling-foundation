@@ -469,6 +469,26 @@ if (_formatter != NULL) { \
     SET_ID(kCFNumberFormatterGroupingSeparator, string);
 }
 
+- (NSString *)thousandSeparator
+{
+    return [self groupingSeparator];
+}
+
+- (void)setThousandSeparator:(NSString *)string
+{
+    [self setGroupingSeparator:string];
+}
+
+- (BOOL)hasThousandSeparators
+{
+    return [self usesGroupingSeparator];
+}
+
+- (void)setHasThousandSeparators:(BOOL)b
+{
+    [self setUsesGroupingSeparator:b];
+}
+
 // Read back what was set: the formatter's own zero symbol may come from a zero pattern.
 - (NSString *)zeroSymbol
 {

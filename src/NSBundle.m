@@ -425,6 +425,20 @@ static void __NSBundleMainBundleDealloc()
     return [(NSArray *)CFBundleCopyResourceURLsOfTypeForLocalization(_cfBundle, (CFStringRef)ext, (CFStringRef)subpath, (CFStringRef)localizationName) autorelease];
 }
 
++ (NSArray *)pathsForResourcesOfType:(NSString *)ext inDirectory:(NSString *)bundlePath
+{
+    NSMutableArray *matches = [NSMutableArray array];
+    NSArray *files = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:bundlePath error:NULL];
+    for (NSString *file in files)
+    {
+        if (ext == nil || [[file pathExtension] caseInsensitiveCompare:ext] == NSOrderedSame)
+        {
+            [matches addObject:[bundlePath stringByAppendingPathComponent:file]];
+        }
+    }
+    return matches;
+}
+
 - (NSArray *)pathsForResourcesOfType:(NSString *)ext inDirectory:(NSString *)subpath
 {
     return [self pathsForResourcesOfType:ext inDirectory:subpath forLocalization:nil];
