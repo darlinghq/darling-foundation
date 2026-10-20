@@ -29,18 +29,71 @@ NSString *const NSAppleScriptErrorRange = @"NSAppleScriptErrorRange";
 
 @implementation NSAppleScript
 
-- (id)copyWithZone:(NSZone *)zone
-{
-	NSLog(@"NSAppleScript copyWithZone:");
-	return nil;
+- (instancetype)initWithSource:(NSString *)source {
+    self = [super init];
+    if (self) {
+        _source = [source copy];
+    }
+    return self;
 }
 
-- (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector {
-    return [NSMethodSignature signatureWithObjCTypes: "v@:"];
+- (instancetype)initWithContentsOfURL:(NSURL *)url error:(NSDictionary **)errorInfo {
+    self = [super init];
+    if (self) {
+        if (url == nil) {
+            if (errorInfo != NULL) {
+                *errorInfo = [NSDictionary dictionaryWithObject: @"Invalid URL" forKey: NSAppleScriptErrorMessage];
+            }
+            [self release];
+            return nil;
+        }
+        _url = [url copy];
+    }
+    return self;
 }
 
-- (void)forwardInvocation:(NSInvocation *)anInvocation {
-    NSLog(@"Stub called: %@ in %@", NSStringFromSelector([anInvocation selector]), [self class]);
+- (void)dealloc {
+    [_source release];
+    [_url release];
+    [super dealloc];
+}
+
+- (NSString *)source {
+    return _source;
+}
+
+- (BOOL)isCompiled {
+    return _compiled;
+}
+
+- (BOOL)compileAndReturnError:(NSDictionary **)errorInfo {
+    // STUB: AppleScript compilation is not supported on Linux
+    if (errorInfo != NULL) {
+        *errorInfo = [NSDictionary dictionaryWithObject: @"AppleScript compilation is not supported on this platform"
+                                                 forKey: NSAppleScriptErrorMessage];
+    }
+    return NO;
+}
+
+- (NSAppleEventDescriptor *)executeAndReturnError:(NSDictionary **)errorInfo {
+    if (errorInfo != NULL) {
+        *errorInfo = [NSDictionary dictionaryWithObject: @"AppleScript execution is not supported on this platform"
+                                                 forKey: NSAppleScriptErrorMessage];
+    }
+    return nil;
+}
+
+- (NSAppleEventDescriptor *)executeAppleEvent:(NSAppleEventDescriptor *)event error:(NSDictionary **)errorInfo {
+    if (errorInfo != NULL) {
+        *errorInfo = [NSDictionary dictionaryWithObject: @"AppleScript execution is not supported on this platform"
+                                                 forKey: NSAppleScriptErrorMessage];
+    }
+    return nil;
+}
+
+- (id)copyWithZone:(NSZone *)zone {
+    // STUB: returns self; true copy unsupported on this platform
+    return [self retain];
 }
 
 @end

@@ -65,6 +65,9 @@ void NSFreeRangeEntries(NSRangeEntries *self) {
 }
 
 void NSResetRangeEntries(NSRangeEntries *self) {
+    if (self == NULL) {
+        return;
+    }
     NSInteger i;
 
     for (i = 0; i < self->count; i++)
@@ -77,6 +80,9 @@ void NSResetRangeEntries(NSRangeEntries *self) {
 }
 
 NSUInteger NSCountRangeEntries(NSRangeEntries *self) {
+    if (self == NULL) {
+        return 0;
+    }
     return self->count;
 }
 
@@ -200,12 +206,17 @@ void NSRangeEntryInsert(NSRangeEntries *self, NSRange range, void *value) {
 void *NSRangeEntryAtIndex(NSRangeEntries *self, NSUInteger location,
                           NSRange *effectiveRangep)
 {
+    if (self == NULL) {
+        if (effectiveRangep != NULL)
+            *effectiveRangep = NSMakeRange(NSNotFound, 0);
+        return NULL;
+    }
     NSInteger count = self->count;
     NSInteger bottom = 0, top = count;
 
     if (top == 0) {
         if (effectiveRangep != NULL)
-            *effectiveRangep = NSMakeRange(0, NSNotFound);
+            *effectiveRangep = NSMakeRange(NSNotFound, 0);
         return NULL;
     }
 
@@ -263,6 +274,9 @@ void *NSRangeEntryAtIndex(NSRangeEntries *self, NSUInteger location,
 }
 
 void *NSRangeEntryAtRange(NSRangeEntries *self, NSRange range) {
+    if (self == NULL) {
+        return NULL;
+    }
     NSInteger bottom = 0, top = self->count;
 
     if (top > 0) {
@@ -296,7 +310,7 @@ BOOL NSNextRangeEnumeratorEntry(NSRangeEnumerator *state, NSRange *rangep,
 {
     NSRangeEntries *self = state->self;
 
-    if (state->index >= self->count)
+    if (self == NULL || state->index >= self->count)
         return NO;
 
     *rangep = self->entries[state->index].range;
