@@ -445,3 +445,50 @@ void __NSInitializeProcess(int argc,const char *argv[]) {
 #endif
 
 NSString *const NSProcessInfoThermalStateDidChangeNotification = @"NSProcessInfoThermalStateDidChangeNotification";
+NSString *const NSProcessInfoPowerStateDidChangeNotification = @"NSProcessInfoPowerStateDidChangeNotification";
+
+@interface _NSProcessActivityToken : NSObject {
+    NSActivityOptions _options;
+    NSString *_reason;
+}
+- (instancetype)initWithOptions:(NSActivityOptions)options reason:(NSString *)reason;
+@end
+
+@implementation _NSProcessActivityToken
+- (instancetype)initWithOptions:(NSActivityOptions)options reason:(NSString *)reason {
+    if ((self = [super init])) {
+        _options = options;
+        _reason = [reason copy];
+    }
+    return self;
+}
+- (void)dealloc {
+    [_reason release];
+    [super dealloc];
+}
+@end
+
+@implementation NSProcessInfo (NSProcessInfoActivityGeneration)
+
+- (id<NSObject>)beginActivityWithOptions:(NSActivityOptions)options reason:(NSString *)reason {
+    return [[[_NSProcessActivityToken alloc] initWithOptions:options reason:reason] autorelease];
+}
+
+- (void)endActivity:(id<NSObject>)activity {
+}
+
+- (void)performActivityWithOptions:(NSActivityOptions)options reason:(NSString *)reason usingBlock:(void (^)(void))block {
+    id<NSObject> activity = [self beginActivityWithOptions:options reason:reason];
+    if (block) {
+        block();
+    }
+    [self endActivity:activity];
+}
+
+- (void)performExpiringActivityWithReason:(NSString *)reason usingBlock:(void (^)(BOOL expired))block {
+    if (block) {
+        block(NO);
+    }
+}
+
+@end

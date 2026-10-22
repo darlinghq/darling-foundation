@@ -6,6 +6,8 @@
 //
 
 #import <Foundation/NSScanner.h>
+#import <Foundation/NSThread.h>
+#import <Foundation/NSArray.h>
 #import "NSConcreteScanner.h"
 #import <Foundation/NSLocale.h>
 #import "NSObjectInternal.h"
@@ -861,7 +863,7 @@ static inline NSUInteger skipSkipSet(NSScanner *self, NSString *s)
 {
     if (string == nil)
     {
-        NSLog(@"NSScanner: nil string argument");
+        NSLog(@"NSScanner: nil string argument, caller stack:\n%@", [[NSThread callStackSymbols] componentsJoinedByString:@"\n"]);
         string = @"";
     }
     self = [super init];
