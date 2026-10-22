@@ -86,12 +86,74 @@ static NSUserNotificationCenter *_defaultUserNotificationCenter = nil;
 	return _defaultUserNotificationCenter;
 }
 
+- (instancetype)init {
+	self = [super init];
+	if (self) {
+		_deliveredNotifications = [[NSMutableArray alloc] init];
+		_scheduledNotifications = [[NSMutableArray alloc] init];
+	}
+	return self;
+}
+
+- (void)dealloc {
+	[_deliveredNotifications release];
+	[_scheduledNotifications release];
+	[super dealloc];
+}
+
+- (NSArray<NSUserNotification *> *)deliveredNotifications {
+	@synchronized (self) {
+		return [[_deliveredNotifications copy] autorelease];
+	}
+}
+
+- (NSArray<NSUserNotification *> *)scheduledNotifications {
+	@synchronized (self) {
+		return [[_scheduledNotifications copy] autorelease];
+	}
+}
+
 - (void)deliverNotification:(NSUserNotification *)notification {
 	NSLog(@"[NSUserNotificationCenter deliverNotification:] Title: '%@' Text: '%@'", [notification title], [notification informativeText]);
+	if (notification) {
+		@synchronized (self) {
+			[_deliveredNotifications addObject:notification];
+		}
+	}
 }
 
 - (void)removeDeliveredNotification:(NSUserNotification *)notification {
 	NSLog(@"[NSUserNotificationCenter removeDeliveredNotification:]");
+	if (notification) {
+		@synchronized (self) {
+			[_deliveredNotifications removeObject:notification];
+		}
+	}
+}
+
+- (void)removeAllDeliveredNotifications {
+	NSLog(@"[NSUserNotificationCenter removeAllDeliveredNotifications]");
+	@synchronized (self) {
+		[_deliveredNotifications removeAllObjects];
+	}
+}
+
+- (void)scheduleNotification:(NSUserNotification *)notification {
+	NSLog(@"[NSUserNotificationCenter scheduleNotification:] Title: '%@'", [notification title]);
+	if (notification) {
+		@synchronized (self) {
+			[_scheduledNotifications addObject:notification];
+		}
+	}
+}
+
+- (void)removeScheduledNotification:(NSUserNotification *)notification {
+	NSLog(@"[NSUserNotificationCenter removeScheduledNotification:]");
+	if (notification) {
+		@synchronized (self) {
+			[_scheduledNotifications removeObject:notification];
+		}
+	}
 }
 
 @end

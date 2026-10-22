@@ -19,6 +19,7 @@
 
 #import <Foundation/NSString.h>
 #import <Foundation/NSDictionary.h>
+#import <Foundation/NSArray.h>
 
 @interface NSUserNotification : NSObject <NSCopying> {
 @package
@@ -55,13 +56,20 @@
 
 @interface NSUserNotificationCenter : NSObject {
     id<NSUserNotificationCenterDelegate> _delegate;
+    NSMutableArray<NSUserNotification *> *_deliveredNotifications;
+    NSMutableArray<NSUserNotification *> *_scheduledNotifications;
 }
 
 @property(class, readonly, strong) NSUserNotificationCenter *defaultUserNotificationCenter;
 @property(assign) id<NSUserNotificationCenterDelegate> delegate;
+@property(readonly, copy) NSArray<NSUserNotification *> *deliveredNotifications;
+@property(readonly, copy) NSArray<NSUserNotification *> *scheduledNotifications;
 
 - (void)deliverNotification:(NSUserNotification *)notification;
 - (void)removeDeliveredNotification:(NSUserNotification *)notification;
+- (void)removeAllDeliveredNotifications;
+- (void)scheduleNotification:(NSUserNotification *)notification;
+- (void)removeScheduledNotification:(NSUserNotification *)notification;
 
 @end
 
