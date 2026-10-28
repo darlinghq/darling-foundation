@@ -12,10 +12,13 @@
 #import "NSNotificationInternal.h"
 #import <dispatch/dispatch.h>
 #import <pthread.h>
+#import <objc/objc-internal.h>
 
 @interface _NSNotificationObserver : NSObject
 {
 	id _observer;
+	const void *_observerIdentity;
+	BOOL _observerIsUnsafe;
 	SEL _selector;
 	NSString* _name;
 	id _object;
@@ -23,7 +26,6 @@
 	void (^_block)(NSNotification *note);
 }
 
-@property (nonatomic, readonly) id observer;
 @property (nonatomic, readonly) SEL selector;
 @property (nonatomic, readonly) NSString *name;
 @property (nonatomic, readonly) id object;
@@ -31,11 +33,11 @@
 @property (nonatomic, readonly) void (^block)(NSNotification *note);
 
 - (id)initWithObserver:(id)observer selector:(SEL)selector name:(NSString *)name object:(id)object queue:(NSOperationQueue *)queue block:(void (^)(NSNotification *note))block;
+- (BOOL)matchesObserver:(id)observer;
 @end
 
 @implementation _NSNotificationObserver
 
-@synthesize observer = _observer;
 @synthesize selector = _selector;
 @synthesize name = _name;
 @synthesize object = _object;
@@ -47,7 +49,12 @@
     self = [super init];
     if (self)
     {
-        _observer = observer;
+        // The observer is not retained, and once it is deallocated it must not be messaged: hold a zeroing weak
+        // reference. An object that refuses weak references keeps the plain unretained registration.
+        _observerIdentity = observer;
+        _observerIsUnsafe = observer != nil && objc_storeWeakOrNil(&_observer, observer) == nil;
+        if (_observerIsUnsafe)
+            _observer = observer;
         _selector = selector;
         _name = [name copy];
         _object = object;
@@ -57,8 +64,16 @@
     return self;
 }
 
+// By identity: the weak reference already reads nil while an observer removes itself from its -dealloc.
+- (BOOL)matchesObserver:(id)observer
+{
+    return _observerIdentity == observer;
+}
+
 - (void)dealloc
 {
+    if (!_observerIsUnsafe)
+        objc_storeWeak(&_observer, nil);
     [_name release];
     [_queue release];
     [_block release];
@@ -81,9 +96,13 @@
     {
         _block(notif);
     }
-    else if (_observer != nil && _selector != NULL)
+    else if (_selector != NULL)
     {
-        [_observer performSelector:_selector withObject:notif];
+        // Keep the observer alive while it handles the notification, even if it releases itself.
+        id observer = _observerIsUnsafe ? _observer : objc_loadWeakRetained(&_observer);
+        [observer performSelector:_selector withObject:notif];
+        if (!_observerIsUnsafe)
+            [observer release];
     }
 }
 
@@ -173,7 +192,7 @@
     NSIndexSet *indicies = [_observers indexesOfObjectsPassingTest:^BOOL(_NSNotificationObserver *notifObserver, NSUInteger idx, BOOL *stop) {
         // observer may be a user controlled object, or an instance of _NSNotificationObserver if the block version of 
         // addObserverForName was used
-        return notifObserver == observer || notifObserver.observer == observer;
+        return notifObserver == observer || [notifObserver matchesObserver:observer];
     }];
     [_observers removeObjectsAtIndexes:indicies];
     pthread_mutex_unlock(&_observersLock);
@@ -188,7 +207,7 @@
         {
             matchesObject = notifObserver.object == anObject;
         }
-        return notifObserver.observer == observer && matchesObject && [notifObserver.name isEqualToString:aName];
+        return [notifObserver matchesObserver:observer] && matchesObject && [notifObserver.name isEqualToString:aName];
     }];
     [_observers removeObjectsAtIndexes:indicies];
     pthread_mutex_unlock(&_observersLock);
