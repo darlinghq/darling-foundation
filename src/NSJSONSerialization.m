@@ -1053,9 +1053,42 @@ static inline BOOL writeBoolean(_NSJSONWriter *writer, NSNumber *object, NSJSONW
 static inline BOOL writeNumber(_NSJSONWriter *writer, NSNumber *object, NSJSONWritingOptions opt, NSUInteger depth);
 static inline BOOL writeObject(_NSJSONWriter *writer, id object, NSJSONWritingOptions opts, NSUInteger depth);
 
+// JSON strings may not contain '"', '\\' or control characters (RFC 8259, 7).
 static NSString *escapeString(NSString *string) {
-    NSString *result = [string stringByReplacingOccurrencesOfString:@"\\" withString:@"\\\\"];
-    return [result stringByReplacingOccurrencesOfString:@"\"" withString:@"\\\""];
+    NSUInteger length = [string length];
+    unichar *chars = malloc(length * sizeof(unichar));
+    if (chars == NULL && length != 0) {
+        return nil;
+    }
+    [string getCharacters:chars range:NSMakeRange(0, length)];
+    NSMutableString *result = [NSMutableString stringWithCapacity:length];
+    NSUInteger start = 0;
+    for (NSUInteger i = 0; i < length; i++) {
+        unichar c = chars[i];
+        NSString *escape = nil;
+        switch (c) {
+            case '"': escape = @"\\\""; break;
+            case '\\': escape = @"\\\\"; break;
+            case '\b': escape = @"\\b"; break;
+            case '\f': escape = @"\\f"; break;
+            case '\n': escape = @"\\n"; break;
+            case '\r': escape = @"\\r"; break;
+            case '\t': escape = @"\\t"; break;
+            default:
+                if (c < 0x20) {
+                    escape = [NSString stringWithFormat:@"\\u%04x", c];
+                }
+                break;
+        }
+        if (escape != nil) {
+            CFStringAppendCharacters((CFMutableStringRef)result, chars + start, i - start);
+            [result appendString:escape];
+            start = i + 1;
+        }
+    }
+    CFStringAppendCharacters((CFMutableStringRef)result, chars + start, length - start);
+    free(chars);
+    return result;
 }
 
 static inline BOOL writeString(_NSJSONWriter *writer, NSString *object, NSJSONWritingOptions opts, NSUInteger depth) {
