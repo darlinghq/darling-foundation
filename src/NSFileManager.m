@@ -566,6 +566,23 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
     return dirUrl;
 }
 
+// The directory apps in an app group share, where macOS keeps it:
+// ~/Library/Group Containers/<identifier>, made on first use.
+- (NSURL *)containerURLForSecurityApplicationGroupIdentifier:(NSString *)groupIdentifier
+{
+    if ([groupIdentifier length] == 0)
+    {
+        return nil;
+    }
+    NSString *path = [[NSHomeDirectory() stringByAppendingPathComponent:@"Library/Group Containers"] stringByAppendingPathComponent:groupIdentifier];
+    if (![self fileExistsAtPath:path] &&
+        ![self createDirectoryAtPath:path withIntermediateDirectories:YES attributes:nil error:NULL])
+    {
+        return nil;
+    }
+    return [NSURL fileURLWithPath:path isDirectory:YES];
+}
+
 - (BOOL)createDirectoryAtURL:(NSURL *)url withIntermediateDirectories:(BOOL)createIntermediates attributes:(NSDictionary *)attributes error:(NSError **)error
 {
     if (createIntermediates)
