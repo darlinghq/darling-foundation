@@ -23,6 +23,8 @@ NSString *const NSLoadedClasses = @"NSLoadedClasses";
 
 static NSMutableDictionary *bundlesByIdentifier = nil;
 static NSBundle *mainBundle = nil;
+// Keyed by the Class pointer itself: an NSDictionary would copy its keys, and a Swift class that
+// does not inherit from NSObject (SwiftPM's resource BundleFinder, for one) cannot be copied.
 static NSMutableDictionary *classToBundle = nil;
 static NSMutableDictionary<NSString *, NSBundle *> *bundlesByPath = nil;
 static NSMutableDictionary<NSString *, NSBundle *> *frameworkBundlesByPath = nil;
@@ -101,7 +103,7 @@ static NSString* frameworkPathForPath(NSString *filePath) {
     static dispatch_once_t once = 0L;
     dispatch_once(&once, ^{
         bundlesByIdentifier = [[NSMutableDictionary alloc] init];
-        classToBundle = [[NSMutableDictionary alloc] init];
+        classToBundle = (NSMutableDictionary *) CFDictionaryCreateMutable(NULL, 0, NULL, &kCFTypeDictionaryValueCallBacks);
         bundlesByPath = [NSMutableDictionary new];
         frameworkBundlesByPath = [NSMutableDictionary new];
         otherBundlesByPath = [NSMutableDictionary new];
@@ -217,7 +219,7 @@ static NSString* frameworkPathForPath(NSString *filePath) {
     }
 
     @synchronized (classToBundle) {
-        NSBundle *bundle = classToBundle[aClass];
+        NSBundle *bundle = (NSBundle *) CFDictionaryGetValue((CFDictionaryRef) classToBundle, aClass);
         if (bundle != nil) {
             return bundle;
         }
@@ -247,7 +249,7 @@ static NSString* frameworkPathForPath(NSString *filePath) {
     NSBundle *bundle = [self bundleWithPath:filePath];
 
     @synchronized (classToBundle) {
-        classToBundle[aClass] = bundle;
+        if (bundle != nil) CFDictionarySetValue((CFMutableDictionaryRef) classToBundle, aClass, bundle);
     }
 
     return bundle;

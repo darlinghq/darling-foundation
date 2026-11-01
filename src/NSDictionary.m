@@ -383,3 +383,45 @@ OBJC_PROTOCOL_IMPL_POP
 }
 
 @end
+
+// The private messages CoreFoundation sends an NSDictionary that is not one of its own (see
+// CF_OBJC_FUNCDISPATCHV in CFDictionary.c), such as Swift's bridged dictionaries: CF functions
+// called on those, CFDictionaryGetValueIfPresent for one, would otherwise raise.
+@implementation NSDictionary (NSCFDictionaryDispatch)
+
+- (BOOL)__getValue:(id *)value forKey:(id)key
+{
+    id object = [self objectForKey:key];
+    if (object != nil && value != NULL) *value = object;
+    return object != nil;
+}
+
+- (BOOL)containsKey:(id)key
+{
+    return [self objectForKey:key] != nil;
+}
+
+- (NSUInteger)countForKey:(id)key
+{
+    return [self objectForKey:key] != nil ? 1 : 0;
+}
+
+- (void)__apply:(void (*)(const void *, const void *, void *))applier context:(void *)context
+{
+    for (id key in [self allKeys]) {
+        applier(key, [self objectForKey:key], context);
+    }
+}
+
+@end
+
+@implementation NSMutableDictionary (NSCFDictionaryDispatch)
+
+- (void)__addObject:(id)object forKey:(id)key
+{
+    if ([self objectForKey:key] == nil) {
+        [self setObject:object forKey:key];
+    }
+}
+
+@end
