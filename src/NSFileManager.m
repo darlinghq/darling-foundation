@@ -692,8 +692,8 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
 static NSError *_NSErrorWithFilePathAndErrno(id path, int code)
 {
     NSString *pathKey = [path isKindOfClass:[NSURL class]] ? NSURLErrorKey : NSFilePathErrorKey;
-    NSString *underlyingError = [NSString stringWithFormat:@"Error Domain=NSPOSIXErrorDomain Code=%d \"%s\"", code, strerror(code)];
-    NSDictionary *userInfo = @{ pathKey: path, NSUnderlyingErrorKey: underlyingError };
+    NSError *underlyingError = [NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:nil];
+    NSDictionary *userInfo = path ? @{ pathKey: path, NSUnderlyingErrorKey: underlyingError } : @{ NSUnderlyingErrorKey: underlyingError };
     
     return [NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:userInfo];
 }
