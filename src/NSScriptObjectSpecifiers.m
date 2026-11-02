@@ -33,16 +33,14 @@
 
 - (instancetype)initWithCoder:(NSCoder *)aDecoder
 {
-	NSLog(@"[NSISO8601DateFormatter initWithCoder:]");
 	return [self init];
 }
 
 - (void)encodeWithCoder:(NSCoder *)aCoder
 {
-	NSLog(@"[NSISO8601DateFormatter encodeWithCoder:");
 }
 
-- (BOOL)supportsSecureCoding
++ (BOOL)supportsSecureCoding
 {
 	return YES;
 }
