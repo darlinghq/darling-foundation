@@ -530,6 +530,11 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
     return urls;
 }
 
+- (NSURL *)temporaryDirectory
+{
+    return [NSURL fileURLWithPath:NSTemporaryDirectory() isDirectory:YES];
+}
+
 - (NSArray *)URLsForDirectory:(NSSearchPathDirectory)directory inDomains:(NSSearchPathDomainMask)domainMask {
     // Only NSUserDomain is supported on iOS
     if (domainMask != NSUserDomainMask)
