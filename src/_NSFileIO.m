@@ -240,6 +240,11 @@ BOOL _NSWriteBytesToFile(NSData *data, id pathOrURL, NSDataWritingOptions option
                     }];
                 }
             }
+            close(fd);
+            if (dest != pathOrURL)
+            {
+                unlink(path);
+            }
             return NO;
         }
         else if (amt == 0)
@@ -261,10 +266,12 @@ BOOL _NSWriteBytesToFile(NSData *data, id pathOrURL, NSDataWritingOptions option
         }
         else
         {
+            int renameErrno = errno;
+            unlink(path);
             if (errorPtr != NULL)
             {
-                *errorPtr = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:@{
-                    NSLocalizedDescriptionKey: [NSString stringWithFormat:@"%s", strerror(errno)]
+                *errorPtr = [NSError errorWithDomain:NSPOSIXErrorDomain code:renameErrno userInfo:@{
+                    NSLocalizedDescriptionKey: [NSString stringWithFormat:@"%s", strerror(renameErrno)]
                 }];
             }
             return NO;
@@ -272,6 +279,10 @@ BOOL _NSWriteBytesToFile(NSData *data, id pathOrURL, NSDataWritingOptions option
     }
     else
     {
+        if (dest != pathOrURL)
+        {
+            unlink(path);
+        }
         // the error was already set hopefully by the amout being negative.
         return remaining == 0;
     }
