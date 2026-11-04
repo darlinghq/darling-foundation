@@ -68,6 +68,7 @@ typedef NS_ENUM(NSInteger, NSProcessInfoThermalState) {
 @interface NSProcessInfo (NSProcessInfoAutomaticTermination)
 - (void)disableAutomaticTermination: (NSString *) reason;
 - (void)enableAutomaticTermination: (NSString *) reason;
+@property BOOL automaticTerminationSupportEnabled;
 @end
 
 @interface NSProcessInfo (NSProcessInfoPlatform)

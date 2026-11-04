@@ -375,8 +375,21 @@ SINGLETON_RR()
 
 @end
 
-// Nothing in Darling terminates an idle app, so both calls only have to exist.
+// Nothing in Darling terminates an idle app, so the calls only have to exist and the flag round-trips.
+// NSProcessInfo is a process-wide singleton, so the flag lives in a static instead of a new ivar.
+static BOOL _automaticTerminationSupportEnabled;
+
 @implementation NSProcessInfo (NSProcessInfoAutomaticTermination)
+
+- (BOOL)automaticTerminationSupportEnabled
+{
+    return _automaticTerminationSupportEnabled;
+}
+
+- (void)setAutomaticTerminationSupportEnabled: (BOOL) enabled
+{
+    _automaticTerminationSupportEnabled = enabled;
+}
 
 - (void)disableAutomaticTermination: (NSString *) reason
 {
