@@ -435,3 +435,74 @@ OBJC_PROTOCOL_IMPL_POP
 }
 
 @end
+
+// Methods the Swift Foundation overlay declares on NSDictionary and
+// NSMutableDictionary with @objc(...) names (NSDictionary.swift in
+// swift-corelibs-foundation's Darwin/Foundation-swiftoverlay and in the
+// Swift 5.x stdlib/public/Darwin/Foundation). Swift code compiled against that
+// overlay sends these selectors through objc_msgSend, so they must exist even
+// when the overlay loaded at run time does not define them.
+
+@interface NSDictionary (NSSwiftOverlayBridging)
+- (id)__swift_objectForKeyedSubscript:(id)key;
+- (id)__swiftInitWithDictionary_NSDictionary:(NSDictionary *)otherDictionary __attribute__((objc_method_family(init)));
+@end
+
+@interface NSMutableDictionary (NSSwiftOverlayBridging)
+- (void)__swift_setObject:(id)object forKeyedSubscript:(id)key;
+@end
+
+@implementation NSDictionary (NSSwiftOverlayBridging)
+
+// Swift's `subscript(key: Any) -> Any?` getter: a plain lookup.
+- (id)__swift_objectForKeyedSubscript:(id)key
+{
+    return [self objectForKey:key];
+}
+
+// Swift's `init(dictionary:)`. Swift gives every Objective-C initializer
+// init-family conventions whatever its selector, so this consumes the
+// receiver and returns a +1 object, which -initWithObjects:forKeys:count:
+// already does.
+- (id)__swiftInitWithDictionary_NSDictionary:(NSDictionary *)otherDictionary
+{
+    NSUInteger count = [otherDictionary count];
+    id *objects = NULL;
+    id *keys = NULL;
+
+    if (count > 0)
+    {
+        objects = malloc(sizeof(id) * count * 2);
+        if (objects == NULL)
+        {
+            [self release];
+            [NSException raise:NSMallocException format:@"Could not allocate buffer"];
+            return nil;
+        }
+        keys = objects + count;
+        [otherDictionary getObjects:objects andKeys:keys count:count];
+    }
+
+    id result = [self initWithObjects:objects forKeys:(id <NSCopying> *)keys count:count];
+    free(objects);
+    return result;
+}
+
+@end
+
+@implementation NSMutableDictionary (NSSwiftOverlayBridging)
+
+// Swift's `subscript(key: Any) -> Any?` setter: assigning nil removes the key.
+- (void)__swift_setObject:(id)object forKeyedSubscript:(id)key
+{
+    if (object != nil)
+    {
+        [self setObject:object forKey:key];
+    }
+    else
+    {
+        [self removeObjectForKey:key];
+    }
+}
+
+@end
