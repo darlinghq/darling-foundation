@@ -19,11 +19,8 @@
 
 typedef long NSInteger;
 typedef unsigned long NSUInteger;
-typedef int BOOL;
-#define nil ((id)0)
+/* BOOL, nil, YES and NO come from <objc/runtime.h> (libobjc2). */
 id class_createInstance(Class, unsigned long);
-#define YES 1
-#define NO 0
 #define NSDataWritingAtomic (1UL << 0)
 #define NSDataWritingWithoutOverwriting (1UL << 1)
 typedef NSUInteger NSDataWritingOptions;
@@ -134,15 +131,15 @@ int main(void) {
 
     // write fails: the file size limit is smaller than the data
     int fdsBefore = openFds();
-    struct rlimit limit = { 4, 4 };
     signal(SIGXFSZ, SIG_IGN);
     struct rlimit old;
     getrlimit(RLIMIT_FSIZE, &old);
-    setrlimit(RLIMIT_FSIZE, &limit);
+    struct rlimit limit = { 4, old.rlim_max };  // soft limit only: a hard limit cannot be raised again without root
+    if (setrlimit(RLIMIT_FSIZE, &limit) != 0) { perror("setrlimit"); return 2; }
     snprintf(text, sizeof text, "%s/file", dir);
     error = nil;
     ok = _NSWriteBytesToFile(data, [NSString stringWithUTF8String:text], NSDataWritingAtomic, &error);
-    setrlimit(RLIMIT_FSIZE, &old);
+    if (setrlimit(RLIMIT_FSIZE, &old) != 0) { perror("restore RLIMIT_FSIZE"); return 2; }
     expect(!ok && error != nil, "write beyond the size limit fails with an error");
     expect(countTmp(dir) == 0, "failed write leaves no .tmpN file");
     expect(openFds() == fdsBefore, "failed write closes its descriptor");

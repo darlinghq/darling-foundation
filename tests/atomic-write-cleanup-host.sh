@@ -4,6 +4,7 @@
 # Runs _NSWriteBytesToFile() from src/_NSFileIO.m on the host against mock NSString/NSData/NSError classes; see
 # atomic-write-cleanup-host.m. Environment: CC (default cc), OBJC_RUNTIME (default gnustep-1.9), OBJC_LIBS (default
 # "-lobjc -lpthread"), NSFILEIO_M (another copy of _NSFileIO.m, to check the test fails there).
+# On aarch64 a libobjc2 without objc_msgSend needs OBJC_RUNTIME=gnustep-1.8.
 set -euo pipefail
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 src=${NSFILEIO_M:-$root/src/_NSFileIO.m}
