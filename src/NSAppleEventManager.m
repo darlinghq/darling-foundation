@@ -23,14 +23,6 @@ static NSAppleEventManager* instance = nil;
 
 - (void)forwardInvocation:(NSInvocation *)anInvocation {
     NSLog(@"Stub called: %@ in %@", NSStringFromSelector([anInvocation selector]), [self class]);
-
-    // The caller reads the return register whatever the method's type, so answer nil/0/NO, not stale stack.
-    NSUInteger length = [[anInvocation methodSignature] methodReturnLength];
-    if (length > 0) {
-        void *zero = calloc(1, length);
-        [anInvocation setReturnValue: zero];
-        free(zero);
-    }
 }
 
 - (void) setEventHandler: (id) handler

@@ -3,8 +3,9 @@
  * NSInvocation, and sends it selectors it does not implement the way darling-corefoundation's ____forwarding___
  * (NSForwarding.m) does: ask -methodSignatureForSelector:, build an invocation, call -forwardInvocation:, then copy
  * the invocation's return value (methodReturnLength bytes) into the return storage the caller's register is loaded
- * from. That storage starts out as stale stack, and an invocation's return value is unspecified until something
- * sets it, so both start out as garbage here. A forwarded stub must hand the caller nil/0, not that garbage.
+ * from. That storage starts out as stale stack, so it is garbage here; the invocation's own return buffer is zeroed
+ * like the real one's. A forwarded stub must hand the caller nil/0, which needs a signature with a non-empty return
+ * (a void signature copies nothing, so the stale storage would reach the caller).
  * tests/appleeventmanager-forward-host.sh extracts the header and implementation at build time. */
 #include <objc/runtime.h>
 #include <stdint.h>
@@ -73,7 +74,7 @@ static NSString *NSStringFromSelector(SEL sel) { (void)sel; return nil; }
 @public
     NSMethodSignature *_signature;
     SEL _selector;
-    unsigned char _return[16];
+    unsigned char *_return;
 }
 - (NSMethodSignature *)methodSignature;
 - (SEL)selector;
@@ -99,7 +100,7 @@ static uint64_t forward(id target, SEL sel)
     NSInvocation *inv = [NSInvocation alloc];
     inv->_signature = sig;
     inv->_selector = sel;
-    memset(inv->_return, STALE, sizeof(inv->_return));
+    inv->_return = calloc(1, 16); // like the real -initWithMethodSignature: (callocs _retdata): zeroed, not stale
     [target forwardInvocation:inv];
     [inv getReturnValue:storage];
     uint64_t reg;
