@@ -117,7 +117,7 @@ int main(void)
 
     // Declared in NSAppleEventManager.h, not implemented: returns OSErr.
     SEL dispatchRaw = sel_registerName("dispatchRawAppleEvent:withRawReply:handlerRefCon:");
-    CK(!class_respondsToSelector([NSAppleEventManager class], dispatchRaw),
+    CK(!class_respondsToSelector(objc_getClass("NSAppleEventManager"), dispatchRaw),
        "dispatchRawAppleEvent:withRawReply:handlerRefCon: is still forwarded; pick another unimplemented selector");
     uint64_t reg = forward(manager, dispatchRaw);
     CK((OSErr)reg == 0, "forwarded dispatchRawAppleEvent:... returns OSErr 0 (got %d)", (OSErr)reg);
