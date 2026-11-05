@@ -114,6 +114,7 @@ static id mock_storeWeak(id *location, id object) { return storeWeak(location, o
 static id mock_storeWeakOrNil(id *location, id object) { return storeWeak(location, object, 0); }
 static id mock_loadWeakRetained(id *location) { return isDeallocating(*location) ? nil : [*location retain]; }
 static id mock_loadWeak(id *location) { return [mock_loadWeakRetained(location) autorelease]; }
+BOOL _objc_rootIsDeallocating(id obj) { return isDeallocating(obj); }
 #define objc_storeWeak mock_storeWeak
 #define objc_storeWeakOrNil mock_storeWeakOrNil
 #define objc_loadWeak mock_loadWeak
@@ -329,6 +330,19 @@ int main(void)
     received = 0;
     post(center);
     CK(received == 0, "and it receives nothing after removal");
+
+    // An observer added while it is deallocating (from another object's dealloc, say) must not be registered, since
+    // objc_storeWeakOrNil refuses it exactly like a class that rejects weak references.
+    o = [[Observer alloc] init];
+    o->center = center;
+    [o release];
+    CK(isDeallocating(o), "setup: the observer is deallocated");
+    [center addObserver:o selector:@selector(handle:) name:@"Ping" object:nil];
+    CK(center->_observers->_count == 0, "an observer that is already deallocating is not registered (%lu)",
+       center->_observers->_count);
+    received = deadMessages = 0;
+    post(center);
+    CK(deadMessages == 0 && received == 0, "and it is not messaged (%d messages to it)", deadMessages);
 
     printf("%s: %d checks, %d failed\n", fails ? "FAIL" : "PASS", checks, fails);
     return fails != 0;

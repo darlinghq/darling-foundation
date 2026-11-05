@@ -53,6 +53,12 @@
         // reference. An object that refuses weak references keeps the plain unretained registration.
         _observerIdentity = observer;
         _observerIsUnsafe = observer != nil && objc_storeWeakOrNil(&_observer, observer) == nil;
+        // objc_storeWeakOrNil also returns nil for an object that is already deallocating: never register that one.
+        if (_observerIsUnsafe && _objc_rootIsDeallocating(observer))
+        {
+            [self release];
+            return nil;
+        }
         if (_observerIsUnsafe)
             _observer = observer;
         _selector = selector;
@@ -145,6 +151,8 @@
 - (void)addObserver:(id)observer selector:(SEL)aSelector name:(NSString *)aName object:(id)anObject
 {
     _NSNotificationObserver *notifObserver = [[_NSNotificationObserver alloc] initWithObserver:observer selector:aSelector name:aName object:anObject queue:nil block:NULL];
+    if (notifObserver == nil)
+        return;
     pthread_mutex_lock(&_observersLock);
     [_observers addObject:notifObserver];
     pthread_mutex_unlock(&_observersLock);
