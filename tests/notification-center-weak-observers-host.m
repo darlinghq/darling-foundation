@@ -281,6 +281,12 @@ static Observer *observe(NSNotificationCenter *center, Class cls)
     [center addObserver:o selector:@selector(handle:) name:@"Ping" object:nil];
     return o;
 }
+static int weakRefsTo(id object)
+{
+    int n = 0;
+    for (int i = 0; i < weakCount; i++) n += weakObjects[i] == object;
+    return n;
+}
 static void post(NSNotificationCenter *center) { [center postNotificationName:@"Ping" object:nil]; drain(); }
 
 int main(void)
@@ -343,6 +349,23 @@ int main(void)
     received = deadMessages = 0;
     post(center);
     CK(deadMessages == 0 && received == 0, "and it is not messaged (%d messages to it)", deadMessages);
+
+    // The weak slot of a registered observer is cleaned up: when the registration is dropped while the observer
+    // lives, the record's -dealloc unregisters its weak slot (else the runtime would later write to freed memory);
+    // when the observer dies first, the slot is zeroed and no later post messages it.
+    o = observe(center, [Observer class]);
+    CK(weakRefsTo(o) == 1, "a registered observer is held by exactly one weak slot (%d)", weakRefsTo(o));
+    [center removeObserver:o];
+    CK(weakRefsTo(o) == 0, "removing the registration unregisters its weak slot (%d left)", weakRefsTo(o));
+    [o release];
+
+    o = observe(center, [Observer class]);
+    [o release];
+    CK(weakRefsTo(o) == 0, "the weak slot is cleared when the observer deallocates (%d left)", weakRefsTo(o));
+    received = deadMessages = 0;
+    post(center);
+    CK(deadMessages == 0 && received == 0, "and a later post does not message it (%d messages)", deadMessages);
+    [center removeObserver:o];
 
     printf("%s: %d checks, %d failed\n", fails ? "FAIL" : "PASS", checks, fails);
     return fails != 0;
