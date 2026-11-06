@@ -362,7 +362,7 @@ main(int argc, char** argv, char **env)
 	  name = [args objectAtIndex: i];
 	}
 
-      domains = [defs persistentDomainNames];
+      domains = owner ? @[owner] : [defs persistentDomainNames];
       for (i = 0; i < [domains count]; i++)
 	{
 	  NSString	*domainName = [domains objectAtIndex: i];
@@ -884,4 +884,3 @@ main(int argc, char** argv, char **env)
   [pool release];
   exit(derror);
 }
-
