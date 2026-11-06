@@ -125,6 +125,7 @@ set(foundation_sources
 	src/NSNotification.m
 	src/NSNotificationQueue.m
 	src/NSNumberFormatter.m
+	src/NSConstantNumbers.m
 	src/NSNumber.m
 	src/NSObjCRuntime.m
 	src/NSObjectInternal.m
