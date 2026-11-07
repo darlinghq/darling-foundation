@@ -19,5 +19,7 @@
 
 #import <Foundation/Foundation.h>
 
+FOUNDATION_EXPORT NSString * const NSUserActivityTypeBrowsingWeb;
+
 @interface NSUserActivity : NSObject
 @end

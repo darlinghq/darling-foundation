@@ -251,7 +251,7 @@ SINGLETON_RR()
     }
 #else
 	NSDictionary* dict = (NSDictionary*) _CFCopySystemVersionDictionary();
-	NSString* string = [dict objectForKey: @"ProductVersion"];
+	NSString* string = [dict objectForKey: @"FullVersionString"];
 
 	[string retain];
 	[dict release];
@@ -287,7 +287,7 @@ SINGLETON_RR()
 {
     unsigned long long amt = 1;
     size_t len = sizeof(unsigned long long);
-    if (sysctlbyname("hw.physmem", &amt, &len, 0, 0) != 0)
+    if (sysctlbyname("hw.memsize", &amt, &len, 0, 0) != 0)
     {
         amt = 1;
     }
@@ -309,8 +309,9 @@ SINGLETON_RR()
 {
 	NSOperatingSystemVersion version = { 0, 0, 0 };
 
-	NSString* string = [self operatingSystemVersionString];
-	NSArray* arr = [string componentsSeparatedByString:@"."];
+	NSDictionary* dict = (NSDictionary*) _CFCopySystemVersionDictionary();
+	NSArray* arr = [[dict objectForKey: @"ProductVersion"] componentsSeparatedByString:@"."];
+	[dict release];
 
 	if ([arr count] >= 1)
 	{
@@ -350,6 +351,13 @@ SINGLETON_RR()
 				return TRUE;
 		}
 	}
+}
+
+- (NSProcessInfoThermalState)thermalState
+{
+	/* There is no thermal-pressure source on Linux; report Nominal, so
+	 * NSProcessInfoThermalStateDidChangeNotification is never posted. */
+	return NSProcessInfoThermalStateNominal;
 }
 
 @end
@@ -396,3 +404,5 @@ void __NSInitializeProcess(int argc,const char *argv[]) {
     }
 }
 #endif
+
+NSString *const NSProcessInfoThermalStateDidChangeNotification = @"NSProcessInfoThermalStateDidChangeNotification";

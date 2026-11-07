@@ -51,6 +51,8 @@ enum {
 
 typedef NSString *NSCalendarIdentifier;
 
+FOUNDATION_EXPORT NSString * const NSCalendarDayChangedNotification;
+
 FOUNDATION_EXPORT const NSCalendarIdentifier NSCalendarIdentifierGregorian;
 FOUNDATION_EXPORT const NSCalendarIdentifier NSCalendarIdentifierISO8601;
 FOUNDATION_EXPORT const NSCalendarIdentifier NSCalendarIdentifierBuddhist;

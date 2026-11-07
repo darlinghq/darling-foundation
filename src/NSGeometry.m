@@ -24,6 +24,12 @@ const NSRect NSZeroRect = { { 0.0, 0.0 }, { 0.0, 0.0 } };
 
 const NSEdgeInsets NSEdgeInsetsZero = { 0.0, 0.0, 0.0, 0.0 };
 
+BOOL NSEdgeInsetsEqual(NSEdgeInsets aInsets, NSEdgeInsets bInsets)
+{
+    return aInsets.top == bInsets.top && aInsets.left == bInsets.left &&
+        aInsets.bottom == bInsets.bottom && aInsets.right == bInsets.right;
+}
+
 /*
  *	Geometry-examining functions.
  *

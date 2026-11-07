@@ -45,6 +45,7 @@ typedef NS_OPTIONS(NSUInteger, NSBinarySearchingOptions) {
 - (NSArray<ObjectType> *)subarrayWithRange:(NSRange)range;
 - (BOOL)writeToFile:(NSString *)path atomically:(BOOL)atomically;
 - (BOOL)writeToURL:(NSURL *)url atomically:(BOOL)atomically;
+- (BOOL)writeToURL:(NSURL *)url error:(NSError **)error;
 - (void)makeObjectsPerformSelector:(SEL)sel;
 - (void)makeObjectsPerformSelector:(SEL)sel withObject:(id)aeg;
 - (NSArray<ObjectType> *)objectsAtIndexes:(NSIndexSet *)indices;

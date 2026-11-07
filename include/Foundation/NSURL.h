@@ -24,6 +24,7 @@ FOUNDATION_EXPORT NSString * const NSURLLinkCountKey;
 FOUNDATION_EXPORT NSString * const NSURLParentDirectoryURLKey;
 FOUNDATION_EXPORT NSString * const NSURLVolumeURLKey;
 FOUNDATION_EXPORT NSString * const NSURLTypeIdentifierKey;
+FOUNDATION_EXPORT NSString * const NSURLContentTypeKey;
 FOUNDATION_EXPORT NSString * const NSURLLocalizedTypeDescriptionKey;
 FOUNDATION_EXPORT NSString * const NSURLLabelNumberKey;
 FOUNDATION_EXPORT NSString * const NSURLLabelColorKey;

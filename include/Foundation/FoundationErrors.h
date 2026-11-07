@@ -41,6 +41,7 @@ enum {
     NSPropertyListReadUnknownVersionError      = 3841,
     NSPropertyListReadStreamError              = 3842,
     NSPropertyListWriteStreamError             = 3851,
+    NSPropertyListWriteInvalidError            = 3852,
     NSPropertyListErrorMinimum                 = 3840,
     NSPropertyListErrorMaximum                 = 4095,
     NSXPCConnectionInterrupted                 = 4097,
