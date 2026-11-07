@@ -638,8 +638,9 @@ static inline id newDecodedNumber(NSCoder *coder)
         case kCFCompareGreaterThan:
             return NSOrderedAscending;
         case kCFCompareEqualTo:
-            return NSOrderedDescending;
+            return NSOrderedSame;
     }
+    return NSOrderedSame;
 }
 
 - (Boolean)_getValue:(void *)value forType:(CFNumberType)type
