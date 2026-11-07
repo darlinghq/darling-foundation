@@ -328,8 +328,8 @@ set_property(
 )
 endif (TARGET_ARM64)
 
-add_darling_executable(defaults tools/defaults.m)
-target_link_libraries(defaults Foundation)
+add_darling_executable(defaults tools/defaults.c)
+target_link_libraries(defaults CoreFoundation)
 install(TARGETS defaults DESTINATION libexec/darling/usr/bin)
 install(FILES tools/defaults.1 DESTINATION libexec/darling/usr/share/man/man1)
 

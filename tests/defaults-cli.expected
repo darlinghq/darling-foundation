@@ -1,0 +1,1722 @@
+### missing domain
+$ defaults [read] [org.darlinghq.defaultstest.missing]
+--- stdout
+--- stderr
+Error: Domain 'org.darlinghq.defaultstest.missing' not found.
+--- exit 1
+$ defaults [read] [org.darlinghq.defaultstest.missing] [k]
+--- stdout
+--- stderr
+Error: Domain 'org.darlinghq.defaultstest.missing' not found.
+--- exit 1
+$ defaults [read-type] [org.darlinghq.defaultstest.missing] [k]
+--- stdout
+--- stderr
+Error: Domain 'org.darlinghq.defaultstest.missing' not found.
+--- exit 1
+$ defaults [delete] [org.darlinghq.defaultstest.missing]
+--- stdout
+--- stderr
+Error: Domain 'org.darlinghq.defaultstest.missing' not found.
+Defaults have not been changed.
+--- exit 1
+$ defaults [delete] [org.darlinghq.defaultstest.missing] [k]
+--- stdout
+--- stderr
+Error: Domain 'org.darlinghq.defaultstest.missing' not found.
+Defaults have not been changed.
+--- exit 1
+$ defaults [rename] [org.darlinghq.defaultstest.missing] [a] [b]
+--- stdout
+--- stderr
+Error: Key a does not exist in domain org.darlinghq.defaultstest.missing; leaving defaults unchanged
+--- exit 1
+$ defaults [export] [org.darlinghq.defaultstest.missing] [-]
+--- stdout
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict/>
+</plist>
+--- stderr
+--- exit 0
+### missing key
+$ defaults [write] [org.darlinghq.defaultstest] [s] [-string] [x]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [k]
+--- stdout
+--- stderr
+Error: Could not find key 'k' in domain 'org.darlinghq.defaultstest'.
+--- exit 1
+$ defaults [read-type] [org.darlinghq.defaultstest] [k]
+--- stdout
+--- stderr
+Error: Could not find key 'k' in domain 'org.darlinghq.defaultstest'.
+--- exit 1
+$ defaults [delete] [org.darlinghq.defaultstest] [k]
+--- stdout
+--- stderr
+Error: Could not find key 'k' in domain 'org.darlinghq.defaultstest'.
+Defaults have not been changed.
+--- exit 1
+### strings
+$ defaults [write] [org.darlinghq.defaultstest] [s] [-string] [hello world]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [s]
+--- stdout
+hello world
+--- stderr
+--- exit 0
+$ defaults [read-type] [org.darlinghq.defaultstest] [s]
+--- stdout
+Type is string
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [s0] [-string] []
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [s0]
+--- stdout
+
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [s1] [-string] [word]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [s2] [-string] [quote " backslash \ end]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [s2]
+--- stdout
+quote " backslash \ end
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [s3] [-string] [line1
+line2]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [s3]
+--- stdout
+line1
+line2
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [s4] [-string] [tab	x]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [s5] [-string] [é ü 日本]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [s5]
+--- stdout
+é ü 日本
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [s6] [-string] [a_b.c/d-e:f$g]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [s7] [-string] [123]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read-type] [org.darlinghq.defaultstest] [s7]
+--- stdout
+Type is string
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [s8] [-string] [-int]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [s8]
+--- stdout
+-int
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [s9] [-string] [bell bs ff vt]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [s10] [-string] [😀]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [s11] [-string] [x@y]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [s12] [-string] [1abc]
+--- stdout
+--- stderr
+--- exit 0
+### integers
+$ defaults [write] [org.darlinghq.defaultstest] [i1] [-int] [42]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [i1]
+--- stdout
+42
+--- stderr
+--- exit 0
+$ defaults [read-type] [org.darlinghq.defaultstest] [i1]
+--- stdout
+Type is integer
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [i2] [-integer] [-7]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [i2]
+--- stdout
+-7
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [i3] [-int] [9223372036854775807]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [i3]
+--- stdout
+9223372036854775807
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [i4] [-int] [0x10]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [i4]
+--- stdout
+0
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [i5] [-int] [1.9]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [i5]
+--- stdout
+1
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [i6] [-int] [abc]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [i6]
+--- stdout
+0
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [i7] [-int] [ 12]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [i7]
+--- stdout
+12
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [i8] [-int] [99999999999999999999]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [i8]
+--- stdout
+9223372036854775807
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [i9] [-int] [-99999999999999999999]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [i9]
+--- stdout
+-9223372036854775808
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [i10] [-int] [+5]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [i10]
+--- stdout
+5
+--- stderr
+--- exit 0
+### floats
+$ defaults [write] [org.darlinghq.defaultstest] [f1] [-float] [1.5]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [f1]
+--- stdout
+1.5
+--- stderr
+--- exit 0
+$ defaults [read-type] [org.darlinghq.defaultstest] [f1]
+--- stdout
+Type is float
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [f2] [-float] [-2.25]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [f2]
+--- stdout
+-2.25
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [f3] [-float] [3]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [f3]
+--- stdout
+3
+--- stderr
+--- exit 0
+$ defaults [read-type] [org.darlinghq.defaultstest] [f3]
+--- stdout
+Type is float
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [f4] [-float] [65536.5]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [f4]
+--- stdout
+65536.5
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [f5] [-float] [ 0.375e1x]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [f5]
+--- stdout
+3.75
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [f6] [-float] [2.5e3]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [f6]
+--- stdout
+2500
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [f7] [-float] [abc]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [f7]
+--- stdout
+0
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [f8] [-float] [0x10]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [f8]
+--- stdout
+0
+--- stderr
+--- exit 0
+### booleans
+$ defaults [write] [org.darlinghq.defaultstest] [b1] [-bool] [YES]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [b1]
+--- stdout
+1
+--- stderr
+--- exit 0
+$ defaults [read-type] [org.darlinghq.defaultstest] [b1]
+--- stdout
+Type is boolean
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [b2] [-bool] [NO]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [b2]
+--- stdout
+0
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [b3] [-boolean] [TRUE]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [b3]
+--- stdout
+1
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [b4] [-bool] [false]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [b4]
+--- stdout
+0
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [b5] [-bool] [1]
+--- stdout
+<usage>
+--- stderr
+--- exit 255
+$ defaults [read] [org.darlinghq.defaultstest] [b5]
+--- stdout
+--- stderr
+Error: Could not find key 'b5' in domain 'org.darlinghq.defaultstest'.
+--- exit 1
+$ defaults [write] [org.darlinghq.defaultstest] [b6] [-bool] [0]
+--- stdout
+<usage>
+--- stderr
+--- exit 255
+$ defaults [read] [org.darlinghq.defaultstest] [b6]
+--- stdout
+--- stderr
+Error: Could not find key 'b6' in domain 'org.darlinghq.defaultstest'.
+--- exit 1
+$ defaults [write] [org.darlinghq.defaultstest] [b7] [-bool] [yes]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [b7]
+--- stdout
+1
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [b8] [-bool] [maybe]
+--- stdout
+<usage>
+--- stderr
+--- exit 255
+$ defaults [read] [org.darlinghq.defaultstest] [b8]
+--- stdout
+--- stderr
+Error: Could not find key 'b8' in domain 'org.darlinghq.defaultstest'.
+--- exit 1
+$ defaults [write] [org.darlinghq.defaultstest] [b9] [-bool] [tRuE]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [b9]
+--- stdout
+1
+--- stderr
+--- exit 0
+### dates
+$ defaults [write] [org.darlinghq.defaultstest] [d1] [-date] [2024-01-02 03:04:05 +0000]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [d1]
+--- stdout
+2024-01-02 03:04:05 +0000
+--- stderr
+--- exit 0
+$ defaults [read-type] [org.darlinghq.defaultstest] [d1]
+--- stdout
+Type is date
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [d2] [-date] [2024-01-02T03:04:05Z]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [d2]
+--- stdout
+2024-01-02 03:04:05 +0000
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [d3] [-date] [1999-12-31 23:59:59 +0130]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [d3]
+--- stdout
+1999-12-31 22:29:59 +0000
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [d4] [-date] [garbage]
+--- stdout
+<usage>
+--- stderr
+--- exit 255
+$ defaults [read] [org.darlinghq.defaultstest] [d4]
+--- stdout
+--- stderr
+Error: Could not find key 'd4' in domain 'org.darlinghq.defaultstest'.
+--- exit 1
+$ defaults [write] [org.darlinghq.defaultstest] [d5] [-date] [2024-01-02 03:04:05]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [d5]
+--- stdout
+2024-01-02 03:04:05 +0000
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [d6] [-date] [2024-01-02 03:04:05 -0800]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [d6]
+--- stdout
+2024-01-02 11:04:05 +0000
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [d7] [-date] [2024-01-02 03:04:05 GMT]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [d7]
+--- stdout
+2024-01-02 03:04:05 +0000
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [d8] [-date] [Tue, 02 Jan 2024 03:04:05 +0000]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [d8]
+--- stdout
+2024-01-02 03:04:05 +0000
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [d9] [-date] [1704164645]
+--- stdout
+<usage>
+--- stderr
+--- exit 255
+$ defaults [read] [org.darlinghq.defaultstest] [d9]
+--- stdout
+--- stderr
+Error: Could not find key 'd9' in domain 'org.darlinghq.defaultstest'.
+--- exit 1
+### data
+$ defaults [write] [org.darlinghq.defaultstest] [x1] [-data] [0a0Bff]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [x1]
+--- stdout
+{length = 3, bytes = 0x0a0bff}
+--- stderr
+--- exit 0
+$ defaults [read-type] [org.darlinghq.defaultstest] [x1]
+--- stdout
+Type is data
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [x2] [-data] []
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [x2]
+--- stdout
+{length = 0, bytes = 0x}
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [x3] [-data] [000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [x3]
+--- stdout
+{length = 32, bytes = 0x00010203 04050607 08090a0b 0c0d0e0f ... 18191a1b 1c1d1e1f }
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [x4] [-data] [zz]
+--- stdout
+<usage>
+--- stderr
+--- exit 255
+$ defaults [write] [org.darlinghq.defaultstest] [x5] [-data] [abc]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [x5]
+--- stdout
+{length = 2, bytes = 0x0abc}
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [x6] [-data] [01 02]
+--- stdout
+<usage>
+--- stderr
+--- exit 255
+$ defaults [write] [org.darlinghq.defaultstest] [x7] [-data] [000102030405060708090a0b0c0d0e0f1011121314151617]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [x7]
+--- stdout
+{length = 24, bytes = 0x000102030405060708090a0b0c0d0e0f1011121314151617}
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [x8] [-data] [000102030405060708090a0b0c0d0e0f101112131415161718]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [x8]
+--- stdout
+{length = 25, bytes = 0x00010203 04050607 08090a0b 0c0d0e0f ... 11121314 15161718 }
+--- stderr
+--- exit 0
+### arrays
+$ defaults [write] [org.darlinghq.defaultstest] [a1] [-array] [a] [b c] [1]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [a1]
+--- stdout
+(
+    a,
+    "b c",
+    1
+)
+--- stderr
+--- exit 0
+$ defaults [read-type] [org.darlinghq.defaultstest] [a1]
+--- stdout
+Type is array
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [a1] [-array-add] [d] [(e, f)]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [a1]
+--- stdout
+(
+    a,
+    "b c",
+    1,
+    d,
+        (
+        e,
+        f
+    )
+)
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [a2] [-array-add] [new]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [a2]
+--- stdout
+(
+    new
+)
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [a3] [-array]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [a3]
+--- stdout
+(
+)
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [a4] [-array] [-int] [1] [-bool] [YES] [-string] [x]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [a4]
+--- stdout
+(
+    1,
+    1,
+    x
+)
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [a5] [-array] [x] [-array] [y]
+--- stdout
+--- stderr
+Error: Cannot nest composite types (arrays and dictionaries); exiting
+--- exit 1
+$ defaults [read] [org.darlinghq.defaultstest] [a5]
+--- stdout
+--- stderr
+Error: Could not find key 'a5' in domain 'org.darlinghq.defaultstest'.
+--- exit 1
+$ defaults [write] [org.darlinghq.defaultstest] [a6] [-array-add] [-int] [3]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [a6] [-array-add] [-bool] [NO]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [a6]
+--- stdout
+(
+    3,
+    0
+)
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [s1] [-array-add] [z]
+--- stdout
+--- stderr
+Error: Value for key s1 is not an array; cannot append.  Leaving defaults unchanged.
+--- exit 1
+$ defaults [read] [org.darlinghq.defaultstest] [s1]
+--- stdout
+word
+--- stderr
+--- exit 0
+### dictionaries
+$ defaults [write] [org.darlinghq.defaultstest] [c1] [-dict] [k1] [v1] [k 2] [v 2]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [c1]
+--- stdout
+{
+    "k 2" = "v 2";
+    k1 = v1;
+}
+--- stderr
+--- exit 0
+$ defaults [read-type] [org.darlinghq.defaultstest] [c1]
+--- stdout
+Type is dictionary
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [c1] [-dict-add] [k3] [v3] [k1] [replaced]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [c1]
+--- stdout
+{
+    "k 2" = "v 2";
+    k1 = replaced;
+    k3 = v3;
+}
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [c2] [-dict-add] [only] [one]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [c2]
+--- stdout
+{
+    only = one;
+}
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [c3] [-dict] [odd]
+--- stdout
+--- stderr
+Error: Key odd lacks a corresponding value
+--- exit 1
+$ defaults [read] [org.darlinghq.defaultstest] [c3]
+--- stdout
+--- stderr
+Error: Could not find key 'c3' in domain 'org.darlinghq.defaultstest'.
+--- exit 1
+$ defaults [write] [org.darlinghq.defaultstest] [c4] [-dict]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [c4]
+--- stdout
+{
+}
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [c5] [-dict] [n] [{ x = (1, 2); }] [-int] [3]
+--- stdout
+--- stderr
+Error: Dictionary keys must be strings
+--- exit 1
+$ defaults [read] [org.darlinghq.defaultstest] [c5]
+--- stdout
+--- stderr
+Error: Could not find key 'c5' in domain 'org.darlinghq.defaultstest'.
+--- exit 1
+$ defaults [write] [org.darlinghq.defaultstest] [c6] [-dict] [k1] [-int] [5] [k2] [-bool] [YES] [k3] [(a)] [-string] [k4] [v]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [c6]
+--- stdout
+{
+    k1 = 5;
+    k2 = 1;
+    k3 =     (
+        a
+    );
+    k4 = v;
+}
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [c7] [-dict] [k] [-dict] [a] [b]
+--- stdout
+--- stderr
+Error: Cannot nest composite types (arrays and dictionaries); exiting
+--- exit 1
+$ defaults [write] [org.darlinghq.defaultstest] [s1] [-dict-add] [z] [y]
+--- stdout
+--- stderr
+Error: Value for key s1 is not a dictionary; cannot append.  Leaving defaults unchanged.
+--- exit 1
+$ defaults [read] [org.darlinghq.defaultstest] [s1]
+--- stdout
+word
+--- stderr
+--- exit 0
+### plain values
+$ defaults [write] [org.darlinghq.defaultstest] [p1] [123]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read-type] [org.darlinghq.defaultstest] [p1]
+--- stdout
+Type is string
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [p2] [(a, "b c")]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [p2]
+--- stdout
+(
+    a,
+    "b c"
+)
+--- stderr
+--- exit 0
+$ defaults [read-type] [org.darlinghq.defaultstest] [p2]
+--- stdout
+Type is array
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [p3] [{x = y; n = (1,2); "q r" = <0102>;}]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [p3]
+--- stdout
+{
+    n =     (
+        1,
+        2
+    );
+    "q r" = {length = 2, bytes = 0x0102};
+    x = y;
+}
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [p4] [<0102>]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read-type] [org.darlinghq.defaultstest] [p4]
+--- stdout
+Type is data
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [p5] [hello world]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [p5]
+--- stdout
+hello world
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [p6] ["quoted"]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [p6]
+--- stdout
+quoted
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [p7] [(unterminated]
+--- stdout
+--- stderr
+Error: Could not parse: (unterminated.  Try single-quoting it.
+--- exit 1
+$ defaults [read] [org.darlinghq.defaultstest] [p7]
+--- stdout
+--- stderr
+Error: Could not find key 'p7' in domain 'org.darlinghq.defaultstest'.
+--- exit 1
+$ defaults [read-type] [org.darlinghq.defaultstest] [p7]
+--- stdout
+--- stderr
+Error: Could not find key 'p7' in domain 'org.darlinghq.defaultstest'.
+--- exit 1
+$ defaults [write] [org.darlinghq.defaultstest] [p8] []
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read-type] [org.darlinghq.defaultstest] [p8]
+--- stdout
+Type is string
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [p9] [()]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read-type] [org.darlinghq.defaultstest] [p9]
+--- stdout
+Type is array
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [p10] [a = b;]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [p10]
+--- stdout
+a = b;
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [p11] [/* c */ x]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [p11]
+--- stdout
+/* c */ x
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [p12] [x)]
+--- stdout
+--- stderr
+Error: Could not parse: x).  Try single-quoting it.
+--- exit 1
+$ defaults [write] [org.darlinghq.defaultstest] [p13] [(a) b]
+--- stdout
+--- stderr
+Error: Could not parse: (a) b.  Try single-quoting it.
+--- exit 1
+$ defaults [write] [org.darlinghq.defaultstest] [p14] ["a\nb"]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [p14]
+--- stdout
+a
+b
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [p15] ["\U00e9"]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [p15]
+--- stdout
+é
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [p16] [it's]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [p16]
+--- stdout
+it's
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [p17] [[a]]
+--- stdout
+--- stderr
+Error: Could not parse: [a].  Try single-quoting it.
+--- exit 1
+$ defaults [write] [org.darlinghq.defaultstest] [p18] [ (a,)]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [p18]
+--- stdout
+(
+    a
+)
+--- stderr
+--- exit 0
+### argument errors
+$ defaults [write] [org.darlinghq.defaultstest] [k]
+--- stdout
+--- stderr
+Error: Rep argument is not a dictionary
+Defaults have not been changed.
+--- exit 1
+$ defaults [write] [org.darlinghq.defaultstest] [k] [-int]
+--- stdout
+<usage>
+--- stderr
+--- exit 255
+$ defaults [write] [org.darlinghq.defaultstest] [k] [-string]
+--- stdout
+<usage>
+--- stderr
+--- exit 255
+$ defaults [write] [org.darlinghq.defaultstest] [k] [-string] [a] [b]
+--- stdout
+--- stderr
+Error: Unexpected argument b; leaving defaults unchanged.
+--- exit 1
+$ defaults [write] [org.darlinghq.defaultstest] [k] [-nosuchtype] [1]
+--- stdout
+--- stderr
+Error: Unexpected argument 1; leaving defaults unchanged.
+--- exit 1
+$ defaults [read] [org.darlinghq.defaultstest] [k] [extra]
+--- stdout
+--- stderr
+Error: Could not find key 'k' in domain 'org.darlinghq.defaultstest'.
+--- exit 1
+$ defaults [read-type] [org.darlinghq.defaultstest]
+--- stdout
+<usage>
+--- stderr
+--- exit 255
+$ defaults [rename] [org.darlinghq.defaultstest] [onlyone]
+--- stdout
+<usage>
+--- stderr
+--- exit 255
+$ defaults [import] [org.darlinghq.defaultstest]
+--- stdout
+--- stderr
+Error: Need a path to read from
+--- exit 1
+$ defaults [export] [org.darlinghq.defaultstest]
+--- stdout
+--- stderr
+Error: Need a path to write to
+--- exit 1
+$ defaults [find]
+--- stdout
+<usage>
+--- stderr
+--- exit 255
+$ defaults [frobnicate]
+--- stdout
+<usage>
+--- stderr
+--- exit 255
+$ defaults [-bogus] [read] [org.darlinghq.defaultstest]
+--- stdout
+<usage>
+--- stderr
+--- exit 255
+$ defaults [write] [org.darlinghq.defaultstest]
+--- stdout
+<usage>
+--- stderr
+--- exit 255
+### whole domain
+$ defaults [read] [org.darlinghq.defaultstest]
+--- stdout
+{
+    a1 =     (
+        a,
+        "b c",
+        1,
+        d,
+                (
+            e,
+            f
+        )
+    );
+    a2 =     (
+        new
+    );
+    a3 =     (
+    );
+    a4 =     (
+        1,
+        1,
+        x
+    );
+    a6 =     (
+        3,
+        0
+    );
+    b1 = 1;
+    b2 = 0;
+    b3 = 1;
+    b4 = 0;
+    b7 = 1;
+    b9 = 1;
+    c1 =     {
+        "k 2" = "v 2";
+        k1 = replaced;
+        k3 = v3;
+    };
+    c2 =     {
+        only = one;
+    };
+    c4 =     {
+    };
+    c6 =     {
+        k1 = 5;
+        k2 = 1;
+        k3 =         (
+            a
+        );
+        k4 = v;
+    };
+    d1 = "2024-01-02 03:04:05 +0000";
+    d2 = "2024-01-02 03:04:05 +0000";
+    d3 = "1999-12-31 22:29:59 +0000";
+    d5 = "2024-01-02 03:04:05 +0000";
+    d6 = "2024-01-02 11:04:05 +0000";
+    d7 = "2024-01-02 03:04:05 +0000";
+    d8 = "2024-01-02 03:04:05 +0000";
+    f1 = "1.5";
+    f2 = "-2.25";
+    f3 = 3;
+    f4 = "65536.5";
+    f5 = "3.75";
+    f6 = 2500;
+    f7 = 0;
+    f8 = 0;
+    i1 = 42;
+    i10 = 5;
+    i2 = "-7";
+    i3 = 9223372036854775807;
+    i4 = 0;
+    i5 = 1;
+    i6 = 0;
+    i7 = 12;
+    i8 = 9223372036854775807;
+    i9 = "-9223372036854775808";
+    p1 = 123;
+    p10 = "a = b;";
+    p11 = "/* c */ x";
+    p14 = "a\nb";
+    p15 = "\U00e9";
+    p16 = "it's";
+    p18 =     (
+        a
+    );
+    p2 =     (
+        a,
+        "b c"
+    );
+    p3 =     {
+        n =         (
+            1,
+            2
+        );
+        "q r" = {length = 2, bytes = 0x0102};
+        x = y;
+    };
+    p4 = {length = 2, bytes = 0x0102};
+    p5 = "hello world";
+    p6 = quoted;
+    p8 = "";
+    p9 =     (
+    );
+    s = "hello world";
+    s0 = "";
+    s1 = word;
+    s10 = "\Ud83d\Ude00";
+    s11 = "x@y";
+    s12 = 1abc;
+    s2 = "quote \" backslash \\ end";
+    s3 = "line1\nline2";
+    s4 = "tab\tx";
+    s5 = "\U00e9 \U00fc \U65e5\U672c";
+    s6 = "a_b.c/d-e:f$g";
+    s7 = 123;
+    s8 = "-int";
+    s9 = "bell\a bs\b ff\f vt\v";
+    x1 = {length = 3, bytes = 0x0a0bff};
+    x2 = {length = 0, bytes = 0x};
+    x3 = {length = 32, bytes = 0x00010203 04050607 08090a0b 0c0d0e0f ... 18191a1b 1c1d1e1f };
+    x5 = {length = 2, bytes = 0x0abc};
+    x7 = {length = 24, bytes = 0x000102030405060708090a0b0c0d0e0f1011121314151617};
+    x8 = {length = 25, bytes = 0x00010203 04050607 08090a0b 0c0d0e0f ... 11121314 15161718 };
+}
+--- stderr
+--- exit 0
+### rename and delete
+$ defaults [rename] [org.darlinghq.defaultstest] [s] [sNew]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [sNew]
+--- stdout
+hello world
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [s]
+--- stdout
+--- stderr
+Error: Could not find key 's' in domain 'org.darlinghq.defaultstest'.
+--- exit 1
+$ defaults [rename] [org.darlinghq.defaultstest] [nokey] [other]
+--- stdout
+--- stderr
+Error: Key nokey does not exist in domain org.darlinghq.defaultstest; leaving defaults unchanged
+--- exit 1
+$ defaults [rename] [org.darlinghq.defaultstest] [s1] [i1]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [i1]
+--- stdout
+word
+--- stderr
+--- exit 0
+$ defaults [delete] [org.darlinghq.defaultstest] [sNew]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [sNew]
+--- stdout
+--- stderr
+Error: Could not find key 'sNew' in domain 'org.darlinghq.defaultstest'.
+--- exit 1
+$ defaults [delete] [org.darlinghq.defaultstest] [sNew]
+--- stdout
+--- stderr
+Error: Could not find key 'sNew' in domain 'org.darlinghq.defaultstest'.
+Defaults have not been changed.
+--- exit 1
+### export and import
+$ defaults [write] [org.darlinghq.defaultstest] [i] [-int] [1]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [s] [-string] [x y]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [a] [-array] [a] [b]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [d] [-date] [2024-01-02 03:04:05 +0000]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [r] [-float] [2.5]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [r32] [-float] [0.1]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [t] [-bool] [YES]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [z] [-data] [00ff]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [export] [org.darlinghq.defaultstest] [-]
+--- stdout
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>a</key>
+	<array>
+		<string>a</string>
+		<string>b</string>
+	</array>
+	<key>d</key>
+	<date>2024-01-02T03:04:05Z</date>
+	<key>i</key>
+	<integer>1</integer>
+	<key>r</key>
+	<real>2.5</real>
+	<key>r32</key>
+	<real>0.10000000149011612</real>
+	<key>s</key>
+	<string>x y</string>
+	<key>t</key>
+	<true/>
+	<key>z</key>
+	<data>
+	AP8=
+	</data>
+</dict>
+</plist>
+--- stderr
+--- exit 0
+$ defaults [export] [org.darlinghq.defaultstest] [<TMP>/exp.plist]
+--- stdout
+--- stderr
+--- exit 0
+exported header: bplist00
+$ defaults [delete] [org.darlinghq.defaultstest]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest]
+--- stdout
+{
+}
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [i]
+--- stdout
+--- stderr
+Error: Could not find key 'i' in domain 'org.darlinghq.defaultstest'.
+--- exit 1
+$ defaults [import] [org.darlinghq.defaultstest] [<TMP>/exp.plist]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [i]
+--- stdout
+1
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [d]
+--- stdout
+2024-01-02 03:04:05 +0000
+--- stderr
+--- exit 0
+$ defaults [import] [org.darlinghq.defaultstest] [-] < in.plist
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [fromstdin]
+--- stdout
+7
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [s]
+--- stdout
+x y
+--- stderr
+--- exit 0
+$ defaults [import] [org.darlinghq.defaultstest] [<TMP>/old.plist]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [oldstyle]
+--- stdout
+(
+    1,
+    2
+)
+--- stderr
+--- exit 0
+$ defaults [import] [org.darlinghq.defaultstest] [<TMP>/nosuchfile.plist]
+--- stdout
+--- stderr
+Error: Could not read data from <TMP>/nosuchfile.plist
+--- exit 1
+$ defaults [import] [org.darlinghq.defaultstest] [<TMP>/bad.plist]
+--- stdout
+--- stderr
+Error: Could not parse property list from <TMP>/bad.plist due to <reason>
+--- exit 1
+### real numbers
+$ defaults [write] [org.darlinghq.defaultstest] [{ placeholder = 1; }]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [import] [org.darlinghq.defaultstest] [<TMP>/reals.plist]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [delete] [org.darlinghq.defaultstest] [placeholder]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest]
+--- stdout
+{
+    b = 0;
+    e =     (
+    );
+    n1 = "-5";
+    n2 = "-9223372036854775808";
+    nest =     {
+        d =         {
+            e =             (
+                                {
+                },
+                {length = 25, bytes = 0x00010203 04050607 08090a0b 0c0d0e0f ... 11121314 15161718 }
+            );
+        };
+    };
+    r1 = "0.1";
+    r2 = "0.3333333333333333";
+    r3 = "3.14159265358979";
+    r4 = "1e+100";
+    r5 = "1.234567890123457e+17";
+    r6 = "1.5e-07";
+    r7 = "-0";
+    r8 = 2;
+}
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [r2]
+--- stdout
+0.3333333333333333
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [r5]
+--- stdout
+1.234567890123457e+17
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [r7]
+--- stdout
+-0
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [n2]
+--- stdout
+-9223372036854775808
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [nest]
+--- stdout
+{
+    d =     {
+        e =         (
+                        {
+            },
+            {length = 25, bytes = 0x00010203 04050607 08090a0b 0c0d0e0f ... 11121314 15161718 }
+        );
+    };
+}
+--- stderr
+--- exit 0
+$ defaults [read-type] [org.darlinghq.defaultstest] [b]
+--- stdout
+Type is boolean
+--- stderr
+--- exit 0
+### write whole domain
+$ defaults [write] [org.darlinghq.defaultstest] [{ a = 1; b = (x, y); c = { d = e; }; }]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest]
+--- stdout
+{
+    a = 1;
+    b =     (
+        x,
+        y
+    );
+    c =     {
+        d = e;
+    };
+}
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [(not, a, dict)]
+--- stdout
+--- stderr
+Error: Rep argument is not a dictionary
+Defaults have not been changed.
+--- exit 1
+$ defaults [read] [org.darlinghq.defaultstest]
+--- stdout
+{
+    a = 1;
+    b =     (
+        x,
+        y
+    );
+    c =     {
+        d = e;
+    };
+}
+--- stderr
+--- exit 0
+### key order
+$ defaults [write] [org.darlinghq.defaultstest] [{ B = 1; a = 1; "_x" = 1; Z = 1; 10 = 1; 9 = 1; "\U00e9" = 1; f = 1; dg = 1; }]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest]
+--- stdout
+{
+    10 = 1;
+    9 = 1;
+    B = 1;
+    Z = 1;
+    "_x" = 1;
+    a = 1;
+    dg = 1;
+    "\U00e9" = 1;
+    f = 1;
+}
+--- stderr
+--- exit 0
+### find
+$ defaults [write] [org.darlinghq.defaultstest] [dqzxtokenkey] [-string] [plain]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [other] [-string] [has DQZXtoken inside]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [nested] [-dict] [inner] [dqzxtoken]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [write] [org.darlinghq.defaultstest] [num] [-int] [4242]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [find] [dqzxtoken]
+--- stdout
+Found 3 keys in domain 'org.darlinghq.defaultstest': {
+    dqzxtokenkey = plain;
+    nested =     {
+        inner = dqzxtoken;
+    };
+    other = "has DQZXtoken inside";
+}
+--- stderr
+--- exit 0
+$ defaults [find] [dqzxnomatchtoken]
+--- stdout
+--- stderr
+Error: No domain, key, nor value containing 'dqzxnomatchtoken'
+--- exit 0
+$ defaults [find] [4242]
+--- stdout
+--- stderr
+Error: No domain, key, nor value containing '4242'
+--- exit 0
+$ defaults [find] [org.darlinghq.defaultstest]
+--- stdout
+Found 13 keys in domain 'org.darlinghq.defaultstest': {
+    10 = 1;
+    9 = 1;
+    B = 1;
+    Z = 1;
+    "_x" = 1;
+    a = 1;
+    dg = 1;
+    dqzxtokenkey = plain;
+    "\U00e9" = 1;
+    f = 1;
+    nested =     {
+        inner = dqzxtoken;
+    };
+    num = 4242;
+    other = "has DQZXtoken inside";
+}
+--- stderr
+--- exit 0
+### domains
+domains exit 0
+domains lists test domain: 1
+domains output lines: 1
+domains stderr bytes: 0
+### global domain
+$ defaults [read] [-g] [org.darlinghq.nokey]
+--- stdout
+--- stderr
+Error: Could not find key 'org.darlinghq.nokey' in domain 'kCFPreferencesAnyApplication'.
+--- exit 1
+$ defaults [read] [NSGlobalDomain] [org.darlinghq.nokey]
+--- stdout
+--- stderr
+Error: Could not find key 'org.darlinghq.nokey' in domain 'kCFPreferencesAnyApplication'.
+--- exit 1
+$ defaults [read] [-globalDomain] [org.darlinghq.nokey]
+--- stdout
+--- stderr
+Error: Could not find key 'org.darlinghq.nokey' in domain 'kCFPreferencesAnyApplication'.
+--- exit 1
+$ defaults [read-type] [-g] [org.darlinghq.nokey]
+--- stdout
+--- stderr
+Error: Could not find key 'org.darlinghq.nokey' in domain 'kCFPreferencesAnyApplication'.
+--- exit 1
+### app
+$ defaults [read] [-app] [DarlingNoSuchApplication] [k]
+--- stdout
+--- stderr
+Error: Couldn't find an application named "DarlingNoSuchApplication"; defaults unchanged
+--- exit 1
+$ defaults [read] [-app]
+--- stdout
+<usage>
+--- stderr
+--- exit 255
+### currentHost
+$ defaults [-currentHost] [write] [org.darlinghq.defaultstest] [hk] [-int] [1]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [-currentHost] [read] [org.darlinghq.defaultstest] [hk]
+--- stdout
+1
+--- stderr
+--- exit 0
+$ defaults [read] [org.darlinghq.defaultstest] [hk]
+--- stdout
+--- stderr
+Error: Could not find key 'hk' in domain 'org.darlinghq.defaultstest'.
+--- exit 1
+$ defaults [-currentHost] [read-type] [org.darlinghq.defaultstest] [hk]
+--- stdout
+Type is integer
+--- stderr
+--- exit 0
+$ defaults [-currentHost] [write] [org.darlinghq.defaultstest] [hk2] [-int] [2]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [-currentHost] [delete] [org.darlinghq.defaultstest] [hk]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [-currentHost] [read] [org.darlinghq.defaultstest] [hk]
+--- stdout
+--- stderr
+Error: Could not find key 'hk' in domain 'org.darlinghq.defaultstest'.
+--- exit 1
+$ defaults [-currentHost] [read] [org.darlinghq.defaultstest]
+--- stdout
+{
+    hk2 = 2;
+}
+--- stderr
+--- exit 0
+### path domains
+$ defaults [write] [<TMP>/pdom] [k] [v]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [<TMP>/pdom]
+--- stdout
+{
+    k = v;
+}
+--- stderr
+--- exit 0
+$ defaults [read] [<TMP>/pdom.plist]
+--- stdout
+{
+    k = v;
+}
+--- stderr
+--- exit 0
+$ defaults [read] [<TMP>/pdom.plist] [k]
+--- stdout
+v
+--- stderr
+--- exit 0
+$ defaults [read-type] [<TMP>/pdom] [k]
+--- stdout
+Type is string
+--- stderr
+--- exit 0
+files: pdom.plist
+$ defaults [write] [<TMP>/pdom.plist] [k2] [-int] [2]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [<TMP>/pdom]
+--- stdout
+{
+    k = v;
+    k2 = 2;
+}
+--- stderr
+--- exit 0
+files: pdom.plist
+$ defaults [read] [<TMP>/missing]
+--- stdout
+--- stderr
+Error: Domain '<TMP>/missing' not found.
+--- exit 1
+$ defaults [delete] [<TMP>/pdom] [k]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [<TMP>/pdom]
+--- stdout
+{
+    k2 = 2;
+}
+--- stderr
+--- exit 0
+$ defaults [delete] [<TMP>/pdom]
+--- stdout
+--- stderr
+--- exit 0
+files: pdom.plist
+$ defaults [read] [<TMP>/pdom]
+--- stdout
+{
+}
+--- stderr
+--- exit 0
+$ defaults [write] [<TMP>/pdom] [k3] [-int] [3]
+--- stdout
+--- stderr
+--- exit 0
+$ defaults [read] [<TMP>/pdom]
+--- stdout
+{
+    k3 = 3;
+}
+--- stderr
+--- exit 0
+### help
+$ defaults [help]
+--- stdout
+<usage>
+--- stderr
+--- exit 0
+$ defaults
+--- stdout
+<usage>
+--- stderr
+--- exit 255
+$ defaults [delete] [org.darlinghq.defaultstest]
+--- stdout
+--- stderr
+--- exit 0
