@@ -36,12 +36,10 @@
 #    define ARC_WEAK_WRITE(addr, x) objc_storeWeak((id*)addr, (id)x)
 #    define WEAK_READ(x) (*x)
 #    define WEAK_WRITE(addr, x) (*(addr) =  x)
-#    define STRONG_WRITE(addr, x) objc_storeStrong((id*)addr, (id)x)
 #    define STRONG_ACQUIRE(x) objc_retain(x)
 #else
 #  define WEAK_READ(x) (*x)
 #  define WEAK_WRITE(addr, x) (*(addr) =  x)
-#  define STRONG_WRITE(addr, x) ASSIGN(*((id*)addr), ((id)x))
 #  define STRONG_ACQUIRE(x) RETAIN(((id)x))
 #endif
 #ifndef ARC_WEAK_WRITE
@@ -104,6 +102,8 @@ static inline void *pointerFunctionsRead(PFInfo *PF, void **addr)
 
 /**
  * Assigns a pointer, inserting the correct write barrier if required.
+ * This does not take ownership: for strong memory the acquire and
+ * relinquish functions own the reference, so storing is a plain write.
  */
 static inline void pointerFunctionsAssign(PFInfo *PF, void **addr, void *value)
 {
@@ -114,10 +114,6 @@ static inline void pointerFunctionsAssign(PFInfo *PF, void **addr, void *value)
   else if (memoryType(PF->options, NSPointerFunctionsZeroingWeakMemory))
     {
       WEAK_WRITE(addr, value);
-    }
-  else if (memoryType(PF->options, NSPointerFunctionsStrongMemory))
-    {
-      STRONG_WRITE(addr, value);
     }
   else
     {
