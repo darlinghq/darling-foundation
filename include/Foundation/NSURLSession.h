@@ -143,6 +143,13 @@ FOUNDATION_EXPORT NSString * const NSURLSessionDownloadTaskResumeData;
 
 @end
 
+typedef NS_ENUM(NSInteger, NSURLSessionMultipathServiceType) {
+    NSURLSessionMultipathServiceTypeNone = 0,
+    NSURLSessionMultipathServiceTypeHandover = 1,
+    NSURLSessionMultipathServiceTypeInteractive = 2,
+    NSURLSessionMultipathServiceTypeAggregate = 3,
+};
+
 @interface NSURLSessionConfiguration : NSObject <NSCopying>
 
 + (NSURLSessionConfiguration *)ephemeralSessionConfiguration;
@@ -170,6 +177,16 @@ FOUNDATION_EXPORT NSString * const NSURLSessionDownloadTaskResumeData;
 @property (retain) NSURLCredentialStorage *URLCredentialStorage;
 @property (retain) NSURLCache *URLCache;
 @property (copy) NSArray *protocolClasses;
+@property BOOL waitsForConnectivity;
+@property BOOL allowsExpensiveNetworkAccess;
+@property BOOL allowsConstrainedNetworkAccess;
+@property BOOL requiresDNSSECValidation;
+@property NSURLSessionMultipathServiceType multipathServiceType;
+@property BOOL shouldUseExtendedBackgroundIdleMode;
+@property (copy) NSString *sharedContainerIdentifier;
+/* tls_protocol_version_t values (TLS 1.2 is 0x0303). */
+@property uint16_t TLSMinimumSupportedProtocolVersion;
+@property uint16_t TLSMaximumSupportedProtocolVersion;
 
 @end
 
