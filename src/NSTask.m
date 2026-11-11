@@ -367,7 +367,7 @@ static void waiterCallback(void* info) {
 		NSDictionary<NSString*, NSString*>* env = nil;
 		NSFileHandle* stdin = nil;
 		NSFileHandle* stdout = nil;
-		NSFileHandle* stderr = nil;
+		NSFileHandle* stderrHandle = nil;
 		BOOL setProcessGroup = YES;
 
 		const char** cArgs = NULL;
@@ -409,7 +409,7 @@ static void waiterCallback(void* info) {
 		env = info[kEnv];
 		stdin = info[kStdin];
 		stdout = info[kStdout];
-		stderr = info[kStderr];
+		stderrHandle = info[kStderr];
 		setProcessGroup = !((NSNumber*)info[kNoProcGroup]).boolValue;
 
 		if ([stdin isKindOfClass: [NSPipe class]]) {
@@ -420,8 +420,8 @@ static void waiterCallback(void* info) {
 			stdout = [(NSPipe*)stdout fileHandleForWriting];
 		}
 
-		if ([stderr isKindOfClass: [NSPipe class]]) {
-			stderr = [(NSPipe*)stderr fileHandleForWriting];
+		if ([stderrHandle isKindOfClass: [NSPipe class]]) {
+			stderrHandle = [(NSPipe*)stderrHandle fileHandleForWriting];
 		}
 
 		// make sure the executable can actually be executed
@@ -457,7 +457,7 @@ static void waiterCallback(void* info) {
 		}
 
 		// make sure these are file handles (or pipes, which we already converted before)
-		if ((stdin && ![stdin isKindOfClass: [NSFileHandle class]]) || (stdout && ![stdout isKindOfClass: [NSFileHandle class]]) || (stderr && ![stderr isKindOfClass: [NSFileHandle class]])) {
+		if ((stdin && ![stdin isKindOfClass: [NSFileHandle class]]) || (stdout && ![stdout isKindOfClass: [NSFileHandle class]]) || (stderrHandle && ![stderrHandle isKindOfClass: [NSFileHandle class]])) {
 			if (useErrors) {
 				if (outError) {
 					// this is probably the wrong error code
@@ -516,8 +516,8 @@ static void waiterCallback(void* info) {
 			os_log_debug(nstask_get_log(), "using %d for stdout", cStdout);
 		}
 
-		if (stderr) {
-			cStderr = stderr.fileDescriptor;
+		if (stderrHandle) {
+			cStderr = stderrHandle.fileDescriptor;
 			os_log_debug(nstask_get_log(), "using %d for stderr", cStderr);
 		}
 
@@ -527,19 +527,28 @@ static void waiterCallback(void* info) {
 
 		posix_spawn_file_actions_init(&actions);
 
-		if (cStdin != -1) {
+		if (cStdin != -1 && cStdin != 0) {
 			posix_spawn_file_actions_addclose(&actions, 0);
 			posix_spawn_file_actions_adddup2(&actions, cStdin, 0);
+		} else if (cStdin == 0) {
+			// the descriptor is already in place; with POSIX_SPAWN_CLOEXEC_DEFAULT it must be marked as inherited
+			posix_spawn_file_actions_addinherit_np(&actions, 0);
 		}
 
-		if (cStdout != -1) {
+		if (cStdout != -1 && cStdout != 1) {
 			posix_spawn_file_actions_addclose(&actions, 1);
 			posix_spawn_file_actions_adddup2(&actions, cStdout, 1);
+		} else if (cStdout == 1) {
+			// the descriptor is already in place; with POSIX_SPAWN_CLOEXEC_DEFAULT it must be marked as inherited
+			posix_spawn_file_actions_addinherit_np(&actions, 1);
 		}
 
-		if (cStderr != -1) {
+		if (cStderr != -1 && cStderr != 2) {
 			posix_spawn_file_actions_addclose(&actions, 2);
 			posix_spawn_file_actions_adddup2(&actions, cStderr, 2);
+		} else if (cStderr == 2) {
+			// the descriptor is already in place; with POSIX_SPAWN_CLOEXEC_DEFAULT it must be marked as inherited
+			posix_spawn_file_actions_addinherit_np(&actions, 2);
 		}
 
 		if (cwd) {
@@ -561,13 +570,24 @@ static void waiterCallback(void* info) {
 		os_log_debug(nstask_get_log(), "going to spawn process %s", cArgs[0]);
 
 		// alright, it's finally time to start the process
-		spawned = posix_spawn(&_pid, cArgs[0], &actions, &attrs, cArgs, cEnv) == 0;
-		savedErrno = errno;
+		int spawn_rc = posix_spawn(&_pid, cArgs[0], &actions, &attrs, cArgs, cEnv);
+		spawned = (spawn_rc == 0);
+		savedErrno = spawned ? 0 : spawn_rc;
 
 		// do some cleanup regardless of whether we failed or not
-		[stdin closeFile];
-		[stdout closeFile];
-		[stderr closeFile];
+		// If the caller supplied an NSPipe, close the child-side handle in the parent process
+		// so that readDataToEndOfFile gets EOF when the child terminates.
+		// If the caller supplied an NSFileHandle (including standard I/O singletons),
+		// do not close it — caller retains ownership.
+		if ([info[kStdin] isKindOfClass: [NSPipe class]]) {
+			[stdin closeFile];
+		}
+		if ([info[kStdout] isKindOfClass: [NSPipe class]]) {
+			[stdout closeFile];
+		}
+		if ([info[kStderr] isKindOfClass: [NSPipe class]]) {
+			[stderrHandle closeFile];
+		}
 
 		posix_spawn_file_actions_destroy(&actions);
 		posix_spawnattr_destroy(&attrs);
