@@ -71,7 +71,7 @@ static void injectedFree(void *bytes) {
 int main(void) {
     @autoreleasepool {
         const int posixCodes[] = {ENOENT, ENOTDIR, EACCES, EPERM, EIO};
-        const NSInteger cocoaCodes[] = {260, 260, 257, 257, 256};
+        const NSInteger cocoaCodes[] = {260, 256, 257, 257, 256};
         for (failureStage = 0; failureStage < 3; ++failureStage) {
             for (NSUInteger i = 0; i < 5; ++i) {
                 for (int wantsError = 0; wantsError < 2; ++wantsError) {
