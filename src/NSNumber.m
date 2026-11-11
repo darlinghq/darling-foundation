@@ -731,12 +731,8 @@ static inline id newDecodedNumber(NSCoder *coder)
     return (id)CFNumberCreate(kCFAllocatorDefault, kCFNumberFloatType, &val);
 }
 
-// CoreFoundation's private 128-bit storage (CFNumber.c kCFNumberSInt128Type / CFSInt128Struct), which
-// keeps unsigned values above INT64_MAX distinct from negative ones, as on macOS.
-enum { kCFNumberSInt128Type = 17 };
-typedef struct { int64_t high; uint64_t low; } CFSInt128Value;
-_Static_assert(sizeof(CFSInt128Value) == 16, "CFSInt128Struct layout");
-
+// Unsigned values above INT64_MAX use CoreFoundation's 128-bit number storage so they stay distinct
+// from negative values (CFNumber compare, hash and plist encoding handle that type).
 static CFNumberRef createUnsignedNumber(uint64_t val)
 {
     if (val <= INT64_MAX)
@@ -744,8 +740,10 @@ static CFNumberRef createUnsignedNumber(uint64_t val)
         SInt64 v = val;
         return CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt64Type, &v);
     }
-    CFSInt128Value v128 = { 0, val };
-    return CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt128Type, &v128);
+    _CFSInt128Struct v128;
+    v128.high = 0;
+    v128.low = val;
+    return CFNumberCreate(kCFAllocatorDefault, (CFNumberType)_kCFNumberSInt128Type, &v128);
 }
 
 - (id)initWithUnsignedLongLong:(unsigned long long)val
