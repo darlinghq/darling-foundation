@@ -7,6 +7,7 @@
 #import "_NSXPCDistantObject.h"
 
 #import "NSXPCInterfaceInternal.h"
+#import <CoreFoundation/NSObjCRuntimeInternal.h>
 
 /**
  * The role of protocols and interfaces in NSXPC
@@ -68,7 +69,7 @@ extern const char* _protocol_getMethodTypeEncoding(Protocol* proto, SEL sel, BOO
         parameterCount = _methodSignature.numberOfArguments;
 
         for (NSUInteger i = 0; i < parameterCount; ++i) {
-            const char* paramType = [_methodSignature getArgumentTypeAtIndex: i];
+            const char* paramType = stripQualifiersAndComments([_methodSignature getArgumentTypeAtIndex: i]);
             size_t paramTypeLen = strlen(paramType);
 
             if (paramTypeLen > 1 && paramType[0] == '@' && paramType[1] == '?') {

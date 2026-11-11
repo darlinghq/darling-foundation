@@ -1644,6 +1644,24 @@ CF_INLINE Boolean isALineSeparatorTypeCharacter(UniChar ch, Boolean includeLineE
 
 - (BOOL)_encodingCantBeStoredInEightBitCFString
 {
+    // CoreFoundation asks this (via CFStrIsUnicode) before copying a string that isn't a CFString
+    // into a mutable CFString: NO makes it use an eight-bit buffer, and CFStringGetBytes then stops
+    // at the first character the eight-bit encoding can't hold. Anything outside ASCII needs Unicode
+    // storage, since the default eight-bit encoding isn't necessarily Latin-1.
+    NSUInteger length = [self length];
+    unichar buffer[256];
+    for (NSUInteger location = 0; location < length; location += sizeof(buffer) / sizeof(buffer[0]))
+    {
+        NSUInteger count = MIN(length - location, sizeof(buffer) / sizeof(buffer[0]));
+        [self getCharacters:buffer range:NSMakeRange(location, count)];
+        for (NSUInteger i = 0; i < count; i++)
+        {
+            if (buffer[i] > 0x7F)
+            {
+                return YES;
+            }
+        }
+    }
     return NO;
 }
 

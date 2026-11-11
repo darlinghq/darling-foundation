@@ -203,11 +203,18 @@ static OSSpinLock registryLock = OS_SPINLOCK_INIT;
     return [NSNumber numberWithBool:!val];
 }
 
+// Negation is its own inverse; without this a binding writing back through
+// NSNegateBoolean stored the un-negated value.
+- (id)reverseTransformedValue:(id)value
+{
+    return [self transformedValue:value];
+}
+
 @end
 
 @implementation _NSIsNilTransformer
 
-+ (BOOL)supportsReverseTransformation
++ (BOOL)allowsReverseTransformation
 {
     return NO;
 }
@@ -226,7 +233,7 @@ static OSSpinLock registryLock = OS_SPINLOCK_INIT;
 
 @implementation _NSIsNotNilTransformer
 
-+ (BOOL)supportsReverseTransformation
++ (BOOL)allowsReverseTransformation
 {
     return NO;
 }

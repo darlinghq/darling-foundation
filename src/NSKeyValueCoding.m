@@ -53,6 +53,11 @@ static NSString *const NSUnknownUserInfoKey = @"NSUnknownUserInfoKey";
     [NSException raise:NSUnknownKeyException format:@"%@ is not key value coding compliant for the key %@", self, key];
 }
 
+- (void)setNilValueForKey:(NSString *)key
+{
+    [NSException raise:NSInvalidArgumentException format:@"[<%@ %p> setNilValueForKey]: could not set nil as the value for the key %@.", NSStringFromClass([self class]), self, key];
+}
+
 - (id)valueForKey:(id)key
 {
     Class cls = object_getClass(self);

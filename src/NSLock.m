@@ -157,7 +157,7 @@ static inline void waitCheck(id lock, SEL cmd, pthread_t thread)
     do {
         success = pthread_mutex_trylock(&_lock) == 0;
         sched_yield();
-    } while ([limit timeIntervalSinceNow] < 0.0 && !success);
+    } while ([limit timeIntervalSinceNow] > 0.0 && !success);
     if (success)
     {
         _thread = pthread_self();
@@ -488,7 +488,7 @@ static inline void waitCheck(id lock, SEL cmd, pthread_t thread)
     do {
         success = pthread_mutex_trylock(&_lock) == 0;
         sched_yield();
-    } while ([limit timeIntervalSinceNow] < 0.0 && !success);
+    } while ([limit timeIntervalSinceNow] > 0.0 && !success);
     if (success)
     {
         if (_locks == 0)

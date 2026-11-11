@@ -32,12 +32,12 @@ static pthread_key_t NSThreadKey;
 static NSThread *NSMainThread = nil;
 static BOOL _NSIsMultiThreaded = NO;
 
-static void NSThreadEnd(NSThread *thread);
+static void NSThreadEnd(void *context);
 
 static void NSThreadInitialize() __attribute__((constructor));
 static void NSThreadInitialize()
 {
-    pthread_key_create(&NSThreadKey, (void (*)(void *))&NSThreadEnd);
+    pthread_key_create(&NSThreadKey, &NSThreadEnd);
     NSMainThread = [NSThread currentThread];
 }
 
@@ -87,8 +87,9 @@ CF_PRIVATE
 // TODO: do something with the value
 @synthesize qualityOfService = _qualityOfService;
 
-static void NSThreadEnd(NSThread *thread)
+static void NSThreadEnd(void *context)
 {
+    NSThread *thread = (NSThread *)context;
     @autoreleasepool {
        [[NSNotificationCenter defaultCenter] postNotificationName:NSThreadWillExitNotification object:nil userInfo:nil];
     }
@@ -358,8 +359,9 @@ static void NSThreadEnd(NSThread *thread)
     _state = NSThreadCancelling;
 }
 
-static void *__NSThread__main__(NSThread *thread)
+static void *__NSThread__main__(void *context)
 {
+    NSThread *thread = (NSThread *)context;
     @autoreleasepool {
         thread->_state = NSThreadRunning;
         pthread_setspecific(NSThreadKey, thread);
@@ -383,7 +385,7 @@ static void *__NSThread__main__(NSThread *thread)
         _NSIsMultiThreaded = 1;
        [[NSNotificationCenter defaultCenter] postNotificationName:NSWillBecomeMultiThreadedNotification object:nil userInfo:nil];
     }
-    pthread_create(&_thread, NULL, (void *(*)(void *))&__NSThread__main__, self);
+    pthread_create(&_thread, NULL, &__NSThread__main__, self);
     while (_state <= NSThreadStarted)
     {
         sched_yield();

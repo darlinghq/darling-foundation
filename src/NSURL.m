@@ -669,23 +669,17 @@ OBJC_PROTOCOL_IMPL_POP
         return nil;
     }
 
-    BOOL isDirectory = NO;
-    if (![pathComponent hasSuffix:@"/"])
+    NSURL *result = [self URLByAppendingPathComponent:pathComponent isDirectory:NO];
+    if (![pathComponent hasSuffix:@"/"] && [self isFileURL])
     {
-        if ([self isFileURL])
+        // As on macOS, a result naming an existing directory gets a trailing slash.
+        NSNumber *isDirectory = nil;
+        if ([result getResourceValue:&isDirectory forKey:NSURLIsDirectoryKey error:NULL] && [isDirectory boolValue])
         {
-            NSNumber *val = nil;
-            if ([self getResourceValue:&val forKey:NSURLIsDirectoryKey error:NULL])
-            {
-                if (![val boolValue])
-                {
-                    return nil;
-                }
-            }
+            return [self URLByAppendingPathComponent:pathComponent isDirectory:YES];
         }
     }
-
-    return [self URLByAppendingPathComponent:pathComponent isDirectory:isDirectory];
+    return result;
 }
 
 - (NSURL *)URLByAppendingPathComponent:(NSString *)pathComponent isDirectory:(BOOL)isDirectory

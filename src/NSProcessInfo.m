@@ -362,6 +362,19 @@ SINGLETON_RR()
 
 @end
 
+// Darling has no sudden-termination mechanism, so there is no state to track.
+@implementation NSProcessInfo (NSSuddenTermination)
+
+- (void)enableSuddenTermination
+{
+}
+
+- (void)disableSuddenTermination
+{
+}
+
+@end
+
 @implementation NSProcessInfo (NSProcessInfoPlatform)
 -(BOOL)isMacCatalystApp {
     return NO;

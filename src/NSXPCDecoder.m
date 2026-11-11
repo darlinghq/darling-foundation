@@ -33,6 +33,7 @@
 #import "NSXPCConnectionInternal.h"
 #import "_NSXPCDistantObject.h"
 #import "NSXPCInterfaceInternal.h"
+#import <CoreFoundation/NSObjCRuntimeInternal.h>
 
 @implementation NSXPCDecoder
 
@@ -346,7 +347,7 @@ static BOOL findObject(
             _collection = savedCollection;
 
             for (NSUInteger i = isReply ? 1 : 2; i < signature.numberOfArguments; ++i) {
-                const char* paramType = [signature getArgumentTypeAtIndex: i];
+                const char* paramType = stripQualifiersAndComments([signature getArgumentTypeAtIndex: i]);
                 size_t paramTypeLen = strlen(paramType);
 
                 if (paramTypeLen > 0 && paramType[0] == '@') {
