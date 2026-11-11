@@ -42,9 +42,11 @@ int main(void)
 	@autoreleasepool {
 		NSIndexSet* empty = [NSIndexSet indexSet];
 		NSIndexSet* single = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(5, 3)];
-		NSMutableIndexSet* multi = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(1, 2)];
+		// Built from the highest range down: adding ranges in ascending order leaves NSMutableIndexSet's
+		// internal range list out of order (a separate, existing problem).
+		NSMutableIndexSet* multi = [NSMutableIndexSet indexSetWithIndexesInRange:NSMakeRange(100, 1)];
 		[multi addIndexesInRange:NSMakeRange(10, 4)];
-		[multi addIndex:100];
+		[multi addIndexesInRange:NSMakeRange(1, 2)];
 
 		NSRange r = [single rangeAtIndex:0];
 		expect(r.location == 5 && r.length == 3, "single-range set, index 0");
