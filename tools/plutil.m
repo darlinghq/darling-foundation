@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 Lubos Dolezel
+ * Copyright (C) 2026 Darling Developers
  *
  * A subset of plutil(1): "plutil -lint file" and
  * "plutil -convert xml1|binary1 [-o output] file". Without -o the input file
