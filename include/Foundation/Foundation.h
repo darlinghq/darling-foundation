@@ -175,4 +175,8 @@
 
 #endif
 
+// Apple's Foundation.h does not include it; Darling's own macOS sources may rely on it here. Not
+// for iOS code, where its lowercase check()/verify() macros break C++ such as OpenCV's.
+#if !TARGET_OS_IPHONE
 #include <AssertMacros.h>
+#endif
