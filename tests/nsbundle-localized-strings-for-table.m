@@ -53,9 +53,10 @@ int main(void) {
         expect("loctable, per-key lookup", [bundle localizedStringForKey:@"KEY" value:nil table:@"keys"], @"Key");
         expect("loctable table, en", [bundle localizedStringsForTable:@"keys" localization:@"en"], @{@"KEY": @"Key"});
         expect("loctable table, de", [bundle localizedStringsForTable:@"keys" localization:@"de"], @{@"KEY": @"Taste"});
-        expect("absent localization falls back to search list", [bundle localizedStringsForTable:@"Localizable" localization:@"fr"], @{@"GREETING": @"Hello"});
-        expect("absent localization falls back, loctable", [bundle localizedStringsForTable:@"keys" localization:@"fr"], @{@"KEY": @"Key"});
-        expect("nonexistent table", [bundle localizedStringsForTable:@"Absent" localization:@"en"], nil);
+        expect("quirk: absent localization is an empty table", [bundle localizedStringsForTable:@"Localizable" localization:@"fr"], @{});
+        expect("quirk: absent localization is an empty table, loctable", [bundle localizedStringsForTable:@"keys" localization:@"fr"], @{});
+        expect("nil localization uses the search list", [bundle localizedStringsForTable:@"keys" localization:nil], @{@"KEY": @"Key"});
+        expect("quirk: nonexistent table is an empty table", [bundle localizedStringsForTable:@"Absent" localization:@"en"], @{});
 
         [[NSFileManager defaultManager] removeItemAtPath:root error:NULL];
     }
