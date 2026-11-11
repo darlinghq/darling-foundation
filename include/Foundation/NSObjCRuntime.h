@@ -320,14 +320,18 @@ typedef unsigned int NSUInteger;
 
 @class NSString, Protocol;
 
+NS_ASSUME_NONNULL_BEGIN
+
 FOUNDATION_EXPORT NSString *NSStringFromSelector(SEL aSelector);
 FOUNDATION_EXPORT SEL NSSelectorFromString(NSString *aSelectorName);
 
 FOUNDATION_EXPORT NSString *NSStringFromClass(Class aClass);
-FOUNDATION_EXPORT Class NSClassFromString(NSString *aClassName);
+FOUNDATION_EXPORT Class _Nullable NSClassFromString(NSString *aClassName);
 
 FOUNDATION_EXPORT NSString *NSStringFromProtocol(Protocol *proto) NS_AVAILABLE(10_5, 2_0);
-FOUNDATION_EXPORT Protocol *NSProtocolFromString(NSString *namestr) NS_AVAILABLE(10_5, 2_0);
+FOUNDATION_EXPORT Protocol * _Nullable NSProtocolFromString(NSString *namestr) NS_AVAILABLE(10_5, 2_0);
+
+NS_ASSUME_NONNULL_END
 
 FOUNDATION_EXPORT const char *NSGetSizeAndAlignment(const char *typePtr, NSUInteger *sizep, NSUInteger *alignp);
 
