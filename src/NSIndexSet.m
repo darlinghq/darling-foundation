@@ -529,6 +529,41 @@ static inline CFComparisonResult NSIndexSetCompareEntry(RangeList *r1, RangeList
     }
 }
 
+// This method is not part of the public NSIndexSet interface, so it is deliberately absent from NSIndexSet.h.
+// QUIRK: an index that is not smaller than -rangeCount raises NSInvalidArgumentException. Undocumented; evidence:
+// black-box observation on macOS 27 (tier 2, probe vd-upstream/mac-probes/v215-rangeatindex.m): an empty set, a
+// single-range set and a multi-range set (for NSNotFound) all raise that exception for such an index.
+// Test: nsindexset-rangeatindex.m (test_quirk_range_at_index_out_of_bounds_raises)
+- (NSRange) rangeAtIndex: (NSUInteger) idx
+{
+    if (idx >= [self rangeCount])
+    {
+        [NSException raise:NSInvalidArgumentException format:@"range index %lu is out of bounds", (unsigned long) idx];
+    }
+
+    if (HAS_SINGLE_RANGE(self))
+    {
+        return SINGLE_RANGE(self);
+    }
+
+    if (!BUILD_CACHE(self))
+    {
+        NSUInteger seen = 0;
+        RangeList *ptr = NULL;
+        DL_FOREACH(MULTIPLE_RANGE_DATA(self), ptr)
+        {
+            if (seen == idx)
+            {
+                return ptr->range;
+            }
+            seen++;
+        }
+        return NSMakeRange(NSNotFound, 0);
+    }
+
+    return *(NSRange *) CFArrayGetValueAtIndex(CACHE(self)->ranges, idx);
+}
+
 - (NSUInteger)firstIndex
 {
     if (IS_EMPTY(self))
