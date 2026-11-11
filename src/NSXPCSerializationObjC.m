@@ -89,7 +89,7 @@ void _NSXPCSerializationAddTypedObjCValuesToArray(
         break;
 
     case _C_DBL:
-        _NSXPCSerializationAddBool(serializer, *(double *) addr);
+        _NSXPCSerializationAddDouble(serializer, *(double *) addr);
         break;
 
 #define HANDLE_INTEGER(_c_type, type) \
