@@ -65,6 +65,12 @@ typedef NS_ENUM(NSInteger, NSProcessInfoThermalState) {
 - (void)disableSuddenTermination;
 @end
 
+@interface NSProcessInfo (NSProcessInfoAutomaticTermination)
+- (void)disableAutomaticTermination: (NSString *) reason;
+- (void)enableAutomaticTermination: (NSString *) reason;
+@property BOOL automaticTerminationSupportEnabled;
+@end
+
 @interface NSProcessInfo (NSProcessInfoPlatform)
 -(BOOL)isMacCatalystApp;
 -(BOOL)isiOSAppOnMac;
@@ -72,8 +78,28 @@ typedef NS_ENUM(NSInteger, NSProcessInfoThermalState) {
 @property(readonly, getter=isiOSAppOnMac) BOOL iOSAppOnMac;
 @end
 
+typedef uint64_t NSActivityOptions;
+enum {
+    NSActivityIdleDisplaySleepDisabled = (1ULL << 40),
+    NSActivityIdleSystemSleepDisabled = (1ULL << 20),
+    NSActivitySuddenTerminationDisabled = (1ULL << 14),
+    NSActivityAutomaticTerminationDisabled = (1ULL << 15),
+    NSActivityUserInitiated = (0x00FFFFFFULL | NSActivityIdleSystemSleepDisabled),
+    NSActivityUserInitiatedAllowingIdleSystemSleep = (NSActivityUserInitiated & ~NSActivityIdleSystemSleepDisabled),
+    NSActivityBackground = 0x000000FFULL,
+    NSActivityLatencyCritical = 0xFF00000000ULL,
+};
+
+@interface NSProcessInfo (NSProcessInfoActivityGeneration)
+- (id<NSObject>)beginActivityWithOptions:(NSActivityOptions)options reason:(NSString *)reason;
+- (void)endActivity:(id<NSObject>)activity;
+- (void)performActivityWithOptions:(NSActivityOptions)options reason:(NSString *)reason usingBlock:(void (^)(void))block;
+- (void)performExpiringActivityWithReason:(NSString *)reason usingBlock:(void (^)(BOOL expired))block;
+@end
+
 #ifdef DARLING
 FOUNDATION_EXPORT void __NSInitializeProcess(int argc,const char *argv[]);
 #endif
 
 FOUNDATION_EXPORT NSString *const NSProcessInfoThermalStateDidChangeNotification;
+FOUNDATION_EXPORT NSString *const NSProcessInfoPowerStateDidChangeNotification;
