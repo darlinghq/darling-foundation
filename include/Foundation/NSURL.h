@@ -1,7 +1,7 @@
 #import <Foundation/NSObject.h>
 #import <Foundation/NSString.h>
 
-@class NSNumber, NSData, NSDictionary;
+@class NSNumber, NSData, NSDictionary, NSCharacterSet;
 
 FOUNDATION_EXPORT NSString * const NSURLFileScheme;
 FOUNDATION_EXPORT NSString * const NSURLKeysOfUnsetValuesKey;
@@ -180,6 +180,7 @@ typedef NSUInteger NSURLBookmarkFileCreationOptions;
 
 @interface NSString (NSURLUtilities)
 
+- (NSString *)stringByAddingPercentEncodingWithAllowedCharacters:(NSCharacterSet *)allowedCharacters;
 - (NSString *)stringByRemovingPercentEncoding;
 - (NSString *)stringByAddingPercentEscapesUsingEncoding:(NSStringEncoding)enc;
 - (NSString *)stringByReplacingPercentEscapesUsingEncoding:(NSStringEncoding)enc;

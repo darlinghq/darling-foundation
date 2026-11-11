@@ -1789,7 +1789,7 @@ static const char* bytesInEncoding(NSString *string, BOOL externalRep, NSStringE
 {
     CFMutableStringRef str = CFStringCreateMutable(kCFAllocatorDefault, 0);
     CFStringReplaceAll(str, (CFStringRef)self);
-    CFStringNormalize(str, kCFStringNormalizationFormKD);
+    CFStringNormalize(str, kCFStringNormalizationFormC);
     return [(NSString *)str autorelease];
 }
 
@@ -1800,7 +1800,7 @@ static const char* bytesInEncoding(NSString *string, BOOL externalRep, NSStringE
 {
     CFMutableStringRef str = CFStringCreateMutable(kCFAllocatorDefault, 0);
     CFStringReplaceAll(str, (CFStringRef)self);
-    CFStringNormalize(str, kCFStringNormalizationFormC);
+    CFStringNormalize(str, kCFStringNormalizationFormKD);
     return [(NSString *)str autorelease];
 }
 
@@ -2479,6 +2479,29 @@ static BOOL _NSScanStringValue(NSString *self, NSNumericValueType type, NSNumeri
 - (NSUInteger)cStringLength
 {
     return [self lengthOfBytesUsingEncoding:__NSDefaultCStringEncoding()];
+}
+
+- (NSString *)stringByAddingPercentEncodingWithAllowedCharacters:(NSCharacterSet *)allowed
+{
+    if (!allowed)
+        return nil;
+
+    NSData *utf8 = [self dataUsingEncoding:NSUTF8StringEncoding allowLossyConversion:NO];
+    if (!utf8)
+        return nil;
+    const unsigned char *bytes = [utf8 bytes];
+    NSMutableString *result = [NSMutableString stringWithCapacity:[utf8 length]];
+    for (NSUInteger i = 0; i < [utf8 length]; ++i)
+    {
+        // Only ASCII members of the allowed set may pass through. Processing
+        // UTF-8 bytes keeps an allowed base character independent of combining
+        // marks, and percent-encodes every byte of non-ASCII scalars.
+        if (bytes[i] < 128 && [allowed characterIsMember:bytes[i]])
+            [result appendFormat:@"%C", (unichar)bytes[i]];
+        else
+            [result appendFormat:@"%%%02X", (unsigned)bytes[i]];
+    }
+    return result;
 }
 
 - (NSString *) stringByRemovingPercentEncoding
