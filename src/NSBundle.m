@@ -8,6 +8,7 @@
 #import <dispatch/dispatch.h>
 #import <CoreFoundation/CFBundle.h>
 #import <CoreFoundation/CFBundlePriv.h>
+#import <CoreFoundation/CFPropertyList.h>
 #import <objc/runtime.h>
 #import <Foundation/NSArray.h>
 #import <Foundation/NSString.h>
@@ -662,6 +663,20 @@ static void __NSBundleMainBundleDealloc()
 - (NSString *)localizedStringForKey:(NSString *)key value:(NSString *)value table:(NSString *)tableName
 {
     return [(NSString *)CFBundleCopyLocalizedString(_cfBundle, (CFStringRef)key, (CFStringRef)value, (CFStringRef)tableName) autorelease];
+}
+
+- (NSDictionary *)localizedStringsForTable:(NSString *)tableName localization:(NSString *)localizationName
+{
+    if ([tableName length] == 0)
+        tableName = @"Localizable";
+
+    // QUIRK: a table or localization the bundle lacks yields an empty dictionary: neither nil nor
+    // a fallback to the search-list localization. Not documented; the method is private API.
+    // Evidence: black-box observation on macOS 27, arm64 (tier 2),
+    // vd-upstream/mac-probes/nsbundle-strings-for-table.m.
+    // Test: tests/nsbundle-localized-strings-for-table.m (missing localization, absent table).
+    CFDictionaryRef table = CFBundleCopyLocalizedStringTableForLocalization(_cfBundle, (CFStringRef)tableName, (CFStringRef)localizationName);
+    return [(NSDictionary *)table autorelease];
 }
 
 - (id)objectForInfoDictionaryKey:(NSString *)key
