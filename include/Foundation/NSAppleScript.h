@@ -26,6 +26,20 @@ FOUNDATION_EXPORT NSString *const NSAppleScriptErrorAppName;
 FOUNDATION_EXPORT NSString *const NSAppleScriptErrorBriefMessage;
 FOUNDATION_EXPORT NSString *const NSAppleScriptErrorRange;
 
-@interface NSAppleScript : NSObject<NSCopying>
+@class NSURL, NSDictionary, NSAppleEventDescriptor;
+
+@interface NSAppleScript : NSObject<NSCopying> {
+    NSString *_source;
+    NSURL *_url;
+    BOOL _compiled;
+}
+
+- (instancetype)initWithSource:(NSString *)source;
+- (instancetype)initWithContentsOfURL:(NSURL *)url error:(NSDictionary **)errorInfo;
+- (NSString *)source;
+- (BOOL)isCompiled;
+- (BOOL)compileAndReturnError:(NSDictionary **)errorInfo;
+- (NSAppleEventDescriptor *)executeAndReturnError:(NSDictionary **)errorInfo;
+- (NSAppleEventDescriptor *)executeAppleEvent:(NSAppleEventDescriptor *)event error:(NSDictionary **)errorInfo;
 
 @end

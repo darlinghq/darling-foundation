@@ -21,10 +21,43 @@
 
 @implementation NSUserNotification
 
+@synthesize identifier = _identifier;
+@synthesize title = _title;
+@synthesize subtitle = _subtitle;
+@synthesize informativeText = _informativeText;
+@synthesize actionButtonTitle = _actionButtonTitle;
+@synthesize otherButtonTitle = _otherButtonTitle;
+@synthesize soundName = _soundName;
+@synthesize userInfo = _userInfo;
+@synthesize hasActionButton = _hasActionButton;
+@synthesize hasReplyButton = _hasReplyButton;
+
+- (void)dealloc {
+    [_identifier release];
+    [_title release];
+    [_subtitle release];
+    [_informativeText release];
+    [_actionButtonTitle release];
+    [_otherButtonTitle release];
+    [_soundName release];
+    [_userInfo release];
+    [super dealloc];
+}
+
 - (id)copyWithZone:(NSZone *)zone
 {
-	NSLog(@"[NSUserNotification copyWithZone:]");
-	return nil;
+    NSUserNotification *copy = [[NSUserNotification allocWithZone:zone] init];
+    copy.identifier = self.identifier;
+    copy.title = self.title;
+    copy.subtitle = self.subtitle;
+    copy.informativeText = self.informativeText;
+    copy.actionButtonTitle = self.actionButtonTitle;
+    copy.otherButtonTitle = self.otherButtonTitle;
+    copy.soundName = self.soundName;
+    copy.userInfo = self.userInfo;
+    copy.hasActionButton = self.hasActionButton;
+    copy.hasReplyButton = self.hasReplyButton;
+    return copy;
 }
 
 @end
@@ -53,12 +86,69 @@ static NSUserNotificationCenter *_defaultUserNotificationCenter = nil;
 	return _defaultUserNotificationCenter;
 }
 
+- (instancetype)init {
+	self = [super init];
+	if (self) {
+		_deliveredNotifications = [[NSMutableArray alloc] init];
+		_scheduledNotifications = [[NSMutableArray alloc] init];
+	}
+	return self;
+}
+
+- (void)dealloc {
+	[_deliveredNotifications release];
+	[_scheduledNotifications release];
+	[super dealloc];
+}
+
+- (NSArray<NSUserNotification *> *)deliveredNotifications {
+	@synchronized (self) {
+		return [[_deliveredNotifications copy] autorelease];
+	}
+}
+
+- (NSArray<NSUserNotification *> *)scheduledNotifications {
+	@synchronized (self) {
+		return [[_scheduledNotifications copy] autorelease];
+	}
+}
+
 - (void)deliverNotification:(NSUserNotification *)notification {
-	NSLog(@"[NSUserNotificationCenter deliverNotification:]");
+	if (notification) {
+		@synchronized (self) {
+			[_deliveredNotifications addObject:notification];
+		}
+	}
 }
 
 - (void)removeDeliveredNotification:(NSUserNotification *)notification {
-	NSLog(@"[NSUserNotificationCenter removeDeliveredNotification:]");
+	if (notification) {
+		@synchronized (self) {
+			[_deliveredNotifications removeObject:notification];
+		}
+	}
+}
+
+- (void)removeAllDeliveredNotifications {
+	@synchronized (self) {
+		[_deliveredNotifications removeAllObjects];
+	}
+}
+
+- (void)scheduleNotification:(NSUserNotification *)notification {
+	if (notification) {
+		@synchronized (self) {
+			[_scheduledNotifications addObject:notification];
+		}
+	}
+}
+
+- (void)removeScheduledNotification:(NSUserNotification *)notification {
+	if (notification) {
+		@synchronized (self) {
+			[_scheduledNotifications removeObject:notification];
+		}
+	}
 }
 
 @end

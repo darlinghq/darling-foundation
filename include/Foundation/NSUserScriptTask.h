@@ -5,3 +5,9 @@
 
 @interface NSUserAppleScriptTask : NSUserScriptTask {}
 @end
+
+@interface NSUserUnixTask : NSUserScriptTask {}
+@end
+
+@interface NSUserAutomatorTask : NSUserScriptTask {}
+@end

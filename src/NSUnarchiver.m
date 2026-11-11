@@ -12,6 +12,7 @@ Copyright (C) 2020 Lubos Dolezel
 #import <Foundation/NSGeometry.h>
 #include <CoreFoundation/CFSet.h>
 #include <string.h>
+#include <ctype.h>
 #include <dispatch/dispatch.h>
 #include <objc/runtime.h>
 
@@ -866,6 +867,45 @@ static const char* uniqueString(const char* str);
     return [unarchiver decodeObject];
 }
 
+// Decides whether the type encoding found in the archive can be decoded into the type the caller asks for.
+// Characters are compared as before (ignoring case). A struct tag is the name between '{' and '=': two tags
+// must be equal, except that the anonymous tag "?" on either side is compatible with any tag, so an archive
+// written from a named struct decodes into an anonymous one and the other way round.
+// QUIRK: the tag handling is not documented. Evidence: black-box observation on macOS 27 (tier 2, probe
+// vd-upstream/mac-probes/v214-unarchiver-tags.m): the tags "{Foo=dd}" and "{?=dd}" are interchangeable in
+// either direction, "{Foo=dd}" against "{Bar=dd}" or "{foo=dd}" raises, and nested tags follow the same rule.
+// Test: unarchiver-struct-tags.m (test_quirk_struct_tag_anonymous_matches_named)
+static BOOL typesAreCompatible(const char *archived, const char *requested)
+{
+    while (*archived && *requested)
+    {
+        if (*archived == '{' && *requested == '{')
+        {
+            const char *archivedTag = archived + 1;
+            const char *requestedTag = requested + 1;
+            size_t archivedTagLength = strcspn(archivedTag, "=}");
+            size_t requestedTagLength = strcspn(requestedTag, "=}");
+            BOOL archivedAnonymous = archivedTagLength == 1 && *archivedTag == '?';
+            BOOL requestedAnonymous = requestedTagLength == 1 && *requestedTag == '?';
+            if (!archivedAnonymous && !requestedAnonymous &&
+                (archivedTagLength != requestedTagLength || strncmp(archivedTag, requestedTag, archivedTagLength) != 0))
+            {
+                return NO;
+            }
+            archived = archivedTag + archivedTagLength;
+            requested = requestedTag + requestedTagLength;
+            continue;
+        }
+        if (tolower((unsigned char)*archived) != tolower((unsigned char)*requested))
+        {
+            return NO;
+        }
+        archived++;
+        requested++;
+    }
+    return *archived == *requested;
+}
+
 #pragma mark - NSCoder methods
 
 - (void)decodeValueOfObjCType:(const char*)type at:(void*)data
@@ -882,7 +922,7 @@ static const char* uniqueString(const char* str);
         return;
     
     const char* str = string.UTF8String;
-    if(strcasecmp(str, type) != 0)
+    if(!typesAreCompatible(str, type))
     {
         NSLog(@"wrong type in archive '%s', expected '%s'", str, type);
         [NSException raise:NSInvalidArgumentException format:@"NSUnarchiver decodeValueOfObjCType: wrong type in archive '%s', expected '%s'", str, type];

@@ -1380,11 +1380,10 @@ const NSMapTableValueCallBacks NSOwnedPointerMapValueCallBacks =
 {
   GSIMapNode	node;
 
-  if (aKey == nil)
+  // A nil key or a nil object is ignored without raising, and does not remove an existing entry.
+  if (aKey == nil || anObject == nil)
     {
-      [NSException raise: NSInvalidArgumentException
-		  format: @"[%@-%@:] given nil argument",
-        NSStringFromClass([self class]), NSStringFromSelector(_cmd)];
+      return;
     }
   node = GSIMapNodeForKey(self, (GSIMapKey)aKey);
   if (node)

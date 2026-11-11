@@ -18,8 +18,34 @@
 */
 
 #import <Foundation/NSString.h>
+#import <Foundation/NSDictionary.h>
+#import <Foundation/NSArray.h>
 
-@interface NSUserNotification : NSObject <NSCopying>
+@interface NSUserNotification : NSObject <NSCopying> {
+@package
+    NSString *_identifier;
+    NSString *_title;
+    NSString *_subtitle;
+    NSString *_informativeText;
+    NSString *_actionButtonTitle;
+    NSString *_otherButtonTitle;
+    NSString *_soundName;
+    NSDictionary *_userInfo;
+    BOOL _hasActionButton;
+    BOOL _hasReplyButton;
+}
+
+@property (copy) NSString *identifier;
+@property (copy) NSString *title;
+@property (copy) NSString *subtitle;
+@property (copy) NSString *informativeText;
+@property (copy) NSString *actionButtonTitle;
+@property (copy) NSString *otherButtonTitle;
+@property (copy) NSString *soundName;
+@property (copy) NSDictionary *userInfo;
+@property BOOL hasActionButton;
+@property BOOL hasReplyButton;
+
 @end
 
 @interface NSUserNotificationAction : NSObject <NSCopying>
@@ -30,13 +56,20 @@
 
 @interface NSUserNotificationCenter : NSObject {
     id<NSUserNotificationCenterDelegate> _delegate;
+    NSMutableArray<NSUserNotification *> *_deliveredNotifications;
+    NSMutableArray<NSUserNotification *> *_scheduledNotifications;
 }
 
 @property(class, readonly, strong) NSUserNotificationCenter *defaultUserNotificationCenter;
 @property(assign) id<NSUserNotificationCenterDelegate> delegate;
+@property(readonly, copy) NSArray<NSUserNotification *> *deliveredNotifications;
+@property(readonly, copy) NSArray<NSUserNotification *> *scheduledNotifications;
 
 - (void)deliverNotification:(NSUserNotification *)notification;
 - (void)removeDeliveredNotification:(NSUserNotification *)notification;
+- (void)removeAllDeliveredNotifications;
+- (void)scheduleNotification:(NSUserNotification *)notification;
+- (void)removeScheduledNotification:(NSUserNotification *)notification;
 
 @end
 

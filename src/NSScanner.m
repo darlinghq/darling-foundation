@@ -444,10 +444,14 @@ static inline NSUInteger skipLeading(unichar** ptrRef, NSUInteger length, NSChar
 static inline NSUInteger skipSkipSet(NSScanner *self, NSString *s)
 {
     NSUInteger strLength = [s length];
+    if (![self charactersToBeSkipped])
+    {
+        return [self scanLocation];
+    }
     NSCharacterSet* inverted = [self _invertedSkipSet];
     if (!inverted)
     {
-        return strLength;
+        return [self scanLocation];
     }
     NSUInteger location = [self scanLocation];
     NSUInteger length = strLength - location;
