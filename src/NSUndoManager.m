@@ -317,15 +317,11 @@ NSString *const NSUndoManagerDidRedoChangeNotification =
     return (_state == NSUndoManagerRedoing);
 }
 
-- (void) registerUndoWithTarget: (id) target
-                       selector: (SEL) selector
-                         object: (id) object
-{
-    NSInvocation *invocation;
-    NSMethodSignature *signature;
-
+// Opens the implicit event group if needed. Returns NO while registration is
+// disabled; raises if there's no open group.
+- (BOOL) _canRegisterUndoAction {
     if (_disableCount > 0)
-        return;
+        return NO;
 
     if (_groupsByEvent && _currentGroup == nil) {
         [self _registerPerform];
@@ -334,8 +330,20 @@ NSString *const NSUndoManagerDidRedoChangeNotification =
 
     if (_currentGroup == nil)
         [NSException raise: NSInternalInconsistencyException
-                    format: @"forwardInvocation called without first opening "
+                    format: @"undo action registered without first opening "
                             @"an undo group"];
+    return YES;
+}
+
+- (void) registerUndoWithTarget: (id) target
+                       selector: (SEL) selector
+                         object: (id) object
+{
+    NSInvocation *invocation;
+    NSMethodSignature *signature;
+
+    if (![self _canRegisterUndoAction])
+        return;
 
     signature = [target methodSignatureForSelector: selector];
     invocation = [NSInvocation invocationWithMethodSignature: signature];
@@ -470,6 +478,66 @@ NSString *const NSUndoManagerDidRedoChangeNotification =
 }
 
 - (void) clearRedoStackIfStateIsNormal {
+    if (_state == NSUndoManagerNormal)
+        [_redoStack removeAllObjects];
+}
+
+@end
+
+// A block-based undo action. Undo groups only send -invoke and -target to what
+// they hold, so the handler is called directly instead of through an
+// NSInvocation, and -removeAllActionsWithTarget: still matches the target.
+@interface _NSUndoHandlerAction : NSObject {
+    id _target;
+    void (^_handler)(id target);
+}
+- (instancetype) initWithTarget: (id) target handler: (void (^)(id target)) handler;
+- (id) target;
+- (void) invoke;
+@end
+
+@implementation _NSUndoHandlerAction
+
+- (instancetype) initWithTarget: (id) target handler: (void (^)(id target)) handler {
+    self = [super init];
+    if (self != nil) {
+        _target = [target retain];
+        _handler = [handler copy];
+    }
+    return self;
+}
+
+- (void) dealloc {
+    [_target release];
+    [_handler release];
+    [super dealloc];
+}
+
+- (id) target {
+    return _target;
+}
+
+- (void) invoke {
+    _handler(_target);
+}
+
+@end
+
+@implementation NSUndoManager (NSUndoManagerHandler)
+
+- (void) registerUndoWithTarget: (id) target
+                        handler: (void (^)(id target)) undoHandler
+{
+    if (target == nil || undoHandler == nil)
+        return;
+    if (![self _canRegisterUndoAction])
+        return;
+
+    _NSUndoHandlerAction *action =
+            [[_NSUndoHandlerAction alloc] initWithTarget: target handler: undoHandler];
+    [_currentGroup addInvocation: (NSInvocation *) action];
+    [action release];
+
     if (_state == NSUndoManagerNormal)
         [_redoStack removeAllObjects];
 }

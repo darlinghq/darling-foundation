@@ -60,6 +60,18 @@ NSString *const NSKeyedArchiveRootObjectKey = @"root";
 static dispatch_once_t archiverClassesOnce = 0L;
 static NSMutableDictionary *archiverClasses = nil;
 
+static void setOrRemoveClassName(NSMutableDictionary *map, NSString *codedName, Class cls)
+{
+    if (codedName != nil)
+    {
+        [map setObject:codedName forKey:(id<NSCopying>)cls];
+    }
+    else
+    {
+        [map removeObjectForKey:cls];
+    }
+}
+
 @implementation NSKeyedArchiver
 
 static NSString *escapeKey(NSString *key)
@@ -96,6 +108,18 @@ static BOOL raiseIfFinished(NSKeyedArchiver *archiver)
         return YES;
     }
     return NO;
+}
+
+// The name a class is archived under: the archiver's own mapping, then the
+// class-wide one, then the real class name.
+static NSString *codedClassName(NSKeyedArchiver *archiver, Class class)
+{
+    NSString *name = [archiver classNameForClass:class];
+    if (name == nil)
+    {
+        name = [[archiver class] classNameForClass:class];
+    }
+    return name != nil ? name : NSStringFromClass(class);
 }
 
 static void encodeFinalValue(NSKeyedArchiver *archiver, id value, NSString *key)
@@ -144,6 +168,32 @@ static CFKeyedArchiverUIDRef _NSKeyedArchiverUIDCreateCached(NSKeyedArchiver *ar
     }
     return CFRetain(val);
 #warning TODO find CFRelease point for UID cache
+}
+
+// Conditional references to an object that has not been encoded (yet) are written as $null and
+// remembered in _conditionals (object -> retained CFArray of [container, key] pairs). If the object
+// is later encoded unconditionally, the recorded keys are pointed at it.
+static void resolveConditionalReferences(NSKeyedArchiver *archiver, id object, int uidIndex)
+{
+    CFArrayRef pending = NULL;
+    if (!CFDictionaryGetValueIfPresent(archiver->_conditionals, object, (const void **)&pending))
+    {
+        return;
+    }
+
+    CFKeyedArchiverUIDRef cka = _NSKeyedArchiverUIDCreateCached(archiver, uidIndex);
+    CFIndex count = CFArrayGetCount(pending);
+    for (CFIndex i = 0; i < count; i++)
+    {
+        NSArray *reference = (NSArray *)CFArrayGetValueAtIndex(pending, i);
+        [(NSMutableDictionary *)[reference objectAtIndex:0] setObject:(id)cka forKey:[reference objectAtIndex:1]];
+    }
+    CFRelease(cka);
+
+    CFRetain(pending);
+    CFDictionaryRemoveValue(archiver->_conditionals, object);
+    CFRelease(pending); // the reference held by _conditionals
+    CFRelease(pending);
 }
 
 static void _encodeObject(NSKeyedArchiver *archiver, id object, NSString *key)
@@ -195,13 +245,10 @@ static void _encodeObject(NSKeyedArchiver *archiver, id object, NSString *key)
         }
         else
         {
-            if (CFDictionaryGetValueIfPresent(archiver->_conditionals, object, (const void **)&mapObject))
-            {
-                // TODO
-            }
             CFArrayAppendValue((CFMutableArrayRef)archiver->_objects, @"$null"); // placeholder
             CFDictionarySetValue(archiver->_objRefMap, object, (const void *)end);
             uidIndex = end;
+            resolveConditionalReferences(archiver, object, uidIndex);
         }
         CFKeyedArchiverUIDRef cka = _NSKeyedArchiverUIDCreateCached(archiver, uidIndex);
         encodeFinalValue(archiver, (id)cka, key);
@@ -212,10 +259,6 @@ static void _encodeObject(NSKeyedArchiver *archiver, id object, NSString *key)
             return;
         }
 
-        //if ([archiver classNameForClass:class] == nil && [NSKeyedArchiver classNameForClass:class])
-        //{
-            // TODO
-        //}
         if ([object isNSString__])
         {
             if ([object length] == 5)
@@ -272,12 +315,12 @@ static void _encodeObject(NSKeyedArchiver *archiver, id object, NSString *key)
                 [archiver->_containers addObject:dict];
                 [dict release];
 
-                encodeFinalValue(archiver, NSStringFromClass(class), @"$classname");
+                encodeFinalValue(archiver, codedClassName(archiver, class), @"$classname");
 
                 NSMutableArray *classes = [NSMutableArray new];
                 do
                 {
-                    CFArrayAppendValue((CFMutableArrayRef)classes, NSStringFromClass(class));
+                    CFArrayAppendValue((CFMutableArrayRef)classes, codedClassName(archiver, class));
                     class = [class superclass];
                 } 
                 while (class != nil);
@@ -313,8 +356,41 @@ static void _encodeObject(NSKeyedArchiver *archiver, id object, NSString *key)
 
 static void encodeConditionalObject(NSKeyedArchiver *archiver, id object, NSString *key)
 {
-#warning TODO
-    DEBUG_BREAK();
+    id mapObject;
+    if (object != nil && CFDictionaryGetValueIfPresent(archiver->_objRefMap, object, (const void **)&mapObject))
+    {
+        // Already encoded unconditionally: reference it.
+        CFKeyedArchiverUIDRef cka = _NSKeyedArchiverUIDCreateCached(archiver, (int)mapObject);
+        encodeFinalValue(archiver, (id)cka, key);
+        CFRelease(cka);
+        return;
+    }
+
+    // Not (yet) part of the archive: encode nil for now.
+    CFKeyedArchiverUIDRef null = _NSKeyedArchiverUIDCreateCached(archiver, 0);
+    encodeFinalValue(archiver, (id)null, key);
+    CFRelease(null);
+
+    id container = [archiver->_containers lastObject];
+    if (object == nil || key == nil || ![container isKindOfClass:[NSMutableDictionary class]])
+    {
+        return;
+    }
+
+    CFMutableArrayRef pending = NULL;
+    if (!CFDictionaryGetValueIfPresent(archiver->_conditionals, object, (const void **)&pending))
+    {
+        pending = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
+        CFDictionarySetValue(archiver->_conditionals, object, pending); // takes the create reference
+    }
+    NSArray *reference = [[NSArray alloc] initWithObjects:container, key, nil];
+    CFArrayAppendValue(pending, reference);
+    [reference release];
+}
+
+static void releaseConditionalReferences(const void *key, const void *value, void *context)
+{
+    CFRelease(value);
 }
 
 static void encodeBytes(NSKeyedArchiver *archiver, const uint8_t *buffer, NSUInteger len, NSString *key)
@@ -405,7 +481,21 @@ static void encodeDouble(NSKeyedArchiver *archiver, double d, NSString *key)
     dispatch_once(&archiverClassesOnce, ^{
         archiverClasses = [[NSMutableDictionary alloc] init];
     });
-    [archiverClasses setObject:codedName forKey:(id<NSCopying>)cls];
+    setOrRemoveClassName(archiverClasses, codedName, cls);
+}
+
+- (NSString *)classNameForClass:(Class)cls
+{
+    return [_classNameMap objectForKey:cls];
+}
+
+- (void)setClassName:(NSString *)codedName forClass:(Class)cls
+{
+    if (_classNameMap == nil)
+    {
+        _classNameMap = [[NSMutableDictionary alloc] init];
+    }
+    setOrRemoveClassName(_classNameMap, codedName, cls);
 }
 
 + (BOOL)archiveRootObject:(id)rootObject toFile:(NSString *)path
@@ -589,9 +679,11 @@ static void _release(CFAllocatorRef allocator, const void *value)
 - (void)dealloc
 {
     CFRelease(_stream);
+    [_classNameMap release];
     [_containers release];
     [_objects release];
     CFRelease(_objRefMap);
+    CFDictionaryApplyFunction(_conditionals, releaseConditionalReferences, NULL);
     CFRelease(_conditionals);
     if (_visited != nil)
     {
