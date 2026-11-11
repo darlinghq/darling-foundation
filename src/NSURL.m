@@ -803,4 +803,88 @@ OBJC_PROTOCOL_IMPL_POP
 @end
 
 @implementation NSURLQueryItem
+
++ (instancetype)queryItemWithName:(NSString *)name value:(NSString *)value
+{
+    return [[[self alloc] initWithName:name value:value] autorelease];
+}
+
+- (instancetype)initWithName:(NSString *)name value:(NSString *)value
+{
+    self = [super init];
+    if (self) {
+        if (![name isKindOfClass:[NSString class]] ||
+            (value != nil && ![value isKindOfClass:[NSString class]])) {
+            [self release];
+            [NSException raise:NSInvalidArgumentException format:@"query item requires a string name and optional string value"];
+            return nil;
+        }
+        _name = [name copy];
+        _value = [value copy];
+    }
+    return self;
+}
+
+- (NSString *)name
+{
+    return _name;
+}
+
+- (NSString *)value
+{
+    return _value;
+}
+
+- (id)copyWithZone:(NSZone *)zone
+{
+    return [self retain];
+}
+
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
+
+- (instancetype)initWithCoder:(NSCoder *)coder
+{
+    if (![coder allowsKeyedCoding]) {
+        [self release];
+        [NSException raise:NSInvalidArgumentException format:@"query item requires keyed coding"];
+        return nil;
+    }
+    NSString *name = [coder decodeObjectOfClass:[NSString class] forKey:@"NS.name"];
+    NSString *value = [coder decodeObjectOfClass:[NSString class] forKey:@"NS.value"];
+    return [self initWithName:name value:value];
+}
+
+- (void)encodeWithCoder:(NSCoder *)coder
+{
+    if (![coder allowsKeyedCoding]) {
+        [NSException raise:NSInvalidArgumentException format:@"query item requires keyed coding"];
+        return;
+    }
+    [coder encodeObject:_name forKey:@"NS.name"];
+    [coder encodeObject:_value forKey:@"NS.value"];
+}
+
+- (BOOL)isEqual:(id)object
+{
+    if (object == self) return YES;
+    if (![object isKindOfClass:[NSURLQueryItem class]]) return NO;
+    return [_name isEqual:[object name]] &&
+        (_value == [object value] || [_value isEqual:[object value]]);
+}
+
+- (NSUInteger)hash
+{
+    return [_name hash] ^ [_value hash];
+}
+
+- (void)dealloc
+{
+    [_name release];
+    [_value release];
+    [super dealloc];
+}
+
 @end
