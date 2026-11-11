@@ -30,6 +30,13 @@
             NSFilePathErrorKey: path
         };
     }
+    if (err == ENOENT)
+    {
+        // A missing item is reported as a Cocoa error with the POSIX error underneath.
+        NSMutableDictionary *cocoaInfo = [NSMutableDictionary dictionaryWithDictionary:info];
+        cocoaInfo[NSUnderlyingErrorKey] = [NSError errorWithDomain:NSPOSIXErrorDomain code:err userInfo:nil];
+        return [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileNoSuchFileError userInfo:cocoaInfo];
+    }
     return [NSError errorWithDomain:NSPOSIXErrorDomain code:err userInfo:info];
 }
 
