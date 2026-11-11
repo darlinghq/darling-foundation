@@ -13,6 +13,7 @@
 #import <stdlib.h>
 #import <stdio.h>
 #import <Foundation/NSError.h>
+#import <Foundation/FoundationErrors.h>
 
 @implementation NSFilesystemItemRemoveOperation
 
