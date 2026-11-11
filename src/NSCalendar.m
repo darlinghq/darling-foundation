@@ -41,6 +41,35 @@ OBJC_PROTOCOL_IMPL_PUSH
 }
 OBJC_PROTOCOL_IMPL_POP
 
+- (NSDate *)dateByAddingUnit:(NSCalendarUnit)unit value:(NSInteger)value toDate:(NSDate *)date options:(NSCalendarOptions)options
+{
+    NSDateComponents *components = [[NSDateComponents alloc] init];
+    switch (unit)
+    {
+        case NSCalendarUnitEra: [components setEra:value]; break;
+        case NSCalendarUnitYear: [components setYear:value]; break;
+        case NSCalendarUnitMonth: [components setMonth:value]; break;
+        case NSCalendarUnitDay: [components setDay:value]; break;
+        case NSCalendarUnitHour: [components setHour:value]; break;
+        case NSCalendarUnitMinute: [components setMinute:value]; break;
+        case NSCalendarUnitSecond: [components setSecond:value]; break;
+        case NSCalendarUnitWeekday: [components setWeekday:value]; break;
+        case NSCalendarUnitWeekdayOrdinal: [components setWeekdayOrdinal:value]; break;
+        case NSCalendarUnitQuarter: [components setQuarter:value]; break;
+        case NSCalendarUnitWeekOfMonth: [components setWeekOfMonth:value]; break;
+        case NSCalendarUnitWeekOfYear: [components setWeekOfYear:value]; break;
+        case NSCalendarUnitYearForWeekOfYear: [components setYearForWeekOfYear:value]; break;
+        case NSCalendarUnitNanosecond: [components setNanosecond:value]; break;
+        default:
+            [components release];
+            return nil;
+    }
+
+    NSDate *result = [self dateByAddingComponents:components toDate:date options:options];
+    [components release];
+    return result;
+}
+
 @end
 
 
