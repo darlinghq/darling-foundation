@@ -178,12 +178,9 @@ OBJC_PROTOCOL_IMPL_POP
     NSEnumerator *enumerator = [self objectEnumerator];
     while ((anObj = [enumerator nextObject]) != NULL)
     {
-#warning TODO https://code.google.com/p/apportable/issues/detail?id=268
-        id aValue = [anObj valueForKey:keyPath];
+        id aValue = [anObj valueForKeyPath:keyPath];
         if (aValue)
-        {
             [resultSet addObject:aValue];
-        }
     }
     return resultSet;
 }

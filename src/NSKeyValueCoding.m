@@ -11,6 +11,7 @@
 #import "NSKeyValueAccessor.h"
 #import <Foundation/NSSet.h>
 #import <Foundation/NSString.h>
+#import <Foundation/NSNull.h>
 #import <libkern/OSAtomic.h>
 #import <objc/runtime.h>
 
@@ -204,7 +205,8 @@ static NSString *const NSUnknownUserInfoKey = @"NSUnknownUserInfoKey";
     NSMutableDictionary *values = [[NSMutableDictionary alloc] init];
     for (NSString *key in keys)
     {
-        values[key] = [self valueForKey:key];
+        id value = [self valueForKey:key];
+        values[key] = value ?: [NSNull null];
     }
     return [values autorelease];
 }
