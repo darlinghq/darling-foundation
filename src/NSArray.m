@@ -212,7 +212,9 @@ OBJC_PROTOCOL_IMPL_POP
     id anObj = nil;
     while ((anObj = [enumerator nextObject]))
     {
-        [resultArray addObject:[anObj valueForKey:key]];
+        // A nil value is documented to appear as NSNull in the result.
+        id value = [anObj valueForKey:key];
+        [resultArray addObject:value ?: [NSNull null]];
     }
     return resultArray;
 }
