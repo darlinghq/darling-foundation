@@ -14,6 +14,12 @@ typedef NS_ENUM(NSInteger, NSFormattingContext) {
     NSFormattingContextMiddleOfSentence,
 };
 
+typedef NS_ENUM(NSInteger, NSFormattingUnitStyle) {
+    NSFormattingUnitStyleShort = 1,
+    NSFormattingUnitStyleMedium,
+    NSFormattingUnitStyleLong,
+};
+
 @interface NSFormatter : NSObject <NSCopying, NSCoding>
 
 - (NSString *)stringForObjectValue:(id)obj;
