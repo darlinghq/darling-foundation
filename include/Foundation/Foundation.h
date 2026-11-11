@@ -22,6 +22,9 @@
 #import <Foundation/NSFileHandle.h>
 #import <Foundation/NSFileManager.h>
 #import <Foundation/NSFormatter.h>
+#import <Foundation/NSEnergyFormatter.h>
+#import <Foundation/NSLengthFormatter.h>
+#import <Foundation/NSMassFormatter.h>
 #import <Foundation/NSHashTable.h>
 #import <Foundation/NSHTTPCookie.h>
 #import <Foundation/NSHTTPCookieStorage.h>
@@ -50,6 +53,7 @@
 #import <Foundation/NSPointerFunctions.h>
 #import <Foundation/NSPort.h>
 #import <Foundation/NSProcessInfo.h>
+#import <Foundation/NSProgress.h>
 #import <Foundation/NSPropertyList.h>
 #import <Foundation/NSProxy.h>
 #import <Foundation/NSRange.h>

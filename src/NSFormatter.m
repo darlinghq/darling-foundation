@@ -7,7 +7,6 @@
 
 #import <Foundation/NSFormatter.h>
 #import <Foundation/NSException.h>
-#import <Foundation/NSInvocation.h>
 #import <Foundation/NSRaise.h>
 #import "NSObjectInternal.h"
 #import "NSFormatterInternal.h"
@@ -83,69 +82,6 @@ NSError *_NSFormatterInvalidValueError(NSString *string)
 - (id)copyWithZone:(NSZone *)zone
 {
     return [self retain];
-}
-
-@end
-
-@interface NSEnergyFormatter : NSFormatter
-@end
-
-@implementation NSEnergyFormatter
-
-- (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector {
-    return [NSMethodSignature signatureWithObjCTypes: "v@:"];
-}
-
-- (void)forwardInvocation:(NSInvocation *)anInvocation {
-    NSLog(@"Stub called: %@ in %@", NSStringFromSelector([anInvocation selector]), [self class]);
-}
-
-- (instancetype)initWithCoder:(NSCoder *)aCoder
-{
-    NSUnimplementedMethod();
-    return self;
-}
-
-@end
-
-@interface NSLengthFormatter : NSFormatter
-@end
-
-@implementation NSLengthFormatter
-
-- (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector {
-    return [NSMethodSignature signatureWithObjCTypes: "v@:"];
-}
-
-- (void)forwardInvocation:(NSInvocation *)anInvocation {
-    NSLog(@"Stub called: %@ in %@", NSStringFromSelector([anInvocation selector]), [self class]);
-}
-
-- (instancetype)initWithCoder:(NSCoder *)aCoder
-{
-    NSUnimplementedMethod();
-    return self;
-}
-
-@end
-
-@interface NSMassFormatter : NSFormatter
-@end
-
-@implementation NSMassFormatter
-
-- (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector {
-    return [NSMethodSignature signatureWithObjCTypes: "v@:"];
-}
-
-- (void)forwardInvocation:(NSInvocation *)anInvocation {
-    NSLog(@"Stub called: %@ in %@", NSStringFromSelector([anInvocation selector]), [self class]);
-}
-
-- (instancetype)initWithCoder:(NSCoder *)aCoder
-{
-    NSUnimplementedMethod();
-    return self;
 }
 
 @end
