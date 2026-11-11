@@ -580,9 +580,7 @@ static id _decodeObjectBinary(NSKeyedUnarchiver *unarchiver, NSUInteger uid1) NS
         // save the allocated object into the temp map, because we don't want to retain it yet
         CFDictionarySetValue(unarchiver->_tmpRefObjMap, (const void *)uid1, allocated);
         CFDictionarySetValue(unarchiver->_objRefMap, (const void *)allocated, (const void *)uid1);
-        NSLog(@"_decodeObjectBinary: calling initWithCoder on %@", class);
         id instance = [allocated initWithCoder:unarchiver];
-        NSLog(@"_decodeObjectBinary: finished initWithCoder on %@", class);
         if (instance != nil)
         {
             instance = [instance awakeAfterUsingCoder:unarchiver];
