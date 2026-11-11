@@ -1027,8 +1027,13 @@ static const char* uniqueString(const char* str);
 	return className;
 }
 
-// Private API apps send before decoding. NSUnarchiver doesn't restrict the classes it decodes, so the
-// set is accepted and ignored.
+// QUIRK: -_setAllowedClasses: is a private selector that callers send to an NSUnarchiver before
+// decoding; it is accepted and ignored. Not documented. Evidence: black-box observation on macOS 27
+// (tier 2, probe mac-probes/mc15-setallowedclasses.m): the selector exists there and makes decoding
+// raise NSInvalidArgumentException for a class that is not in the set. We deliberately do not
+// enforce the restriction (compatibility over enforcement); without the method callers would
+// hit an unrecognized selector instead.
+// Test: tests/nsunarchiver-allowed-classes.m (test_quirk_set_allowed_classes_is_accepted)
 -(void)_setAllowedClasses:(NSSet *)classes {
 }
 
