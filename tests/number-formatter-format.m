@@ -70,7 +70,7 @@ int main(void)
         expect(@"single format clears zero pattern", [f stringFromNumber:@0], @"0.0");
         expect(@"single format after three", [f format], @"0.0;-0.0");
 
-        // The formats Activity Monitor sets.
+        // A format with a signed positive section, a zero section and a negative section.
         f = posixFormatter();
         [f setFormat:@"+#,##0.0;0.0;-#,##0.0"];
         expect(@"signed positive", [f stringFromNumber:@1234.56], @"+1,234.6");
