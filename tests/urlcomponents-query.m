@@ -5,7 +5,6 @@
 #import <Foundation/NSAutoreleasePool.h>
 #import <Foundation/NSString.h>
 #import <Foundation/NSObjCRuntime.h>
-#include <dlfcn.h>
 #include <stdio.h>
 
 @interface NSObject (QueryRegression)
@@ -20,13 +19,9 @@
 - (NSString *)value;
 @end
 
-int main(int argc, char **argv) {
+int main(void) {
     @autoreleasepool {
-        if (argc == 2 && !dlopen(argv[1], RTLD_NOW)) {
-            fprintf(stderr, "FAIL load candidate: %s\n", dlerror());
-            return 2;
-        }
-        Class componentsClass = NSClassFromString(argc == 2 ? @"DARTestURLComponents" : @"NSURLComponents");
+        Class componentsClass = NSClassFromString(@"NSURLComponents");
         @try {
             NSURL *url = [NSURL URLWithString:@"https://example.invalid/path?name=a%20b&flag&empty=&name=second"];
             id components = [componentsClass componentsWithURL:url resolvingAgainstBaseURL:NO];
