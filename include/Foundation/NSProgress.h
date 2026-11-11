@@ -12,7 +12,33 @@ typedef NSString * NSProgressFileOperationKind NS_TYPED_EXTENSIBLE_ENUM;
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface NSProgress : NSObject
+// Instance state of NSProgress; the layout is private. The variables live in the interface because
+// 32-bit builds use the legacy runtime, which does not allow instance variables in an implementation.
+typedef struct {
+    int64_t completed;
+    int64_t total;
+    BOOL overflowed;
+} NSProgressFraction;
+
+@interface NSProgress : NSObject {
+@private
+    NSProgress *_parent; // weak, accessed with objc_loadWeak/objc_storeWeak
+    NSMutableSet *_children;
+    NSProgressFraction _selfFraction;
+    NSProgressFraction _childFraction;
+    int64_t _portionOfParent;
+    NSMutableDictionary *_userInfo;
+    NSProgressKind _kind;
+    NSString *_localizedDescription;
+    NSString *_localizedAdditionalDescription;
+    void (^_cancellationHandler)(void);
+    void (^_pausingHandler)(void);
+    void (^_resumingHandler)(void);
+    BOOL _cancelled;
+    BOOL _paused;
+    BOOL _cancellable;
+    BOOL _pausable;
+}
 
 + (nullable NSProgress *)currentProgress;
 + (NSProgress *)progressWithTotalUnitCount:(int64_t)unitCount;

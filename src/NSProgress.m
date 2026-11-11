@@ -38,12 +38,6 @@ NSString * const NSProgressFileAnimationImageKey = @"NSProgressFlyToImageKey";
 NSString * const NSProgressFileAnimationImageOriginalRectKey = @"NSProgressFileAnimationImageOriginalRectKey";
 NSString * const NSProgressFileIconKey = @"NSProgressFileIconKey";
 
-typedef struct {
-    int64_t completed;
-    int64_t total;
-    BOOL overflowed;
-} NSProgressFraction;
-
 static NSProgressFraction fraction(int64_t completed, int64_t total)
 {
     return (NSProgressFraction){ completed, total, NO };
@@ -205,24 +199,7 @@ static _NSProgressCurrentEntry *currentEntry(void)
 // travels down, so per-object locks would deadlock.
 static NSObject *progressTreeLock;
 
-@implementation NSProgress {
-    NSProgress *_parent; // weak, accessed with objc_loadWeak/objc_storeWeak
-    NSMutableSet *_children;
-    NSProgressFraction _selfFraction;
-    NSProgressFraction _childFraction;
-    int64_t _portionOfParent;
-    NSMutableDictionary *_userInfo;
-    NSProgressKind _kind;
-    NSString *_localizedDescription;
-    NSString *_localizedAdditionalDescription;
-    void (^_cancellationHandler)(void);
-    void (^_pausingHandler)(void);
-    void (^_resumingHandler)(void);
-    BOOL _cancelled;
-    BOOL _paused;
-    BOOL _cancellable;
-    BOOL _pausable;
-}
+@implementation NSProgress
 
 @synthesize kind = _kind;
 
