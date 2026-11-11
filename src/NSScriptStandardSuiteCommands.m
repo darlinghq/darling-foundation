@@ -35,7 +35,7 @@
 
 @end
 
-// The remaining standard suite commands. Apps subclass them (e.g. Mail's scripting support), so the
+// The remaining standard suite commands. Scriptable applications subclass them, so the
 // classes have to exist; like NSCreateCommand, unimplemented methods only log.
 
 @implementation NSCloneCommand
