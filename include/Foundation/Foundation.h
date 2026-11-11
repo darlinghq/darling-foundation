@@ -92,6 +92,7 @@
 #import <Foundation/NSScriptObjectSpecifiers.h>
 #import <Foundation/NSDateInterval.h>
 #import <Foundation/NSDateIntervalFormatter.h>
+#import <Foundation/NSPersonNameComponents.h>
 
 #import <Foundation/FoundationErrors.h>
 
