@@ -45,8 +45,13 @@ enum {
     NSWrapCalendarComponents = kCFCalendarComponentsWrap,
 };
 
+typedef NS_OPTIONS(NSUInteger, NSCalendarOptions) {
+    NSCalendarWrapComponents = kCFCalendarComponentsWrap,
+};
+
 enum {
-    NSUndefinedDateComponent = NSIntegerMax
+    NSDateComponentUndefined = NSIntegerMax,
+    NSUndefinedDateComponent __attribute__((deprecated("use NSDateComponentUndefined"))) = NSDateComponentUndefined
 };
 
 typedef NSString *NSCalendarIdentifier;
@@ -94,6 +99,7 @@ FOUNDATION_EXPORT const NSCalendarIdentifier NSCalendarIdentifierRepublicOfChina
 - (NSDateComponents *)components:(NSUInteger)unitFlags fromDate:(NSDate *)date;
 - (NSInteger)component:(NSCalendarUnit)unit fromDate:(NSDate *)date;
 - (NSDate *)dateByAddingComponents:(NSDateComponents *)comps toDate:(NSDate *)date options:(NSUInteger)opts;
+- (NSDate *)dateByAddingUnit:(NSCalendarUnit)unit value:(NSInteger)value toDate:(NSDate *)date options:(NSCalendarOptions)options;
 - (NSDateComponents *)components:(NSUInteger)unitFlags fromDate:(NSDate *)startingDate toDate:(NSDate *)resultDate options:(NSUInteger)opts;
 
 @end
