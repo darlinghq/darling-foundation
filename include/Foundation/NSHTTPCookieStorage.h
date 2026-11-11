@@ -1,6 +1,6 @@
 #import <Foundation/NSObject.h>
 
-@class NSArray, NSHTTPCookie, NSURL;
+@class NSArray, NSDate, NSHTTPCookie, NSURL;
 
 typedef NS_ENUM(NSUInteger, NSHTTPCookieAcceptPolicy) {
     NSHTTPCookieAcceptPolicyAlways,
@@ -28,6 +28,7 @@ typedef struct __CFHTTPCookieStorage *CFHTTPCookieStorageRef;
 - (void)setCookies:(NSArray *)cookies forURL:(NSURL *)URL mainDocumentURL:(NSURL *)mainDocumentURL;
 - (NSHTTPCookieAcceptPolicy)cookieAcceptPolicy;
 - (void)setCookieAcceptPolicy:(NSHTTPCookieAcceptPolicy)cookieAcceptPolicy;
+- (void)removeCookiesSinceDate:(NSDate *)date;
 - (NSArray*)sortedCookiesUsingDescriptors:(NSArray*) sortOrder;
 
 @end
