@@ -6,14 +6,36 @@
 //
 
 #import <Foundation/NSDateFormatter.h>
+#import "NSFormatterInternal.h"
 #import <Foundation/NSDictionary.h>
 #import <Foundation/NSError.h>
+#import <Foundation/FoundationErrors.h>
 #import <Foundation/NSString.h>
 #import <Foundation/NSDate.h>
 #import <Foundation/NSArray.h>
 #import <Foundation/NSTimeZone.h>
 #import <Foundation/NSCalendar.h>
 #import <Foundation/NSLocale.h>
+#include <unicode/udisplaycontext.h>
+
+static UDisplayContext displayContextForFormattingContext(NSFormattingContext context)
+{
+    switch (context)
+    {
+        case NSFormattingContextStandalone:
+            return UDISPCTX_CAPITALIZATION_FOR_STANDALONE;
+        case NSFormattingContextListItem:
+            return UDISPCTX_CAPITALIZATION_FOR_UI_LIST_OR_MENU;
+        case NSFormattingContextBeginningOfSentence:
+            return UDISPCTX_CAPITALIZATION_FOR_BEGINNING_OF_SENTENCE;
+        case NSFormattingContextMiddleOfSentence:
+            return UDISPCTX_CAPITALIZATION_FOR_MIDDLE_OF_SENTENCE;
+        case NSFormattingContextUnknown:
+        case NSFormattingContextDynamic:
+        default:
+            return UDISPCTX_CAPITALIZATION_NONE;
+    }
+}
 
 @implementation NSDateFormatter
 
@@ -72,14 +94,58 @@ static NSDateFormatterBehavior defaultBehavior = NSDateFormatterBehaviorDefault;
     [super dealloc];
 }
 
+- (NSString *)stringForObjectValue:(id)obj
+{
+    if (![obj isKindOfClass:[NSDate class]])
+    {
+        return nil;
+    }
+    return [self stringFromDate:obj];
+}
+
+- (BOOL)getObjectValue:(out id *)obj forString:(NSString *)string range:(inout NSRange *)rangep error:(out NSError **)error
+{
+    NSRange range = rangep != NULL ? *rangep : NSMakeRange(0, [string length]);
+    CFRange cfRange = CFRangeMake(range.location, range.length);
+    CFAbsoluteTime time = 0;
+    [self _regenerateFormatter];
+    if (_formatter == NULL || !CFDateFormatterGetAbsoluteTimeFromString(_formatter, (CFStringRef)string, &cfRange, &time))
+    {
+        if (error != NULL)
+        {
+            *error = _NSFormatterInvalidValueError(string);
+        }
+        return NO;
+    }
+    if (rangep != NULL)
+    {
+        *rangep = NSMakeRange(cfRange.location, cfRange.length);
+    }
+    if (obj != NULL)
+    {
+        *obj = [NSDate dateWithTimeIntervalSinceReferenceDate:time];
+    }
+    return YES;
+}
+
 - (BOOL)getObjectValue:(out id *)obj forString:(NSString *)string errorDescription:(out NSString **)error
 {
     NSError *err = nil;
-    NSRange r;
-    BOOL success = [self getObjectValue:obj forString:string range:&r error:&err];
-    if (error != NULL)
+    NSRange r = NSMakeRange(0, [string length]);
+    id value = nil;
+    BOOL success = [self getObjectValue:&value forString:string range:&r error:&err];
+    if (success && r.length != [string length])
     {
-        *error= [err localizedDescription];
+        success = NO;
+        err = _NSFormatterInvalidValueError(string);
+    }
+    if (success && obj != NULL)
+    {
+        *obj = value;
+    }
+    if (!success && error != NULL)
+    {
+        *error = [err localizedDescription];
     }
     return success;
 }
@@ -122,13 +188,35 @@ static NSDateFormatterBehavior defaultBehavior = NSDateFormatterBehaviorDefault;
 
 - (NSString *)dateFormat
 {
-    return _attributes[@"dateFormat"];
+    NSString *format = _attributes[@"dateFormat"];
+    if (format != nil)
+    {
+        return format;
+    }
+    // null_resettable: without an explicit format, report the one the date and time styles produce.
+    [self _regenerateFormatter];
+    return _formatter != NULL ? (NSString *)CFDateFormatterGetFormat(_formatter) : nil;
 }
 
 - (void)setDateFormat:(NSString *)string
 {
-    _attributes[@"dateFormat"] = string;
+    if (string != nil)
+    {
+        _attributes[@"dateFormat"] = [[string copy] autorelease];
+    }
+    else
+    {
+        [_attributes removeObjectForKey:@"dateFormat"];
+    }
     [self _reset];
+}
+
+- (void)setLocalizedDateFormatFromTemplate:(NSString *)dateFormatTemplate
+{
+    NSString *format = [[self class] dateFormatFromTemplate:dateFormatTemplate
+                                                   options:0
+                                                    locale:[self locale]];
+    [self setDateFormat:format];
 }
 
 - (NSLocale *)locale
@@ -140,6 +228,17 @@ static NSDateFormatterBehavior defaultBehavior = NSDateFormatterBehaviorDefault;
 - (void)setLocale:(NSLocale *)locale
 {
     _attributes[@"locale"] = locale;
+    [self _reset];
+}
+
+- (NSFormattingContext)formattingContext
+{
+    return (NSFormattingContext)[_attributes[@"formattingContext"] integerValue];
+}
+
+- (void)setFormattingContext:(NSFormattingContext)context
+{
+    _attributes[@"formattingContext"] = @(context);
     [self _reset];
 }
 
@@ -177,6 +276,14 @@ static NSDateFormatterBehavior defaultBehavior = NSDateFormatterBehaviorDefault;
     if (_attributes[@"dateFormat"])
     {
         CFDateFormatterSetFormat(_formatter, (CFStringRef)_attributes[@"dateFormat"]);
+    }
+
+    if (_attributes[@"formattingContext"])
+    {
+        // CoreFoundation already passes this private property through to ICU.
+        // Its key is currently private, so use the same string as CFDateFormatter.
+        NSNumber *icuContext = @(displayContextForFormattingContext([self formattingContext]));
+        CFDateFormatterSetProperty(_formatter, CFSTR("kCFDateFormatterFormattingContextKey"), (CFTypeRef)icuContext);
     }
 
     if (_attributes[(id)kCFDateFormatterIsLenient])

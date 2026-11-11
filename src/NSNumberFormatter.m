@@ -11,6 +11,65 @@
 #import <Foundation/NSError.h>
 #import <Foundation/NSString.h>
 #import <Foundation/NSLocale.h>
+#import <Foundation/NSException.h>
+#import <Foundation/NSArray.h>
+#import <Foundation/NSDecimalNumber.h>
+#import "NSFormatterInternal.h"
+#include <math.h>
+
+// Splits a number pattern at the semicolons outside '...' quotes.
+static NSArray *patternSegments(NSString *pattern)
+{
+    NSMutableArray *segments = [NSMutableArray array];
+    NSUInteger start = 0;
+    BOOL quoted = NO;
+    for (NSUInteger i = 0; i < [pattern length]; i++)
+    {
+        unichar c = [pattern characterAtIndex:i];
+        if (c == '\'')
+        {
+            quoted = !quoted;
+        }
+        else if (c == ';' && !quoted)
+        {
+            [segments addObject:[pattern substringWithRange:NSMakeRange(start, i - start)]];
+            start = i + 1;
+        }
+    }
+    [segments addObject:[pattern substringFromIndex:start]];
+    return segments;
+}
+
+// The text of a pattern without digit placeholders ("'none'", "-"), with ICU quoting
+// removed; nil when the pattern has digits and must be formatted.
+static NSString *literalPattern(NSString *pattern)
+{
+    NSMutableString *text = [NSMutableString string];
+    BOOL quoted = NO;
+    for (NSUInteger i = 0; i < [pattern length]; i++)
+    {
+        unichar c = [pattern characterAtIndex:i];
+        if (c == '\'')
+        {
+            if (i + 1 < [pattern length] && [pattern characterAtIndex:i + 1] == '\'')
+            {
+                [text appendString:@"'"];
+                i++;
+            }
+            else
+            {
+                quoted = !quoted;
+            }
+            continue;
+        }
+        if (!quoted && ((c >= '0' && c <= '9') || c == '#' || c == '@'))
+        {
+            return nil;
+        }
+        [text appendFormat:@"%C", c];
+    }
+    return text;
+}
 
 @implementation NSNumberFormatter
 
@@ -54,7 +113,7 @@ static NSNumberFormatterBehavior defaultBehavior = NSNumberFormatterBehaviorDefa
 {
     NSNumberFormatter *formatter = [[NSNumberFormatter alloc] init];
     [formatter->_attributes release];
-    formatter->_attributes = [_attributes copy];
+    formatter->_attributes = [_attributes mutableCopy];
     return formatter;
 }
 
@@ -65,12 +124,84 @@ static NSNumberFormatterBehavior defaultBehavior = NSNumberFormatterBehaviorDefa
     [super dealloc];
 }
 
+- (NSString *)stringForObjectValue:(id)obj
+{
+    if (obj == nil)
+    {
+        return [self nilSymbol];
+    }
+    if (![obj isKindOfClass:[NSNumber class]])
+    {
+        return nil;
+    }
+    return [self stringFromNumber:obj];
+}
+
+- (BOOL)getObjectValue:(out id *)obj forString:(NSString *)string range:(inout NSRange *)rangep error:(out NSError **)error
+{
+    NSRange range = rangep != NULL ? *rangep : NSMakeRange(0, [string length]);
+    NSUInteger length = [string length];
+    if (range.location > length || range.length > length - range.location)
+    {
+        [NSException raise:NSRangeException format:@"range %@ out of bounds for string of length %lu", NSStringFromRange(range), (unsigned long)length];
+    }
+    NSString *nilSymbol = [self nilSymbol];
+    if (nilSymbol != nil && string != nil && [[string substringWithRange:range] isEqualToString:nilSymbol])
+    {
+        if (obj != NULL)
+        {
+            *obj = nil;
+        }
+        return YES;
+    }
+
+    CFRange cfRange = CFRangeMake(range.location, range.length);
+    NSNumber *number = nil;
+    [self _regenerateFormatter];
+    if (string != nil && _formatter != NULL)
+    {
+        CFOptionFlags options = [_attributes[@"parseIntegersOnly"] boolValue] ? kCFNumberFormatterParseIntegersOnly : 0;
+        number = [(NSNumber *)CFNumberFormatterCreateNumberFromString(kCFAllocatorDefault, _formatter, (CFStringRef)string, &cfRange, options) autorelease];
+    }
+    if (number != nil && ![self allowsFloats] && [number doubleValue] != trunc([number doubleValue]))
+    {
+        number = nil;
+    }
+    if (number == nil)
+    {
+        if (error != NULL)
+        {
+            *error = _NSFormatterInvalidValueError(string ?: @"");
+        }
+        return NO;
+    }
+    if (rangep != NULL)
+    {
+        *rangep = NSMakeRange(cfRange.location, cfRange.length);
+    }
+    if (obj != NULL)
+    {
+        *obj = [self generatesDecimalNumbers] ? [NSDecimalNumber decimalNumberWithDecimal:[number decimalValue]] : number;
+    }
+    return YES;
+}
+
 - (BOOL)getObjectValue:(out id *)obj forString:(NSString *)string errorDescription:(out NSString **)errorStr
 {
     NSError *error = nil;
-    NSRange r;
-    BOOL success = [self getObjectValue:obj forString:string range:&r error:&error];
-    if (errorStr != NULL)
+    NSRange r = NSMakeRange(0, [string length]);
+    id value = nil;
+    BOOL success = [self getObjectValue:&value forString:string range:&r error:&error];
+    if (success && r.length != [string length])
+    {
+        success = NO;
+        error = _NSFormatterInvalidValueError(string ?: @"");
+    }
+    if (success && obj != NULL)
+    {
+        *obj = value;
+    }
+    if (!success && errorStr != NULL)
     {
         *errorStr = [error localizedDescription];
     }
@@ -104,6 +235,7 @@ static NSNumberFormatterBehavior defaultBehavior = NSNumberFormatterBehaviorDefa
 - (void)setNumberStyle:(NSNumberFormatterStyle)style
 {
     _attributes[@"style"] = @(style);
+    [_attributes removeObjectsForKeys:@[@"positiveFormat", @"zeroFormat", @"negativeFormat"]];
     [self _reset];
 }
 
@@ -143,14 +275,58 @@ static NSNumberFormatterBehavior defaultBehavior = NSNumberFormatterBehaviorDefa
     _attributes[@"formatterBehavior"] = @(behavior);
 }
 
+- (void)_setAttribute:(NSString *)key toPattern:(NSString *)pattern
+{
+    if ([pattern length] > 0)
+    {
+        _attributes[key] = [[pattern copy] autorelease];
+    }
+    else
+    {
+        [_attributes removeObjectForKey:key];
+    }
+    [self _clearFormatter];
+}
+
+- (NSString *)format
+{
+    NSString *zero = _attributes[@"zeroFormat"];
+    if (zero != nil)
+    {
+        return [NSString stringWithFormat:@"%@;%@;%@", [self positiveFormat], zero, [self negativeFormat]];
+    }
+    return [NSString stringWithFormat:@"%@;%@", [self positiveFormat], [self negativeFormat]];
+}
+
+// "positive", "positive;negative" or "positive;zero;negative"
+- (void)setFormat:(NSString *)format
+{
+    NSArray *segments = patternSegments(format ?: @"");
+    NSUInteger count = [segments count];
+    if (count > 3)
+    {
+        [NSException raise:NSInvalidArgumentException format:@"-[NSNumberFormatter setFormat:]: more than three patterns in \"%@\"", format];
+    }
+    [self _setAttribute:@"positiveFormat" toPattern:segments[0]];
+    [self _setAttribute:@"zeroFormat" toPattern:count == 3 ? segments[1] : nil];
+    [self _setAttribute:@"negativeFormat" toPattern:count > 1 ? segments[count - 1] : nil];
+}
+
 - (NSString *)negativeFormat
 {
-    return _attributes[@"negativeFormat"];
+    NSString *format = _attributes[@"negativeFormat"];
+    if (format != nil)
+    {
+        return format;
+    }
+    // Without a negative pattern, negatives get the minus sign before the positive pattern.
+    NSString *positive = [self positiveFormat];
+    return positive != nil ? [@"-" stringByAppendingString:positive] : nil;
 }
 
 - (void)setNegativeFormat:(NSString *)format
 {
-    _attributes[@"negativeFormat"] = format;
+    [self _setAttribute:@"negativeFormat" toPattern:format];
 }
 
 - (NSDictionary *)textAttributesForNegativeValues
@@ -165,12 +341,22 @@ static NSNumberFormatterBehavior defaultBehavior = NSNumberFormatterBehaviorDefa
 
 - (NSString *)positiveFormat
 {
-    return _attributes[@"positiveFormat"];
+    NSString *format = _attributes[@"positiveFormat"];
+    if (format != nil)
+    {
+        return format;
+    }
+    [self _regenerateFormatter];
+    if (_formatter == NULL)
+    {
+        return nil;
+    }
+    return patternSegments((NSString *)CFNumberFormatterGetFormat(_formatter))[0];
 }
 
 - (void)setPositiveFormat:(NSString *)format
 {
-    _attributes[@"positiveFormat"] = format;
+    [self _setAttribute:@"positiveFormat" toPattern:format];
 }
 
 - (NSDictionary *)textAttributesForPositiveValues
@@ -283,14 +469,24 @@ if (_formatter != NULL) { \
     SET_ID(kCFNumberFormatterGroupingSeparator, string);
 }
 
+// Read back what was set: the formatter's own zero symbol may come from a zero pattern.
 - (NSString *)zeroSymbol
 {
-    return GET_ID(kCFNumberFormatterZeroSymbol);
+    return _attributes[(id)kCFNumberFormatterZeroSymbol];
 }
 
+// Rebuilds the formatter so that clearing the symbol brings back a zero pattern.
 - (void)setZeroSymbol:(NSString *)string
 {
-    SET_ID(kCFNumberFormatterZeroSymbol, string);
+    if (string != nil)
+    {
+        _attributes[(id)kCFNumberFormatterZeroSymbol] = [[string copy] autorelease];
+    }
+    else
+    {
+        [_attributes removeObjectForKey:(id)kCFNumberFormatterZeroSymbol];
+    }
+    [self _clearFormatter];
 }
 
 - (NSDictionary *)textAttributesForZero
@@ -695,9 +891,26 @@ if (_formatter != NULL) { \
         return;
     }
 
-    if (_attributes[@"format"])
+    NSString *positive = _attributes[@"positiveFormat"];
+    NSString *negative = _attributes[@"negativeFormat"];
+    if (positive != nil || negative != nil)
     {
-        CFNumberFormatterSetFormat(_formatter, (CFStringRef)_attributes[@"format"]);
+        positive = positive ?: patternSegments((NSString *)CFNumberFormatterGetFormat(_formatter))[0];
+        NSString *pattern = negative != nil ? [NSString stringWithFormat:@"%@;%@", positive, negative] : positive;
+        CFNumberFormatterSetFormat(_formatter, (CFStringRef)pattern);
+    }
+    NSString *zero = _attributes[@"zeroFormat"];
+    if (zero != nil && _attributes[(id)kCFNumberFormatterZeroSymbol] == nil)
+    {
+        NSString *symbol = literalPattern(zero);
+        if (symbol == nil)
+        {
+            CFNumberFormatterRef zeroFormatter = CFNumberFormatterCreate(kCFAllocatorDefault, CFNumberFormatterGetLocale(_formatter), kCFNumberFormatterNoStyle);
+            CFNumberFormatterSetFormat(zeroFormatter, (CFStringRef)zero);
+            symbol = [(NSString *)CFNumberFormatterCreateStringWithNumber(kCFAllocatorDefault, zeroFormatter, (CFNumberRef)@0) autorelease];
+            CFRelease(zeroFormatter);
+        }
+        CFNumberFormatterSetProperty(_formatter, kCFNumberFormatterZeroSymbol, (CFStringRef)symbol);
     }
     if (_attributes[(id)kCFNumberFormatterCurrencyCode])
     {

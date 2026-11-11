@@ -56,6 +56,7 @@ typedef struct __CFNumberFormatter* CFNumberFormatterRef;
 - (void)setGeneratesDecimalNumbers:(BOOL)b;
 - (NSNumberFormatterBehavior)formatterBehavior;
 - (void)setFormatterBehavior:(NSNumberFormatterBehavior)behavior;
+@property (copy) NSString *format;
 - (NSString *)negativeFormat;
 - (void)setNegativeFormat:(NSString *)format;
 - (NSDictionary *)textAttributesForNegativeValues;

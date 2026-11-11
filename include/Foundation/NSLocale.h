@@ -56,6 +56,7 @@ FOUNDATION_EXPORT NSString * const NSISO8601Calendar;
 
 - (NSString *)localeIdentifier;
 - (NSString *)languageCode;
+- (NSString *)languageIdentifier;
 
 @end
 

@@ -10,6 +10,7 @@
 #import <Foundation/NSCoder.h>
 #import <Foundation/NSException.h>
 #import <Foundation/NSNotification.h>
+#import <Foundation/NSString.h>
 
 CF_PRIVATE
 @interface NSAutoLocale : NSLocale
@@ -38,6 +39,15 @@ CF_PRIVATE
 
 - (NSString *) languageCode {
     return [self objectForKey: NSLocaleLanguageCode];
+}
+
+- (NSString *)languageIdentifier {
+    NSString *identifier = [self localeIdentifier];
+    NSRange keywordStart = [identifier rangeOfString:@"@"];
+    if (keywordStart.location != NSNotFound) {
+        identifier = [identifier substringToIndex:keywordStart.location];
+    }
+    return [[self class] canonicalLanguageIdentifierFromString:identifier];
 }
 
 @end

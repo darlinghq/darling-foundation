@@ -87,6 +87,7 @@
 #import <Foundation/NSISO8601DateFormatter.h>
 #import <Foundation/NSScriptObjectSpecifiers.h>
 #import <Foundation/NSDateInterval.h>
+#import <Foundation/NSDateIntervalFormatter.h>
 
 #import <Foundation/FoundationErrors.h>
 

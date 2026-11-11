@@ -10,6 +10,16 @@
 #import <Foundation/NSInvocation.h>
 #import <Foundation/NSRaise.h>
 #import "NSObjectInternal.h"
+#import "NSFormatterInternal.h"
+#import <Foundation/NSDictionary.h>
+#import <Foundation/FoundationErrors.h>
+
+NSError *_NSFormatterInvalidValueError(NSString *string)
+{
+    NSString *description = [NSString stringWithFormat:@"The value \u201c%@\u201d is invalid.", string];
+    return [NSError errorWithDomain:NSCocoaErrorDomain code:NSFormattingError
+                           userInfo:@{NSLocalizedDescriptionKey: description}];
+}
 
 @implementation NSFormatter
 
@@ -73,21 +83,6 @@
 - (id)copyWithZone:(NSZone *)zone
 {
     return [self retain];
-}
-
-@end
-
-@interface NSDateIntervalFormatter : NSFormatter
-@end
-
-@implementation NSDateIntervalFormatter
-
-- (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector {
-    return [NSMethodSignature signatureWithObjCTypes: "v@:"];
-}
-
-- (void)forwardInvocation:(NSInvocation *)anInvocation {
-    NSLog(@"Stub called: %@ in %@", NSStringFromSelector([anInvocation selector]), [self class]);
 }
 
 @end

@@ -11,6 +11,29 @@
 
 @implementation NSCalendar (NSCalendar)
 
+- (NSInteger)component:(NSCalendarUnit)unit fromDate:(NSDate *)date
+{
+    NSDateComponents *components = [self components:unit fromDate:date];
+    switch (unit)
+    {
+        case NSCalendarUnitEra: return [components era];
+        case NSCalendarUnitYear: return [components year];
+        case NSCalendarUnitMonth: return [components month];
+        case NSCalendarUnitDay: return [components day];
+        case NSCalendarUnitHour: return [components hour];
+        case NSCalendarUnitMinute: return [components minute];
+        case NSCalendarUnitSecond: return [components second];
+        case NSCalendarUnitWeekday: return [components weekday];
+        case NSCalendarUnitWeekdayOrdinal: return [components weekdayOrdinal];
+        case NSCalendarUnitQuarter: return [components quarter];
+        case NSCalendarUnitWeekOfMonth: return [components weekOfMonth];
+        case NSCalendarUnitWeekOfYear: return [components weekOfYear];
+        case NSCalendarUnitYearForWeekOfYear: return [components yearForWeekOfYear];
+        case NSCalendarUnitNanosecond: return [components nanosecond];
+        default: return NSUndefinedDateComponent;
+    }
+}
+
 OBJC_PROTOCOL_IMPL_PUSH
 + (id)autoupdatingCurrentCalendar
 {

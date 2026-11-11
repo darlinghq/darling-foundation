@@ -61,6 +61,7 @@ static NSArray *_NSByteCountFormatterUnits;
     copy->_includesActualByteCount = _includesActualByteCount;
     copy->_adaptive = _adaptive;
     copy->_zeroPadsFractionDigits = _zeroPadsFractionDigits;
+    copy->_formattingContext = _formattingContext;
 
     return copy;
 }
@@ -107,16 +108,17 @@ static NSArray *_NSByteCountFormatterUnits;
 
     if (unsignedByteCount == 0 && _allowsNonnumericFormatting && _includesUnit && _includesCount)
     {
+        NSString *zero = _formattingContext == NSFormattingContextMiddleOfSentence ? @"zero" : @"Zero";
         // Use "Zero KB" for default or all style, or if KB is allowed and bytes isn't.
         if (_allowedUnits == NSByteCountFormatterUseAll ||
             _allowedUnits == NSByteCountFormatterUseDefault ||
             (_allowedUnits & NSByteCountFormatterUseKB && !(_allowedUnits & NSByteCountFormatterUseBytes)))
         {
-            return @"Zero KB";
+            return [zero stringByAppendingString:@" KB"];
         }
         else
         {
-            return @"Zero bytes";
+            return [zero stringByAppendingString:@" bytes"];
         }
     }
 

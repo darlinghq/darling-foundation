@@ -260,6 +260,7 @@ set(foundation_sources
 	src/NSUserNotification.m
 	src/NSUserScriptTask.m
 	src/NSDateInterval.m
+	src/NSDateIntervalFormatter.m
 	src/NSGarbageCollector.m
 	src/NSUnarchiver.m
 	src/NSDeserializer.m
