@@ -703,7 +703,7 @@ if ((_flags & NSConcreteFileHandleClosed) != 0) \
 {
     FAIL_IF_CLOSED();
 
-    if (lseek(_fd, offset, SEEK_CUR) < 0)
+    if (lseek(_fd, offset, SEEK_SET) < 0)
     {
         FAIL();
     }

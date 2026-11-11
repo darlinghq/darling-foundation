@@ -142,7 +142,7 @@
 static CFURLEnumeratorOptions CFURLEnumeratorOptionsFromNSDirectoryEnumeration(NSDirectoryEnumerationOptions opts)
 {
     CFURLEnumeratorOptions options = kCFURLEnumeratorDefaultBehavior;
-    if ((opts & NSDirectoryEnumerationSkipsSubdirectoryDescendants) != 0)
+    if ((opts & NSDirectoryEnumerationSkipsSubdirectoryDescendants) == 0)
     {
         options |= kCFURLEnumeratorDescendRecursively;
     }
