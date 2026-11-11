@@ -179,9 +179,8 @@ OBJC_PROTOCOL_IMPL_POP
     while ((anObj = [enumerator nextObject]) != NULL)
     {
         id aValue = [anObj valueForKeyPath:keyPath];
-        if (!aValue)
-            [NSException raise:NSInvalidArgumentException format:@"nil value for union key path %@", keyPath];
-        [resultSet addObject:aValue];
+        if (aValue)
+            [resultSet addObject:aValue];
     }
     return resultSet;
 }

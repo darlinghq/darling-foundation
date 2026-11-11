@@ -3,14 +3,6 @@
 #include <assert.h>
 #include <stdio.h>
 
-static void expectNilFailure(id collection, NSString *path)
-{
-    BOOL raised = NO;
-    @try { [collection valueForKeyPath:path]; }
-    @catch (NSException *exception) { raised = [[exception name] isEqual:NSInvalidArgumentException]; }
-    assert((raised));
-}
-
 int main(void)
 {
     @autoreleasepool {
@@ -37,14 +29,21 @@ int main(void)
         assert(([[NSSet setWithArray:distinct] isEqual:[NSSet setWithArray:@[@"a", @"b"]]]));
         assert(([[@[] valueForKeyPath:@"@unionOfObjects.self"] count] == 0));
         assert(([[@[] valueForKeyPath:@"@unionOfArrays.self"] count] == 0));
-        expectNilFailure(@[@{}], @"@unionOfObjects.missing");
-        expectNilFailure(@[@{}], @"@distinctUnionOfObjects.missing");
-        expectNilFailure(@[@[@{}]], @"@unionOfArrays.missing");
-        expectNilFailure(@[@[@{}]], @"@distinctUnionOfArrays.missing");
-        expectNilFailure([NSSet setWithObject:[NSSet setWithObject:@{}]], @"@distinctUnionOfSets.missing");
+        // Nil values: the object unions omit them; the array union keeps the NSNull that
+        // mapping a key path over an array produces (observed on macOS).
+        NSArray *sparse = @[@{@"k": @"a"}, @{}];
+        assert(([[sparse valueForKeyPath:@"@unionOfObjects.k"] isEqual:@[@"a"]]));
+        assert(([[sparse valueForKeyPath:@"@distinctUnionOfObjects.k"] isEqual:@[@"a"]]));
+        assert(([[@[sparse] valueForKeyPath:@"@unionOfArrays.k"] isEqual:@[@"a", [NSNull null]]]));
+        distinct = [[NSSet setWithObject:[NSSet setWithArray:sparse]] valueForKeyPath:@"@distinctUnionOfSets.k"];
+        assert(([distinct isEqual:[NSSet setWithObject:@"a"]]));
+        BOOL raised = NO;
+        @try { [@[@"notAnArray"] valueForKeyPath:@"@unionOfArrays.self"]; }
+        @catch (NSException *exception) { raised = [[exception name] isEqual:NSInvalidArgumentException]; }
+        assert(raised);
         assert(([[@[@1, @2, @3] valueForKeyPath:@"@sum.self"] intValue] == 6));
         assert(([[objects valueForKeyPath:@"@count"] unsignedIntegerValue] == 3));
     }
-    puts("PASS: KVC unions, duplicates, nesting, key paths, nil rejection and aggregates");
+    puts("PASS: KVC unions, duplicates, nesting, key paths, nil handling and aggregates");
     return 0;
 }

@@ -222,10 +222,10 @@ OBJC_PROTOCOL_IMPL_POP
     NSMutableArray *result = [NSMutableArray arrayWithCapacity:[self count]];
     for (id object in self)
     {
+        // A nil value is omitted, as on macOS.
         id value = [object valueForKeyPath:keyPath];
-        if (!value)
-            [NSException raise:NSInvalidArgumentException format:@"nil value for union key path %@", keyPath];
-        [result addObject:value];
+        if (value)
+            [result addObject:value];
     }
     return [NSArray arrayWithArray:result];
 }
@@ -237,7 +237,9 @@ OBJC_PROTOCOL_IMPL_POP
     {
         if (![array isKindOfClass:[NSArray class]])
             [NSException raise:NSInvalidArgumentException format:@"argument is not an NSArray"];
-        [result addObjectsFromArray:[array _unionOfObjectsForKeyPath:keyPath]];
+        // Mapping the key path over an array stands in NSNull for a nil value, and
+        // macOS keeps those placeholders in the union.
+        [result addObjectsFromArray:[array valueForKeyPath:keyPath]];
     }
     return [NSArray arrayWithArray:result];
 }
@@ -251,9 +253,8 @@ OBJC_PROTOCOL_IMPL_POP
     while ((anObj = [enumerator nextObject]) != NULL)
     {
         id aValue = [anObj valueForKeyPath:keyPath];
-        if (!aValue)
-            [NSException raise:NSInvalidArgumentException format:@"nil value for union key path %@", keyPath];
-        [resultSet addObject:aValue];
+        if (aValue)
+            [resultSet addObject:aValue];
     }
     return [NSArray arrayWithArray:[resultSet allObjects]];
 }
