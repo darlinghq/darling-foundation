@@ -68,22 +68,22 @@ static NSArray *foundationValues(void)
 - (void)encodeWithCoder:(NSCoder *)a {}
 - (instancetype)initWithCoder:(NSCoder *)a
 {
-    [a decodeValueOfObjCType:@encode(char) at:&c size:sizeof c];
-    [a decodeValueOfObjCType:@encode(unsigned char) at:&uc size:sizeof uc];
-    [a decodeValueOfObjCType:@encode(short) at:&s size:sizeof s];
-    [a decodeValueOfObjCType:@encode(unsigned short) at:&us size:sizeof us];
-    [a decodeValueOfObjCType:@encode(int) at:&i size:sizeof i];
-    [a decodeValueOfObjCType:@encode(unsigned int) at:&ui size:sizeof ui];
-    [a decodeValueOfObjCType:@encode(long) at:&l size:sizeof l];
-    [a decodeValueOfObjCType:@encode(long long) at:&q size:sizeof q];
-    [a decodeValueOfObjCType:@encode(unsigned long long) at:&uq size:sizeof uq];
-    [a decodeValueOfObjCType:@encode(float) at:&f size:sizeof f];
-    [a decodeValueOfObjCType:@encode(double) at:&dd size:sizeof dd];
-    [a decodeValueOfObjCType:@encode(char *) at:&cs size:sizeof cs];
-    [a decodeValueOfObjCType:@encode(Class) at:&cls size:sizeof cls];
-    [a decodeValueOfObjCType:@encode(SEL) at:&sel size:sizeof sel];
+    [a decodeValueOfObjCType:@encode(char) at:&c];
+    [a decodeValueOfObjCType:@encode(unsigned char) at:&uc];
+    [a decodeValueOfObjCType:@encode(short) at:&s];
+    [a decodeValueOfObjCType:@encode(unsigned short) at:&us];
+    [a decodeValueOfObjCType:@encode(int) at:&i];
+    [a decodeValueOfObjCType:@encode(unsigned int) at:&ui];
+    [a decodeValueOfObjCType:@encode(long) at:&l];
+    [a decodeValueOfObjCType:@encode(long long) at:&q];
+    [a decodeValueOfObjCType:@encode(unsigned long long) at:&uq];
+    [a decodeValueOfObjCType:@encode(float) at:&f];
+    [a decodeValueOfObjCType:@encode(double) at:&dd];
+    [a decodeValueOfObjCType:@encode(char *) at:&cs];
+    [a decodeValueOfObjCType:@encode(Class) at:&cls];
+    [a decodeValueOfObjCType:@encode(SEL) at:&sel];
     r = [a decodeRect]; pt = [a decodePoint]; sz = [a decodeSize];
-    [a decodeValueOfObjCType:@encode(NSRange) at:&rg size:sizeof rg];
+    [a decodeValueOfObjCType:@encode(NSRange) at:&rg];
     [a decodeArrayOfObjCType:@encode(int) count:4 at:arr];
     [a decodeValuesOfObjCTypes:"ii", &i2, &i3];
     o1 = [[a decodeObject] retain]; o2 = [[a decodeObject] retain];
