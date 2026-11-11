@@ -632,8 +632,9 @@ static id newDecodedValue(NSCoder *aCoder)
 
 - (void)encodeWithCoder:(NSCoder *)aCoder
 {
-    if (_specialFlags == 0)
+    if (_specialFlags == 0 || ![aCoder allowsKeyedCoding])
     {
+        // Non-keyed coders store the type encoding and the raw value for every kind of value.
         [super encodeWithCoder:aCoder];
         return;
     }
