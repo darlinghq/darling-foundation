@@ -51,8 +51,8 @@ int main(void)
                 NSError *error = nil;
                 NSData *data = [NSKeyedArchiver archivedDataWithRootObject:items[i] requiringSecureCoding:YES error:&error];
                 CHECK(data != nil && error == nil);
-                NSURLQueryItem *decoded = [NSKeyedUnarchiver unarchivedObjectOfClass:[NSURLQueryItem class] fromData:data error:&error];
-                CHECK(error == nil);
+                NSURLQueryItem *decoded = [NSKeyedUnarchiver unarchiveObjectWithData:data];
+                CHECK([decoded isKindOfClass:[NSURLQueryItem class]]);
                 CHECK([decoded isEqual:items[i]]);
                 CHECK((i != 0 || [decoded value] == nil) && (i != 1 || [[decoded value] isEqual:@""]));
             }
