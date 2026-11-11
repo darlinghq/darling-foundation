@@ -436,11 +436,16 @@ void _NSXPCSerializationAddInvocationArgumentsArray(
 
     for (CFIndex index = isReply ? 1 : 2; index < [signature numberOfArguments]; index++) {
         NSMethodType *arg = [signature _argInfo: index + 1];
+        // The public accessor, since an argument need not be contiguous in the invocation's frame.
+        NSUInteger size;
+        NSGetSizeAndAlignment(arg->type, &size, NULL);
+        NSMutableData *value = [NSMutableData dataWithLength: size];
+        [invocation getArgument: [value mutableBytes] atIndex: index];
         _NSXPCSerializationAddTypedObjCValuesToArray(
             encoder,
             serializer,
             arg->type,
-             [invocation _idxToArg: index + 1]
+            [value mutableBytes]
         );
     }
 
@@ -474,17 +479,21 @@ void _NSXPCSerializationDecodeInvocationArgumentArray(
             if (index - (isReply ? 1 : 2) < [classesForArguments count]) {
                 classes = classesForArguments[index - (isReply ? 1 : 2)];
             }
+            NSUInteger size;
+            NSGetSizeAndAlignment(arg->type, &size, NULL);
+            NSMutableData *value = [NSMutableData dataWithLength: size];
             _NSXPCSerializationDecodeTypedObjCValuesFromArray(
                 decoder,
                 deserializer,
                 arg->type,
-                [invocation _idxToArg: index + 1],
+                [value mutableBytes],
                 NO,
                 object,
                 item,
                 invocation,
                 classes
             );
+            [invocation setArgument: [value mutableBytes] atIndex: index];
             index++;
             return YES;
         }
