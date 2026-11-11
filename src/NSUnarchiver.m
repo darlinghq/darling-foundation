@@ -12,6 +12,7 @@ Copyright (C) 2020 Lubos Dolezel
 #import <Foundation/NSGeometry.h>
 #include <CoreFoundation/CFSet.h>
 #include <string.h>
+#include <ctype.h>
 #include <dispatch/dispatch.h>
 #include <objc/runtime.h>
 
@@ -855,50 +856,43 @@ static unsigned int roundUp(unsigned int size, unsigned int align);
     return [unarchiver decodeObject];
 }
 
-static BOOL typesAreCompatible(const char *t1, const char *t2)
+// Decides whether the type encoding found in the archive can be decoded into the type the caller asks for.
+// Characters are compared as before (ignoring case). A struct tag is the name between '{' and '=': two tags
+// must be equal, except that the anonymous tag "?" on either side is compatible with any tag, so an archive
+// written from a named struct decodes into an anonymous one and the other way round.
+// QUIRK: the tag handling is not documented. Evidence: black-box observation on macOS 27 (tier 2, probe
+// vd-upstream/mac-probes/v214-unarchiver-tags.m): the tags "{Foo=dd}" and "{?=dd}" are interchangeable in
+// either direction, "{Foo=dd}" against "{Bar=dd}" or "{foo=dd}" raises, and nested tags follow the same rule.
+// Test: unarchiver-struct-tags.m (test_quirk_struct_tag_anonymous_matches_named)
+static BOOL typesAreCompatible(const char *archived, const char *requested)
 {
-    if (strcasecmp(t1, t2) == 0)
-        return YES;
-
-    char n1[256], n2[256];
-    int j = 0;
-    BOOL inName = NO;
-    for (int i = 0; t1[i] && j < sizeof(n1) - 1; i++) {
-        if (t1[i] == '{') {
-            n1[j++] = '{';
-            inName = YES;
-        } else if (inName) {
-            if (t1[i] == '=') {
-                n1[j++] = '=';
-                inName = NO;
+    while (*archived && *requested)
+    {
+        if (*archived == '{' && *requested == '{')
+        {
+            const char *archivedTag = archived + 1;
+            const char *requestedTag = requested + 1;
+            size_t archivedTagLength = strcspn(archivedTag, "=}");
+            size_t requestedTagLength = strcspn(requestedTag, "=}");
+            BOOL archivedAnonymous = archivedTagLength == 1 && *archivedTag == '?';
+            BOOL requestedAnonymous = requestedTagLength == 1 && *requestedTag == '?';
+            if (!archivedAnonymous && !requestedAnonymous &&
+                (archivedTagLength != requestedTagLength || strncmp(archivedTag, requestedTag, archivedTagLength) != 0))
+            {
+                return NO;
             }
-        } else {
-            n1[j++] = t1[i];
+            archived = archivedTag + archivedTagLength;
+            requested = requestedTag + requestedTagLength;
+            continue;
         }
-    }
-    n1[j] = '\0';
-
-    j = 0;
-    inName = NO;
-    for (int i = 0; t2[i] && j < sizeof(n2) - 1; i++) {
-        if (t2[i] == '{') {
-            n2[j++] = '{';
-            inName = YES;
-        } else if (inName) {
-            if (t2[i] == '=') {
-                n2[j++] = '=';
-                inName = NO;
-            }
-        } else {
-            n2[j++] = t2[i];
+        if (tolower((unsigned char)*archived) != tolower((unsigned char)*requested))
+        {
+            return NO;
         }
+        archived++;
+        requested++;
     }
-    n2[j] = '\0';
-
-    if (strcasecmp(n1, n2) == 0)
-        return YES;
-
-    return NO;
+    return *archived == *requested;
 }
 
 #pragma mark - NSCoder methods
