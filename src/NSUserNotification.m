@@ -114,7 +114,6 @@ static NSUserNotificationCenter *_defaultUserNotificationCenter = nil;
 }
 
 - (void)deliverNotification:(NSUserNotification *)notification {
-	NSLog(@"[NSUserNotificationCenter deliverNotification:] Title: '%@' Text: '%@'", [notification title], [notification informativeText]);
 	if (notification) {
 		@synchronized (self) {
 			[_deliveredNotifications addObject:notification];
@@ -123,7 +122,6 @@ static NSUserNotificationCenter *_defaultUserNotificationCenter = nil;
 }
 
 - (void)removeDeliveredNotification:(NSUserNotification *)notification {
-	NSLog(@"[NSUserNotificationCenter removeDeliveredNotification:]");
 	if (notification) {
 		@synchronized (self) {
 			[_deliveredNotifications removeObject:notification];
@@ -132,14 +130,12 @@ static NSUserNotificationCenter *_defaultUserNotificationCenter = nil;
 }
 
 - (void)removeAllDeliveredNotifications {
-	NSLog(@"[NSUserNotificationCenter removeAllDeliveredNotifications]");
 	@synchronized (self) {
 		[_deliveredNotifications removeAllObjects];
 	}
 }
 
 - (void)scheduleNotification:(NSUserNotification *)notification {
-	NSLog(@"[NSUserNotificationCenter scheduleNotification:] Title: '%@'", [notification title]);
 	if (notification) {
 		@synchronized (self) {
 			[_scheduledNotifications addObject:notification];
@@ -148,7 +144,6 @@ static NSUserNotificationCenter *_defaultUserNotificationCenter = nil;
 }
 
 - (void)removeScheduledNotification:(NSUserNotification *)notification {
-	NSLog(@"[NSUserNotificationCenter removeScheduledNotification:]");
 	if (notification) {
 		@synchronized (self) {
 			[_scheduledNotifications removeObject:notification];
