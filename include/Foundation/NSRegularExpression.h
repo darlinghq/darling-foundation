@@ -15,7 +15,7 @@ typedef NS_OPTIONS(NSUInteger, NSRegularExpressionOptions) {
 
 };
 
-@interface NSRegularExpression : NSObject <NSCopying, NSCoding> {
+@interface NSRegularExpression : NSObject <NSCopying, NSSecureCoding> {
     NSString *_pattern;
     NSRegularExpressionOptions _options;
     void *_internal;

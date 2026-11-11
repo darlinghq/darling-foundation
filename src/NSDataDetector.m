@@ -9,6 +9,13 @@
     return [[[self alloc] initWithTypes:checkingTypes error:error] autorelease];
 }
 
+// The pattern coding inherited from NSRegularExpression does not carry the
+// checking types, so a detector cannot be archived securely yet.
++ (BOOL)supportsSecureCoding
+{
+    return NO;
+}
+
 - (id)initWithTypes:(NSTextCheckingTypes)checkingTypes error:(NSError **)error
 {
     self = [super initWithPattern:@".*" options:0 error:error];
