@@ -1,3 +1,14 @@
+/*
+ * Copyright (C) 2026 Lubos Dolezel
+ *
+ * A subset of plutil(1): "plutil -lint file" and
+ * "plutil -convert xml1|binary1 [-o output] file". Without -o the input file
+ * is converted in place. Every other option (json conversion, -p, -extract,
+ * -replace, several input files, "-o -") is not implemented. Errors are
+ * reported with the fixed messages below and exit status 1; a usage error
+ * exits with 64. The message text is not the text macOS prints.
+ */
+
 #import <Foundation/NSData.h>
 #import <Foundation/NSError.h>
 #import <Foundation/NSPropertyList.h>
