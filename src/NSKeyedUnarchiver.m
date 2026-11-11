@@ -1864,6 +1864,12 @@ static NSError *unarchivingError(NSInteger code, NSString *description)
     NSKeyedUnarchiver *unarchiver = nil;
     @try {
         unarchiver = [[NSKeyedUnarchiver alloc] initForReadingWithData: data];
+        if (unarchiver == nil) {
+            // Data that is not a keyed archive is corrupt, not merely lacking a root object.
+            if (error)
+                *error = unarchivingError(NSCoderReadCorruptError, @"The data isn't in the correct format.");
+            return nil;
+        }
         [unarchiver setRequiresSecureCoding: YES];
         object = [[unarchiver decodeObjectOfClasses: decodableClasses forKey: NSKeyedArchiveRootObjectKey] retain];
         [unarchiver finishDecoding];
