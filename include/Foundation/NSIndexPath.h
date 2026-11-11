@@ -1,6 +1,6 @@
 #import <Foundation/NSObject.h>
 
-@interface NSIndexPath : NSObject <NSCopying, NSCoding>
+@interface NSIndexPath : NSObject <NSCopying, NSSecureCoding>
 {
     NSUInteger *_indexes;
     NSUInteger _hash;
