@@ -8,8 +8,16 @@
 #import <Foundation/NSAttributedString.h>
 #import "NSAttributedStringInternal.h"
 #import "NSStringInternal.h"
+#import "CFInternal.h"
+#import <Foundation/NSLocale.h>
+#import <Foundation/NSValue.h>
 #import <Foundation/NSPortCoder.h>
 #import <dispatch/dispatch.h>
+
+// The keys are stored in archives and AttributedString encodings, so they must match macOS.
+// Sources: swift-foundation's LanguageIdentifierAttribute.name; OpenSwiftUI's non-Darwin shim.
+NSAttributedStringKey const NSInlinePresentationIntentAttributeName = @"NSInlinePresentationIntent";
+NSAttributedStringKey const NSLanguageIdentifierAttributeName = @"NSLanguage";
 
 @implementation NSAttributedString
 
@@ -100,7 +108,7 @@ OBJC_PROTOCOL_IMPL_POP
     return obj;
 }
 
-- (void)enumerateAttributesInRange:(NSRange)enumerationRange options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(NSDictionary *attrs, NSRange range, BOOL *stop))block
+- (void)enumerateAttributesInRange:(NSRange)enumerationRange options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(NSDictionary<NSAttributedStringKey, id> * _Nonnull attrs, NSRange range, BOOL *stop))block
 {
     if ((uint64_t)enumerationRange.location + enumerationRange.length > [self length])
     {
@@ -241,6 +249,14 @@ OBJC_PROTOCOL_IMPL_POP
     return retVal;
 }
 
+static inline BOOL _NSAttrValuesEqual(id val1, id val2) {
+    if (val1 == val2)
+        return YES;
+    if (val1 == nil || val2 == nil)
+        return NO;
+    return [val1 isEqual:val2];
+}
+
 - (NSDictionary *)attributesAtIndex:(NSUInteger)index longestEffectiveRange:(NSRangePointer)aRange inRange:(NSRange)rangeLimit
 {
     NSDictionary *retVal = [self attributesAtIndex:index effectiveRange:aRange];
@@ -251,12 +267,18 @@ OBJC_PROTOCOL_IMPL_POP
     NSUInteger min = aRange->location;  // inclusive end
     NSUInteger max = aRange->location + aRange->length;  // exclusive end
     NSRange tempRange;
-    while (min > 0 && [retVal isEqualToDictionary:[self attributesAtIndex:min - 1 effectiveRange:&tempRange]])
+    while (min > 0)
     {
+        NSDictionary *compareVal = [self attributesAtIndex:min - 1 effectiveRange:&tempRange];
+        if (!_NSAttrValuesEqual(retVal, compareVal))
+            break;
         min = tempRange.location;
     }
-    while (max < [self length] && [retVal isEqualToDictionary:[self attributesAtIndex:max effectiveRange:&tempRange]])
+    while (max < [self length])
     {
+        NSDictionary *compareVal = [self attributesAtIndex:max effectiveRange:&tempRange];
+        if (!_NSAttrValuesEqual(retVal, compareVal))
+            break;
         max = tempRange.location + tempRange.length;
     }
     aRange->location = min;
@@ -275,12 +297,18 @@ OBJC_PROTOCOL_IMPL_POP
     NSUInteger min = aRange->location;  // inclusive end
     NSUInteger max = aRange->location + aRange->length;  // exclusive end
     NSRange tempRange;
-    while (min > 0 && retVal == [self attribute:attrName atIndex:min - 1 effectiveRange:&tempRange])
+    while (min > 0)
     {
+        id compareVal = [self attribute:attrName atIndex:min - 1 effectiveRange:&tempRange];
+        if (!_NSAttrValuesEqual(retVal, compareVal))
+            break;
         min = tempRange.location;
     }
-    while (max < [self length] && retVal == [self attribute:attrName atIndex:max effectiveRange:&tempRange])
+    while (max < [self length])
     {
+        id compareVal = [self attribute:attrName atIndex:max effectiveRange:&tempRange];
+        if (!_NSAttrValuesEqual(retVal, compareVal))
+            break;
         max = tempRange.location + tempRange.length;
     }
     aRange->location = min;
@@ -381,6 +409,142 @@ OBJC_PROTOCOL_IMPL_POP
 
 @end
 
+// Must match macOS: the key is stored in archives. Source: swift-foundation ReplacementIndexAttribute.name.
+NSAttributedStringKey const NSReplacementIndexAttributeName = @"NSReplacementIndex";
+
+static CFStringRef _NSAttributedFormatCopyDescription(void *value, const void *formatOptions)
+{
+    if ([(id)value isKindOfClass:[NSAttributedString class]])
+    {
+        return (CFStringRef)[[(NSAttributedString *)value string] copy];
+    }
+    return _NSCFCopyDescription2(value, formatOptions);
+}
+
+static NSUInteger _NSFormatMetadataValue(NSDictionary *entry, CFStringRef key)
+{
+    return [[entry objectForKey:(NSString *)key] unsignedIntegerValue];
+}
+
+static void _NSCopyFormatAttributes(NSAttributedString *format, NSRange formatRange, NSMutableAttributedString *result, NSUInteger resultLocation)
+{
+    [format enumerateAttributesInRange:formatRange options:0 usingBlock:^(NSDictionary *attrs, NSRange range, BOOL *stop) {
+        [result setAttributes:attrs range:NSMakeRange(resultLocation + range.location - formatRange.location, range.length)];
+    }];
+}
+
+static void _NSRaiseFormatMismatch(NSAttributedString *format)
+{
+    [NSException raise:NSInvalidArgumentException format:@"arguments could not be applied to attributed format string \"%@\"", [format string]];
+}
+
+@implementation NSAttributedString (NSAttributedStringFormatting)
+
+- (instancetype)initWithFormat:(NSAttributedString *)format options:(NSAttributedStringFormattingOptions)options locale:(NSLocale *)locale, ...
+{
+    va_list args;
+    va_start(args, locale);
+    self = [self initWithFormat:format options:options locale:locale arguments:args];
+    va_end(args);
+    return self;
+}
+
+- (instancetype)initWithFormat:(NSAttributedString *)format options:(NSAttributedStringFormattingOptions)options locale:(NSLocale *)locale arguments:(va_list)arguments
+{
+    if (format == nil)
+    {
+        [self release];
+        [NSException raise:NSInvalidArgumentException format:@"nil format"];
+        return nil;
+    }
+
+    CFArrayRef metadata = NULL;
+    NSString *string = (NSString *)_CFStringCreateWithFormatAndArgumentsReturningMetadata(kCFAllocatorDefault, &_NSAttributedFormatCopyDescription, NULL, (CFDictionaryRef)(CFLocaleRef)locale, NULL, (CFStringRef)[format string], &metadata, arguments);
+    NSMutableAttributedString *result = [[NSMutableAttributedString alloc] initWithString:string];
+    [string release];
+    [(id)metadata autorelease];
+
+    // Text between specifiers is copied verbatim, so it maps 1:1 onto the format.
+    NSUInteger formatLocation = 0;
+    NSUInteger resultLocation = 0;
+    for (NSDictionary *entry in (NSArray *)metadata)
+    {
+        NSRange spec = NSMakeRange(_NSFormatMetadataValue(entry, _kCFStringFormatMetadataSpecifierRangeLocationInFormatStringKey),
+                                   _NSFormatMetadataValue(entry, _kCFStringFormatMetadataSpecifierRangeLengthInFormatStringKey));
+        NSRange replacement = NSMakeRange(_NSFormatMetadataValue(entry, _kCFStringFormatMetadataReplacementRangeLocationKey),
+                                          _NSFormatMetadataValue(entry, _kCFStringFormatMetadataReplacementRangeLengthKey));
+        if (spec.location - formatLocation != replacement.location - resultLocation)
+        {
+            [result release];
+            [self release];
+            _NSRaiseFormatMismatch(format);
+            return nil;
+        }
+        _NSCopyFormatAttributes(format, NSMakeRange(formatLocation, spec.location - formatLocation), result, resultLocation);
+
+        if (replacement.length > 0)
+        {
+            NSDictionary *specAttributes = [format attributesAtIndex:spec.location effectiveRange:NULL];
+            id argument = [entry objectForKey:(NSString *)_kCFStringFormatMetadataArgumentObjectKey];
+            if ([argument isKindOfClass:[NSAttributedString class]])
+            {
+                BOOL argumentWins = (options & NSAttributedStringFormattingInsertArgumentAttributesWithoutMerging) != 0;
+                [argument enumerateAttributesInRange:NSMakeRange(0, MIN(replacement.length, [argument length])) options:0 usingBlock:^(NSDictionary *argumentAttributes, NSRange range, BOOL *stop) {
+                    NSMutableDictionary *merged = [(argumentWins ? specAttributes : argumentAttributes) mutableCopy];
+                    [merged addEntriesFromDictionary:argumentWins ? argumentAttributes : specAttributes];
+                    [result setAttributes:merged range:NSMakeRange(replacement.location + range.location, range.length)];
+                    [merged release];
+                }];
+            }
+            else
+            {
+                [result setAttributes:specAttributes range:replacement];
+            }
+            NSNumber *index = [entry objectForKey:(NSString *)_kCFStringFormatMetadataReplacementIndexKey];
+            if ((options & NSAttributedStringFormattingApplyReplacementIndexAttribute) && index != nil)
+            {
+                [result addAttribute:NSReplacementIndexAttributeName value:index range:replacement];
+            }
+        }
+        formatLocation = NSMaxRange(spec);
+        resultLocation = NSMaxRange(replacement);
+    }
+
+    NSUInteger trailing = [format length] - formatLocation;
+    if (trailing != [result length] - resultLocation)
+    {
+        [result release];
+        [self release];
+        _NSRaiseFormatMismatch(format);
+        return nil;
+    }
+    _NSCopyFormatAttributes(format, NSMakeRange(formatLocation, trailing), result, resultLocation);
+
+    self = [self initWithAttributedString:result];
+    [result release];
+    return self;
+}
+
++ (instancetype)localizedAttributedStringWithFormat:(NSAttributedString *)format, ...
+{
+    va_list args;
+    va_start(args, format);
+    NSAttributedString *result = [[self alloc] initWithFormat:format options:0 locale:[NSLocale currentLocale] arguments:args];
+    va_end(args);
+    return [result autorelease];
+}
+
++ (instancetype)localizedAttributedStringWithFormat:(NSAttributedString *)format options:(NSAttributedStringFormattingOptions)options, ...
+{
+    va_list args;
+    va_start(args, options);
+    NSAttributedString *result = [[self alloc] initWithFormat:format options:options locale:[NSLocale currentLocale] arguments:args];
+    va_end(args);
+    return [result autorelease];
+}
+
+@end
+
 @implementation NSAttributedString (NSAttributedStringPortCoding)
 
 - (id) replacementObjectForPortCoder: (NSPortCoder *) portCoder {
@@ -465,6 +629,16 @@ OBJC_PROTOCOL_IMPL_POP
 - (void)setAttributedString:(NSAttributedString *)attrString
 {
     [self replaceCharactersInRange:NSMakeRange(0, [self length]) withAttributedString:attrString];
+}
+
+- (void)appendLocalizedFormat:(NSAttributedString *)format, ...
+{
+    va_list args;
+    va_start(args, format);
+    NSAttributedString *formatted = [[NSAttributedString alloc] initWithFormat:format options:0 locale:[NSLocale currentLocale] arguments:args];
+    va_end(args);
+    [self appendAttributedString:formatted];
+    [formatted release];
 }
 
 - (void)beginEditing
