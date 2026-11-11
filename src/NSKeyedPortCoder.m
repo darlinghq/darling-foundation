@@ -761,7 +761,13 @@ out:
             [invocation getArgument: &object atIndex: index];
             encodeObject(self, object, isBycopy, isByref);
         } else {
-            [self encodeValueOfObjCType: type at: [invocation _idxToArg: index + 1]];
+            // Copy the argument out with the public accessor: on some architectures an
+            // argument is not stored contiguously in the invocation's frame.
+            NSUInteger size;
+            NSGetSizeAndAlignment(type, &size, NULL);
+            NSMutableData *value = [NSMutableData dataWithLength: size];
+            [invocation getArgument: [value mutableBytes] atIndex: index];
+            [self encodeValueOfObjCType: type at: [value mutableBytes]];
         }
     }
 
@@ -823,7 +829,11 @@ out:
             [invocation setArgument: &str atIndex: index];
             free(str);
         } else {
-            [self decodeValueOfObjCType: type at: [invocation _idxToArg: index + 1]];
+            NSUInteger size;
+            NSGetSizeAndAlignment(type, &size, NULL);
+            NSMutableData *value = [NSMutableData dataWithLength: size];
+            [self decodeValueOfObjCType: type at: [value mutableBytes]];
+            [invocation setArgument: [value mutableBytes] atIndex: index];
         }
     }
 
