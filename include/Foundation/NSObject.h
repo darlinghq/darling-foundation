@@ -27,7 +27,7 @@
 @protocol NSSecureCoding <NSCoding>
 @required
 
-+ (BOOL)supportsSecureCoding;
+@property (class, readonly) BOOL supportsSecureCoding;
 
 @end
 

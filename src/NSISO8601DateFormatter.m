@@ -42,7 +42,7 @@
 	NSLog(@"[NSISO8601DateFormatter encodeWithCoder:");
 }
 
-- (BOOL)supportsSecureCoding
++ (BOOL)supportsSecureCoding
 {
 	return YES;
 }

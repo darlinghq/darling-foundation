@@ -27,7 +27,7 @@ typedef NS_ENUM(NSUInteger, NSDateFormatterBehavior) {
 + (NSDateFormatterBehavior)defaultFormatterBehavior;
 + (void)setDefaultFormatterBehavior:(NSDateFormatterBehavior)behavior;
 
-- (id)init;
+- (id _Nonnull)init;
 - (BOOL)getObjectValue:(out id *)obj forString:(NSString *)string range:(inout NSRange *)rangep error:(out NSError **)error;
 - (NSString *)stringFromDate:(NSDate *)date;
 - (NSDate *)dateFromString:(NSString *)string;
@@ -35,8 +35,7 @@ typedef NS_ENUM(NSUInteger, NSDateFormatterBehavior) {
 - (void)setDateStyle:(NSDateFormatterStyle)style;
 - (NSDateFormatterStyle)timeStyle;
 - (void)setTimeStyle:(NSDateFormatterStyle)style;
-- (NSLocale *)locale;
-- (void)setLocale:(NSLocale *)locale;
+@property (retain) NSLocale *locale;
 - (BOOL)generatesCalendarDates;
 - (void)setGeneratesCalendarDates:(BOOL)generate;
 - (NSDateFormatterBehavior)formatterBehavior;
@@ -45,10 +44,8 @@ typedef NS_ENUM(NSUInteger, NSDateFormatterBehavior) {
 // Set and get all CFDate formatter property keys except kCFDateFormatterCalendarName
 - (NSString *)dateFormat;
 - (void)setDateFormat:(NSString *)string;
-- (NSTimeZone *)timeZone;
-- (void)setTimeZone:(NSTimeZone *)tz;
-- (NSCalendar *)calendar;
-- (void)setCalendar:(NSCalendar *)calendar;
+@property (retain) NSTimeZone *timeZone;
+@property (retain) NSCalendar *calendar;
 - (BOOL)isLenient;
 - (void)setLenient:(BOOL)lenient;
 - (NSDate *)twoDigitStartDate;

@@ -62,7 +62,7 @@ typedef const struct __CFKeyedArchiverUID* CFKeyedArchiverUIDRef;
 
 - (id)init;
 - (id)initForWritingWithMutableData:(NSMutableData *)data;
-- (id)initRequiringSecureCoding:(BOOL)requiringSecureCoding;
+- (nonnull instancetype)initRequiringSecureCoding:(BOOL)requiresSecureCoding;
 - (void)setDelegate:(id <NSKeyedArchiverDelegate>)delegate;
 - (id <NSKeyedArchiverDelegate>)delegate;
 - (void)setOutputFormat:(NSPropertyListFormat)format;

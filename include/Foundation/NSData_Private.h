@@ -20,6 +20,10 @@
 #ifndef _NSDATA_PRIVATE_H_
 #define _NSDATA_PRIVATE_H_
 
+// Uses NSUInteger, FOUNDATION_EXPORT and the NSData class, none of which it
+// declared; it compiled only because every importer happened to include NSData.h first.
+#import <Foundation/NSData.h>
+
 typedef void (^NSDataDeallocator)(void *bytes, NSUInteger length);
 
 FOUNDATION_EXPORT const NSDataDeallocator NSDataDeallocatorVM;

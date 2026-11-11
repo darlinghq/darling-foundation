@@ -34,6 +34,7 @@
 #import	<Foundation/NSObject.h>
 #import	<Foundation/NSString.h>
 #import	<Foundation/NSArray.h>
+#import	<Foundation/NSDictionary.h>
 #import	<Foundation/NSEnumerator.h>
 #import	<Foundation/NSPointerFunctions.h>
 
@@ -71,42 +72,42 @@ typedef NSUInteger NSMapTableOptions;
 /** Convenience method for creating a map table to store object values
  * using object keys.
  */
-+ (id) mapTableWithStrongToStrongObjects;
++ (NSMapTable<KeyType, ObjectType> *) mapTableWithStrongToStrongObjects;
 
 /** Convenience method for creating a map table to store non-retained
  * object values with retained object keys.
  */
-+ (id) mapTableWithStrongToWeakObjects;
++ (NSMapTable<KeyType, ObjectType> *) mapTableWithStrongToWeakObjects;
 
 /** Convenience method for creating a map table to store retained
  * object values with non-retained object keys.
  */
-+ (id) mapTableWithWeakToStrongObjects;
++ (NSMapTable<KeyType, ObjectType> *) mapTableWithWeakToStrongObjects;
 
 /** Convenience method for creating a map table to store non-retained
  * object values with non-retained object keys.
  */
-+ (id) mapTableWithWeakToWeakObjects;
++ (NSMapTable<KeyType, ObjectType> *) mapTableWithWeakToWeakObjects;
 
 /** Convenience method for creating a map table to store object values
  * using object keys.  The collection will retain both the key and the value.
  */
-+ (id) strongToStrongObjectsMapTable;
++ (NSMapTable<KeyType, ObjectType> *) strongToStrongObjectsMapTable NS_SWIFT_NAME(strongToStrongObjects());
 /** Convenience method for creating a map table to store object values
  * using object keys.  The collection will retain the key, the value will be a
  * zeroing weak reference.
  */
-+ (id) strongToWeakObjectsMapTable;
++ (NSMapTable<KeyType, ObjectType> *) strongToWeakObjectsMapTable NS_SWIFT_NAME(strongToWeakObjects());
 /** Convenience method for creating a map table to store object values
  * using object keys.  The collection will retain the value, the key will be a
  * zeroing weak reference.
  */
-+ (id) weakToStrongObjectsMapTable;
++ (NSMapTable<KeyType, ObjectType> *) weakToStrongObjectsMapTable NS_SWIFT_NAME(weakToStrongObjects());
 /** Convenience method for creating a map table to store object values
  * using object keys.  The collection will use zeroing weak references for both
  * the key and the value.
  */
-+ (id) weakToWeakObjectsMapTable;
++ (NSMapTable<KeyType, ObjectType> *) weakToWeakObjectsMapTable NS_SWIFT_NAME(weakToWeakObjects());
 
 
 /** Initialiser using option bitmasks to describe the keys and values.
@@ -124,15 +125,15 @@ typedef NSUInteger NSMapTableOptions;
 
 /** Return the number of items stored in the map.
  */
-- (NSUInteger) count;
+@property (readonly) NSUInteger count;
 
 /** Return a dictionary containing the keys and values in the receiver.
  */
-- (NSDictionary*) dictionaryRepresentation;
+- (NSDictionary<KeyType, ObjectType> *) dictionaryRepresentation;
 
 /** Return an enumerator able to enumerate the keys in the receiver.
  */
-- (NSEnumerator*) keyEnumerator;
+- (NSEnumerator<KeyType> *) keyEnumerator;
 
 /** Return an NSPointerFunctions value describind the functions used by the
  * receiver to handle keys.
@@ -145,7 +146,7 @@ typedef NSUInteger NSMapTableOptions;
 
 /** Return the object stored under the specified key.
  */
-- (id) objectForKey: (id)aKey;
+- (nullable ObjectType) objectForKey: (KeyType)aKey;
 
 /** Empty the receiver of all stored values.
  */
@@ -153,12 +154,12 @@ typedef NSUInteger NSMapTableOptions;
 
 /** Remove the object stored under the specified key.
  */
-- (void) removeObjectForKey: (id)aKey;
+- (void) removeObjectForKey: (KeyType)aKey;
 
 /** Store the object under the specified key, replacing any object which
  * was previously stored under that key.
  */
-- (void) setObject: (id)anObject forKey: (id)aKey;
+- (void) setObject: (ObjectType)anObject forKey: (KeyType)aKey;
 
 /** Return an NSPointerFunctions value describind the functions used by the
  * receiver to handle values.

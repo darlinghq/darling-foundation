@@ -1,27 +1,31 @@
 #import <Foundation/NSString.h>
 #import <Foundation/NSArray.h>
 
+NS_ASSUME_NONNULL_BEGIN
+
 @interface NSString (NSStringPathExtensions)
 
-+ (NSString *)pathWithComponents:(NSArray *)components;
-- (NSArray *)pathComponents;
-- (BOOL)isAbsolutePath;
-- (NSString *)lastPathComponent;
-- (NSString *)stringByDeletingLastPathComponent;
++ (NSString *)pathWithComponents:(NSArray<NSString *> *)components;
+@property (readonly, copy) NSArray<NSString *> *pathComponents;
+@property (readonly, getter=isAbsolutePath) BOOL absolutePath;
+@property (readonly, copy) NSString *lastPathComponent;
+@property (readonly, copy) NSString *stringByDeletingLastPathComponent;
 - (NSString *)stringByAppendingPathComponent:(NSString *)str;
-- (NSString *)pathExtension;
-- (NSString *)stringByDeletingPathExtension;
-- (NSString *)stringByAppendingPathExtension:(NSString *)str;
-- (NSString *)stringByAbbreviatingWithTildeInPath;
-- (NSString *)stringByExpandingTildeInPath;
-- (NSString *)stringByStandardizingPath;
-- (NSString *)stringByResolvingSymlinksInPath;
-- (NSArray *)stringsByAppendingPaths:(NSArray *)paths;
-- (NSUInteger)completePathIntoString:(NSString **)outputName caseSensitive:(BOOL)flag matchesIntoArray:(NSArray **)outputArray filterTypes:(NSArray *)filterTypes;
-- (const char *)fileSystemRepresentation NS_RETURNS_INNER_POINTER;
+@property (readonly, copy) NSString *pathExtension;
+@property (readonly, copy) NSString *stringByDeletingPathExtension;
+- (nullable NSString *)stringByAppendingPathExtension:(NSString *)str;
+@property (readonly, copy) NSString *stringByAbbreviatingWithTildeInPath;
+@property (readonly, copy) NSString *stringByExpandingTildeInPath;
+@property (readonly, copy) NSString *stringByStandardizingPath;
+@property (readonly, copy) NSString *stringByResolvingSymlinksInPath;
+- (NSArray<NSString *> *)stringsByAppendingPaths:(NSArray<NSString *> *)paths;
+- (NSUInteger)completePathIntoString:(NSString * _Nullable * _Nullable)outputName caseSensitive:(BOOL)flag matchesIntoArray:(NSArray<NSString *> * _Nullable * _Nullable)outputArray filterTypes:(nullable NSArray<NSString *> *)filterTypes;
+@property (readonly) const char *fileSystemRepresentation NS_RETURNS_INNER_POINTER;
 - (BOOL)getFileSystemRepresentation:(char *)cname maxLength:(NSUInteger)max;
 
 @end
+
+NS_ASSUME_NONNULL_END
 
 @interface NSArray (NSArrayPathExtensions)
 

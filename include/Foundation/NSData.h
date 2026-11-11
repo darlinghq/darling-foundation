@@ -42,12 +42,16 @@ typedef NS_OPTIONS(NSUInteger, NSDataBase64DecodingOptions) {
 @interface NSData : NSObject <NSCopying, NSMutableCopying, NSSecureCoding>
 
 - (NSUInteger)length;
-- (const void *)bytes NS_RETURNS_INNER_POINTER;
 
 @end
 
 @interface NSData (NSExtendedData)
 
+// Declared here, not on the primary @interface above: NSData's real storage lives in a private
+// __NSCFData subclass and this accessor is implemented in a category (src/NSData.m), so declaring
+// the property in a category too keeps Clang from auto-synthesizing a shadowing ivar/getter on the
+// empty primary @implementation NSData in CoreFoundation's NSData.m.
+@property (readonly) const void *bytes NS_RETURNS_INNER_POINTER;
 - (NSString *)description;
 - (void)getBytes:(void *)buffer length:(NSUInteger)length;
 - (void)getBytes:(void *)buffer range:(NSRange)range;

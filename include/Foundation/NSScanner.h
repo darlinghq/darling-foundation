@@ -2,24 +2,26 @@
 
 @class NSString, NSCharacterSet, NSDictionary;
 
+NS_ASSUME_NONNULL_BEGIN
+
 @interface NSScanner : NSObject <NSCopying>
 
-- (NSString *)string;
-- (NSUInteger)scanLocation;
-- (void)setScanLocation:(NSUInteger)pos;
-- (void)setCharactersToBeSkipped:(NSCharacterSet *)set;
-- (void)setCaseSensitive:(BOOL)flag;
-- (void)setLocale:(id)locale;
+@property (readonly, copy) NSString *string;
+@property NSUInteger scanLocation;
+@property (nullable, copy) NSCharacterSet *charactersToBeSkipped;
+@property BOOL caseSensitive;
+@property (nullable, retain) id locale;
+
+- (instancetype)initWithString:(NSString *)string;
 
 @end
+
+NS_ASSUME_NONNULL_END
 
 @interface NSScanner (NSExtendedScanner)
 
 + (id)scannerWithString:(NSString *)string;
 + (id)localizedScannerWithString:(NSString *)string;
-- (NSCharacterSet *)charactersToBeSkipped;
-- (BOOL)caseSensitive;
-- (id)locale;
 - (BOOL)scanInt:(int *)value;
 - (BOOL)scanInteger:(NSInteger *)value;
 - (BOOL)scanHexLongLong:(unsigned long long *)result;
@@ -33,7 +35,6 @@
 - (BOOL)scanCharactersFromSet:(NSCharacterSet *)set intoString:(NSString **)value;
 - (BOOL)scanUpToString:(NSString *)string intoString:(NSString **)value;
 - (BOOL)scanUpToCharactersFromSet:(NSCharacterSet *)set intoString:(NSString **)value;
-- (BOOL)isAtEnd;
-- (id)initWithString:(NSString *)string;
+@property (getter=isAtEnd, readonly) BOOL atEnd;
 
 @end

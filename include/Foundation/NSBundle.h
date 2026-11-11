@@ -1,4 +1,5 @@
 #import <Foundation/NSObject.h>
+#import <Foundation/NSArray.h>
 
 enum {
     NSBundleExecutableArchitectureI386   = 0x00000007,
@@ -21,7 +22,7 @@ typedef struct __CFBundle *CFBundleRef;
     Class _principalClass;
 }
 
-+ (NSBundle *)mainBundle;
+@property (class, readonly, retain) NSBundle * _Nonnull mainBundle;
 + (NSBundle *)bundleWithPath:(NSString *)path;
 + (NSBundle *)bundleWithURL:(NSURL *)url;
 + (NSBundle *)bundleForClass:(Class)aClass;
@@ -35,7 +36,7 @@ typedef struct __CFBundle *CFBundleRef;
 - (BOOL)unload;
 - (BOOL)preflightAndReturnError:(NSError **)error;
 - (BOOL)loadAndReturnError:(NSError **)error;
-- (NSURL *)bundleURL;
+@property (readonly, retain) NSURL *bundleURL;
 - (NSURL *)resourceURL;
 - (NSURL *)executableURL;
 - (NSURL *)URLForAuxiliaryExecutable:(NSString *)executableName;
@@ -44,7 +45,7 @@ typedef struct __CFBundle *CFBundleRef;
 - (NSURL *)sharedSupportURL;
 - (NSURL *)builtInPlugInsURL;
 - (NSURL *)appStoreReceiptURL;
-- (NSString *)bundlePath;
+@property (readonly, retain) NSString *bundlePath;
 - (NSString *)resourcePath;
 - (NSString *)executablePath;
 - (NSString *)pathForAuxiliaryExecutable:(NSString *)executableName;
@@ -67,17 +68,17 @@ typedef struct __CFBundle *CFBundleRef;
 - (NSArray *)pathsForResourcesOfType:(NSString *)ext inDirectory:(NSString *)subpath;
 - (NSArray *)pathsForResourcesOfType:(NSString *)ext inDirectory:(NSString *)subpath forLocalization:(NSString *)localizationName;
 - (NSString *)localizedStringForKey:(NSString *)key value:(NSString *)value table:(NSString *)tableName NS_FORMAT_ARGUMENT(1);
-- (NSString *)bundleIdentifier;
+@property (readonly, retain) NSString *bundleIdentifier;
 - (NSDictionary *)infoDictionary;
 - (NSDictionary *)localizedInfoDictionary;
 - (id)objectForInfoDictionaryKey:(NSString *)key;
 - (Class)classNamed:(NSString *)className;
 - (Class)principalClass;
 - (NSArray *)localizations;
-- (NSArray *)preferredLocalizations;
+@property (readonly, copy) NSArray<NSString *> *preferredLocalizations;
 - (NSString *)developmentLocalization;
-+ (NSArray *)preferredLocalizationsFromArray:(NSArray *)localizationsArray;
-+ (NSArray *)preferredLocalizationsFromArray:(NSArray *)localizationsArray forPreferences:(NSArray *)preferencesArray;
++ (NSArray<NSString *> *)preferredLocalizationsFromArray:(NSArray<NSString *> *)localizationsArray;
++ (NSArray<NSString *> *)preferredLocalizationsFromArray:(NSArray<NSString *> *)localizationsArray forPreferences:(NSArray<NSString *> *)preferencesArray;
 - (NSArray *)executableArchitectures;
 
 @end

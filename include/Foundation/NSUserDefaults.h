@@ -27,7 +27,7 @@ FOUNDATION_EXPORT NSString * const NSUserDefaultsDidChangeNotification;
 
 @interface NSUserDefaults (NSUserDefaults)
 
-+ (NSUserDefaults *)standardUserDefaults;
+@property (class, readonly, retain) NSUserDefaults *standardUserDefaults;
 + (void)resetStandardUserDefaults;
 
 - (id)init;
