@@ -255,6 +255,9 @@ static BOOL _decodeBool(NSKeyedUnarchiver *unarchiver, NSString *key)
         {
             return NO;
         }
+        // QUIRK: decodeBoolForKey: accepts an integer-typed value (non-zero is YES). Not documented.
+        // Reason: nib archives store booleans as integers. Applies to the binary and XML readers.
+        // Test: tests/keyed-archive-decode.m (test_quirk_decode_bool_from_integer)
         if (CFGetTypeID(val) == CFNumberGetTypeID() && !CFNumberIsFloatType((CFNumberRef)val))
         {
             int64_t intVal = 0;
@@ -283,6 +286,7 @@ static BOOL _decodeBool(NSKeyedUnarchiver *unarchiver, NSString *key)
     {
         return NO;
     }
+    // QUIRK: integer-typed value accepted as a bool, see the XML branch above.
     if (encodedVal >= kCFBinaryPlistMarkerInt && encodedVal <= (kCFBinaryPlistMarkerInt | 3))
     {
         uint8_t *ptr = (uint8_t *)(unarchiver->_bytes + voffset);
@@ -332,7 +336,10 @@ static double _decodeDouble(NSKeyedUnarchiver *unarchiver, NSString *key)
         memmove(&swapped32, ptr + 1, 4);
         return (double)CFConvertFloat32SwappedToHost(swapped32);
     }
-    // Archives from other encoders (e.g. nibs) store integral values such as NSPriority as integers.
+    // QUIRK: decodeDoubleForKey:/decodeFloatForKey: accept an integer-typed value and convert it.
+    // Not documented. Reason: archives written by other encoders (nib files) store integral
+    // values such as priorities as integers; the integer is converted as is.
+    // Test: tests/keyed-archive-decode.m (test_quirk_decode_double_from_integer)
     if (*ptr >= kCFBinaryPlistMarkerInt && *ptr <= (kCFBinaryPlistMarkerInt | 3))
     {
         return (double)_getInt(&ptr);
@@ -1845,7 +1852,7 @@ static NSError *unarchivingError(NSInteger code, NSString *description)
         *error = nil;
     if (data == nil || [classes count] == 0) {
         if (error)
-            *error = unarchivingError(4864 /* NSCoderReadCorruptError */, @"The data isn't in the correct format.");
+            *error = unarchivingError(NSCoderReadCorruptError, @"The data isn't in the correct format.");
         return nil;
     }
 
@@ -1864,13 +1871,13 @@ static NSError *unarchivingError(NSInteger code, NSString *description)
         [object release];
         object = nil;
         if (error)
-            *error = unarchivingError(4864 /* NSCoderReadCorruptError */, [exception reason] ?: @"The data couldn't be read because it isn't in the correct format.");
+            *error = unarchivingError(NSCoderReadCorruptError, [exception reason] ?: @"The data couldn't be read because it isn't in the correct format.");
     }
     [unarchiver release];
 
     if (object == nil) {
         if (error && *error == nil)
-            *error = unarchivingError(4865 /* NSCoderValueNotFoundError */, @"The data doesn't contain a root object.");
+            *error = unarchivingError(NSCoderValueNotFoundError, @"The data doesn't contain a root object.");
         return nil;
     }
 
@@ -1883,7 +1890,7 @@ static NSError *unarchivingError(NSInteger code, NSString *description)
     }
     if (!allowed) {
         if (error)
-            *error = unarchivingError(4864 /* NSCoderReadCorruptError */, [NSString stringWithFormat: @"The root object's class %@ isn't one of the allowed classes.", [object class]]);
+            *error = unarchivingError(NSCoderReadCorruptError, [NSString stringWithFormat: @"The root object's class %@ isn't one of the allowed classes.", [object class]]);
         [object release];
         return nil;
     }
