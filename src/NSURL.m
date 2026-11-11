@@ -343,8 +343,8 @@ OBJC_PROTOCOL_IMPL_PUSH
     NSString *relative = nil;
     if ([coder allowsKeyedCoding])
     {
-        base = [coder decodeObjectForKey:@"NS.base"];
-        relative = [coder decodeObjectForKey:@"NS.relative"];
+        base = [coder decodeObjectOfClass:[NSURL class] forKey:@"NS.base"];
+        relative = [coder decodeObjectOfClass:[NSString class] forKey:@"NS.relative"];
     }
     else
     {
