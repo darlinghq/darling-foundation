@@ -182,18 +182,37 @@ int main(void)
         expect(emptyCopy && accentedCopy && strcmp(emptyCopy, "") == 0 && strcmp(accentedCopy, accented) == 0 &&
                atom && strcmp(atom, accented) == 0, @"empty and UTF-8 C strings and atoms round-trip");
 
-        BOOL raised = NO;
-        @try
+        // 64-bit integers: values in the 32-bit signed range use the ordinary integer encoding,
+        // anything else a 0x87 label followed by 8 bytes (what macOS writes).
+        long long qs[] = { 42, -5, 70000, -70000, 2147483648ll, -2147483649ll, (long long)1 << 40, -((long long)1 << 40) };
+        unsigned long long uqs[] = { 42, 200, 70000, 3000000000ull, 4294967296ull, 0xfedcba9876543210ull };
+        NSMutableData *wide = [NSMutableData data];
+        NSArchiver *wideArchiver = [[NSArchiver alloc] initForWritingWithMutableData:wide];
+        for (size_t i = 0; i < sizeof(qs) / sizeof(qs[0]); i++)
+            [wideArchiver encodeValueOfObjCType:@encode(long long) at:&qs[i]];
+        for (size_t i = 0; i < sizeof(uqs) / sizeof(uqs[0]); i++)
+            [wideArchiver encodeValueOfObjCType:@encode(unsigned long long) at:&uqs[i]];
+        [wideArchiver release];
+        const unsigned char wideBytes[] = { 0x87, 0x00, 0x5e, 0xd0, 0xb2, 0x00, 0x00, 0x00, 0x00 };
+        expect([wide length] > sizeof(wideBytes) &&
+               memmem([wide bytes], [wide length], wideBytes, sizeof(wideBytes)) != NULL,
+               @"3000000000 as unsigned long long is written with the 8-byte label");
+        NSUnarchiver *wideUnarchiver = [[NSUnarchiver alloc] initForReadingWithData:wide];
+        BOOL wideOK = YES;
+        for (size_t i = 0; i < sizeof(qs) / sizeof(qs[0]); i++)
         {
-            NSInteger big = (NSInteger)1 << 40;
-            NSArchiver *a = [[[NSArchiver alloc] initForWritingWithMutableData:[NSMutableData data]] autorelease];
-            [a encodeValueOfObjCType:@encode(NSInteger) at:&big];
+            long long v = 0;
+            [wideUnarchiver decodeValueOfObjCType:@encode(long long) at:&v];
+            wideOK = wideOK && v == qs[i];
         }
-        @catch (NSException *e)
+        for (size_t i = 0; i < sizeof(uqs) / sizeof(uqs[0]); i++)
         {
-            raised = [e.name isEqual:NSInvalidArchiveOperationException];
+            unsigned long long v = 0;
+            [wideUnarchiver decodeValueOfObjCType:@encode(unsigned long long) at:&v];
+            wideOK = wideOK && v == uqs[i];
         }
-        expect(raised, @"a 64-bit value the format cannot hold raises");
+        [wideUnarchiver release];
+        expect(wideOK, @"64-bit integers round-trip");
     }
     printf("failures=%d\n", failures);
     return failures != 0;

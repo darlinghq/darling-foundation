@@ -179,6 +179,12 @@ static NSMutableDictionary *encodedClassNames = nil;
     }
 }
 
+- (void)_writeLong8:(unsigned long long)value
+{
+    [self _writeByte:Long8Label];
+    [mdata appendBytes:&value length:sizeof(value)];
+}
+
 - (void)_writeLabelReference:(NSUInteger)label
 {
     [self _writeInt:(int)label + SmallestLabel];
@@ -297,16 +303,18 @@ static NSMutableDictionary *encodedClassNames = nil;
         {
             long long value = *(const long long *)addr;
             if (value < INT_MIN || value > INT_MAX)
-                [NSException raise:NSInvalidArchiveOperationException format:@"NSArchiver: %lld does not fit the 32-bit typedstream integer", value];
-            [self _writeInt:(int)value];
+                [self _writeLong8:(unsigned long long)value];
+            else
+                [self _writeInt:(int)value];
             break;
         }
         case 'Q':
         {
             unsigned long long value = *(const unsigned long long *)addr;
-            if (value > UINT_MAX)
-                [NSException raise:NSInvalidArchiveOperationException format:@"NSArchiver: %llu does not fit the 32-bit typedstream integer", value];
-            [self _writeInt:(int)(unsigned int)value];
+            if (value > INT_MAX)
+                [self _writeLong8:value];
+            else
+                [self _writeInt:(int)value];
             break;
         }
         case 'f':

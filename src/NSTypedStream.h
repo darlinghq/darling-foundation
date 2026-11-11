@@ -7,6 +7,8 @@ static signed char const RealLabel          = -125;     // 0x83
 static signed char const NewLabel           = -124;     // 0x84
 static signed char const NullLabel          = -123;     // 0x85
 static signed char const EndOfObjectLabel   = -122;     // 0x86
+// A 64-bit integer that does not fit the 32-bit forms: this byte, then 8 bytes in stream byte order.
+static signed char const Long8Label         = -121;     // 0x87
 static signed char const SmallestLabel      = -110;     // 0x92
 
 #define BIAS(x) (x - SmallestLabel)

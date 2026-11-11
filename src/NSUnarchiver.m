@@ -564,6 +564,26 @@ static const char* uniqueString(const char* str);
     return [self finishDecodeInt:outInt withChar:ch];
 }
 
+- (BOOL)decodeLongLong:(unsigned long long*)outValue signExtend:(BOOL)sign
+{
+    signed char ch;
+    if(![self decodeChar:&ch])
+        return NO;
+    if(ch == Long8Label)
+    {
+        unsigned long long value;
+        if(![self readBytes:&value length:8])
+            return NO;
+        *outValue = [self swappedLongLong:value];
+        return YES;
+    }
+    int value;
+    if(![self finishDecodeInt:&value withChar:ch])
+        return NO;
+    *outValue = sign ? (unsigned long long)(long long)value : (unsigned long long)(unsigned int)value;
+    return YES;
+}
+
 - (BOOL)finishDecodeInt:(int*)outInt
                withChar:(signed char)charValue
 {
@@ -678,20 +698,17 @@ static const char* uniqueString(const char* str);
             break;
         }
 
-        // long long values use the same integer encoding as int.
+        // 64-bit values use the integer encoding when they fit it, else a label and 8 bytes.
         case 'q':
         case 'Q':
         {
-            int value;
-            if(![self decodeInt:&value])
+            unsigned long long value;
+            if(![self decodeLongLong:&value signExtend:(ch == 'q')])
             {
                 rv = NO;
                 break;
             }
-            if(ch == 'q')
-                *((long long*)data) = value;
-            else
-                *((unsigned long long*)data) = (unsigned int)value;
+            *((unsigned long long*)data) = value;
             break;
         }
 
