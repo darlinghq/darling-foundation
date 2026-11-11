@@ -27,7 +27,6 @@ static NSError *NSFileReadError(int errorCode, NSString *path)
     NSInteger code = NSFileReadUnknownError;
     switch (errorCode) {
         case ENOENT:
-        case ENOTDIR:
             code = NSFileReadNoSuchFileError;
             break;
         case EACCES:

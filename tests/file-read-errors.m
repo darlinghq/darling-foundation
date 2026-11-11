@@ -7,11 +7,11 @@
 #include <assert.h>
 #include <stdio.h>
 
-static void checkReadError(NSString *path, int posixCode) {
+static void checkReadError(NSString *path, int posixCode, NSInteger cocoaCode) {
     NSError *error = nil;
     assert([NSData dataWithContentsOfFile:path options:0 error:&error] == nil);
     assert([[error domain] isEqual:NSCocoaErrorDomain]);
-    assert([error code] == 260);
+    assert([error code] == cocoaCode);
     assert([[[error userInfo] objectForKey:NSFilePathErrorKey] isEqual:path]);
     NSError *underlying = [[error userInfo] objectForKey:NSUnderlyingErrorKey];
     assert([[underlying domain] isEqual:NSPOSIXErrorDomain]);
@@ -25,13 +25,14 @@ int main(void) {
         char directory[] = "/tmp/read-errors-XXXXXX";
         assert(mkdtemp(directory));
         NSString *root = [NSString stringWithUTF8String:directory];
-        checkReadError([root stringByAppendingPathComponent:@"missing"], ENOENT);
+        checkReadError([root stringByAppendingPathComponent:@"missing"], ENOENT, NSFileReadNoSuchFileError);
         NSString *file = [root stringByAppendingPathComponent:@"file"];
         int fd = open([file fileSystemRepresentation], O_CREAT | O_WRONLY, 0600);
         assert(fd >= 0);
         assert(write(fd, "abc", 3) == 3);
         assert(close(fd) == 0);
-        checkReadError([file stringByAppendingPathComponent:@"child"], ENOTDIR);
+        // A path below a regular file is NSFileReadUnknownError on macOS (black-box, macOS 27), not "no such file".
+        checkReadError([file stringByAppendingPathComponent:@"child"], ENOTDIR, NSFileReadUnknownError);
         NSError *error = nil;
         NSData *data = [NSData dataWithContentsOfFile:file options:0 error:&error];
         assert([data isEqual:[@"abc" dataUsingEncoding:NSUTF8StringEncoding]]);

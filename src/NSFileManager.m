@@ -950,7 +950,8 @@ static NSError *_NSErrorWithFilePathAndErrno(id path, int code)
         if (error)
         {
             *error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileWriteFileExistsError
-                                     userInfo:@{NSFilePathErrorKey: dstPath}];
+                                     userInfo:@{NSFilePathErrorKey: dstPath,
+                                                NSUnderlyingErrorKey: [NSError errorWithDomain:NSPOSIXErrorDomain code:EEXIST userInfo:nil]}];
         }
         return NO;
     }
