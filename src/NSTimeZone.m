@@ -15,7 +15,8 @@
 
 @implementation NSTimeZone (NSTimeZone)
 
-// Archive keys as in swift-corelibs-foundation's NSTimeZone (Apache License 2.0).
+// Archive keys NS.name and NS.data, matching an archive written by macOS (named zones store the
+// tzfile; a fixed offset stores the name "GMT+0100" with empty data) and swift-corelibs-foundation.
 OBJC_PROTOCOL_IMPL_PUSH
 - (id)initWithCoder:(NSCoder *)coder
 {

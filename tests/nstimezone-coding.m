@@ -36,6 +36,19 @@ int main(void)
         expect([decoded.name isEqualToString:fixed.name], @"fixed-offset zone keeps its name");
         expect(decoded.secondsFromGMT == -18000, @"fixed-offset zone keeps its offset");
 
+        // Archive layout seen in a macOS archive: NS.name and NS.data, empty data for a fixed offset.
+        NSData *archive = [NSKeyedArchiver archivedDataWithRootObject:fixed];
+        NSDictionary *plist = [NSPropertyListSerialization propertyListWithData:archive options:0 format:NULL error:NULL];
+        NSDictionary *encoded = nil;
+        for (id object in plist[@"$objects"])
+        {
+            if ([object isKindOfClass:[NSDictionary class]] && object[@"NS.name"] != nil)
+            {
+                encoded = object;
+            }
+        }
+        expect(encoded != nil && encoded[@"NS.data"] != nil, @"archive carries NS.name and NS.data keys");
+
         decoded = roundTrip([NSTimeZone timeZoneWithName:@"GMT"]);
         expect(decoded.secondsFromGMT == 0 && [decoded.name isEqualToString:@"GMT"], @"GMT round trip");
     }
