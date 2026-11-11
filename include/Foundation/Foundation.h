@@ -88,7 +88,6 @@
 #import <Foundation/NSValueTransformer.h>
 #import <Foundation/NSXMLParser.h>
 #import <Foundation/NSZone.h>
-#import <Foundation/NSAppleScript.h>
 #import <Foundation/NSExtensionContext.h>
 #import <Foundation/NSItemProvider.h>
 #import <Foundation/NSISO8601DateFormatter.h>

@@ -1,5 +1,8 @@
 #ifndef NSAPPLEEVENTMANAGER_H
 #define NSAPPLEEVENTMANAGER_H
+#include <TargetConditionals.h>
+// Apple Events are macOS-only: iOS has no AE framework and no NSAppleEvent* classes.
+#if TARGET_OS_OSX
 #include "NSAppleEventDescriptor.h"
 
 typedef const struct __NSAppleEventManagerSuspension *NSAppleEventManagerSuspensionID;
@@ -28,4 +31,5 @@ typedef const struct __NSAppleEventManagerSuspension *NSAppleEventManagerSuspens
 
 @end
 
+#endif /* TARGET_OS_OSX */
 #endif

@@ -1,5 +1,8 @@
 #ifndef NSAPPLEEVENTDESCRIPTOR_H
 #define NSAPPLEEVENTDESCRIPTOR_H
+#include <TargetConditionals.h>
+// Apple Events are macOS-only: iOS has no AE framework and no NSAppleEvent* classes.
+#if TARGET_OS_OSX
 #include <Foundation/NSObject.h>
 #include <Foundation/NSData.h>
 #include <Foundation/NSString.h>
@@ -99,4 +102,5 @@ struct AEDesc;
 
 @end
 
+#endif /* TARGET_OS_OSX */
 #endif
