@@ -7,7 +7,7 @@ typedef NS_OPTIONS(NSUInteger, NSPredicateEvaluationFlags) {
     NSPredicateEvaluationBlocked = 1 << 0,
 };
 
-@interface NSPredicate : NSObject <NSCoding, NSCopying>
+@interface NSPredicate : NSObject <NSSecureCoding, NSCopying>
 {
     NSPredicateEvaluationFlags _predicateFlags;
     NSUInteger reserved;

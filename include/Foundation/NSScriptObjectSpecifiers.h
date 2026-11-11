@@ -19,7 +19,7 @@
 
 #import <Foundation/NSObject.h>
 
-@interface NSScriptObjectSpecifier : NSObject <NSCoding>
+@interface NSScriptObjectSpecifier : NSObject <NSSecureCoding>
 @end
 
 @interface NSObject (NSScriptObjectSpecifiers)

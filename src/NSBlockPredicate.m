@@ -71,7 +71,7 @@
     [NSException raise:NSInvalidArgumentException format:@"Cannot encode block predicates"];
 }
 
-- (BOOL)supportsSecureCoding
++ (BOOL)supportsSecureCoding
 {
     return NO;
 }
