@@ -156,7 +156,8 @@ const NSNotificationName NSPortDidBecomeInvalidNotification = @"NSPortDidBecomeI
 @end
 
 
-@implementation NSMachPort
+// Like NSPort, the NSMachPort class is defined in CoreFoundation.
+@implementation NSMachPort (NSMachPort)
 
 + (NSPort *) portWithMachPort: (uint32_t) machPort
 {
