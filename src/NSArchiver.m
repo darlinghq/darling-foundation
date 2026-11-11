@@ -464,6 +464,11 @@ static NSMutableDictionary *encodedClassNames = nil;
 
 - (void)encodeConditionalObject:(id)object
 {
+    if (_rootPass == NotEncodingRoot)
+    {
+        [NSException raise:NSInvalidArgumentException
+                    format:@"-encodeConditionalObject: is only valid while encoding a root object"];
+    }
     [self _writeSharedString:@encode(id)];
     id replacement = [self _replacementForObject:object];
     BOOL wanted = replacement != nil &&
