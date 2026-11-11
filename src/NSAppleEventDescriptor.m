@@ -27,7 +27,9 @@
 #include <string.h>
 
 // The descriptor wraps an AEDesc from CoreServices' AE Descriptor Manager. AE links against Foundation,
-// so Foundation can't link against AE; its functions are looked up when the first descriptor is made.
+// (through CarbonCore) so Foundation can't link against AE; its functions are looked up when the first
+// descriptor is made. On macOS Foundation sits above AE: this lookup is a bridge to remove once AE no
+// longer depends on Foundation.
 #define AE_PATH "/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/AE.framework/Versions/A/AE"
 
 static struct {
