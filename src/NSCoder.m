@@ -208,7 +208,7 @@ static inline const char *nextType(const char *type)
     size_t typelen = strlen(type);
     size_t len = typelen + 14; // enough space for the type and NSUIntegerMax and the braces
     char buffer[len];
-    snprintf(buffer, len, "[%d%s]", count, type);
+    snprintf(buffer, len, "[%lu%s]", (unsigned long)count, type);
     [self encodeValueOfObjCType:buffer at:array];
     
 }
@@ -243,7 +243,7 @@ static inline const char *nextType(const char *type)
     size_t typelen = strlen(type);
     size_t len = typelen + 14; // enough space for the type and NSUIntegerMax and the braces
     char buffer[len];
-    snprintf(buffer, len, "[%d%s]", count, type);
+    snprintf(buffer, len, "[%lu%s]", (unsigned long)count, type);
     [self decodeValueOfObjCType:buffer at:array];
 }
 
@@ -457,7 +457,8 @@ static inline const char *nextType(const char *type)
 
 - (void)encodeRect:(CGRect)r
 {
-    [self encodeValuesOfObjCTypes:"ffff", (float)r.origin.x, (float)r.origin.y, (float)r.size.width, (float)r.size.height];
+    float x = r.origin.x, y = r.origin.y, width = r.size.width, height = r.size.height;
+    [self encodeValuesOfObjCTypes:"ffff", &x, &y, &width, &height];
 }
 
 - (CGSize)decodeSize
@@ -469,7 +470,8 @@ static inline const char *nextType(const char *type)
 
 - (void)encodeSize:(CGSize)sz
 {
-    [self encodeValuesOfObjCTypes:"ff", (float)sz.width, (float)sz.height];
+    float width = sz.width, height = sz.height;
+    [self encodeValuesOfObjCTypes:"ff", &width, &height];
 }
 
 - (CGPoint)decodePoint

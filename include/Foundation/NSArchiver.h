@@ -5,13 +5,18 @@
 #import <Foundation/NSHashTable.h>
 #import <Foundation/NSMapTable.h>
 #import <CoreFoundation/CFDictionary.h>
+#import <CoreFoundation/CFSet.h>
 
 @interface NSArchiver : NSCoder
 {
     NSMutableData *mdata;
-    void *ids;
     CFMutableDictionaryRef replacementTable;
     NSMutableDictionary<NSString*,NSString*>* map;
+    CFMutableDictionaryRef _objectLabels;
+    NSMutableDictionary<NSData*,NSNumber*>* _sharedStrings;
+    NSUInteger _nextObjectLabel;
+    CFMutableSetRef _unconditionalObjects;
+    int _rootPass;
 }
 
 + (BOOL)archiveRootObject:(id)object toFile:(NSString *)path;
@@ -22,9 +27,7 @@
 - (void)encodeConditionalObject:(id)object;
 - (void)encodeRootObject:(id)object;
 - (void)encodeDataObject:(NSData *)object;
-- (void)encodeObject:(id)object;
 - (void)encodeBytes:(const void *)addr length:(NSUInteger)len;
-- (void)encodeArrayOfObjCType:(const char *)type count:(NSUInteger)count at:(const void *)array;
 - (void)encodeValuesOfObjCTypes:(const char *)types, ...;
 - (void)encodeValueOfObjCType:(const char *)type at:(const void *)addr;
 - (NSInteger)versionForClassName:(NSString *)className;

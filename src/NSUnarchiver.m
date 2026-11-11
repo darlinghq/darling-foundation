@@ -17,15 +17,7 @@ Copyright (C) 2020 Lubos Dolezel
 
 static NSMutableDictionary<NSString*,NSString*>* globalClassNameMap;
 
-static signed char const Long2Label         = -127;     // 0x81
-static signed char const Long4Label         = -126;     // 0x82
-static signed char const RealLabel          = -125;     // 0x83
-static signed char const NewLabel           = -124;     // 0x84
-static signed char const NullLabel          = -123;     // 0x85
-static signed char const EndOfObjectLabel   = -122;     // 0x86
-static signed char const SmallestLabel      = -110;     // 0x92
-
-#define BIAS(x) (x - SmallestLabel)
+#import "NSTypedStream.h"
 
 //#define DEBUG_NSUNARCHIVER
 #ifndef DEBUG_NSUNARCHIVER
@@ -35,9 +27,6 @@ static signed char const SmallestLabel      = -110;     // 0x92
 #endif
 
 static const char* uniqueString(const char* str);
-static const char* sizeofType(const char* type, unsigned int* size, unsigned int* align);
-static const char* skipStructName(const char* str);
-static unsigned int roundUp(unsigned int size, unsigned int align);
 
 @implementation NSUnarchiver
 
@@ -61,10 +50,12 @@ static unsigned int roundUp(unsigned int size, unsigned int align);
 
 - (NSData *)decodeDataObject
 {
-   int length;
+   int length = 0;
    NSMutableData* data;
 
    [self decodeValuesOfObjCTypes: "i", &length];
+   if (length < 0)
+      [NSException raise:NSInvalidArgumentException format:@"NSUnarchiver decodeDataObject: negative length %d", length];
 
    data = [[NSMutableData alloc] initWithLength: length];
 
@@ -460,16 +451,14 @@ static unsigned int roundUp(unsigned int size, unsigned int align);
     if(![self finishDecodeInt:&length
                      withChar:charValue])
         return NO;
-    if(length <= 0)
+    if(length < 0)
         return NO;
     
-    char bytes[length];
-    if(![self readBytes:bytes length:length])
+    NSData* bytes;
+    if(![self readData:&bytes length:length])
         return NO;
-    *outString = [[NSString alloc] initWithBytes:bytes
-                                          length:length
-                                        encoding:NSASCIIStringEncoding];
-    return YES;
+    *outString = [[[NSString alloc] initWithData:bytes encoding:NSUTF8StringEncoding] autorelease];
+    return *outString != nil;
 }
 
 - (BOOL)decodeString:(NSString**)outString
@@ -575,6 +564,26 @@ static unsigned int roundUp(unsigned int size, unsigned int align);
     return [self finishDecodeInt:outInt withChar:ch];
 }
 
+- (BOOL)decodeLongLong:(unsigned long long*)outValue signExtend:(BOOL)sign
+{
+    signed char ch;
+    if(![self decodeChar:&ch])
+        return NO;
+    if(ch == Long8Label)
+    {
+        unsigned long long value;
+        if(![self readBytes:&value length:8])
+            return NO;
+        *outValue = [self swappedLongLong:value];
+        return YES;
+    }
+    int value;
+    if(![self finishDecodeInt:&value withChar:ch])
+        return NO;
+    *outValue = sign ? (unsigned long long)(long long)value : (unsigned long long)(unsigned int)value;
+    return YES;
+}
+
 - (BOOL)finishDecodeInt:(int*)outInt
                withChar:(signed char)charValue
 {
@@ -587,7 +596,7 @@ static unsigned int roundUp(unsigned int size, unsigned int align);
             short value;
             if(![self readBytes:&value length:2])
                 return NO;
-            *outInt = [self swappedShort:value];
+            *outInt = (short)[self swappedShort:value];
             break;
         }
             
@@ -688,7 +697,21 @@ static unsigned int roundUp(unsigned int size, unsigned int align);
             *((int*)data) = value;
             break;
         }
-            
+
+        // 64-bit values use the integer encoding when they fit it, else a label and 8 bytes.
+        case 'q':
+        case 'Q':
+        {
+            unsigned long long value;
+            if(![self decodeLongLong:&value signExtend:(ch == 'q')])
+            {
+                rv = NO;
+                break;
+            }
+            *((unsigned long long*)data) = value;
+            break;
+        }
+
         case 'f':
         {
             float value;
@@ -727,9 +750,24 @@ static unsigned int roundUp(unsigned int size, unsigned int align);
         }
             
         case '*':
+        {
+            // A C string is a shared object (a label, then a shared string), not a bare shared string.
+            NSString* string;
+            if(![self decodeString:&string])
+            {
+                rv = NO;
+                break;
+            }
+            *((char**)data) = string ? strdup(string.UTF8String) : NULL;
+            break;
+        }
+        case '#':
+            // a class value is a class record, as for an object's class
+            rv = [self readClass:(Class*)data];
+            break;
+
         case '%':
         case ':':
-        case '#':
         {
             NSString* string;
             if(![self decodeSharedString:&string])
@@ -738,37 +776,11 @@ static unsigned int roundUp(unsigned int size, unsigned int align);
                 break;
             }
 
-            // Freeing of the string seems to be the responsibilty of the caller.
-            // NSCoding implementations of Foundation classes all seem to do this.
-            char* cString = malloc(string.length + 1);  // +1 because of null-termination
-            [string getBytes:cString
-                   maxLength:string.length
-                  usedLength:NULL
-                    encoding:NSASCIIStringEncoding
-                     options:0
-                       range:NSMakeRange(0, string.length)
-              remainingRange:NULL];
-            cString[string.length] = '\0';
-
-            if (ch == '*')
-            {
-               *((const char**)data) = cString;
-            }
-            else if (ch == '%')
-            {
-               *((const char**)data) = uniqueString(cString);
-               free(cString);
-            }
-            else if (ch == ':')
-            {
-               *((SEL*) data) = sel_registerName(cString);
-               free(cString);
-            }
-            else if (ch == '#')
-            {
-                *((Class*) data) = objc_getClass(cString);
-                free(cString);
-            }
+            const char* cString = string.UTF8String;
+            if (ch == '%')
+               *((const char**)data) = cString ? uniqueString(cString) : NULL;
+            else
+               *((SEL*) data) = cString ? sel_registerName(cString) : NULL;
             break;
         }
 
@@ -819,7 +831,6 @@ static unsigned int roundUp(unsigned int size, unsigned int align);
         case '(':
         {
             unsigned int s, a;
-            type = skipStructName(type);
             type = sizeofType(type - 1, &s, &a);
 
             for (unsigned int i = 0; i < s; i++)
@@ -922,6 +933,51 @@ static unsigned int roundUp(unsigned int size, unsigned int align);
     va_end (argList);
 }
 
+// Archives written by 32-bit code store points and sizes as "ff" and rects as "ffff".
+- (void)_decodeGeometry:(CGFloat*)values count:(unsigned)count type:(const char*)type legacyType:(const char*)legacyType
+{
+    NSString* string;
+    const char* str = [self decodeSharedString:&string] ? [string cStringUsingEncoding:NSASCIIStringEncoding] : NULL;
+    BOOL legacy = str && strcmp(str, legacyType) == 0;
+    BOOL ok = legacy || (str && strcmp(str, type) == 0);
+
+    for(unsigned i = 0; i < count && ok; i++)
+    {
+        if(legacy)
+        {
+            float value;
+            if((ok = [self decodeFloat:&value]))
+                values[i] = value;
+        }
+        else
+            ok = [self readType:@encode(CGFloat) data:&values[i]];
+    }
+
+    if(!ok)
+        [NSException raise:NSInvalidArgumentException format:@"NSUnarchiver: cannot decode geometry of type '%s', expected '%s' or '%s'", str ? str : "", type, legacyType];
+}
+
+- (CGPoint)decodePoint
+{
+    CGFloat v[2];
+    [self _decodeGeometry:v count:2 type:@encode(CGPoint) legacyType:"ff"];
+    return CGPointMake(v[0], v[1]);
+}
+
+- (CGSize)decodeSize
+{
+    CGFloat v[2];
+    [self _decodeGeometry:v count:2 type:@encode(CGSize) legacyType:"ff"];
+    return CGSizeMake(v[0], v[1]);
+}
+
+- (CGRect)decodeRect
+{
+    CGFloat v[4];
+    [self _decodeGeometry:v count:4 type:@encode(CGRect) legacyType:"ffff"];
+    return CGRectMake(v[0], v[1], v[2], v[3]);
+}
+
 - (void*)decodeBytesWithReturnedLength:(NSUInteger*)outLength
 {
     NSParameterAssert(outLength);
@@ -988,6 +1044,16 @@ static unsigned int roundUp(unsigned int size, unsigned int align);
 	return className;
 }
 
+// QUIRK: -_setAllowedClasses: is a private selector that callers send to an NSUnarchiver before
+// decoding; it is accepted and ignored. Not documented. Evidence: black-box observation on macOS 27
+// (tier 2, probe mac-probes/mc15-setallowedclasses.m): the selector exists there and makes decoding
+// raise NSInvalidArgumentException for a class that is not in the set. We deliberately do not
+// enforce the restriction (compatibility over enforcement); without the method callers would
+// hit an unrecognized selector instead.
+// Test: tests/nsunarchiver-allowed-classes.m (test_quirk_set_allowed_classes_is_accepted)
+-(void)_setAllowedClasses:(NSSet *)classes {
+}
+
 -(void)replaceObject:original withObject:replacement {
    NSUnimplementedMethod();
 }
@@ -1037,124 +1103,3 @@ static const char* uniqueString(const char* str)
 
    return (const char*) CFSetGetValue(atoms, str);
 }
-
-static unsigned int roundUp(unsigned int size, unsigned int align)
-{
-   return ((size + align - 1) / align) * align;
-}
-
-static const char* skipStructName(const char* str)
-{
-   const char* type = str;
-
-   while (TRUE)
-   {
-      switch (*type++)
-      {
-         case '=':
-            return type;
-         case '}':
-         case '{':
-         case ')':
-         case '(':
-         case 0:
-            return str;
-      }
-   }
-}
-
-// This is NOT a duplicate of NSGetSizeAndAlignment. This function just stops after the 1st type it finds.
-const char* sizeofType(const char* type, unsigned int* size, unsigned int* align)
-{
-   char c = *type++;
-
-#define simpleCase(cc, type) case cc: *size = sizeof(type); *align = __alignof(type); break
-
-   switch (c)
-   {
-      simpleCase('c', char);
-      simpleCase('C', char);
-      simpleCase('s', short);
-      simpleCase('S', short);
-      simpleCase('i', int);
-      simpleCase('I', int);
-      simpleCase('!', int);
-      simpleCase('l', int);
-      simpleCase('L', int);
-      simpleCase('f', float);
-      simpleCase('d', double);
-      simpleCase('@', id);
-      simpleCase('*', char*);
-      simpleCase('%', char*);
-      simpleCase(':', SEL);
-      simpleCase('#', Class);
-      case '[':
-      {
-         unsigned int count = 0;
-         unsigned s, a;
-
-         while ('0' <= *type && *type <= '9')
-            count = 10 * count + (*type++ - '0');
-
-         type = sizeofType(type, &s, &a);
-
-         *size = count * roundUp(s, a);
-         *align = a;
-
-         c = *type++;
-         if (c != ']')
-            [NSException raise:NSInvalidArgumentException format:@"Invalid char found in array encoding, expected ], found %c", c];
-
-         break;
-      }
-      case '(':
-      {
-         unsigned int unionSize = 0;
-         unsigned int unionAlign = 1;
-
-         type = skipStructName(type);
-
-         while (*type != ')')
-         {
-            unsigned int s, a;
-
-            type = sizeofType(type, &s, &a);
-
-            if (s > unionSize)
-               unionSize = s;
-            if (a > unionAlign)
-               unionAlign = a;
-         }
-
-         *size = roundUp(unionSize, unionAlign);
-         *align = unionAlign;
-         break;
-      }
-      case '{':
-      {
-         unsigned int structSize = 0;
-         unsigned int structAlign = 1;
-
-         type = skipStructName(type);
-
-         while (*type != '}')
-         {
-            unsigned int s, a;
-
-            type = sizeofType(type, &s, &a);
-            structSize = roundUp(structSize, a);
-            structSize += s;
-            if (a > structAlign)
-               structAlign = a;
-         }
-
-         *size = roundUp(structSize, structAlign);
-         *align = structAlign;
-         break;
-      }
-   }
-
-#undef simpleCase
-    return type;
-}
-
