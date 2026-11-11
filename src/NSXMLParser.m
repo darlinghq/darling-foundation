@@ -23,7 +23,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 #import <Foundation/NSMutableDictionary.h>
 #import <Foundation/NSRaise.h>
 #import <Foundation/NSXMLParser.h>
+#import <Foundation/NSError.h>
 #import <string.h>
+
+NSString * const NSXMLParserErrorDomain = @"NSXMLParserErrorDomain";
 
 enum {
     STATE_content,
@@ -50,6 +53,14 @@ enum {
 };
 
 @implementation NSXMLParser
+
+- (void)recordParseFailure:(NSString *)reason code:(NSXMLParserError)code {
+    if (_parserError != nil) return;
+    _parserError = [[NSError alloc] initWithDomain:NSXMLParserErrorDomain
+        code:code userInfo:@{NSLocalizedDescriptionKey: reason}];
+    if ([_delegate respondsToSelector:@selector(parser:parseErrorOccurred:)])
+        [_delegate parser:self parseErrorOccurred:_parserError];
+}
 
 - (instancetype) initWithData: (NSData *) data {
     _data = [data retain];
@@ -83,6 +94,8 @@ enum {
 }
 
 - (void) dealloc {
+    [_parserError release];
+    [_currentAttributeName release];
     [_data release];
     [_entityRefContents release];
     [_elementNameStack release];
@@ -158,10 +171,18 @@ enum {
 }
 
 - (void) sTag: (NSString *) sTag {
+    if ([_elementNameStack count] == 0) {
+        if (_sawRootElement) {
+            [self recordParseFailure:@"Document contains multiple root elements" code:NSXMLParserExtraContentError];
+            return;
+        }
+        _sawRootElement = YES;
+    }
     [_elementNameStack addObject: sTag];
 }
 
 - (void) didStartElement {
+    if (_parserError != nil) return;
     NSString *elementName = [_elementNameStack lastObject];
 
     if ([_delegate respondsToSelector: @selector
@@ -179,8 +200,10 @@ enum {
 }
 
 - (void) didEndElement {
+    if (_parserError != nil) return;
     NSString *elementName = [_elementNameStack lastObject];
-    [_delegate parser: self
+    if ([_delegate respondsToSelector:@selector(parser:didEndElement:namespaceURI:qualifiedName:)])
+        [_delegate parser: self
             didEndElement: elementName
              namespaceURI: nil
             qualifiedName: nil];
@@ -188,7 +211,10 @@ enum {
 }
 
 - (void) eTag: (NSString *) eTag {
-    // FIX, maybe double check name here
+    if (![[_elementNameStack lastObject] isEqualToString:eTag]) {
+        [self recordParseFailure:@"Closing tag does not match the open element" code:NSXMLParserTagNameMismatchError];
+        return;
+    }
     [self didEndElement];
 }
 
@@ -240,24 +266,28 @@ static inline BOOL codeIsNameContinue(uint8_t code) {
 }
 
 - (void) unexpectedIn: (NSString *) state {
-    NSUInteger position = NSMaxRange(_range) - 1;
-    uint8_t code = _bytes[position];
-
-    [NSException raise: @""
-                format: @"Unexpected character %c in %@, position=%d", code,
-                        state, position];
+    [self recordParseFailure:[NSString stringWithFormat:@"Unexpected character in %@", state] code:NSXMLParserNotWellBalancedError];
 }
 
 - (BOOL) parse {
     int createNewPool = 0;
     NSAutoreleasePool *pool = nil;
 
-    while (NSMaxRange(_range) < _length) {
+    @try {
+    if ([_delegate respondsToSelector:@selector(parserDidStartDocument:)])
+        [_delegate parserDidStartDocument:self];
+    while (_parserError == nil && NSMaxRange(_range) < _length) {
 
         if (pool == nil)
             pool = [NSAutoreleasePool new];
 
         uint8_t code = _bytes[NSMaxRange(_range)];
+        if ((_state == STATE_content || _state == STATE_ignoreable_content) &&
+            [_elementNameStack count] == 0 && code != '<' && !codeIsWhitespace(code)) {
+            [self recordParseFailure:@"Character data outside the root element"
+                code:(_sawRootElement ? NSXMLParserExtraContentError : NSXMLParserDocumentStartError)];
+            break;
+        }
         enum {
             extendLength,
             advanceLocationToNext,
@@ -558,11 +588,23 @@ static inline BOOL codeIsNameContinue(uint8_t code) {
             pool = nil;
         }
     }
-    return YES;
+    if (_parserError == nil && !_sawRootElement)
+        [self recordParseFailure:@"Document has no root element" code:NSXMLParserEmptyDocumentError];
+    if (_parserError == nil && ([_elementNameStack count] != 0 ||
+        (_state != STATE_content && _state != STATE_ignoreable_content)))
+        [self recordParseFailure:@"Document ended before markup was complete" code:NSXMLParserPrematureDocumentEndError];
+    if (_parserError != nil) return NO;
+    if ([_delegate respondsToSelector:@selector(parserDidEndDocument:)])
+        [_delegate parserDidEndDocument:self];
+    return _parserError == nil;
+    }
+    @finally {
+        [pool release];
+    }
 }
 
 - (void) abortParsing {
-    NSUnimplementedMethod();
+    [self recordParseFailure:@"Parsing aborted by delegate" code:NSXMLParserDelegateAbortedParseError];
 }
 
 - (NSError *) parserError {
