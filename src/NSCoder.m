@@ -397,12 +397,12 @@ static inline const char *nextType(const char *type)
 
 - (void)encodeInteger:(NSInteger)value forKey:(NSString *)key
 {
-    [self encodeInt32:value forKey:key];
+    [self encodeInt64:value forKey:key];
 }
 
 - (NSInteger)decodeIntegerForKey:(NSString *)key
 {
-    return [self decodeInt32ForKey:key];
+    return (NSInteger)[self decodeInt64ForKey:key];
 }
 
 - (BOOL)requiresSecureCoding
