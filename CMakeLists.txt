@@ -273,11 +273,10 @@ set(foundation_sources
 	src/NSHFSFileTypes.m
 	src/NSMeasurement.m
 	src/NSUnit.m
-	src/NSUnitDuration.m
 	src/NSDimension.m
 	src/NSUnitConverter.m
 	src/NSUnitConverterLinear.m
-	src/NSUnitLength.m
+	src/NSUnitDimensions.m
 	src/NSAutoresizingMaskLayoutConstraint.m
 	src/NSContentSizeLayoutConstraint.m
 	src/NSIBPrototypingLayoutConstraint.m

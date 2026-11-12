@@ -1,5 +1,1 @@
-#import <Foundation/NSDimension.h>
-
-@interface NSUnitLength : NSDimension
-
-@end
+#import <Foundation/NSUnit.h>
