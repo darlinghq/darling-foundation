@@ -89,6 +89,61 @@ OBJC_PROTOCOL_IMPL_PUSH
 }
 OBJC_PROTOCOL_IMPL_POP
 
+- (id)initFileURLWithPath:(NSString *)path isDirectory:(BOOL)isDir relativeToURL:(NSURL *)baseURL
+{
+    if (path == nil)
+    {
+        [self release];
+        [NSException raise:NSInvalidArgumentException format:@"path cannot be nil"];
+        return nil;
+    }
+
+    CFURLRef url = CFURLCreateWithFileSystemPathRelativeToBase(kCFAllocatorDefault, (CFStringRef)path, kCFURLPOSIXPathStyle, isDir, (CFURLRef)baseURL);
+
+    if ([self class] == [NSURL class])
+    {
+        [self release];
+        return (NSURL *)url;
+    }
+
+    self = [super init];
+    if (self)
+    {
+        _reserved = (void *)url;
+    }
+    else if (url)
+    {
+        CFRelease(url);
+    }
+    return self;
+}
+
+- (id)initFileURLWithPath:(NSString *)path relativeToURL:(NSURL *)baseURL
+{
+    if (path == nil)
+    {
+        [self release];
+        [NSException raise:NSInvalidArgumentException format:@"path cannot be nil"];
+        return nil;
+    }
+
+    // Whether the path names a directory is decided by the file system, after
+    // resolving a relative path against the base URL (not the current directory).
+    NSString *fullPath = path;
+    if (![path isAbsolutePath] && baseURL != nil)
+    {
+        NSString *basePath = [baseURL path];
+        if (basePath != nil)
+        {
+            fullPath = [basePath stringByAppendingPathComponent:path];
+        }
+    }
+
+    BOOL isDir = NO;
+    [[NSFileManager defaultManager] fileExistsAtPath:fullPath isDirectory:&isDir];
+    return [self initFileURLWithPath:path isDirectory:isDir relativeToURL:baseURL];
+}
+
 - (id)initFileURLWithFileSystemRepresentation:(const char *)path isDirectory:(BOOL)isDir relativeToURL:(NSURL *)baseURL
 {
     if ([self class] == [NSURL class])
@@ -134,6 +189,16 @@ OBJC_PROTOCOL_IMPL_PUSH
 + (id)fileURLWithPath:(NSString *)path
 {
     return [[[self alloc] initFileURLWithPath:path] autorelease];
+}
+
++ (id)fileURLWithPath:(NSString *)path isDirectory:(BOOL)isDir relativeToURL:(NSURL *)baseURL
+{
+    return [[[self alloc] initFileURLWithPath:path isDirectory:isDir relativeToURL:baseURL] autorelease];
+}
+
++ (id)fileURLWithPath:(NSString *)path relativeToURL:(NSURL *)baseURL
+{
+    return [[[self alloc] initFileURLWithPath:path relativeToURL:baseURL] autorelease];
 }
 
 + (id)URLWithString:(NSString *)str relativeToURL:(NSURL *)url
