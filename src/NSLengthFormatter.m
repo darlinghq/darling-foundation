@@ -92,6 +92,28 @@ static const NSLengthFormatterUnitInfo *NSLengthFormatterUnitInfoFor(NSLengthFor
     _isForPersonHeight = forPersonHeightUse;
 }
 
+// QUIRK: stringFromMeters: and unitStringFromMeters:usedUnit: convert meters to
+// yards and miles with the rounded factors 1.0936 and 0.00062137 instead of the
+// exact ones (1 / 0.9144 and 1 / 1609.344), so 1000 meters read as "1,093.6 yd"
+// and not "1,093.613 yd". Not documented. Evidence: black-box observation on
+// macOS 27 (tier 2): of 227 yard and 121 mile results over random values these
+// two factors reproduced every one, the exact factors 132 and 111; the other
+// units cannot be told apart (the results match with either factor).
+// -stringFromValue:unit: takes the value as given and is not affected.
+// Test: tests/length-formatter-meters-conversion.m
+static double NSLengthFormatterValueFromMeters(double meters, NSLengthFormatterUnit unit)
+{
+    switch (unit)
+    {
+        case NSLengthFormatterUnitYard:
+            return meters * 1.0936;
+        case NSLengthFormatterUnitMile:
+            return meters * 0.00062137;
+        default:
+            return meters / NSLengthFormatterUnitInfoFor(unit)->meters;
+    }
+}
+
 - (NSLengthFormatterUnit)_unitFromMeters:(double)meters
 {
     if (_NSUnitFormatterUsesMetricSystem(_numberFormatter))
@@ -135,7 +157,7 @@ static const NSLengthFormatterUnitInfo *NSLengthFormatterUnitInfoFor(NSLengthFor
 - (NSString *)stringFromMeters:(double)numberInMeters
 {
     NSLengthFormatterUnit unit = [self _unitFromMeters:numberInMeters];
-    double value = numberInMeters / NSLengthFormatterUnitInfoFor(unit)->meters;
+    double value = NSLengthFormatterValueFromMeters(numberInMeters, unit);
 
     if (unit == NSLengthFormatterUnitFoot && _isForPersonHeight)
     {
@@ -169,7 +191,7 @@ static const NSLengthFormatterUnitInfo *NSLengthFormatterUnitInfoFor(NSLengthFor
     {
         *unitp = unit;
     }
-    return [self unitStringFromValue:numberInMeters / NSLengthFormatterUnitInfoFor(unit)->meters unit:unit];
+    return [self unitStringFromValue:NSLengthFormatterValueFromMeters(numberInMeters, unit) unit:unit];
 }
 
 - (NSString *)stringForObjectValue:(id)obj

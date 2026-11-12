@@ -228,11 +228,14 @@ static inline void addIndexesInRange(NSIndexSet *self, NSRange range)
         }
         else if (NSContainsRange(ptr->range, range))
         {
+            free(newRange);
             return;
         }
         else
         {
-            DL_INSERT(MULTIPLE_RANGE_DATA(self), ptr, newRange);
+            // DL_INSERT puts the new node in front of the given one; the new range follows ptr.
+            RangeList *following = ptr->next;
+            DL_INSERT(MULTIPLE_RANGE_DATA(self), following, newRange);
         }
         
         [self _mergeOverlappingRangesStartingAtIndex:(ptr ?: MULTIPLE_RANGE_DATA(self))];

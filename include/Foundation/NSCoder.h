@@ -7,6 +7,7 @@
 - (void)encodeValueOfObjCType:(const char *)type at:(const void *)addr;
 - (void)encodeDataObject:(NSData *)data;
 - (void)decodeValueOfObjCType:(const char *)type at:(void *)data;
+- (void)decodeValueOfObjCType:(const char *)type at:(void *)data size:(NSUInteger)size API_AVAILABLE(macos(10.13), ios(11.0), watchos(4.0), tvos(11.0));
 - (NSData *)decodeDataObject;
 - (NSInteger)versionForClassName:(NSString *)className;
 

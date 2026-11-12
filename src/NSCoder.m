@@ -61,6 +61,21 @@
     NSRequestConcreteImplementation();
 }
 
+- (void)decodeValueOfObjCType:(const char *)type at:(void *)data size:(NSUInteger)size
+{
+    NSParameterAssert(type);
+    NSUInteger needed = 0;
+    NSGetSizeAndAlignment(type, &needed, NULL);
+    if (needed > size)
+    {
+        [NSException raise:NSInvalidArgumentException
+                    format:@"*** -[%@ decodeValueOfObjCType:at:size:]: the type '%s' needs %lu bytes, but only %lu were provided",
+                           NSStringFromClass([self class]), type, (unsigned long)needed, (unsigned long)size];
+        return;
+    }
+    [self decodeValueOfObjCType:type at:data];
+}
+
 - (NSData *)decodeDataObject
 {
     NSRequestConcreteImplementation();
