@@ -17,7 +17,7 @@ typedef NS_OPTIONS(NSUInteger, NSAttributedStringFormattingOptions) {
 
 @class NSLocale;
 
-@interface NSAttributedString : NSObject <NSCopying, NSMutableCopying, NSCoding>
+@interface NSAttributedString : NSObject <NSCopying, NSMutableCopying, NSSecureCoding>
 
 - (NSDictionary<NSAttributedStringKey, id> * _Nonnull)attributesAtIndex:(NSUInteger)index effectiveRange:(NSRangePointer)range;
 

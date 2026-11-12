@@ -13,6 +13,13 @@
 #import <Foundation/NSValue.h>
 #import <Foundation/NSPortCoder.h>
 #import <dispatch/dispatch.h>
+#import <Foundation/NSArray.h>
+#import <Foundation/NSCoder.h>
+#import <Foundation/NSData.h>
+#import <Foundation/NSDictionary.h>
+#import <Foundation/NSSet.h>
+#import <Foundation/NSURL.h>
+#import <objc/runtime.h>
 
 // The keys are stored in archives and AttributedString encodings, so they must match macOS.
 // Sources: swift-foundation's LanguageIdentifierAttribute.name; OpenSwiftUI's non-Darwin shim.
@@ -437,6 +444,190 @@ static void _NSRaiseFormatMismatch(NSAttributedString *format)
 {
     [NSException raise:NSInvalidArgumentException format:@"arguments could not be applied to attributed format string \"%@\"", [format string]];
 }
+
+// The archive holds the string (mutable for a mutable attributed string) and
+// its attribute runs: for one run the attribute dictionary under
+// NSAttributes, for several runs an array of dictionaries under NSAttributes
+// and under NSAttributeInfo the run table as unsigned base-128 varints, low
+// group first: the length of each run followed by its index in the array.
+
+static void appendAttributeInfoVarint(NSMutableData *data, NSUInteger value)
+{
+    uint8_t byte;
+    do
+    {
+        byte = value & 0x7f;
+        value >>= 7;
+        if (value != 0)
+        {
+            byte |= 0x80;
+        }
+        [data appendBytes:&byte length:1];
+    }
+    while (value != 0);
+}
+
+static BOOL readAttributeInfoVarint(const uint8_t *bytes, NSUInteger length, NSUInteger *position, NSUInteger *value)
+{
+    NSUInteger result = 0;
+    unsigned shift = 0;
+    while (*position < length)
+    {
+        uint8_t byte = bytes[(*position)++];
+        if (shift >= sizeof(NSUInteger) * 8 || (shift > 0 && ((NSUInteger)(byte & 0x7f) << shift) >> shift != (byte & 0x7f)))
+        {
+            return NO;
+        }
+        result |= (NSUInteger)(byte & 0x7f) << shift;
+        if ((byte & 0x80) == 0)
+        {
+            *value = result;
+            return YES;
+        }
+        shift += 7;
+    }
+    return NO;
+}
+
+// The classes attribute values may have when an attributed string is decoded
+// securely: property-list values, URLs and attributed strings, plus the text
+// styling classes of the application framework when it is loaded.
+static NSSet *attributeValueClasses(void)
+{
+    NSMutableSet *classes = [NSMutableSet setWithObjects:[NSDictionary class], [NSArray class], [NSString class], [NSNumber class], [NSURL class], [NSData class], [NSAttributedString class], nil];
+    static const char *const styleClassNames[] = { "NSColor", "NSFont", "NSParagraphStyle", "NSShadow", "NSTextAttachment" };
+    for (size_t i = 0; i < sizeof(styleClassNames) / sizeof(styleClassNames[0]); i++)
+    {
+        Class styleClass = objc_getClass(styleClassNames[i]);
+        if (styleClass != Nil)
+        {
+            [classes addObject:styleClass];
+        }
+    }
+    return classes;
+}
+
+@implementation NSAttributedString (NSAttributedStringKeyedCoding)
+
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
+
+- (void)encodeWithCoder:(NSCoder *)coder
+{
+    if (![coder allowsKeyedCoding])
+    {
+        [NSException raise:NSInvalidArgumentException format:@"%@ cannot be encoded by non-keyed archivers", NSStringFromClass([self class])];
+    }
+    BOOL mutableString = [[self classForCoder] isSubclassOfClass:[NSMutableAttributedString class]];
+    NSString *string = [self string];
+    [coder encodeObject:mutableString ? (NSString *)[NSMutableString stringWithString:string] : string forKey:@"NSString"];
+    NSUInteger length = [string length];
+    if (length == 0)
+    {
+        return;
+    }
+
+    NSMutableArray *runAttributes = [NSMutableArray array];
+    NSMutableData *info = [NSMutableData data];
+    NSUInteger location = 0;
+    while (location < length)
+    {
+        NSRange run;
+        NSDictionary *attributes = [self attributesAtIndex:location effectiveRange:&run];
+        if (run.length == 0)
+        {
+            break;
+        }
+        appendAttributeInfoVarint(info, run.length);
+        appendAttributeInfoVarint(info, [runAttributes count]);
+        [runAttributes addObject:attributes != nil ? attributes : [NSDictionary dictionary]];
+        location = NSMaxRange(run);
+    }
+    if ([runAttributes count] == 1)
+    {
+        [coder encodeObject:[runAttributes objectAtIndex:0] forKey:@"NSAttributes"];
+    }
+    else
+    {
+        [coder encodeObject:runAttributes forKey:@"NSAttributes"];
+        [coder encodeObject:info forKey:@"NSAttributeInfo"];
+    }
+}
+
+- (id)initWithCoder:(NSCoder *)coder
+{
+    if (![coder allowsKeyedCoding])
+    {
+        [self release];
+        return nil;
+    }
+    NSString *string = [coder decodeObjectOfClass:[NSString class] forKey:@"NSString"];
+    id attributes = [coder decodeObjectOfClasses:attributeValueClasses() forKey:@"NSAttributes"];
+    NSData *info = [coder decodeObjectOfClass:[NSData class] forKey:@"NSAttributeInfo"];
+    if (string == nil)
+    {
+        [self release];
+        return nil;
+    }
+
+    NSMutableAttributedString *result = [[NSMutableAttributedString alloc] initWithString:string];
+    NSUInteger length = [string length];
+    BOOL valid = YES;
+    if (length > 0 && [attributes isKindOfClass:[NSDictionary class]])
+    {
+        [result setAttributes:attributes range:NSMakeRange(0, length)];
+    }
+    else if (length > 0 && [attributes isKindOfClass:[NSArray class]])
+    {
+        const uint8_t *bytes = [info bytes];
+        NSUInteger infoLength = [info length];
+        NSUInteger position = 0;
+        NSUInteger location = 0;
+        while (valid && location < length)
+        {
+            NSUInteger runLength, index;
+            if (!readAttributeInfoVarint(bytes, infoLength, &position, &runLength) ||
+                !readAttributeInfoVarint(bytes, infoLength, &position, &index) ||
+                runLength == 0 || runLength > length - location || index >= [attributes count] ||
+                ![[attributes objectAtIndex:index] isKindOfClass:[NSDictionary class]])
+            {
+                valid = NO;
+                break;
+            }
+            [result setAttributes:[attributes objectAtIndex:index] range:NSMakeRange(location, runLength)];
+            location += runLength;
+        }
+    }
+    else if (attributes != nil && length > 0)
+    {
+        valid = NO;
+    }
+    if (valid)
+    {
+        for (id key in [attributes isKindOfClass:[NSDictionary class]] ? [attributes allKeys] : @[])
+        {
+            if (![key isKindOfClass:[NSString class]])
+            {
+                valid = NO;
+            }
+        }
+    }
+    if (!valid)
+    {
+        [result release];
+        [self release];
+        return nil;
+    }
+
+    // self is the placeholder for the immutable or the mutable class.
+    id decoded = [self initWithAttributedString:result];
+    [result release];
+    return decoded;
+}
+
+@end
 
 @implementation NSAttributedString (NSAttributedStringFormatting)
 
