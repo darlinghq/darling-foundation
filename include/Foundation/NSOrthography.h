@@ -2,7 +2,7 @@
 
 @class NSString, NSArray, NSDictionary;
 
-@interface NSOrthography : NSObject <NSCopying, NSCoding>
+@interface NSOrthography : NSObject <NSCopying, NSSecureCoding>
 
 @property (readonly) NSString *dominantScript;
 @property (readonly) NSDictionary *languageMap;
