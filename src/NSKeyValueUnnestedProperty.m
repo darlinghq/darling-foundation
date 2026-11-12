@@ -20,11 +20,14 @@
 
 @interface NSKeyValueUnnestedProperty ()
 @property (nonatomic, retain) NSArray *affectingProperties;
-@property (nonatomic, assign) Class cachedIsaForAutonotifying;
 @property (nonatomic, assign) BOOL cachedIsaForAutonotifyingIsValid;
 @end
 
 @implementation NSKeyValueUnnestedProperty
+
+// Explicit: see NSKeyValueProperty.m (no implicit synthesis on i386).
+@synthesize affectingProperties = _affectingProperties;
+@synthesize cachedIsaForAutonotifyingIsValid = _cachedIsaForAutonotifyingIsValid;
 
 - (instancetype)_initWithContainerClass:(NSKeyValueContainerClass *)containerClass keyPath:(NSString *)key propertiesBeingInitialized:(CFMutableSetRef)propertiesBeingInitialized
 {

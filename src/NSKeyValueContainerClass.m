@@ -11,6 +11,14 @@
 
 @implementation NSKeyValueContainerClass
 
+// Explicit: properties are only synthesized implicitly by the non-fragile
+// (64-bit) runtime, so on i386 the accessors would otherwise not exist.
+@synthesize originalClass = _originalClass;
+@synthesize cachedObservationInfoImplementation = _cachedObservationInfoImplementation;
+@synthesize cachedSetObservationInfoImplementation = _cachedSetObservationInfoImplementation;
+@synthesize cachedSetObservationInfoTakesAnObject = _cachedSetObservationInfoTakesAnObject;
+@synthesize notifyingInfo = _notifyingInfo;
+
 - (instancetype)initWithOriginalClass:(Class)cls
 {
     self = [super init];

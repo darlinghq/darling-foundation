@@ -11,6 +11,12 @@
 
 @implementation NSKeyValueProperty
 
+// Explicit: only the non-fragile (64-bit) runtime synthesizes properties
+// implicitly, so on i386 the accessors would otherwise not exist.
+@synthesize containerClass = _containerClass;
+@synthesize keyPath = _keyPath;
+@synthesize cachedIsaForAutonotifying = _cachedIsaForAutonotifying;
+
 - (instancetype)_initWithContainerClass:(NSKeyValueContainerClass *)containerClass keyPath:(NSString *)key propertiesBeingInitialized:(CFMutableSetRef)properties
 {
     self = [super init];
