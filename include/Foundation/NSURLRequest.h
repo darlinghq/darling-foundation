@@ -23,7 +23,7 @@ typedef NS_ENUM(NSUInteger, NSURLRequestNetworkServiceType) {
 
 @class NSURLRequestInternal;
 
-@interface NSURLRequest : NSObject <NSCoding, NSCopying, NSMutableCopying>
+@interface NSURLRequest : NSObject <NSSecureCoding, NSCopying, NSMutableCopying>
 {
     NSURLRequestInternal *_internal;
 }

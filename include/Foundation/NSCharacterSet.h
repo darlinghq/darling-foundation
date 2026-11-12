@@ -9,7 +9,7 @@ enum {
     NSOpenStepUnicodeReservedBase = 0xF400
 };
 
-@interface NSCharacterSet : NSObject <NSCopying, NSMutableCopying, NSCoding>
+@interface NSCharacterSet : NSObject <NSCopying, NSMutableCopying, NSSecureCoding>
 
 + (id)controlCharacterSet;
 + (id)whitespaceCharacterSet;

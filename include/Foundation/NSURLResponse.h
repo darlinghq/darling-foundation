@@ -6,7 +6,7 @@
 
 @class NSURLResponseInternal;
 
-@interface NSURLResponse : NSObject <NSCoding, NSCopying>
+@interface NSURLResponse : NSObject <NSSecureCoding, NSCopying>
 {
     NSURLResponseInternal *_internal;
 }
