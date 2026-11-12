@@ -69,8 +69,13 @@ static void testConverters(void)
     CHECK(![offset isEqual:plain]);
     CHECK([offset copy] != nil);
 
-    CHECK(raises(^{ [[[[NSUnitConverter alloc] init] autorelease] baseUnitValueFromValue:1]; }));
-    CHECK(raises(^{ [NSDimension baseUnit]; }));
+    // test_quirk_abstract_converter_does_not_raise (MC26.15, macOS 26.7.3): the abstract converter
+    // methods do not raise; the abstract +baseUnit does, with NSInvalidArgumentException
+    // (test_quirk_abstract_dimension_base_unit).
+    CHECK(!raises(^{ [[[[NSUnitConverter alloc] init] autorelease] baseUnitValueFromValue:1]; }));
+    CHECK(!raises(^{ [[[[NSUnitConverter alloc] init] autorelease] valueFromBaseUnitValue:1]; }));
+    @try { [NSDimension baseUnit]; CHECK(NO); }
+    @catch (NSException *e) { CHECK([[e name] isEqualToString:NSInvalidArgumentException]); }
 
     CHECK([NSUnitConverterLinear supportsSecureCoding]);
 }
@@ -100,7 +105,12 @@ static void testUnits(void)
     CHECK([[NSUnitDuration baseUnit].symbol isEqualToString:@"s"]);
     CHECK([[NSUnitVolume baseUnit].symbol isEqualToString:@"L"]);
     CHECK([[NSUnitFuelEfficiency baseUnit].symbol isEqualToString:@"L/100km"]);
-    CHECK([[NSUnitInformationStorage baseUnit].symbol isEqualToString:@"byte"]);
+    // test_quirk_unit_symbols (MC26.15, macOS 26.7.3)
+    CHECK([[NSUnitInformationStorage baseUnit].symbol isEqualToString:@"B"]);
+    CHECK([[NSUnitAngle arcMinutes].symbol isEqualToString:@"\u02b9"] && [[NSUnitAngle arcSeconds].symbol isEqualToString:@"\u02ba"]);
+    CHECK([[NSUnitElectricResistance ohms].symbol isEqualToString:@"\u2126"] && [[NSUnitElectricResistance kiloohms].symbol isEqualToString:@"k\u2126"]);
+    CHECK([[NSUnitVolume imperialPints].symbol isEqualToString:[NSUnitVolume pints].symbol]);
+    CHECK(![[NSUnitVolume imperialTeaspoons] isEqual:[NSUnitVolume teaspoons]]);
     CHECK(![[NSUnitVolume gallons] isEqual:[NSUnitVolume imperialGallons]]);
     CHECK(![[NSUnitFuelEfficiency milesPerGallon] isEqual:[NSUnitFuelEfficiency milesPerImperialGallon]]);
 }
@@ -143,6 +153,8 @@ static void testCatalog(void)
                 continue;
 
             NSDimension *unit = [dimension performSelector:selector];
+            if (![unit isKindOfClass:[NSDimension class]])
+                continue; // for example the NSString returned by +icuType on macOS
             NSString *what = [NSString stringWithFormat:@"%s %s", dimensions[d].name, sel_getName(selector)];
             expectTrue([unit isMemberOfClass:dimension], [what stringByAppendingString:@" is of the class"]);
             expectTrue([unit.symbol length] > 0, [what stringByAppendingString:@" has a symbol"]);
@@ -435,6 +447,19 @@ static void testSecureCoding(void)
     struct { NSDimension *unit; int specifier; } known[] = {
         { [NSUnitLength meters], 1280 }, { [NSUnitLength kilometers], 1282 }, { [NSUnitMass grams], 1536 },
         { [NSUnitDuration seconds], 1030 }, { [NSUnitSpeed metersPerSecond], 2304 }, { [NSUnitTemperature fahrenheit], 2561 },
+        // test_quirk_archive_specifiers: the ids observed on macOS 26.7.3 (MC26.15)
+        { [NSUnitAcceleration baseUnit], 1 }, { [NSUnitAcceleration gravity], 0 }, { [NSUnitAngle degrees], 256 },
+        { [NSUnitAngle arcMinutes], 257 }, { [NSUnitAngle arcSeconds], 258 }, { [NSUnitAngle radians], 259 },
+        { [NSUnitAngle revolutions], 260 }, { [NSUnitArea squareMeters], 512 }, { [NSUnitArea acres], 516 },
+        { [NSUnitArea squareYards], 520 }, { [NSUnitDuration hours], 1028 }, { [NSUnitDuration nanoseconds], 1033 },
+        { [NSUnitVolume milliliters], 2819 }, { [NSUnitVolume megaliters], 2823 }, { [NSUnitVolume teaspoons], 2831 },
+        { [NSUnitVolume imperialTeaspoons], 2831 }, { [NSUnitVolume imperialFluidOunces], 2833 },
+        { [NSUnitVolume imperialPints], 2835 }, { [NSUnitVolume gallons], 2837 }, { [NSUnitVolume metricCups], 2838 },
+        { [NSUnitVolume imperialGallons], 2840 }, { [NSUnitFuelEfficiency milesPerGallon], 3329 },
+        { [NSUnitFuelEfficiency litersPer100Kilometers], 3330 }, { [NSUnitFuelEfficiency milesPerImperialGallon], 3331 },
+        { [NSUnitInformationStorage bits], 3584 }, { [NSUnitInformationStorage bytes], 3585 },
+        { [NSUnitElectricResistance ohms], 3842 }, { [NSUnitIlluminance baseUnit], 4352 },
+        { [NSUnitConcentrationMass milligramsPerDeciliter], 4609 }, { [NSUnitDispersion baseUnit], 4611 },
     };
     for (size_t i = 0; i < sizeof(known) / sizeof(known[0]); i++)
     {
@@ -442,6 +467,9 @@ static void testSecureCoding(void)
         expectTrue([o[@"NS.specifier"] intValue] == known[i].specifier, [NSString stringWithFormat:@"%@ archives with its id", known[i].unit.symbol]);
     }
     CHECK([objectWithKey(archiveObjects([TestWobble tripleWobbles]), @"NS.specifier")[@"NS.specifier"] intValue] == -1);
+    // units without a predefined id archive -1 (macOS 26.7.3, MC26.15)
+    CHECK([objectWithKey(archiveObjects([NSUnitAngle gradians]), @"NS.specifier")[@"NS.specifier"] intValue] == -1);
+    CHECK([objectWithKey(archiveObjects([NSUnitElectricResistance kiloohms]), @"NS.specifier")[@"NS.specifier"] intValue] == -1);
 
     // refused: other classes than the allowed ones
     NSError *error = nil;

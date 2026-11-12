@@ -26,6 +26,7 @@
 #import <Foundation/NSUnit.h>
 #import <dispatch/dispatch.h>
 #import <math.h>
+#import <objc/runtime.h>
 #import "NSUnitInternal.h"
 
 // A predefined unit is created once and shared.
@@ -69,8 +70,12 @@ UNIT_LINEAR(NSUnitAcceleration, gravity, @"g", 9.80665)
 @implementation NSUnitAngle
 
 UNIT_LINEAR(NSUnitAngle, degrees, @"\u00b0", 1.0)
-UNIT_LINEAR(NSUnitAngle, arcMinutes, @"'", 1.0 / 60.0)
-UNIT_LINEAR(NSUnitAngle, arcSeconds, @"\"", 1.0 / 3600.0)
+// QUIRK: the arc minute and arc second symbols are the modifier letters prime U+02B9 and
+// double prime U+02BA, not ASCII quote characters. Not documented. Evidence: black-box
+// observation on macOS 26.7.3 (tier 2), MC26.15, probe vd-upstream/mac-probes/v409-nsunit.m.
+// Test: test_quirk_unit_symbols in tests/nsunit-nsmeasurement.m
+UNIT_LINEAR(NSUnitAngle, arcMinutes, @"\u02b9", 1.0 / 60.0)
+UNIT_LINEAR(NSUnitAngle, arcSeconds, @"\u02ba", 1.0 / 3600.0)
 UNIT_LINEAR(NSUnitAngle, radians, @"rad", 180.0 / M_PI)
 UNIT_LINEAR(NSUnitAngle, gradians, @"grad", 0.9)
 UNIT_LINEAR(NSUnitAngle, revolutions, @"rev", 360.0)
@@ -199,11 +204,14 @@ UNIT_LINEAR(NSUnitElectricPotentialDifference, microvolts, @"\u00b5V", 1.0e-6)
 
 @implementation NSUnitElectricResistance
 
-UNIT_LINEAR(NSUnitElectricResistance, megaohms, @"M\u03a9", 1.0e6)
-UNIT_LINEAR(NSUnitElectricResistance, kiloohms, @"k\u03a9", 1.0e3)
-UNIT_LINEAR(NSUnitElectricResistance, ohms, @"\u03a9", 1.0)
-UNIT_LINEAR(NSUnitElectricResistance, milliohms, @"m\u03a9", 1.0e-3)
-UNIT_LINEAR(NSUnitElectricResistance, microohms, @"\u00b5\u03a9", 1.0e-6)
+// QUIRK: the ohm sign is U+2126 (OHM SIGN), not the Greek capital omega U+03A9, in every
+// ohm unit. Not documented. Evidence as for the arc symbols (MC26.15).
+// Test: test_quirk_unit_symbols in tests/nsunit-nsmeasurement.m
+UNIT_LINEAR(NSUnitElectricResistance, megaohms, @"M\u2126", 1.0e6)
+UNIT_LINEAR(NSUnitElectricResistance, kiloohms, @"k\u2126", 1.0e3)
+UNIT_LINEAR(NSUnitElectricResistance, ohms, @"\u2126", 1.0)
+UNIT_LINEAR(NSUnitElectricResistance, milliohms, @"m\u2126", 1.0e-3)
+UNIT_LINEAR(NSUnitElectricResistance, microohms, @"\u00b5\u2126", 1.0e-6)
 
 + (instancetype)baseUnit { return [NSUnitElectricResistance ohms]; }
 
@@ -274,8 +282,10 @@ UNIT_LINEAR(NSUnitIlluminance, lux, @"lx", 1.0)
 // byte is 8 bits and a nibble 4 bits.
 @implementation NSUnitInformationStorage
 
+// QUIRK: the byte symbol is "B" (so is the symbol of the base unit). Not documented.
+// Evidence as for the arc symbols (MC26.15). Test: test_quirk_unit_symbols.
 UNIT_LINEAR(NSUnitInformationStorage, bits, @"bit", 0.125)
-UNIT_LINEAR(NSUnitInformationStorage, bytes, @"byte", 1.0)
+UNIT_LINEAR(NSUnitInformationStorage, bytes, @"B", 1.0)
 UNIT_LINEAR(NSUnitInformationStorage, nibbles, @"nibble", 0.5)
 UNIT_LINEAR(NSUnitInformationStorage, yottabytes, @"YB", 1.0e24)
 UNIT_LINEAR(NSUnitInformationStorage, zettabytes, @"ZB", 1.0e21)
@@ -494,22 +504,49 @@ UNIT_LINEAR(NSUnitVolume, metricCups, @"metric cup", 0.25)
 
 #pragma mark - Archive identifiers
 
-// The ids with which an archive names some predefined units (the others are archived as -1 and
-// are identified by their symbol and converter).
+// The ids with which an archive names the predefined units. The others are archived as -1 and
+// are identified by their symbol and converter. The imperial teaspoon, tablespoon, pint and
+// quart carry the ids of their US namesakes.
+// QUIRK: the ids are part of the archive layout. Not documented. Evidence: black-box
+// observation on macOS 26.7.3 (tier 2), MC26.13 and MC26.15 (probe v409-nsunit.m); only the ids
+// listed in MC26.15 are known, the remaining predefined units archive -1 until they are observed.
+// Test: test_quirk_archive_specifiers in tests/nsunit-nsmeasurement.m
 NSInteger _NSDimensionArchiveSpecifier(NSDimension *unit)
 {
-    struct { Class dimension; SEL selector; NSInteger specifier; } known[] = {
-        { [NSUnitLength class], @selector(meters), 1280 },
-        { [NSUnitLength class], @selector(kilometers), 1282 },
-        { [NSUnitMass class], @selector(grams), 1536 },
-        { [NSUnitDuration class], @selector(seconds), 1030 },
-        { [NSUnitSpeed class], @selector(metersPerSecond), 2304 },
-        { [NSUnitTemperature class], @selector(fahrenheit), 2561 },
+    static const struct { const char *dimension; const char *selector; NSInteger specifier; } known[] = {
+        { "NSUnitAcceleration", "metersPerSecondSquared", 1 }, { "NSUnitAcceleration", "gravity", 0 },
+        { "NSUnitAngle", "degrees", 256 }, { "NSUnitAngle", "arcMinutes", 257 }, { "NSUnitAngle", "arcSeconds", 258 },
+        { "NSUnitAngle", "radians", 259 }, { "NSUnitAngle", "revolutions", 260 },
+        { "NSUnitArea", "squareMeters", 512 }, { "NSUnitArea", "squareKilometers", 513 }, { "NSUnitArea", "squareFeet", 514 },
+        { "NSUnitArea", "squareMiles", 515 }, { "NSUnitArea", "acres", 516 }, { "NSUnitArea", "hectares", 517 },
+        { "NSUnitArea", "squareCentimeters", 518 }, { "NSUnitArea", "squareInches", 519 }, { "NSUnitArea", "squareYards", 520 },
+        { "NSUnitLength", "meters", 1280 }, { "NSUnitLength", "kilometers", 1282 },
+        { "NSUnitMass", "grams", 1536 },
+        { "NSUnitDuration", "hours", 1028 }, { "NSUnitDuration", "minutes", 1029 }, { "NSUnitDuration", "seconds", 1030 },
+        { "NSUnitDuration", "milliseconds", 1031 }, { "NSUnitDuration", "microseconds", 1032 }, { "NSUnitDuration", "nanoseconds", 1033 },
+        { "NSUnitSpeed", "metersPerSecond", 2304 },
+        { "NSUnitTemperature", "fahrenheit", 2561 },
+        { "NSUnitVolume", "milliliters", 2819 }, { "NSUnitVolume", "megaliters", 2823 },
+        { "NSUnitVolume", "teaspoons", 2831 }, { "NSUnitVolume", "imperialTeaspoons", 2831 },
+        { "NSUnitVolume", "tablespoons", 2832 }, { "NSUnitVolume", "imperialTablespoons", 2832 },
+        { "NSUnitVolume", "imperialFluidOunces", 2833 },
+        { "NSUnitVolume", "pints", 2835 }, { "NSUnitVolume", "imperialPints", 2835 },
+        { "NSUnitVolume", "quarts", 2836 }, { "NSUnitVolume", "imperialQuarts", 2836 },
+        { "NSUnitVolume", "gallons", 2837 }, { "NSUnitVolume", "metricCups", 2838 }, { "NSUnitVolume", "imperialGallons", 2840 },
+        { "NSUnitFuelEfficiency", "milesPerGallon", 3329 }, { "NSUnitFuelEfficiency", "litersPer100Kilometers", 3330 },
+        { "NSUnitFuelEfficiency", "milesPerImperialGallon", 3331 },
+        { "NSUnitInformationStorage", "bits", 3584 }, { "NSUnitInformationStorage", "bytes", 3585 },
+        { "NSUnitElectricResistance", "ohms", 3842 },
+        { "NSUnitIlluminance", "lux", 4352 },
+        { "NSUnitConcentrationMass", "milligramsPerDeciliter", 4609 },
+        { "NSUnitDispersion", "partsPerMillion", 4611 },
     };
 
     for (size_t i = 0; i < sizeof(known) / sizeof(known[0]); i++)
     {
-        if ([unit class] == known[i].dimension && [unit isEqual:[known[i].dimension performSelector:known[i].selector]])
+        Class dimension = objc_getClass(known[i].dimension);
+        SEL selector = sel_registerName(known[i].selector);
+        if ([unit class] == dimension && [dimension respondsToSelector:selector] && [unit isEqual:[dimension performSelector:selector]])
             return known[i].specifier;
     }
     return -1;
