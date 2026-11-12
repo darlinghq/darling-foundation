@@ -40,6 +40,7 @@ set(foundation_sources
 	src/NSArray.m
 	src/NSAttributedString.m
 	src/NSAutoreleasePool.m
+	src/NSBackgroundActivityScheduler.m
 	src/NSBetweenPredicateOperator.m
 	src/NSBlockExpression.m
 	src/NSBlockPredicate.m

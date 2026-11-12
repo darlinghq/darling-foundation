@@ -3,6 +3,7 @@
 #import <Foundation/NSObjCRuntime.h>
 #import <Foundation/NSArray.h>
 #import <Foundation/NSAutoreleasePool.h>
+#import <Foundation/NSBackgroundActivityScheduler.h>
 #import <Foundation/NSBundle.h>
 #import <Foundation/NSByteOrder.h>
 #import <Foundation/NSCalendar.h>
