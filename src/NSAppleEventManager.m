@@ -27,17 +27,8 @@ static NSAppleEventManager* instance = nil;
     NSLog(@"Stub called: %@ in %@", NSStringFromSelector([anInvocation selector]), [self class]);
 }
 
-// Darling does not deliver Apple events, so no event is ever being handled or suspended.
-- (NSAppleEventDescriptor *)currentAppleEvent
-{
-    return nil;
-}
-
-- (NSAppleEventDescriptor *)currentReplyAppleEvent
-{
-    return nil;
-}
-
+// Event handlers and the event being handled are in NSAppleEventManagerHandlers.m. Suspending the handling of
+// an event is not supported: handlers always finish before their event is answered.
 - (NSAppleEventManagerSuspensionID)suspendCurrentAppleEvent
 {
     return NULL;
@@ -59,19 +50,6 @@ static NSAppleEventManager* instance = nil;
 
 - (void)resumeWithSuspensionID:(NSAppleEventManagerSuspensionID)suspensionID
 {
-}
-
-// Handlers set with setEventHandler:... are never called, so there is nothing to remove.
-- (void)removeEventHandlerForEventClass:(AEEventClass)eventClass andEventID:(AEEventID)eventID
-{
-}
-
-- (void) setEventHandler: (id) handler
-             andSelector: (SEL) selector
-           forEventClass: (AEEventClass) eventClass
-              andEventID: (AEEventID) eventID
-{
-    printf("STUB %s\n", __PRETTY_FUNCTION__);
 }
 
 @end
