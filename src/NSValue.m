@@ -314,6 +314,18 @@ static NSValue *_NSNewValue(void *value, const char *type)
     return createValue(value, type, size, flags);
 }
 
+// Range members are archived as NSNumber objects; archives written before that was matched hold
+// inline integers, which are still read.
+static NSUInteger decodeRangeComponent(NSCoder *aCoder, NSString *key)
+{
+    NSNumber *number = [aCoder decodeObjectOfClass:[NSNumber class] forKey:key];
+    if (number != nil)
+    {
+        return (NSUInteger)[number longLongValue];
+    }
+    return (NSUInteger)[aCoder decodeInt64ForKey:key];
+}
+
 static id newDecodedValue(NSCoder *aCoder)
 {
     NSConcreteValueSpecialType flags = NSNotSpecialType;
@@ -340,8 +352,8 @@ static id newDecodedValue(NSCoder *aCoder)
             }
             case NSRangeType: {
                 NSRange r;
-                r.location = [aCoder decodeIntegerForKey:NS_rangeval_location];
-                r.length = [aCoder decodeIntegerForKey:NS_rangeval_length];
+                r.location = decodeRangeComponent(aCoder, NS_rangeval_location);
+                r.length = decodeRangeComponent(aCoder, NS_rangeval_length);
                 return createValue((uint8_t *)&r, @encode(NSRange), sizeof(NSRange), flags);
             }
             case NSAffineTransformType: {
@@ -658,8 +670,12 @@ static id newDecodedValue(NSCoder *aCoder)
                 break;
             case NSRangeType: {
                 NSRange r = [self rangeValue];
-                [aCoder encodeInt64:(int64_t)r.location forKey:NS_rangeval_location];
-                [aCoder encodeInt64:(int64_t)r.length forKey:NS_rangeval_length];
+                // QUIRK: the range members are archived as references to NSNumber objects, not
+                // as inline integers. Not documented. Evidence: black-box observation on macOS
+                // 26.7.3 (tier 2), MC26.13 (vd-upstream probe v398-pending.m).
+                // Test: tests/secure-coding-conformance.m (test_quirk_nsvalue_range_references)
+                [aCoder encodeObject:[NSNumber numberWithLongLong:(long long)r.location] forKey:NS_rangeval_location];
+                [aCoder encodeObject:[NSNumber numberWithLongLong:(long long)r.length] forKey:NS_rangeval_length];
                 break;
             }
             
