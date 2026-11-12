@@ -12,6 +12,7 @@ CF_PRIVATE
 {
     NSKeyValueContainerClass *_containerClass;
     NSString *_keyPath;
+    Class _cachedIsaForAutonotifying;
 }
 
 @property (retain, nonatomic) NSKeyValueContainerClass *containerClass;
