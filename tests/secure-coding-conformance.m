@@ -62,6 +62,17 @@ static void expectRefused(NSString *label, Class cls, NSString *className, NSDic
     }
 }
 
+// test_quirk_text_checking_result_lenient_decoding (MC26.13, macOS 26.7.3): a stored value of
+// another plain class does not make decoding fail.
+static void expectAccepted(NSString *label, Class cls, NSString *className, NSDictionary *ints, NSDictionary *objects) {
+    NSError *error = nil;
+    id decoded = secureDecode(cls, spoofArchive(className, ints, objects), &error);
+    if (decoded == nil) {
+        printf("FAIL: %s was refused although macOS decodes it\n", label.UTF8String);
+        failures++;
+    }
+}
+
 static id roundTrip(NSString *label, id object, Class publicClass) {
     CHECK([publicClass supportsSecureCoding]);
     NSError *error = nil;
@@ -443,6 +454,48 @@ int main(void) {
             NSError *badError = nil;
             CHECK([[NSKeyedUnarchiver alloc] initForReadingFromData:[NSData dataWithBytes:"xyz" length:3] error:&badError] == nil);
             CHECK(badError != nil);
+        }
+        // test_quirk_text_checking_result_lenient_decoding (MC26.13, macOS 26.7.3)
+        {
+            expectAccepted(@"result replacement string", [NSTextCheckingResult class], @"NSReplacementCheckingResult", @{@"NSRangeLocation": @1, @"NSRangeLength": @2}, @{@"NSReplacementString": @42});
+            expectAccepted(@"result link", [NSTextCheckingResult class], @"NSLinkCheckingResult", @{@"NSRangeLocation": @1, @"NSRangeLength": @2}, @{@"NSURL": @"http://example.com/"});
+            expectAccepted(@"result range", [NSTextCheckingResult class], @"NSSpellCheckingResult", @{@"NSRangeLocation": @-1, @"NSRangeLength": @2}, @{});
+        }
+        // test_quirk_set_error_policy_xml_returns_nil (MC26.13, macOS 26.7.3): the set-error policy of
+        // -initForReadingFromData:error: also covers XML property list archives and scalar decodes.
+        {
+            NSKeyedArchiver *xmlArchiver = [[NSKeyedArchiver alloc] initRequiringSecureCoding:YES];
+            [xmlArchiver setOutputFormat:NSPropertyListXMLFormat_v1_0];
+            [xmlArchiver encodeObject:[NSURL URLWithString:@"http://example.com/"] forKey:NSKeyedArchiveRootObjectKey];
+            [xmlArchiver finishEncoding];
+            NSData *xmlData = [[[xmlArchiver encodedData] retain] autorelease];
+            [xmlArchiver release];
+            CHECK(xmlData != nil && [[[NSString alloc] initWithData:xmlData encoding:NSUTF8StringEncoding] autorelease].length > 0 && memcmp(xmlData.bytes, "<?xml", 5) == 0);
+            NSError *initError = nil;
+            NSKeyedUnarchiver *unarchiver = [[NSKeyedUnarchiver alloc] initForReadingFromData:xmlData error:&initError];
+            CHECK(unarchiver != nil && initError == nil);
+            [unarchiver setRequiresSecureCoding:YES];
+            BOOL raised = NO;
+            id refused = nil;
+            @try {
+                refused = [unarchiver decodeObjectOfClasses:[NSSet setWithObject:[NSString class]] forKey:NSKeyedArchiveRootObjectKey];
+            } @catch (NSException *exception) {
+                raised = YES;
+            }
+            CHECK(!raised && refused == nil);
+            CHECK([[unarchiver error] code] == 4864);
+            [unarchiver release];
+            unarchiver = [[NSKeyedUnarchiver alloc] initForReadingFromData:xmlData error:NULL];
+            raised = NO;
+            int missing = -1;
+            @try {
+                missing = [unarchiver decodeIntForKey:@"noSuchKey"];
+            } @catch (NSException *exception) {
+                raised = YES;
+            }
+            CHECK(!raised && missing == 0);
+            CHECK([[unarchiver error] code] == 4864);
+            [unarchiver release];
         }
         // NSValue ranges: the members are archived as references to NSNumber objects.
         // test_quirk_nsvalue_range_references (MC26.13, macOS 26.7.3)

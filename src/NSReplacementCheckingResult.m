@@ -54,8 +54,9 @@
 - (id)initWithCoder:(NSCoder *)coder
 {
     NSRange range;
-    NSString *replacement = [coder decodeObjectOfClass:[NSString class] forKey:@"NSReplacementString"];
-    if (!NSTextCheckingResultDecodeRange(coder, &range) || replacement == nil)
+    id stored = [coder decodeObjectOfClasses:NSTextCheckingResultLenientClasses([NSString class]) forKey:@"NSReplacementString"];
+    NSString *replacement = [stored isKindOfClass:[NSString class]] ? stored : nil;
+    if (!NSTextCheckingResultDecodeRange(coder, &range) || stored == nil)
     {
         [self release];
         return nil;
