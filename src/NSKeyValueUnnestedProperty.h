@@ -7,7 +7,6 @@ CF_PRIVATE
 {
     NSArray *_affectingProperties;
     BOOL _cachedIsaForAutonotifyingIsValid;
-    Class _cachedIsaForAutonotifying;
 }
 
 - (NSString *)_keyPathIfAffectedByValueForMemberOfKeys:(NSSet *)keys;
