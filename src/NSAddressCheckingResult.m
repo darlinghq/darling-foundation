@@ -56,6 +56,11 @@
     return _components;
 }
 
+- (NSDictionary *)addressComponents
+{
+    return _components;
+}
+
 - (NSRange)range
 {
     return _range;
