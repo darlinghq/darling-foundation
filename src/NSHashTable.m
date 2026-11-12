@@ -38,6 +38,16 @@
 
 @implementation	NSHashTable
 
++ (BOOL) supportsSecureCoding
+{
+  return YES;
+}
+
+- (Class) classForCoder
+{
+  return [NSHashTable class];
+}
+
 
 static Class	abstractClass = 0;
 static Class	concreteClass = 0;
