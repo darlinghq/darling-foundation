@@ -462,7 +462,7 @@ int main(void) {
             expectAccepted(@"result range", [NSTextCheckingResult class], @"NSSpellCheckingResult", @{@"NSRangeLocation": @-1, @"NSRangeLength": @2}, @{});
         }
         // test_quirk_set_error_policy_xml_returns_nil (MC26.13, macOS 26.7.3): the set-error policy of
-        // -initForReadingFromData:error: also covers XML property list archives and scalar decodes.
+        // -initForReadingFromData:error: also covers XML property list archives.
         {
             NSKeyedArchiver *xmlArchiver = [[NSKeyedArchiver alloc] initRequiringSecureCoding:YES];
             [xmlArchiver setOutputFormat:NSPropertyListXMLFormat_v1_0];
@@ -493,9 +493,32 @@ int main(void) {
             } @catch (NSException *exception) {
                 raised = YES;
             }
+            // A key that is not in the archive reads as zero without an error (documented).
             CHECK(!raised && missing == 0);
-            CHECK([[unarchiver error] code] == 4864);
+            CHECK([unarchiver error] == nil);
             [unarchiver release];
+        }
+        // An archived string whose contents are "$null" is an ordinary object and is not mistaken for
+        // an unresolved slot while the archive is built: the user's string keeps its own entry next to
+        // the nil entry, and the array and its class description are written once each.
+        {
+            NSArray *nullStrings = @[@"$null", @"x", @"$null"];
+            NSError *nullError = nil;
+            NSData *nullData = [NSKeyedArchiver archivedDataWithRootObject:nullStrings requiringSecureCoding:YES error:&nullError];
+            CHECK(nullData != nil && nullError == nil);
+            NSDictionary *plist = [NSPropertyListSerialization propertyListWithData:nullData options:0 format:NULL error:NULL];
+            NSArray *objects = plist[@"$objects"];
+            CHECK([objects count] == 5);
+            NSUInteger nulls = 0, arrays = 0, descriptions = 0;
+            for (id object in objects) {
+                if ([object isKindOfClass:[NSString class]] && [object isEqualToString:@"$null"])
+                    nulls++;
+                if ([object isKindOfClass:[NSDictionary class]] && [object objectForKey:@"NS.objects"] != nil)
+                    arrays++;
+                if ([object isKindOfClass:[NSDictionary class]] && [object objectForKey:@"$classname"] != nil)
+                    descriptions++;
+            }
+            CHECK(nulls == 2 && arrays == 1 && descriptions == 1);
         }
         // NSValue ranges: the members are archived as references to NSNumber objects.
         // test_quirk_nsvalue_range_references (MC26.13, macOS 26.7.3)

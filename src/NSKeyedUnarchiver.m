@@ -1957,7 +1957,10 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
     }
     @try
     {
-        return _decodeObject(self, unescapeKey(key));
+        id object = _decodeObject(self, unescapeKey(key));
+        // A refused member decoded inside this object's initializer returned nil and recorded the
+        // failure; the object built around it is not handed out.
+        return _helper->_error != nil ? nil : object;
     }
     @catch (NSException *exception)
     {
