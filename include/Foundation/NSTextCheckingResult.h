@@ -38,7 +38,7 @@ typedef NS_OPTIONS(uint64_t, NSTextCheckingTypes) {
     NSTextCheckingAllTypes       = (NSTextCheckingAllSystemTypes | NSTextCheckingAllCustomTypes)
 };
 
-@interface NSTextCheckingResult : NSObject <NSCopying, NSCoding>
+@interface NSTextCheckingResult : NSObject <NSCopying, NSSecureCoding>
 
 @property (readonly) NSTextCheckingType resultType;
 @property (readonly) NSRange range;

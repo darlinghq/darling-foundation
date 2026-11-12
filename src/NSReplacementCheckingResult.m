@@ -1,14 +1,17 @@
 //
-//  NSSubstitutionCheckingResult.m
+//  NSReplacementCheckingResult.m
 //  Foundation
 //
 //  Copyright (c) 2014 Apportable. All rights reserved.
 //
 
-#import "NSSubstitutionCheckingResult.h"
+#import "NSReplacementCheckingResult.h"
 #import <Foundation/NSString.h>
 
-@implementation NSSubstitutionCheckingResult
+#import "NSTextCheckingResultCoding.h"
+#import <Foundation/NSCoder.h>
+
+@implementation NSReplacementCheckingResult
 
 - (id)initWithRange:(NSRange)range replacementString:(NSString *)replacementString
 {
@@ -23,6 +26,7 @@
 
 - (void)dealloc
 {
+    [_replacementString release];
     [super dealloc];
 }
 
@@ -34,6 +38,29 @@
 - (NSRange)range
 {
     return _range;
+}
+
+- (NSTextCheckingType)resultType
+{
+    return NSTextCheckingTypeReplacement;
+}
+
+- (void)encodeWithCoder:(NSCoder *)coder
+{
+    NSTextCheckingResultEncodeRange(coder, _range);
+    [coder encodeObject:_replacementString forKey:@"NSReplacementString"];
+}
+
+- (id)initWithCoder:(NSCoder *)coder
+{
+    NSRange range;
+    NSString *replacement = [coder decodeObjectOfClass:[NSString class] forKey:@"NSReplacementString"];
+    if (!NSTextCheckingResultDecodeRange(coder, &range) || replacement == nil)
+    {
+        [self release];
+        return nil;
+    }
+    return [self initWithRange:range replacementString:replacement];
 }
 
 @end

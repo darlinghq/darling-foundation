@@ -7,6 +7,11 @@
 
 #import "NSTransitInformationCheckingResult.h"
 #import <Foundation/NSDictionary.h>
+#import <Foundation/NSSet.h>
+#import <Foundation/NSString.h>
+
+#import "NSTextCheckingResultCoding.h"
+#import <Foundation/NSCoder.h>
 
 @implementation NSTransitInformationCheckingResult
 
@@ -46,6 +51,25 @@
 - (NSTextCheckingType)resultType
 {
     return NSTextCheckingTypeTransitInformation;
+}
+
+
+- (void)encodeWithCoder:(NSCoder *)coder
+{
+    NSTextCheckingResultEncodeRange(coder, _range);
+    [coder encodeObject:_components forKey:@"NSTransitInformationComponents"];
+}
+
+- (id)initWithCoder:(NSCoder *)coder
+{
+    NSRange range;
+    NSDictionary *components = [coder decodeObjectOfClasses:[NSSet setWithObjects:[NSDictionary class], [NSString class], nil] forKey:@"NSTransitInformationComponents"];
+    if (!NSTextCheckingResultDecodeRange(coder, &range) || ![components isKindOfClass:[NSDictionary class]])
+    {
+        [self release];
+        return nil;
+    }
+    return [self initWithRange:range components:components];
 }
 
 @end
