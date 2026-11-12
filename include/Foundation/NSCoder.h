@@ -2,6 +2,11 @@
 
 @class NSString, NSData, NSSet;
 
+typedef NS_ENUM(NSInteger, NSDecodingFailurePolicy) {
+    NSDecodingFailurePolicyRaiseException,
+    NSDecodingFailurePolicySetErrorAndReturn,
+} API_AVAILABLE(macos(10.13), ios(11.0), watchos(4.0), tvos(11.0));
+
 @interface NSCoder : NSObject
 
 - (void)encodeValueOfObjCType:(const char *)type at:(const void *)addr;

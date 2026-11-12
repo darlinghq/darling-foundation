@@ -34,6 +34,8 @@ NSString *const NSInvalidUnarchiveOperationException = @"NSInvalidUnarchiveOpera
     NSArray *_white;
     NSUInteger _lastRef;
     NSMutableArray *_allowedClasses;
+    NSError *_error;
+    BOOL _setsErrorOnFailure;
 }
 - (BOOL)classNameAllowed:(Class)class;
 - (void)setAllowedClassNames:(NSArray *)classNames;
@@ -51,6 +53,7 @@ NSString *const NSInvalidUnarchiveOperationException = @"NSInvalidUnarchiveOpera
         [_white release];
     }
     [_allowedClasses release];
+    [_error release];
 
     [super dealloc];
 }
@@ -1122,8 +1125,57 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 
 - (id)initForReadingFromData:(NSData *)data error:(NSError **)error
 {
-#warning TODO [NSKeyedUnarchiver initForReadingFromData:error:]
-    return [self initForReadingWithData: data];
+    if (error != NULL)
+    {
+        *error = nil;
+    }
+    id unarchiver = nil;
+    @try
+    {
+        unarchiver = [self initForReadingWithData: data];
+    }
+    @catch (NSException *exception)
+    {
+        unarchiver = nil;
+    }
+    if (unarchiver == nil)
+    {
+        if (error != NULL)
+        {
+            *error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSCoderReadCorruptError userInfo:@{NSLocalizedDescriptionKey: @"The data isn't in the correct format."}];
+        }
+        return nil;
+    }
+    // This initializer reports decoding failures through -error, not by raising.
+    [(NSKeyedUnarchiver *)unarchiver setDecodingFailurePolicy:NSDecodingFailurePolicySetErrorAndReturn];
+    return unarchiver;
+}
+
+- (NSDecodingFailurePolicy)decodingFailurePolicy
+{
+    return _helper->_setsErrorOnFailure ? NSDecodingFailurePolicySetErrorAndReturn : NSDecodingFailurePolicyRaiseException;
+}
+
+- (void)setDecodingFailurePolicy:(NSDecodingFailurePolicy)policy
+{
+    _helper->_setsErrorOnFailure = (policy == NSDecodingFailurePolicySetErrorAndReturn);
+}
+
+- (NSError *)error
+{
+    return _helper->_error;
+}
+
+- (void)failWithError:(NSError *)error
+{
+    if (_helper->_error == nil)
+    {
+        _helper->_error = [error retain];
+    }
+    if (!_helper->_setsErrorOnFailure)
+    {
+        [NSException raise:NSInvalidUnarchiveOperationException format:@"%@", [error localizedDescription]];
+    }
 }
 
 - (id)init
@@ -1744,7 +1796,34 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 {
     _flags |= NSKeyedArchivingStarted;
 
-    return _decodeObject(self, unescapeKey(key));
+    if (!_helper->_setsErrorOnFailure)
+    {
+        return _decodeObject(self, unescapeKey(key));
+    }
+    if (_helper->_error != nil)
+    {
+        return nil; // after a failure every decode returns nil
+    }
+    @try
+    {
+        return _decodeObject(self, unescapeKey(key));
+    }
+    @catch (NSException *exception)
+    {
+        if (![[exception name] isEqualToString:NSInvalidUnarchiveOperationException])
+        {
+            @throw;
+        }
+        // QUIRK: with the set-error-and-return failure policy (the default of
+        // -initForReadingFromData:error:) a refused class or malformed value does not
+        // raise: the decode returns nil and -error holds a read-corrupt error (code 4864).
+        // Not documented in detail. Evidence: black-box observation on macOS 26.7.3
+        // (tier 2), MC26.13, probe vd-upstream/mac-probes/mc15-setallowedclasses.m family.
+        // Test: test_quirk_set_error_policy_returns_nil in tests/secure-coding-conformance.m
+        NSError *failure = [NSError errorWithDomain:NSCocoaErrorDomain code:NSCoderReadCorruptError userInfo:@{NSLocalizedDescriptionKey: @"The data couldn't be read because it isn't in the correct format.", NSDebugDescriptionErrorKey: [exception reason] ?: @""}];
+        _helper->_error = [failure retain];
+        return nil;
+    }
 }
 
 - (BOOL)containsValueForKey:(NSString *)key
