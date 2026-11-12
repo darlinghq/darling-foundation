@@ -1161,6 +1161,24 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
     _helper->_setsErrorOnFailure = (policy == NSDecodingFailurePolicySetErrorAndReturn);
 }
 
+- (BOOL)_recordDecodeFailure:(NSException *)exception
+{
+    if (![[exception name] isEqualToString:NSInvalidUnarchiveOperationException])
+    {
+        return NO;
+    }
+    // QUIRK: with the set-error-and-return failure policy (the default of
+    // -initForReadingFromData:error:) a refused class or malformed value does not
+    // raise: the decode returns nil (or zero for scalar decodes) and -error holds a
+    // read-corrupt error (code 4864). This applies to binary and XML property list
+    // archives alike. Not documented in detail. Evidence: black-box observation on
+    // macOS 26.7.3 (tier 2), MC26.13.
+    // Test: test_quirk_set_error_policy_returns_nil in tests/secure-coding-conformance.m
+    NSError *failure = [NSError errorWithDomain:NSCocoaErrorDomain code:NSCoderReadCorruptError userInfo:@{NSLocalizedDescriptionKey: @"The data couldn't be read because it isn't in the correct format.", NSDebugDescriptionErrorKey: [exception reason] ?: @""}];
+    _helper->_error = [failure retain];
+    return YES;
+}
+
 - (NSError *)error
 {
     return _helper->_error;
@@ -1488,7 +1506,26 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
     {
         return NULL;
     }
-    return _decodeBytes(self, key, len);
+    if (!_helper->_setsErrorOnFailure)
+    {
+        return _decodeBytes(self, key, len);
+    }
+    if (_helper->_error != nil)
+    {
+        return NULL;
+    }
+    @try
+    {
+        return _decodeBytes(self, key, len);
+    }
+    @catch (NSException *exception)
+    {
+        if (![self _recordDecodeFailure:exception])
+        {
+            @throw;
+        }
+        return NULL;
+    }
 }
 
 - (double)decodeDoubleForKey:(NSString *)key
@@ -1500,7 +1537,26 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
         return 0.0;
     }
 
-    return _decodeDouble(self, unescapeKey(key));
+    if (!_helper->_setsErrorOnFailure)
+    {
+        return _decodeDouble(self, unescapeKey(key));
+    }
+    if (_helper->_error != nil)
+    {
+        return 0.0;
+    }
+    @try
+    {
+        return _decodeDouble(self, unescapeKey(key));
+    }
+    @catch (NSException *exception)
+    {
+        if (![self _recordDecodeFailure:exception])
+        {
+            @throw;
+        }
+        return 0.0;
+    }
 }
 
 - (float)decodeFloatForKey:(NSString *)key
@@ -1512,7 +1568,26 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
         return 0.0f;
     }
 
-    return (float)_decodeDouble(self, unescapeKey(key));
+    if (!_helper->_setsErrorOnFailure)
+    {
+        return (float)_decodeDouble(self, unescapeKey(key));
+    }
+    if (_helper->_error != nil)
+    {
+        return 0.0f;
+    }
+    @try
+    {
+        return (float)_decodeDouble(self, unescapeKey(key));
+    }
+    @catch (NSException *exception)
+    {
+        if (![self _recordDecodeFailure:exception])
+        {
+            @throw;
+        }
+        return 0.0f;
+    }
 }
 
 - (long long)decodeInt64ForKey:(NSString *)key
@@ -1524,7 +1599,26 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
         return 0ll;
     }
 
-    return (long long)_decodeInt(self, unescapeKey(key));
+    if (!_helper->_setsErrorOnFailure)
+    {
+        return (long long)_decodeInt(self, unescapeKey(key));
+    }
+    if (_helper->_error != nil)
+    {
+        return 0ll;
+    }
+    @try
+    {
+        return (long long)_decodeInt(self, unescapeKey(key));
+    }
+    @catch (NSException *exception)
+    {
+        if (![self _recordDecodeFailure:exception])
+        {
+            @throw;
+        }
+        return 0ll;
+    }
 }
 
 - (int)decodeInt32ForKey:(NSString *)key
@@ -1536,7 +1630,26 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
         return 0;
     }
 
-    return (int)_decodeInt(self, unescapeKey(key));
+    if (!_helper->_setsErrorOnFailure)
+    {
+        return (int)_decodeInt(self, unescapeKey(key));
+    }
+    if (_helper->_error != nil)
+    {
+        return 0;
+    }
+    @try
+    {
+        return (int)_decodeInt(self, unescapeKey(key));
+    }
+    @catch (NSException *exception)
+    {
+        if (![self _recordDecodeFailure:exception])
+        {
+            @throw;
+        }
+        return 0;
+    }
 }
 
 - (int)decodeIntForKey:(NSString *)key
@@ -1548,7 +1661,26 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
         return 0;
     }
 
-    return _decodeInt(self, unescapeKey(key));
+    if (!_helper->_setsErrorOnFailure)
+    {
+        return _decodeInt(self, unescapeKey(key));
+    }
+    if (_helper->_error != nil)
+    {
+        return 0;
+    }
+    @try
+    {
+        return _decodeInt(self, unescapeKey(key));
+    }
+    @catch (NSException *exception)
+    {
+        if (![self _recordDecodeFailure:exception])
+        {
+            @throw;
+        }
+        return 0;
+    }
 }
 
 - (BOOL)decodeBoolForKey:(NSString *)key
@@ -1560,7 +1692,26 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
         return NO;
     }
 
-    return _decodeBool(self, unescapeKey(key));
+    if (!_helper->_setsErrorOnFailure)
+    {
+        return _decodeBool(self, unescapeKey(key));
+    }
+    if (_helper->_error != nil)
+    {
+        return NO;
+    }
+    @try
+    {
+        return _decodeBool(self, unescapeKey(key));
+    }
+    @catch (NSException *exception)
+    {
+        if (![self _recordDecodeFailure:exception])
+        {
+            @throw;
+        }
+        return NO;
+    }
 }
 
 - (NSArray *)_decodeArrayOfObjectsForKey:(NSString *)key
@@ -1810,18 +1961,10 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
     }
     @catch (NSException *exception)
     {
-        if (![[exception name] isEqualToString:NSInvalidUnarchiveOperationException])
+        if (![self _recordDecodeFailure:exception])
         {
             @throw;
         }
-        // QUIRK: with the set-error-and-return failure policy (the default of
-        // -initForReadingFromData:error:) a refused class or malformed value does not
-        // raise: the decode returns nil and -error holds a read-corrupt error (code 4864).
-        // Not documented in detail. Evidence: black-box observation on macOS 26.7.3
-        // (tier 2), MC26.13, probe vd-upstream/mac-probes/mc15-setallowedclasses.m family.
-        // Test: test_quirk_set_error_policy_returns_nil in tests/secure-coding-conformance.m
-        NSError *failure = [NSError errorWithDomain:NSCocoaErrorDomain code:NSCoderReadCorruptError userInfo:@{NSLocalizedDescriptionKey: @"The data couldn't be read because it isn't in the correct format.", NSDebugDescriptionErrorKey: [exception reason] ?: @""}];
-        _helper->_error = [failure retain];
         return nil;
     }
 }
