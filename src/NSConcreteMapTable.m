@@ -33,10 +33,12 @@
 #import "Foundation/NSDictionary.h"
 #import "Foundation/NSEnumerator.h"
 #import "Foundation/NSException.h"
+#import "Foundation/NSCoder.h"
 #import "Foundation/NSMapTable.h"
 #import "Foundation/NSHashTable.h"
 #import "NSConcreteHashTableInternal.h"
 #import "NSPointerFunctionsInternal.h"
+#import "NSPointerFunctionsArchiving.h"
 
 #import "NSPointerFunctions.h"
 #import "NSCallBacks.h"
@@ -1215,7 +1217,38 @@ const NSMapTableValueCallBacks NSOwnedPointerMapValueCallBacks =
 
 - (void) encodeWithCoder: (NSCoder*)aCoder
 {
-  [self subclassResponsibility: _cmd];
+  NSPointerFunctionsOptions	keyOptions = legacy ? 0 : self->cb.pf.k.options;
+  NSPointerFunctionsOptions	valueOptions = legacy ? 0 : self->cb.pf.v.options;
+  int				archivedKeyOptions = (int)keyOptions;
+  int				archivedValueOptions = (int)valueOptions;
+  int				archivedCount = (int)nodeCount;
+  BOOL				weakKeys = NSPointerFunctionsOptionsAreWeak(keyOptions);
+  BOOL				weakValues = NSPointerFunctionsOptionsAreWeak(valueOptions);
+  NSEnumerator			*enumerator;
+  id				key;
+
+  if (legacy
+    || !NSPointerFunctionsOptionsAreArchivable(keyOptions)
+    || !NSPointerFunctionsOptionsAreArchivable(valueOptions))
+    {
+      [NSException raise: NSInvalidArgumentException
+		  format: @"NSMapTable has invalid options for encoding"];
+    }
+  [aCoder encodeValueOfObjCType: "i" at: &archivedKeyOptions];
+  [aCoder encodeValueOfObjCType: "i" at: &archivedValueOptions];
+  enumerator = [self keyEnumerator];
+  while ((key = [enumerator nextObject]) != nil)
+    {
+      id	value = [self objectForKey: key];
+
+      [aCoder encodeObject: weakKeys ? NSPointerFunctionsWeakMemberPlaceholder : key];
+      [aCoder encodeObject: weakValues ? NSPointerFunctionsWeakMemberPlaceholder : value];
+    }
+  [aCoder encodeObject: nil];
+  if ([aCoder allowsKeyedCoding])
+    {
+      [aCoder encodeInt: archivedCount forKey: @"NS.count"];
+    }
 }
 
 - (void) finalize
@@ -1237,8 +1270,41 @@ const NSMapTableValueCallBacks NSOwnedPointerMapValueCallBacks =
 
 - (id) initWithCoder: (NSCoder*)aCoder
 {
-  [self subclassResponsibility: _cmd];
-  return nil;
+  int		keyOptions = -1;
+  int		valueOptions = -1;
+  int		count = 0;
+  BOOL		weak;
+  id		key;
+
+  [aCoder decodeValueOfObjCType: "i" at: &keyOptions];
+  [aCoder decodeValueOfObjCType: "i" at: &valueOptions];
+  if ([aCoder allowsKeyedCoding])
+    {
+      count = [aCoder decodeIntForKey: @"NS.count"];
+    }
+  if (count < 0
+    || !NSPointerFunctionsOptionsAreArchivable((NSPointerFunctionsOptions)keyOptions)
+    || !NSPointerFunctionsOptionsAreArchivable((NSPointerFunctionsOptions)valueOptions))
+    {
+      [self release];
+      return nil;
+    }
+  /* Entries whose key or value is weak could not have been restored. */
+  weak = NSPointerFunctionsOptionsAreWeak((NSPointerFunctionsOptions)keyOptions)
+    || NSPointerFunctionsOptionsAreWeak((NSPointerFunctionsOptions)valueOptions);
+  self = [self initWithKeyOptions: (NSPointerFunctionsOptions)keyOptions
+		     valueOptions: (NSPointerFunctionsOptions)valueOptions
+			 capacity: 0];
+  while (self != nil && !weak && (key = [aCoder decodeObject]) != nil)
+    {
+      id	value = [aCoder decodeObject];
+
+      if (value != nil)
+	{
+	  [self setObject: value forKey: key];
+	}
+    }
+  return self;
 }
 
 - (id) initWithKeyPointerFunctions: (NSPointerFunctions*)keyFunctions

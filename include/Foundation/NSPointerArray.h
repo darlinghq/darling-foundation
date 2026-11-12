@@ -32,7 +32,7 @@ struct NSSlice {
 };
 
 
-@interface NSPointerArray : NSObject <NSFastEnumeration, NSCopying, NSCoding>
+@interface NSPointerArray : NSObject <NSFastEnumeration, NSCopying, NSSecureCoding>
 {
     struct NSSlice slice;
     NSUInteger count;

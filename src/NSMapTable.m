@@ -37,6 +37,16 @@
 
 @implementation	NSMapTable
 
++ (BOOL) supportsSecureCoding
+{
+  return YES;
+}
+
+- (Class) classForCoder
+{
+  return [NSMapTable class];
+}
+
 static Class	abstractClass = 0;
 static Class	concreteClass = 0;
 

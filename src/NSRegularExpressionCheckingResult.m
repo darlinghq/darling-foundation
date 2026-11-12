@@ -10,6 +10,9 @@
 #import <Foundation/NSValue.h>
 #import <Foundation/NSRegularExpression.h>
 #import "NSObjectInternal.h"
+#import "NSTextCheckingResultCoding.h"
+#import <Foundation/NSSet.h>
+#import <Foundation/NSCoder.h>
 
 @implementation NSRegularExpressionCheckingResult
 
@@ -25,6 +28,36 @@
     NSRequestConcreteImplementation();
     [self release];
     return nil;
+}
+
+- (void)encodeWithCoder:(NSCoder *)coder
+{
+    NSArray *ranges = self.rangeArray;
+    NSTextCheckingResultEncodeRange(coder, [ranges count] > 0 ? self.range : NSMakeRange(0, 0));
+    [coder encodeObject:self.regularExpression forKey:@"NSRegularExpression"];
+    [coder encodeObject:[NSMutableArray arrayWithArray:ranges] forKey:@"NSRangeArray"];
+}
+
+- (id)initWithCoder:(NSCoder *)coder
+{
+    NSRange range;
+    NSRegularExpression *expression = [coder decodeObjectOfClass:[NSRegularExpression class] forKey:@"NSRegularExpression"];
+    NSArray *ranges = [coder decodeObjectOfClasses:[NSSet setWithObjects:[NSArray class], [NSValue class], nil] forKey:@"NSRangeArray"];
+    BOOL valid = expression != nil && [ranges isKindOfClass:[NSArray class]] && NSTextCheckingResultDecodeRange(coder, &range);
+    for (id value in ranges)
+    {
+        if (!valid || ![value isKindOfClass:[NSValue class]] || strcmp([value objCType], @encode(NSRange)) != 0)
+        {
+            valid = NO;
+            break;
+        }
+    }
+    if (!valid)
+    {
+        [self release];
+        return nil;
+    }
+    return [self initWithRangeArray:ranges regularExpression:expression];
 }
 
 - (id)resultByAdjustingRangesWithOffset:(NSInteger)offset
@@ -119,7 +152,7 @@
 - (NSArray *)rangeArray
 {
     NSMutableArray *rangeArray = [[NSMutableArray alloc] init];
-    for (NSUInteger idx = 0; idx < NSRegularExpressionCheckingResultSimpleLimit; idx++)
+    for (NSUInteger idx = 0; idx < _numberOfRanges; idx++)
     {
         [rangeArray addObject:[NSValue valueWithBytes:&_ranges[idx] objCType:@encode(NSRange)]];
     }
@@ -138,7 +171,7 @@
 
 - (BOOL)_adjustRangesWithOffset:(NSInteger)offset
 {
-    for (NSUInteger i = 0; i < NSRegularExpressionCheckingResultSimpleLimit; ++i) {
+    for (NSUInteger i = 0; i < _numberOfRanges; ++i) {
         _ranges[i].location += offset;
     }
     return YES;
@@ -182,6 +215,8 @@
     self = [super init];
     if (self)
     {
+        NSAssert(count <= NSRegularExpressionCheckingResultExtendedLimit, @"Should be no more than %u ranges", NSRegularExpressionCheckingResultExtendedLimit);
+        _numberOfRanges = count;
         memcpy(_ranges, ranges, count * sizeof(NSRange));
         _regularExpression = [expression retain];
     }
@@ -197,7 +232,7 @@
 - (NSArray *)rangeArray
 {
     NSMutableArray *rangeArray = [[NSMutableArray alloc] init];
-    for (NSUInteger idx = 0; idx < NSRegularExpressionCheckingResultExtendedLimit; idx++)
+    for (NSUInteger idx = 0; idx < _numberOfRanges; idx++)
     {
         [rangeArray addObject:[NSValue valueWithBytes:&_ranges[idx] objCType:@encode(NSRange)]];
     }
@@ -211,12 +246,12 @@
 
 - (NSUInteger)numberOfRanges
 {
-    return NSRegularExpressionCheckingResultExtendedLimit;
+    return _numberOfRanges;
 }
 
 - (BOOL)_adjustRangesWithOffset:(NSInteger)offset
 {
-    for (NSUInteger i = 0; i < NSRegularExpressionCheckingResultExtendedLimit; ++i)
+    for (NSUInteger i = 0; i < _numberOfRanges; ++i)
     {
         _ranges[i].location += offset;
     }

@@ -62,7 +62,7 @@ enum {
 
 typedef NSUInteger NSHashTableOptions;
 
-@interface NSHashTable<__covariant ObjectType> : NSObject <NSCopying, NSCoding, NSFastEnumeration>
+@interface NSHashTable<__covariant ObjectType> : NSObject <NSCopying, NSSecureCoding, NSFastEnumeration>
 
 + (NSHashTable<ObjectType> *) hashTableWithOptions: (NSPointerFunctionsOptions)options;
 

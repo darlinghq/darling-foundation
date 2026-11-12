@@ -189,7 +189,7 @@ set(foundation_sources
 	src/NSString.m
 	src/NSStringPredicateOperator.m
 	src/NSSubqueryExpression.m
-	src/NSSubstitutionCheckingResult.m
+	src/NSReplacementCheckingResult.m
 	src/NSSubstringPredicateOperator.m
 	src/NSSymbolicExpression.m
 	src/NSTask.m

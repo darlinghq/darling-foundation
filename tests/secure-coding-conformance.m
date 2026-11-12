@@ -102,7 +102,54 @@ static id roundTrip(NSString *label, id object, Class publicClass) {
     return back;
 }
 
+// Archive without letting an exception escape (some objects raise when archived).
+static NSData *tryArchive(id object) {
+    @try {
+        return [NSKeyedArchiver archivedDataWithRootObject:object requiringSecureCoding:YES error:NULL];
+    } @catch (NSException *exception) {
+        return nil;
+    }
+}
+
+// The first archived object that has the given key: the dictionary of its fields.
+static NSDictionary *objectWithKey(NSData *data, NSString *key) {
+    NSDictionary *plist = [NSPropertyListSerialization propertyListWithData:data options:0 format:NULL error:NULL];
+    for (id object in plist[@"$objects"]) {
+        if ([object isKindOfClass:[NSDictionary class]] && object[key] != nil && object[@"$class"] != nil) return object;
+    }
+    return nil;
+}
+
+static NSArray *sortedKeys(NSDictionary *dictionary) {
+    return [[dictionary allKeys] sortedArrayUsingSelector:@selector(compare:)];
+}
+
+static BOOL keysAre(NSDictionary *dictionary, NSString *joined) {
+    return dictionary != nil && [[sortedKeys(dictionary) componentsJoinedByString:@","] isEqual:joined];
+}
+
 static NSData *bytes(const uint8_t *p, size_t n) { return [NSData dataWithBytes:p length:n]; }
+
+// Whether an archived data object holds the given bytes; the archiver stores NSData either as a plain
+// property list data value or as an object with an NS.data field.
+static BOOL archiveHasDataPrefix(NSData *archive, NSData *expected) {
+    NSDictionary *plist = [NSPropertyListSerialization propertyListWithData:archive options:0 format:NULL error:NULL];
+    for (id object in plist[@"$objects"]) {
+        NSData *data = [object isKindOfClass:[NSData class]] ? object : [object isKindOfClass:[NSDictionary class]] ? object[@"NS.data"] : nil;
+        if ([data isKindOfClass:[NSData class]] && [data length] >= [expected length] && [[data subdataWithRange:NSMakeRange(0, [expected length])] isEqual:expected]) return YES;
+    }
+    return NO;
+}
+
+static BOOL archiveHasData(NSData *archive, NSData *expected) {
+    NSDictionary *plist = [NSPropertyListSerialization propertyListWithData:archive options:0 format:NULL error:NULL];
+    for (id object in plist[@"$objects"]) {
+        NSData *data = [object isKindOfClass:[NSData class]] ? object : [object isKindOfClass:[NSDictionary class]] ? object[@"NS.data"] : nil;
+        if ([data isEqual:expected]) return YES;
+    }
+    return NO;
+}
+
 
 int main(void) {
     @autoreleasepool {
@@ -289,6 +336,209 @@ int main(void) {
             back = roundTrip(@"empty NSDateComponents", [[[NSDateComponents alloc] init] autorelease], [NSDateComponents class]);
             CHECK(back.year == NSDateComponentUndefined && ![back isLeapMonth] && back.calendar == nil && back.timeZone == nil);
             expectRefused(@"NSDateComponents calendar", [NSDateComponents class], @"NSDateComponents", @{}, @{@"NS.calendar": @"str"});
+        }
+
+        // NSPointerArray, NSHashTable, NSMapTable: the options, the members and a nil terminator are archived
+        // as unkeyed values ($0, $1, ...), the member count of the tables as NS.count.
+        {
+            NSString *p1 = [NSString stringWithFormat:@"p%d", 1], *p2 = [NSString stringWithFormat:@"p%d", 2];
+            NSPointerArray *array = [NSPointerArray strongObjectsPointerArray];
+            [array addPointer:(void *)p1];
+            [array addPointer:NULL];
+            [array addPointer:(void *)p2];
+            NSPointerArray *arrayBack = roundTrip(@"NSPointerArray", array, [NSPointerArray class]);
+            CHECK([arrayBack count] == 3);
+            CHECK([(id)[arrayBack pointerAtIndex:0] isEqual:@"p1"] && [arrayBack pointerAtIndex:1] == NULL && [(id)[arrayBack pointerAtIndex:2] isEqual:@"p2"]);
+            NSDictionary *fields = objectWithKey(tryArchive(array), @"$1");
+            CHECK(keysAre(fields, @"$0,$1,$2,$3,$4,$5,$class"));
+            CHECK([fields[@"$0"] intValue] == 0 && [fields[@"$1"] intValue] == 3);
+            arrayBack = roundTrip(@"empty NSPointerArray", [NSPointerArray strongObjectsPointerArray], [NSPointerArray class]);
+            CHECK([arrayBack count] == 0);
+            NSPointerArray *weakArray = [NSPointerArray weakObjectsPointerArray];
+            [weakArray addPointer:(void *)p1];
+            fields = objectWithKey(tryArchive(weakArray), @"$1");
+            CHECK([fields[@"$0"] intValue] == NSPointerFunctionsWeakMemory && [fields[@"$1"] intValue] == 1);
+            roundTrip(@"weak NSPointerArray", weakArray, [NSPointerArray class]);
+            // test_quirk_collection_options_must_be_object_options: only object collections archive.
+            CHECK(tryArchive([NSPointerArray pointerArrayWithOptions:NSPointerFunctionsOpaqueMemory | NSPointerFunctionsOpaquePersonality]) == nil);
+
+            NSHashTable *table = [NSHashTable hashTableWithOptions:NSPointerFunctionsStrongMemory | NSPointerFunctionsObjectPersonality];
+            [table addObject:@"a"];
+            [table addObject:@3];
+            NSHashTable *tableBack = roundTrip(@"NSHashTable", table, [NSHashTable class]);
+            CHECK([tableBack count] == 2 && [tableBack containsObject:@"a"] && [tableBack containsObject:@3]);
+            fields = objectWithKey(tryArchive(table), @"NS.count");
+            CHECK(keysAre(fields, @"$0,$1,$2,$3,$class,NS.count"));
+            CHECK([fields[@"$0"] intValue] == 0 && [fields[@"NS.count"] intValue] == 2);
+            tableBack = roundTrip(@"empty NSHashTable", [NSHashTable hashTableWithOptions:NSPointerFunctionsObjectPersonality | NSPointerFunctionsCopyIn], [NSHashTable class]);
+            CHECK([tableBack count] == 0);
+            fields = objectWithKey(tryArchive([NSHashTable hashTableWithOptions:NSPointerFunctionsObjectPersonality | NSPointerFunctionsCopyIn]), @"NS.count");
+            CHECK(keysAre(fields, @"$0,$1,$class,NS.count") && [fields[@"$0"] intValue] == NSPointerFunctionsCopyIn);
+            NSHashTable *pointerTable = [NSHashTable hashTableWithOptions:NSPointerFunctionsStrongMemory | NSPointerFunctionsObjectPointerPersonality];
+            [pointerTable addObject:p1];
+            tableBack = roundTrip(@"NSHashTable with object pointer personality", pointerTable, [NSHashTable class]);
+            CHECK([tableBack count] == 1);
+            fields = objectWithKey(tryArchive(pointerTable), @"NS.count");
+            CHECK([fields[@"$0"] intValue] == NSPointerFunctionsObjectPointerPersonality);
+            // test_quirk_weak_members_are_not_archived: the count stays in NS.count, nothing is restored.
+            NSHashTable *weakTable = [NSHashTable weakObjectsHashTable];
+            [weakTable addObject:p1];
+            [weakTable addObject:p2];
+            fields = objectWithKey(tryArchive(weakTable), @"NS.count");
+            CHECK([fields[@"$0"] intValue] == NSPointerFunctionsWeakMemory && [fields[@"NS.count"] intValue] == 2);
+            tableBack = roundTrip(@"weak NSHashTable", weakTable, [NSHashTable class]);
+            CHECK([tableBack count] == 0);
+            // test_quirk_collection_options_must_be_object_options
+            CHECK(tryArchive([NSHashTable hashTableWithOptions:NSPointerFunctionsOpaquePersonality]) == nil);
+
+            NSMapTable *map = [NSMapTable strongToStrongObjectsMapTable];
+            [map setObject:@"v1" forKey:@"k1"];
+            [map setObject:@"v2" forKey:@"k2"];
+            NSMapTable *mapBack = roundTrip(@"NSMapTable", map, [NSMapTable class]);
+            CHECK([mapBack count] == 2 && [[mapBack objectForKey:@"k1"] isEqual:@"v1"] && [[mapBack objectForKey:@"k2"] isEqual:@"v2"]);
+            fields = objectWithKey(tryArchive(map), @"NS.count");
+            CHECK(keysAre(fields, @"$0,$1,$2,$3,$4,$5,$6,$class,NS.count"));
+            CHECK([fields[@"$0"] intValue] == 0 && [fields[@"$1"] intValue] == 0 && [fields[@"NS.count"] intValue] == 2);
+            mapBack = roundTrip(@"empty NSMapTable", [NSMapTable strongToStrongObjectsMapTable], [NSMapTable class]);
+            CHECK([mapBack count] == 0);
+            NSMapTable *weakKeys = [NSMapTable weakToStrongObjectsMapTable];
+            [weakKeys setObject:@"v" forKey:p1];
+            fields = objectWithKey(tryArchive(weakKeys), @"NS.count");
+            CHECK([fields[@"$0"] intValue] == NSPointerFunctionsWeakMemory && [fields[@"$1"] intValue] == 0 && [fields[@"NS.count"] intValue] == 1);
+            roundTrip(@"weak-to-strong NSMapTable", weakKeys, [NSMapTable class]);
+            CHECK(tryArchive([NSMapTable mapTableWithKeyOptions:NSPointerFunctionsOpaquePersonality valueOptions:NSPointerFunctionsOpaquePersonality]) == nil);
+        }
+        // NSOrthography
+        {
+            NSDictionary *languageMap = @{@"Latn": @[@"en", @"fr"], @"Cyrl": @[@"ru"]};
+            NSOrthography *orthography = [NSOrthography orthographyWithDominantScript:@"Latn" languageMap:languageMap];
+            NSOrthography *back = roundTrip(@"NSOrthography", orthography, [NSOrthography class]);
+            CHECK([back.dominantScript isEqual:@"Latn"] && [back.languageMap isEqual:languageMap]);
+            CHECK([back isEqual:orthography]);
+            CHECK([[back languagesForScript:@"Cyrl"] isEqual:@[@"ru"]] && [back.dominantLanguage isEqual:@"en"]);
+            NSDictionary *fields = objectWithKey(tryArchive(orthography), @"NSDominantScript");
+            CHECK(keysAre(fields, @"$class,NSDominantScript,NSLanguageMap"));
+            expectRefused(@"NSOrthography script", [NSOrthography class], @"NSOrthography", @{}, @{@"NSDominantScript": @42, @"NSLanguageMap": languageMap});
+            expectRefused(@"NSOrthography map", [NSOrthography class], @"NSOrthography", @{}, @{@"NSDominantScript": @"Latn", @"NSLanguageMap": @{@"Latn": @[@42]}});
+        }
+        // NSTextCheckingResult: the range (NSRangeLocation, NSRangeLength) and the fields of each kind.
+        {
+            NSTextCheckingResult *r = [NSTextCheckingResult replacementCheckingResultWithRange:NSMakeRange(1, 3) replacementString:@"fix"];
+            NSTextCheckingResult *back = roundTrip(@"replacement result", r, [NSTextCheckingResult class]);
+            CHECK(back.resultType == NSTextCheckingTypeReplacement && NSEqualRanges(back.range, NSMakeRange(1, 3)) && [back.replacementString isEqual:@"fix"]);
+            NSDictionary *fields = objectWithKey(tryArchive(r), @"NSReplacementString");
+            CHECK(keysAre(fields, @"$class,NSRangeLength,NSRangeLocation,NSReplacementString"));
+            CHECK([NSStringFromClass([back class]) isEqual:@"NSReplacementCheckingResult"]);
+            back = roundTrip(@"correction result", [NSTextCheckingResult correctionCheckingResultWithRange:NSMakeRange(0, 5) replacementString:@"x"], [NSTextCheckingResult class]);
+            CHECK(back.resultType == NSTextCheckingTypeCorrection && [back.replacementString isEqual:@"x"]);
+            back = roundTrip(@"quote result", [NSTextCheckingResult quoteCheckingResultWithRange:NSMakeRange(0, 1) replacementString:@"\""], [NSTextCheckingResult class]);
+            CHECK(back.resultType == NSTextCheckingTypeQuote && [back.replacementString isEqual:@"\""]);
+            back = roundTrip(@"dash result", [NSTextCheckingResult dashCheckingResultWithRange:NSMakeRange(0, 2) replacementString:@"-"], [NSTextCheckingResult class]);
+            CHECK(back.resultType == NSTextCheckingTypeDash && [back.replacementString isEqual:@"-"]);
+            back = roundTrip(@"spelling result", [NSTextCheckingResult spellCheckingResultWithRange:NSMakeRange(2, 4)], [NSTextCheckingResult class]);
+            CHECK(back.resultType == NSTextCheckingTypeSpelling && NSEqualRanges(back.range, NSMakeRange(2, 4)));
+            fields = objectWithKey(tryArchive([NSTextCheckingResult spellCheckingResultWithRange:NSMakeRange(2, 4)]), @"NSRangeLocation");
+            CHECK(keysAre(fields, @"$class,NSRangeLength,NSRangeLocation"));
+            NSOrthography *orthography = [NSOrthography orthographyWithDominantScript:@"Latn" languageMap:@{@"Latn": @[@"en"]}];
+            back = roundTrip(@"orthography result", [NSTextCheckingResult orthographyCheckingResultWithRange:NSMakeRange(0, 5) orthography:orthography], [NSTextCheckingResult class]);
+            CHECK(back.resultType == NSTextCheckingTypeOrthography && NSEqualRanges(back.range, NSMakeRange(0, 5)) && [back.orthography isEqual:orthography]);
+            back = roundTrip(@"link result", [NSTextCheckingResult linkCheckingResultWithRange:NSMakeRange(2, 3) URL:[NSURL URLWithString:@"http://example.com/b"]], [NSTextCheckingResult class]);
+            CHECK(back.resultType == NSTextCheckingTypeLink && NSEqualRanges(back.range, NSMakeRange(2, 3)) && [back.URL isEqual:[NSURL URLWithString:@"http://example.com/b"]]);
+            NSDate *date = [NSDate dateWithTimeIntervalSinceReferenceDate:99];
+            back = roundTrip(@"date result", [NSTextCheckingResult dateCheckingResultWithRange:NSMakeRange(0, 5) date:date timeZone:[NSTimeZone timeZoneWithName:@"Asia/Tokyo"] duration:60], [NSTextCheckingResult class]);
+            CHECK(back.resultType == NSTextCheckingTypeDate && [back.date isEqual:date] && [back.timeZone.name isEqual:@"Asia/Tokyo"] && back.duration == 60);
+            back = roundTrip(@"date result without time zone", [NSTextCheckingResult dateCheckingResultWithRange:NSMakeRange(0, 5) date:date], [NSTextCheckingResult class]);
+            CHECK([back.date isEqual:date] && back.timeZone == nil && back.duration == 0);
+            fields = objectWithKey(tryArchive([NSTextCheckingResult dateCheckingResultWithRange:NSMakeRange(0, 5) date:date]), @"NSDate");
+            CHECK(keysAre(fields, @"$class,NSDate,NSDuration,NSRangeLength,NSRangeLocation,NSReferenceDate,NSTimeZone") || keysAre(fields, @"$class,NSDate,NSDuration,NSRangeLength,NSRangeLocation"));
+            NSDictionary *components = @{NSTextCheckingCityKey: @"Prague", NSTextCheckingCountryKey: @"CZ"};
+            back = roundTrip(@"address result", [NSTextCheckingResult addressCheckingResultWithRange:NSMakeRange(0, 5) components:components], [NSTextCheckingResult class]);
+            CHECK(back.resultType == NSTextCheckingTypeAddress && [back.addressComponents isEqual:components]);
+            back = roundTrip(@"phone number result", [NSTextCheckingResult phoneNumberCheckingResultWithRange:NSMakeRange(0, 5) phoneNumber:@"123 456"], [NSTextCheckingResult class]);
+            CHECK(back.resultType == NSTextCheckingTypePhoneNumber && [back.phoneNumber isEqual:@"123 456"]);
+            back = roundTrip(@"transit result", [NSTextCheckingResult transitInformationCheckingResultWithRange:NSMakeRange(0, 5) components:@{NSTextCheckingAirlineKey: @"A"}], [NSTextCheckingResult class]);
+            CHECK(back.resultType == NSTextCheckingTypeTransitInformation && [back.components isEqual:@{NSTextCheckingAirlineKey: @"A"}]);
+            NSRegularExpression *expression = [NSRegularExpression regularExpressionWithPattern:@"a(b)" options:0 error:NULL];
+            NSTextCheckingResult *match = [expression firstMatchInString:@"xab" options:0 range:NSMakeRange(0, 3)];
+            back = roundTrip(@"regular expression result", match, [NSTextCheckingResult class]);
+            CHECK(back.resultType == NSTextCheckingTypeRegularExpression && back.numberOfRanges == 2);
+            CHECK(NSEqualRanges([back rangeAtIndex:0], NSMakeRange(1, 2)) && NSEqualRanges([back rangeAtIndex:1], NSMakeRange(2, 1)));
+            CHECK([[back.regularExpression pattern] isEqual:@"a(b)"]);
+            fields = objectWithKey(tryArchive(match), @"NSRangeArray");
+            CHECK(keysAre(fields, @"$class,NSRangeArray,NSRangeLength,NSRangeLocation,NSRegularExpression"));
+            NSRange five[5] = {{0, 5}, {1, 1}, {2, 1}, {3, 1}, {NSNotFound, 0}};
+            back = roundTrip(@"five-range regular expression result", [NSTextCheckingResult regularExpressionCheckingResultWithRanges:five count:5 regularExpression:expression], [NSTextCheckingResult class]);
+            CHECK(back.numberOfRanges == 5 && NSEqualRanges([back rangeAtIndex:4], NSMakeRange(NSNotFound, 0)) && NSEqualRanges([back rangeAtIndex:0], NSMakeRange(0, 5)));
+            NSRange nine[9] = {{0, 9}, {1, 1}, {2, 1}, {3, 1}, {4, 1}, {5, 1}, {6, 1}, {7, 1}, {8, 1}};
+            back = roundTrip(@"nine-range regular expression result", [NSTextCheckingResult regularExpressionCheckingResultWithRanges:nine count:9 regularExpression:expression], [NSTextCheckingResult class]);
+            CHECK(back.numberOfRanges == 9 && NSEqualRanges([back rangeAtIndex:8], NSMakeRange(8, 1)));
+            expectRefused(@"result replacement string", [NSTextCheckingResult class], @"NSReplacementCheckingResult", @{@"NSRangeLocation": @1, @"NSRangeLength": @2}, @{@"NSReplacementString": @42});
+            expectRefused(@"result link", [NSTextCheckingResult class], @"NSLinkCheckingResult", @{@"NSRangeLocation": @1, @"NSRangeLength": @2}, @{@"NSURL": @"http://example.com/"});
+            expectRefused(@"result range", [NSTextCheckingResult class], @"NSSpellCheckingResult", @{@"NSRangeLocation": @-1, @"NSRangeLength": @2}, @{});
+        }
+        // NSAttributedString and NSMutableAttributedString: the string, the attribute runs
+        // (NSAttributes, and for several runs NSAttributeInfo as varint length/index pairs).
+        {
+            NSDictionary *A = @{@"a": @1}, *B = @{@"b": @"two"};
+            NSMutableAttributedString *mutableString = [[[NSMutableAttributedString alloc] initWithString:@"AAAAABBBBBAAAAA"] autorelease];
+            [mutableString setAttributes:A range:NSMakeRange(0, 5)];
+            [mutableString setAttributes:B range:NSMakeRange(5, 5)];
+            [mutableString setAttributes:A range:NSMakeRange(10, 5)];
+            NSAttributedString *immutableString = [[mutableString copy] autorelease];
+
+            NSMutableAttributedString *mutableBack = roundTrip(@"NSMutableAttributedString", mutableString, [NSMutableAttributedString class]);
+            CHECK([mutableBack isKindOfClass:[NSMutableAttributedString class]] && [mutableBack isEqualToAttributedString:mutableString]);
+            [mutableBack appendAttributedString:[[[NSAttributedString alloc] initWithString:@"!"] autorelease]]; // really mutable
+            CHECK([mutableBack length] == 16);
+            NSAttributedString *immutableBack = roundTrip(@"NSAttributedString", immutableString, [NSAttributedString class]);
+            CHECK([immutableBack isEqualToAttributedString:immutableString] && [immutableBack length] == 15);
+            NSRange run;
+            CHECK([[immutableBack attributesAtIndex:7 effectiveRange:&run] isEqual:B] && NSEqualRanges(run, NSMakeRange(5, 5)));
+
+            NSDictionary *fields = objectWithKey(tryArchive(mutableString), @"NSAttributeInfo");
+            CHECK(keysAre(fields, @"$class,NSAttributeInfo,NSAttributes,NSString"));
+            const uint8_t expectedInfo[] = {5, 0, 5, 1, 5, 2};
+            CHECK(archiveHasData(tryArchive(mutableString), bytes(expectedInfo, sizeof expectedInfo)));
+
+            NSAttributedString *single = [[[NSAttributedString alloc] initWithString:@"abc" attributes:A] autorelease];
+            NSAttributedString *singleBack = roundTrip(@"single-run NSAttributedString", single, [NSAttributedString class]);
+            CHECK([singleBack isEqualToAttributedString:single]);
+            fields = objectWithKey(tryArchive(single), @"NSAttributes");
+            CHECK(keysAre(fields, @"$class,NSAttributes,NSString"));
+            NSAttributedString *empty = [[[NSAttributedString alloc] initWithString:@""] autorelease];
+            NSAttributedString *emptyBack = roundTrip(@"empty NSAttributedString", empty, [NSAttributedString class]);
+            CHECK([emptyBack length] == 0);
+            fields = objectWithKey(tryArchive(empty), @"NSString");
+            CHECK(keysAre(fields, @"$class,NSString"));
+            NSMutableString *longString = [NSMutableString string];
+            for (int i = 0; i < 300; i++) [longString appendString:@"x"];
+            NSMutableAttributedString *longRuns = [[[NSMutableAttributedString alloc] initWithString:longString attributes:A] autorelease];
+            [longRuns addAttributes:B range:NSMakeRange(130, 1)]; // run lengths above 127 take two varint bytes
+            NSAttributedString *longBack = roundTrip(@"NSMutableAttributedString with long runs", longRuns, [NSMutableAttributedString class]);
+            CHECK([longBack isEqualToAttributedString:longRuns]);
+            // macOS reuses the dictionary of the split run for the third run (index 0); ours writes one dictionary
+            // per run, so only the run lengths and the first indexes are compared.
+            const uint8_t expectedLongInfo[] = {0x82, 0x01, 0, 1, 1, 0xa9, 0x01};
+            CHECK(archiveHasDataPrefix(tryArchive(longRuns), bytes(expectedLongInfo, sizeof expectedLongInfo)));
+
+            // Attribute values: strings, numbers, URLs, data, arrays, dictionaries and attributed strings are
+            // accepted; others make the secure decoding fail.
+            NSURL *url = [NSURL URLWithString:@"http://example.com/"];
+            NSAttributedString *rich = [[[NSAttributedString alloc] initWithString:@"x" attributes:@{@"u": url, @"d": [NSData dataWithBytes:"ab" length:2], @"l": @[@1, @"s"], @"m": @{@"k": @2}, @"n": @1.5}] autorelease];
+            NSAttributedString *richBack = roundTrip(@"NSAttributedString with attribute values", rich, [NSAttributedString class]);
+            CHECK([richBack isEqualToAttributedString:rich]);
+            NSAttributedString *refused[] = {
+                [[[NSAttributedString alloc] initWithString:@"x" attributes:@{@"w": [NSSet setWithObject:@1]}] autorelease],
+                [[[NSAttributedString alloc] initWithString:@"x" attributes:@{@"w": [NSDate dateWithTimeIntervalSinceReferenceDate:5]}] autorelease],
+                [[[NSAttributedString alloc] initWithString:@"x" attributes:@{@"w": [NSNull null]}] autorelease],
+            };
+            for (size_t i = 0; i < sizeof refused / sizeof refused[0]; i++) {
+                NSError *error = nil;
+                CHECK(secureDecode([NSAttributedString class], tryArchive(refused[i]), &error) == nil);
+            }
+            // An attribute value the archiver cannot encode makes the archiving fail.
+            CHECK(tryArchive([[[NSAttributedString alloc] initWithString:@"x" attributes:@{@"o": [[[NSObject alloc] init] autorelease]}] autorelease]) == nil);
+            expectRefused(@"attributed string text", [NSAttributedString class], @"NSAttributedString", @{}, @{@"NSString": @42});
         }
     }
     if (failures != 0) {

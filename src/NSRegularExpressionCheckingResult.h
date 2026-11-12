@@ -46,6 +46,7 @@ NS_REQUIRES_PROPERTY_DEFINITIONS
 {
     NSRegularExpression *_regularExpression;
     NSRange _ranges[NSRegularExpressionCheckingResultExtendedLimit];
+    NSUInteger _numberOfRanges;
 }
 
 - (id)initWithRangeArray:(NSArray *)ranges regularExpression:(NSRegularExpression *)expression;

@@ -33,6 +33,7 @@
 #import "Foundation/NSDictionary.h"
 #import "Foundation/NSEnumerator.h"
 #import "Foundation/NSException.h"
+#import "Foundation/NSCoder.h"
 #import "Foundation/NSHashTable.h"
 #import "NSConcreteHashTableInternal.h"
 #import "NSPointerFunctionsInternal.h"
@@ -42,6 +43,7 @@
 
 #import "NSCallBacks.h"
 #import "GSPrivate.h"
+#import "NSPointerFunctionsArchiving.h"
 #import <objc/runtime.h>
 
 static Class	concreteClass = Nil;
@@ -936,7 +938,29 @@ const NSHashTableCallBacks NSOwnedObjectIdentityHashCallBacks =
 
 - (void) encodeWithCoder: (NSCoder*)aCoder
 {
-  [self subclassResponsibility: _cmd];
+  NSPointerFunctionsOptions	options = legacy ? 0 : self->cb.pf.options;
+  int				archivedOptions = (int)options;
+  int				archivedCount = (int)nodeCount;
+  BOOL				weak = NSPointerFunctionsOptionsAreWeak(options);
+  NSEnumerator			*enumerator;
+  id				member;
+
+  if (legacy || !NSPointerFunctionsOptionsAreArchivable(options))
+    {
+      [NSException raise: NSInvalidArgumentException
+		  format: @"NSHashTable has invalid options for encoding"];
+    }
+  [aCoder encodeValueOfObjCType: "i" at: &archivedOptions];
+  enumerator = [self objectEnumerator];
+  while ((member = [enumerator nextObject]) != nil)
+    {
+      [aCoder encodeObject: weak ? NSPointerFunctionsWeakMemberPlaceholder : member];
+    }
+  [aCoder encodeObject: nil];
+  if ([aCoder allowsKeyedCoding])
+    {
+      [aCoder encodeInt: archivedCount forKey: @"NS.count"];
+    }
 }
 
 - (void) finalize
@@ -956,8 +980,30 @@ const NSHashTableCallBacks NSOwnedObjectIdentityHashCallBacks =
 
 - (id) initWithCoder: (NSCoder*)aCoder
 {
-  [self subclassResponsibility: _cmd];
-  return nil;
+  int		options = -1;
+  int		count = 0;
+  BOOL		weak;
+  id		member;
+
+  [aCoder decodeValueOfObjCType: "i" at: &options];
+  if ([aCoder allowsKeyedCoding])
+    {
+      count = [aCoder decodeIntForKey: @"NS.count"];
+    }
+  if (count < 0 || !NSPointerFunctionsOptionsAreArchivable((NSPointerFunctionsOptions)options))
+    {
+      [self release];
+      return nil;
+    }
+  weak = NSPointerFunctionsOptionsAreWeak((NSPointerFunctionsOptions)options);
+  /* The count is only a hint and a small initial capacity makes lookups fail on i386, so it is not used. */
+  self = [self initWithOptions: (NSPointerFunctionsOptions)options capacity: 0];
+  /* Weak members are archived as nil and cannot be restored. */
+  while (self != nil && !weak && (member = [aCoder decodeObject]) != nil)
+    {
+      [self addObject: member];
+    }
+  return self;
 }
 
 - (id) initWithPointerFunctions: (NSPointerFunctions*)functions

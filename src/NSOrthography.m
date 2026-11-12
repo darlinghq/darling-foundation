@@ -7,6 +7,10 @@
 
 #import <Foundation/NSOrthography.h>
 #import <Foundation/NSArray.h>
+#import <Foundation/NSCoder.h>
+#import <Foundation/NSDictionary.h>
+#import <Foundation/NSSet.h>
+#import <Foundation/NSString.h>
 #import "NSObjectInternal.h"
 
 typedef NS_OPTIONS(NSUInteger, NSOrthographyFlags) {
@@ -34,6 +38,11 @@ typedef NS_OPTIONS(NSUInteger, NSOrthographyFlags) {
 + (void)initialize
 {
 
+}
+
++ (BOOL)supportsSecureCoding
+{
+    return YES;
 }
 
 + (id)allocWithZone:(NSZone *)zone
@@ -86,7 +95,7 @@ typedef NS_OPTIONS(NSUInteger, NSOrthographyFlags) {
     // ensure dominant is the first script (even for subclassers)
     [all removeObject:dominant];
     [all insertObject:dominant atIndex:0];
-    return [all autorelase];
+    return [all autorelease];
 }
 
 - (NSString *)dominantLanguage
@@ -107,7 +116,7 @@ typedef NS_OPTIONS(NSUInteger, NSOrthographyFlags) {
 
 - (NSArray *)languagesForScript:(NSString *)script
 {
-    return [[self languageMap] objectForKey:[self dominantScript]];
+    return [[self languageMap] objectForKey:script];
 }
 
 - (NSOrthographyFlags)orthographyFlags
@@ -159,6 +168,18 @@ typedef NS_OPTIONS(NSUInteger, NSOrthographyFlags) {
     return [self retain];
 }
 
+- (void)encodeWithCoder:(NSCoder *)coder
+{
+    NSRequestConcreteImplementation();
+}
+
+- (id)initWithCoder:(NSCoder *)coder
+{
+    NSRequestConcreteImplementation();
+    [self release];
+    return nil;
+}
+
 @end
 
 @interface NSSimpleOrthography : NSOrthography
@@ -189,4 +210,87 @@ typedef NS_OPTIONS(NSUInteger, NSOrthographyFlags) {
 @end
 
 @implementation NSComplexOrthography
+
+- (id)initWithDominantScript:(NSString *)script languageMap:(NSDictionary *)map
+{
+    self = [super init];
+    if (self)
+    {
+        _dominantScript = [script copy];
+        _languageMap = [map copy];
+    }
+    return self;
+}
+
+- (void)dealloc
+{
+    [_dominantScript release];
+    [_languageMap release];
+    [super dealloc];
+}
+
+- (NSString *)dominantScript
+{
+    return _dominantScript;
+}
+
+- (NSDictionary *)languageMap
+{
+    return _languageMap;
+}
+
+- (NSOrthographyFlags)orthographyFlags
+{
+    return _orthographyFlags;
+}
+
+- (Class)classForCoder
+{
+    return [NSOrthography class];
+}
+
+- (void)encodeWithCoder:(NSCoder *)coder
+{
+    [coder encodeObject:_dominantScript forKey:@"NSDominantScript"];
+    [coder encodeObject:_languageMap forKey:@"NSLanguageMap"];
+}
+
+- (id)initWithCoder:(NSCoder *)coder
+{
+    NSString *script = nil;
+    NSDictionary *map = nil;
+    if ([coder allowsKeyedCoding])
+    {
+        script = [coder decodeObjectOfClass:[NSString class] forKey:@"NSDominantScript"];
+        map = [coder decodeObjectOfClasses:[NSSet setWithObjects:[NSDictionary class], [NSArray class], [NSString class], nil] forKey:@"NSLanguageMap"];
+    }
+    BOOL valid = script != nil && [map isKindOfClass:[NSDictionary class]];
+    if (valid)
+    {
+        for (id key in map)
+        {
+            id languages = [map objectForKey:key];
+            if (![key isKindOfClass:[NSString class]] || ![languages isKindOfClass:[NSArray class]])
+            {
+                valid = NO;
+                break;
+            }
+            for (id language in languages)
+            {
+                if (![language isKindOfClass:[NSString class]])
+                {
+                    valid = NO;
+                    break;
+                }
+            }
+        }
+    }
+    if (!valid)
+    {
+        [self release];
+        return nil;
+    }
+    return [self initWithDominantScript:script languageMap:map];
+}
+
 @end

@@ -9,6 +9,9 @@
 #import <Foundation/NSDate.h>
 #import <Foundation/NSTimeZone.h>
 
+#import "NSTextCheckingResultCoding.h"
+#import <Foundation/NSCoder.h>
+
 @implementation NSDateCheckingResult
 
 - (id)initWithRange:(NSRange)range date:(NSDate *)date
@@ -51,12 +54,44 @@
 - (void)dealloc
 {
     [_date release];
+    [_timeZone release];
+    [_referenceDate release];
     [super dealloc];
 }
 
 - (NSDate *)date
 {
     return _date;
+}
+
+- (NSTimeZone *)timeZone
+{
+    return _timeZone;
+}
+
+- (NSTimeInterval)duration
+{
+    return _duration;
+}
+
+- (NSDate *)referenceDate
+{
+    return _referenceDate;
+}
+
+- (BOOL)timeIsSignificant
+{
+    return _timeIsSignificant;
+}
+
+- (BOOL)timeIsApproximate
+{
+    return _timeIsApproximate;
+}
+
+- (void *)underlyingResult
+{
+    return _underlyingResult;
 }
 
 - (NSRange)range
@@ -75,5 +110,30 @@
 
 }
 */
+
+
+- (void)encodeWithCoder:(NSCoder *)coder
+{
+    NSTextCheckingResultEncodeRange(coder, _range);
+    [coder encodeObject:_date forKey:@"NSDate"];
+    [coder encodeDouble:_duration forKey:@"NSDuration"];
+    [coder encodeObject:_referenceDate forKey:@"NSReferenceDate"];
+    [coder encodeObject:_timeZone forKey:@"NSTimeZone"];
+}
+
+- (id)initWithCoder:(NSCoder *)coder
+{
+    NSRange range;
+    NSDate *date = [coder decodeObjectOfClass:[NSDate class] forKey:@"NSDate"];
+    NSDate *referenceDate = [coder decodeObjectOfClass:[NSDate class] forKey:@"NSReferenceDate"];
+    NSTimeZone *timeZone = [coder decodeObjectOfClass:[NSTimeZone class] forKey:@"NSTimeZone"];
+    NSTimeInterval duration = [coder decodeDoubleForKey:@"NSDuration"];
+    if (!NSTextCheckingResultDecodeRange(coder, &range) || date == nil)
+    {
+        [self release];
+        return nil;
+    }
+    return [self initWithRange:range date:date timeZone:timeZone duration:duration referenceDate:referenceDate];
+}
 
 @end

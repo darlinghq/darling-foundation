@@ -7,6 +7,11 @@
 
 #import "NSAddressCheckingResult.h"
 #import <Foundation/NSDictionary.h>
+#import <Foundation/NSSet.h>
+#import <Foundation/NSString.h>
+
+#import "NSTextCheckingResultCoding.h"
+#import <Foundation/NSCoder.h>
 
 @implementation NSAddressCheckingResult
 
@@ -27,18 +32,6 @@
         _underlyingResult = underlyingResult;
     }
     return self;
-}
-
-- (id)initWithCoder:(NSCoder *)coder
-{
-	self = [super init];
-	NSLog(@"STUB NSAddressCheckingResult initWithCoder");
-	return self;
-}
-
-- (void)encodeWithCoder:(NSCoder *)coder
-{
-	NSLog(@"STUB NSAddressCheckingResult encodeWithCoder");
 }
 
 - (id)resultByAdjustingRangesWithOffset:(NSInteger)offset
@@ -63,6 +56,11 @@
     return _components;
 }
 
+- (NSDictionary *)addressComponents
+{
+    return _components;
+}
+
 - (NSRange)range
 {
     return _range;
@@ -73,5 +71,24 @@
     return NSTextCheckingTypeAddress;
 }
 
+
+
+- (void)encodeWithCoder:(NSCoder *)coder
+{
+    NSTextCheckingResultEncodeRange(coder, _range);
+    [coder encodeObject:_components forKey:@"NSAddressComponents"];
+}
+
+- (id)initWithCoder:(NSCoder *)coder
+{
+    NSRange range;
+    NSDictionary *components = [coder decodeObjectOfClasses:[NSSet setWithObjects:[NSDictionary class], [NSString class], nil] forKey:@"NSAddressComponents"];
+    if (!NSTextCheckingResultDecodeRange(coder, &range) || ![components isKindOfClass:[NSDictionary class]])
+    {
+        [self release];
+        return nil;
+    }
+    return [self initWithRange:range components:components];
+}
 
 @end

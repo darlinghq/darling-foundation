@@ -2,7 +2,7 @@
 
 @class NSString;
 
-@interface NSSubstitutionCheckingResult : NSTextCheckingResult {
+@interface NSReplacementCheckingResult : NSTextCheckingResult {
     NSRange _range;
     NSString *_replacementString;
 }
@@ -20,19 +20,19 @@
 @end
 
 
-@interface NSCorrectionCheckingResult : NSSubstitutionCheckingResult
+@interface NSCorrectionCheckingResult : NSReplacementCheckingResult
 
 - (NSTextCheckingType)resultType;
 
 @end
 
-@interface NSDashCheckingResult : NSSubstitutionCheckingResult
+@interface NSDashCheckingResult : NSReplacementCheckingResult
 
 - (NSTextCheckingType)resultType;
 
 @end
 
-@interface NSQuoteCheckingResult : NSSubstitutionCheckingResult
+@interface NSQuoteCheckingResult : NSReplacementCheckingResult
 
 - (NSTextCheckingType)resultType;
 

@@ -8,6 +8,9 @@
 #import "NSOrthographyCheckingResult.h"
 #import <Foundation/NSOrthography.h>
 
+#import "NSTextCheckingResultCoding.h"
+#import <Foundation/NSCoder.h>
+
 @implementation NSOrthographyCheckingResult
 
 - (id)initWithRange:(NSRange)range orthography:(NSOrthography *)orthography
@@ -15,6 +18,7 @@
     self = [super init];
     if (self)
     {
+        _range = range;
         _orthography = [orthography copy];
     }
     return self;
@@ -39,6 +43,25 @@
 - (NSTextCheckingType)resultType
 {
     return NSTextCheckingTypeOrthography;
+}
+
+
+- (void)encodeWithCoder:(NSCoder *)coder
+{
+    NSTextCheckingResultEncodeRange(coder, _range);
+    [coder encodeObject:_orthography forKey:@"NSOrthography"];
+}
+
+- (id)initWithCoder:(NSCoder *)coder
+{
+    NSRange range;
+    NSOrthography *orthography = [coder decodeObjectOfClass:[NSOrthography class] forKey:@"NSOrthography"];
+    if (!NSTextCheckingResultDecodeRange(coder, &range) || orthography == nil)
+    {
+        [self release];
+        return nil;
+    }
+    return [self initWithRange:range orthography:orthography];
 }
 
 @end

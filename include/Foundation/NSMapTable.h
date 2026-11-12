@@ -61,7 +61,7 @@ enum {
 
 typedef NSUInteger NSMapTableOptions;
 
-@interface NSMapTable<KeyType, ObjectType> : NSObject <NSCopying, NSCoding, NSFastEnumeration>
+@interface NSMapTable<KeyType, ObjectType> : NSObject <NSCopying, NSSecureCoding, NSFastEnumeration>
 
 /** Return a map table initialised using the specified options for
  * keys and values.

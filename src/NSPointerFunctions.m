@@ -378,7 +378,11 @@ static void *NSARCSentinelSliceAlloc(size_t count)
     void *buffer = malloc(size);
     if (buffer != NULL)
     {
-        memset_pattern4(buffer, &_NSPointerFunctionsSentinel, size);
+        void **slots = buffer;
+        for (size_t idx = 0; idx < count; idx++)
+        {
+            slots[idx] = _NSPointerFunctionsSentinel;
+        }
     }
 
     return buffer;

@@ -658,8 +658,8 @@ static id newDecodedValue(NSCoder *aCoder)
                 break;
             case NSRangeType: {
                 NSRange r = [self rangeValue];
-                [aCoder encodeObject:[NSNumber numberWithUnsignedInteger:r.location] forKey:NS_rangeval_location];
-                [aCoder encodeObject:[NSNumber numberWithUnsignedInteger:r.length] forKey:NS_rangeval_length];
+                [aCoder encodeInt64:(int64_t)r.location forKey:NS_rangeval_location];
+                [aCoder encodeInt64:(int64_t)r.length forKey:NS_rangeval_length];
                 break;
             }
             

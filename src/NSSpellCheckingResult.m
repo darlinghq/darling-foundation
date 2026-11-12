@@ -7,6 +7,9 @@
 
 #import "NSSpellCheckingResult.h"
 
+#import "NSTextCheckingResultCoding.h"
+#import <Foundation/NSCoder.h>
+
 @implementation NSSpellCheckingResult
 
 - (id)initWithRange:(NSRange)range
@@ -29,5 +32,22 @@
     return NSTextCheckingTypeSpelling;
 }
 
+
+
+- (void)encodeWithCoder:(NSCoder *)coder
+{
+    NSTextCheckingResultEncodeRange(coder, _range);
+}
+
+- (id)initWithCoder:(NSCoder *)coder
+{
+    NSRange range;
+    if (!NSTextCheckingResultDecodeRange(coder, &range))
+    {
+        [self release];
+        return nil;
+    }
+    return [self initWithRange:range];
+}
 
 @end

@@ -8,7 +8,7 @@
 #import "NSTransitInformationCheckingResult.h"
 #import "NSPhoneNumberCheckingResult.h"
 #import "NSRegularExpressionCheckingResult.h"
-#import "NSSubstitutionCheckingResult.h"
+#import "NSReplacementCheckingResult.h"
 #import "NSLinkCheckingResult.h"
 #import "NSDateCheckingResult.h"
 #import "NSGrammarCheckingResult.h"
@@ -29,6 +29,11 @@ NSString * const NSTextCheckingAirlineKey = @"Airline";
 NSString * const NSTextCheckingFlightKey = @"Flight";
 
 @implementation NSTextCheckingResult
+
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
 
 + (void)initialize
 {
@@ -68,7 +73,7 @@ NSString * const NSTextCheckingFlightKey = @"Flight";
 
 + (NSTextCheckingResult *)replacementCheckingResultWithRange:(NSRange)range replacementString:(NSString *)replacementString
 {
-    return [[[NSSubstitutionCheckingResult alloc] initWithRange:range replacementString:replacementString] autorelease];
+    return [[[NSReplacementCheckingResult alloc] initWithRange:range replacementString:replacementString] autorelease];
 }
 
 + (NSTextCheckingResult *)dashCheckingResultWithRange:(NSRange)range replacementString:(NSString *)replacementString

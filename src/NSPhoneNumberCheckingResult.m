@@ -8,6 +8,9 @@
 #import "NSPhoneNumberCheckingResult.h"
 #import <Foundation/NSString.h>
 
+#import "NSTextCheckingResultCoding.h"
+#import <Foundation/NSCoder.h>
+
 @implementation NSPhoneNumberCheckingResult
 
 - (id)initWithRange:(NSRange)range phoneNumber:(NSString *)phoneNumber
@@ -54,5 +57,24 @@
 
 }
 */
+
+
+- (void)encodeWithCoder:(NSCoder *)coder
+{
+    NSTextCheckingResultEncodeRange(coder, _range);
+    [coder encodeObject:_phoneNumber forKey:@"NSPhoneNumber"];
+}
+
+- (id)initWithCoder:(NSCoder *)coder
+{
+    NSRange range;
+    NSString *phoneNumber = [coder decodeObjectOfClass:[NSString class] forKey:@"NSPhoneNumber"];
+    if (!NSTextCheckingResultDecodeRange(coder, &range) || phoneNumber == nil)
+    {
+        [self release];
+        return nil;
+    }
+    return [self initWithRange:range phoneNumber:phoneNumber];
+}
 
 @end
