@@ -244,6 +244,7 @@ set(foundation_sources
 
 	src/NSXPCConnection.m
 	src/NSAppleEventManager.m
+	src/NSAppleEventManagerHandlers.m
 	src/NSDateComponentsFormatter.m
 	src/NSMeasurementFormatter.m
 	src/NSAppleScript.m
