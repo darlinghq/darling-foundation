@@ -7,6 +7,8 @@
 
 #import <Foundation/NSIndexPath.h>
 #import <Foundation/NSRange.h>
+#import <Foundation/NSCoder.h>
+#import <Foundation/NSData.h>
 #import <stdlib.h>
 
 @implementation NSIndexPath
@@ -52,16 +54,147 @@
     return self;
 }
 
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
+
+// The index list of a path with two or more elements is archived as one data
+// blob holding each index as an unsigned base-128 varint (low group first).
+static void appendVarint(NSMutableData *data, NSUInteger value)
+{
+    do
+    {
+        uint8_t byte = value & 0x7f;
+        value >>= 7;
+        if (value != 0)
+        {
+            byte |= 0x80;
+        }
+        [data appendBytes:&byte length:1];
+    } while (value != 0);
+}
+
+static BOOL readVarint(const uint8_t *bytes, NSUInteger length, NSUInteger *position, NSUInteger *value)
+{
+    NSUInteger result = 0;
+    unsigned shift = 0;
+    while (*position < length)
+    {
+        uint8_t byte = bytes[(*position)++];
+        const unsigned bits = sizeof(NSUInteger) * 8;
+        if (shift >= bits || (shift + 7 > bits && ((byte & 0x7f) >> (bits - shift)) != 0))
+        {
+            return NO;
+        }
+        result |= (NSUInteger)(byte & 0x7f) << shift;
+        if ((byte & 0x80) == 0)
+        {
+            *value = result;
+            return YES;
+        }
+        shift += 7;
+    }
+    return NO;
+}
+
 - (id)initWithCoder:(NSCoder *)aDecoder
 {
-#warning TODO: FIXME
-    [self release];
-    return nil;
+    if (![aDecoder allowsKeyedCoding])
+    {
+        NSUInteger length = 0;
+        [aDecoder decodeValueOfObjCType:@encode(NSUInteger) at:&length];
+        NSUInteger *indexes = length > 0 ? malloc(sizeof(NSUInteger) * length) : NULL;
+        if (length > 0 && indexes == NULL)
+        {
+            [self release];
+            return nil;
+        }
+        for (NSUInteger i = 0; i < length; i++)
+        {
+            [aDecoder decodeValueOfObjCType:@encode(NSUInteger) at:&indexes[i]];
+        }
+        self = [self initWithIndexes:indexes length:length];
+        free(indexes);
+        return self;
+    }
+
+    int64_t length = [aDecoder decodeInt64ForKey:@"NSIndexPathLength"];
+    if (length < 0)
+    {
+        [self release];
+        return nil;
+    }
+    if (length == 0)
+    {
+        return [self initWithIndexes:NULL length:0];
+    }
+    if (length == 1)
+    {
+        return [self initWithIndex:(NSUInteger)[aDecoder decodeInt64ForKey:@"NSIndexPathValue"]];
+    }
+
+    NSData *data = [aDecoder decodeObjectOfClass:[NSData class] forKey:@"NSIndexPathData"];
+    const uint8_t *bytes = [data bytes];
+    NSUInteger dataLength = [data length];
+    // Every index takes at least one byte, which bounds the allocation.
+    if (data == nil || (uint64_t)length > dataLength)
+    {
+        [self release];
+        return nil;
+    }
+    NSUInteger *indexes = malloc(sizeof(NSUInteger) * (NSUInteger)length);
+    if (indexes == NULL)
+    {
+        [self release];
+        return nil;
+    }
+    NSUInteger position = 0;
+    for (NSUInteger i = 0; i < (NSUInteger)length; i++)
+    {
+        if (!readVarint(bytes, dataLength, &position, &indexes[i]))
+        {
+            free(indexes);
+            [self release];
+            return nil;
+        }
+    }
+    if (position != dataLength)
+    {
+        free(indexes);
+        [self release];
+        return nil;
+    }
+    self = [self _initWithIndexesNoCopy:indexes length:(NSUInteger)length];
+    return self;
 }
 
 - (void)encodeWithCoder:(NSCoder *)aCoder
 {
-#warning TODO: FIXME
+    if (![aCoder allowsKeyedCoding])
+    {
+        [aCoder encodeValueOfObjCType:@encode(NSUInteger) at:&_length];
+        for (NSUInteger i = 0; i < _length; i++)
+        {
+            [aCoder encodeValueOfObjCType:@encode(NSUInteger) at:&_indexes[i]];
+        }
+        return;
+    }
+
+    [aCoder encodeInt64:(int64_t)_length forKey:@"NSIndexPathLength"];
+    if (_length == 1)
+    {
+        [aCoder encodeInt64:(int64_t)_indexes[0] forKey:@"NSIndexPathValue"];
+    }
+    else if (_length > 1)
+    {
+        NSMutableData *data = [NSMutableData data];
+        for (NSUInteger i = 0; i < _length; i++)
+        {
+            appendVarint(data, _indexes[i]);
+        }
+        [aCoder encodeObject:data forKey:@"NSIndexPathData"];
+    }
 }
 
 - (id)copyWithZone:(NSZone *)zone

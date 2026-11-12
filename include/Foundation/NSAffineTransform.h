@@ -40,7 +40,7 @@ typedef	struct {
   CGFloat	tY;
 } NSAffineTransformStruct;
 
-@interface NSAffineTransform : NSObject <NSCopying, NSCoding>
+@interface NSAffineTransform : NSObject <NSCopying, NSSecureCoding>
 {
 @private
   NSAffineTransformStruct	_matrix;

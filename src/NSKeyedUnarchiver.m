@@ -465,6 +465,32 @@ static BOOL _classIsAllowed(Class class, NSSet *allowedClasses)
     return NO;
 }
 
+// Values archived as plain property-list scalars (strings, numbers, booleans,
+// data) carry no class name, so they are checked as the instance of their
+// class that they decode to. `owned` says the caller holds a +1 reference that
+// has to be dropped when the value is refused.
+static id _scalarAllowed(NSKeyedUnarchiver *unarchiver, id value, BOOL owned)
+{
+    if (value == nil || ![unarchiver requiresSecureCoding])
+    {
+        return value;
+    }
+    NSSet *allowedClassSet = [unarchiver allowedClasses];
+    if (_classIsAllowed([value class], allowedClassSet))
+    {
+        return value;
+    }
+    NSString *className = NSStringFromClass([value class]);
+    if (owned)
+    {
+        CFRelease(value);
+    }
+    [[NSException exceptionWithName:NSInvalidUnarchiveOperationException
+                            reason:[NSString stringWithFormat:@"%@ was unexpected. The expected classes are %@", className, allowedClassSet]
+                          userInfo: @{@"__NSCoderInternalErrorCode" : @4864}] raise];
+    return nil;
+}
+
 static id _decodeObjectBinary(NSKeyedUnarchiver *unarchiver, NSUInteger uid1) NS_RETURNS_RETAINED
 {
     uint64_t voffset = unarchiver->_offsetData->valueOffset;
@@ -493,11 +519,11 @@ static id _decodeObjectBinary(NSKeyedUnarchiver *unarchiver, NSUInteger uid1) NS
         }
         else if (marker == kCFBinaryPlistMarkerTrue)
         {
-            return (id)kCFBooleanTrue;
+            return _scalarAllowed(unarchiver, (id)kCFBooleanTrue, NO);
         }
         else if (marker == kCFBinaryPlistMarkerFalse)
         {
-            return (id)kCFBooleanFalse;
+            return _scalarAllowed(unarchiver, (id)kCFBooleanFalse, NO);
         }
         else if (markerTag == kCFBinaryPlistMarkerASCIIString)
         {
@@ -511,7 +537,7 @@ static id _decodeObjectBinary(NSKeyedUnarchiver *unarchiver, NSUInteger uid1) NS
             {
                 return nil; // This is a success. nil is the correctly decoded value here.
             }
-            return string;
+            return _scalarAllowed(unarchiver, (id)string, YES);
         }
         else if (markerTag == kCFBinaryPlistMarkerInt || markerTag == kCFBinaryPlistMarkerReal || markerTag == kCFBinaryPlistMarkerData || markerTag == kCFBinaryPlistMarkerUnicode16String)
         {
@@ -520,7 +546,7 @@ static id _decodeObjectBinary(NSKeyedUnarchiver *unarchiver, NSUInteger uid1) NS
             {
                 return nil;
             }
-            return obj;
+            return _scalarAllowed(unarchiver, (id)obj, YES);
         }
         else if (markerTag != kCFBinaryPlistMarkerDict)
         {
@@ -685,7 +711,7 @@ static id _decodeObjectXML(NSKeyedUnarchiver *unarchiver, NSString *key)
     }
     if (typeID == CFStringGetTypeID() || typeID == CFNumberGetTypeID() || typeID == CFBooleanGetTypeID() || typeID == CFDataGetTypeID())
     {
-        return [obj retain];
+        return _scalarAllowed(unarchiver, [obj retain], YES);
     }
 
     CFKeyedArchiverUIDRef keyedArchiverUID;

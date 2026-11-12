@@ -132,11 +132,24 @@ NSString *_NSMethodExceptionProem(id object, SEL selector)
 @implementation NSException (NSException)
 OBJC_PROTOCOL_IMPL_PUSH
 
++ (BOOL) supportsSecureCoding {
+    return YES;
+}
+
 - (instancetype) initWithCoder: (NSCoder *) coder {
     if ([coder allowsKeyedCoding]) {
-        _name = [[coder decodeObjectForKey: @"NS.name"] retain];
-        _reason = [[coder decodeObjectForKey: @"NS.reason"] retain];
-        _userInfo = [[coder decodeObjectForKey: @"NS.userinfo"] retain];
+        // The user info is decoded as a dictionary whose values may only be
+        // these property-list style classes (and nested exceptions).
+        NSSet *infoClasses = [NSSet setWithObjects:
+            [NSDictionary class], [NSArray class], [NSString class], [NSNumber class],
+            [NSData class], [NSDate class], [NSURL class], [NSException class], nil];
+        _name = [[coder decodeObjectOfClass: [NSString class] forKey: @"NS.name"] retain];
+        _reason = [[coder decodeObjectOfClass: [NSString class] forKey: @"NS.reason"] retain];
+        _userInfo = [[coder decodeObjectOfClasses: infoClasses forKey: @"NS.userinfo"] retain];
+        if (_userInfo != nil && ![_userInfo isKindOfClass: [NSDictionary class]]) {
+            [self release];
+            return nil;
+        }
     } else {
         _name = [[coder decodeObject] retain];
         _reason = [[coder decodeObject] retain];

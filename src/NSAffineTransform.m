@@ -29,6 +29,7 @@
    Boston, MA 02111 USA.
 */
 
+#include <string.h>
 #import "common.h"
 #include <math.h>
 
@@ -596,6 +597,11 @@ static NSAffineTransformStruct identityTransform = {
   return NO;
 }
 
++ (BOOL) supportsSecureCoding
+{
+  return YES;
+}
+
 - (id) initWithCoder: (NSCoder*)aCoder
 {
   NSAffineTransformStruct replace = identityTransform;
@@ -606,27 +612,22 @@ static NSAffineTransformStruct identityTransform = {
         {
 	  NSUInteger length;
 	  const uint8_t *data;
-          NSData *d;
-          NSUInteger cursor = 0;
 
           data = [aCoder decodeBytesForKey: @"NSTransformStruct"
-                              returnedLength: &length]; 
-          d = [NSData dataWithBytes: data length: length];
+                              returnedLength: &length];
+          if (data == NULL)
+            {
+              return nil;
+            }
 
+          // The bytes are plain native-endian floats: a type byte (1 translation,
+          // 2 scale) and two floats, or 4 floats (m11 m22 tX tY), or 6 floats.
           if (length == 9)
             {
               float f, g;
-              replace = identityTransform;
-              
-              cursor = 1;
-              [d deserializeDataAt: &f
-                        ofObjCType: "f"
-                          atCursor: &cursor
-                           context: nil];
-              [d deserializeDataAt: &g
-                        ofObjCType: "f"
-                          atCursor: &cursor
-                           context: nil];
+
+              memcpy(&f, data + 1, sizeof(f));
+              memcpy(&g, data + 1 + sizeof(f), sizeof(g));
               if (data[0] == 1)
                 {
                   replace.tX = f;
@@ -639,20 +640,14 @@ static NSAffineTransformStruct identityTransform = {
                 }
               else
                 {
-                  // FIXME
-                  NSLog(@"Got type %d for affine transform", data[0]);
-		  NSLog(@"NOT IMPLEMENTED: NSAffineTransform");
-		  return nil;
+                  return nil;
                 }
             }
           else if (16 == length)
             {
               float s[4];
-              
-              [d deserializeDataAt: s
-                        ofObjCType: "[4f]"
-                          atCursor: &cursor
-                           context: nil];
+
+              memcpy(s, data, sizeof(s));
               replace.m11 = s[0];
               replace.m22 = s[1];
               replace.tX = s[2];
@@ -661,11 +656,8 @@ static NSAffineTransformStruct identityTransform = {
           else if (24 == length)
             {
               float s[6];
-              
-              [d deserializeDataAt: s
-                        ofObjCType: "[6f]"
-                          atCursor: &cursor
-                           context: nil];
+
+              memcpy(s, data, sizeof(s));
               replace.m11 = s[0];
               replace.m12 = s[1];
               replace.m21 = s[2];
@@ -675,9 +667,7 @@ static NSAffineTransformStruct identityTransform = {
             }
           else
             {
-              // FIXME
-              NSLog(@"Got data %@ len %d for affine transform", d, (int)length);
-	      return nil;
+              return nil;
             }
         }
       else
@@ -704,20 +694,31 @@ static NSAffineTransformStruct identityTransform = {
     {
       if (!_isIdentity)
         {
+          // Without shear macOS writes m11 m22 tX tY, otherwise all six values,
+          // as native-endian floats.
           float s[6];
-          NSMutableData *d = [NSMutableData data];
+          NSUInteger length;
 
-          s[0] = replace.m11;
-          s[1] = replace.m12;
-          s[2] = replace.m21;
-          s[3] = replace.m22;
-          s[4] = replace.tX;
-          s[5] = replace.tY;
-          [d serializeDataAt: s
-                  ofObjCType: "[6f]"
-                     context: nil];
-          [aCoder encodeBytes: [d bytes]
-                       length: [d length]
+          if (replace.m12 == 0 && replace.m21 == 0)
+            {
+              s[0] = replace.m11;
+              s[1] = replace.m22;
+              s[2] = replace.tX;
+              s[3] = replace.tY;
+              length = 4 * sizeof(float);
+            }
+          else
+            {
+              s[0] = replace.m11;
+              s[1] = replace.m12;
+              s[2] = replace.m21;
+              s[3] = replace.m22;
+              s[4] = replace.tX;
+              s[5] = replace.tY;
+              length = 6 * sizeof(float);
+            }
+          [aCoder encodeBytes: (const uint8_t *)s
+                       length: length
                        forKey: @"NSTransformStruct"];
         }
     }

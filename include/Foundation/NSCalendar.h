@@ -115,6 +115,7 @@ FOUNDATION_EXPORT const NSCalendarIdentifier NSCalendarIdentifierRepublicOfChina
 - (NSInteger)hour;
 - (NSInteger)minute;
 - (NSInteger)second;
+- (NSInteger)nanosecond;
 - (NSInteger)week;
 - (NSInteger)weekday;
 - (NSInteger)weekdayOrdinal;
@@ -132,6 +133,7 @@ FOUNDATION_EXPORT const NSCalendarIdentifier NSCalendarIdentifierRepublicOfChina
 - (void)setHour:(NSInteger)hour;
 - (void)setMinute:(NSInteger)min;
 - (void)setSecond:(NSInteger)sec;
+- (void)setNanosecond:(NSInteger)nanosecond;
 - (void)setWeek:(NSInteger)week;
 - (void)setWeekday:(NSInteger)weekday;
 - (void)setWeekdayOrdinal:(NSInteger)ordinal;

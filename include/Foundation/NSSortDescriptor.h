@@ -1,7 +1,7 @@
 #import <Foundation/NSArray.h>
 #import <Foundation/NSSet.h>
 
-@interface NSSortDescriptor : NSObject <NSCoding, NSCopying>
+@interface NSSortDescriptor : NSObject <NSSecureCoding, NSCopying>
 {
     NSUInteger _sortDescriptorFlags;
     NSString *_key;

@@ -10,6 +10,9 @@
 #import <Foundation/NSArray.h>
 #import <Foundation/NSCharacterSet.h>
 #import <Foundation/NSError.h>
+#import <Foundation/NSCoder.h>
+#import <Foundation/NSException.h>
+#import <Foundation/NSKeyedArchiver.h>
 #import <Foundation/NSDictionary.h>
 #import <Foundation/NSException.h>
 #import "NSErrorInternal.h"
@@ -62,18 +65,19 @@
             [self release];
             return nil;
         }
+        _pattern = [pattern copy];
+        _options = options;
+        // The pattern and options are reported as given; only the expression
+        // handed to ICU has its metacharacters escaped.
+        NSString *compiledPattern = _pattern;
         if ((options & NSRegularExpressionIgnoreMetacharacters) != 0)
         {
-            _pattern = [[NSRegularExpression escapedPatternForString:pattern] copy];
-        }
-        else
-        {
-            _pattern = [pattern copy];
+            compiledPattern = [NSRegularExpression escapedPatternForString:_pattern];
         }
 
         BOOL needsFree = NO;
-        int32_t len = (int32_t)[_pattern length];
-        const UChar *pat = CFStringGetCharactersPtr((CFStringRef)_pattern);
+        int32_t len = (int32_t)[compiledPattern length];
+        const UChar *pat = CFStringGetCharactersPtr((CFStringRef)compiledPattern);
         if (pat == NULL)
         {
             pat = malloc(sizeof(UChar) * len);
@@ -86,7 +90,7 @@
                 [self release];
                 return nil;
             }
-            [pattern getCharacters:(unichar *)pat range:NSMakeRange(0, len)];
+            [compiledPattern getCharacters:(unichar *)pat range:NSMakeRange(0, len)];
             needsFree = YES;
         }
         UParseError parse_err = { 0 };
@@ -138,6 +142,38 @@
     return self;
 }
 
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
+
+- (id)initWithCoder:(NSCoder *)coder
+{
+    if (![coder allowsKeyedCoding])
+    {
+        [self release];
+        return nil;
+    }
+    NSString *pattern = [coder decodeObjectOfClass:[NSString class] forKey:@"NSPattern"];
+    int64_t options = [coder decodeInt64ForKey:@"NSOptions"];
+    if (pattern == nil || options < 0)
+    {
+        [self release];
+        return nil;
+    }
+    return [self initWithPattern:pattern options:(NSRegularExpressionOptions)options error:NULL];
+}
+
+- (void)encodeWithCoder:(NSCoder *)coder
+{
+    if (![coder allowsKeyedCoding])
+    {
+        [NSException raise:NSInvalidArchiveOperationException format:@"NSRegularExpression can only be encoded by a keyed archiver."];
+    }
+    [coder encodeObject:_pattern forKey:@"NSPattern"];
+    [coder encodeInt64:(int64_t)_options forKey:@"NSOptions"];
+}
+
 - (void)dealloc
 {
     if (_internal)
@@ -145,6 +181,17 @@
         uregex_close(_internal);
     }
     [super dealloc];
+}
+
+// Explicit accessors: the 32-bit runtime does not synthesize properties.
+- (NSString *)pattern
+{
+    return _pattern;
+}
+
+- (NSRegularExpressionOptions)options
+{
+    return _options;
 }
 
 - (NSUInteger)numberOfCaptureGroups

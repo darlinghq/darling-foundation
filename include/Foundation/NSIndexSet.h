@@ -4,7 +4,7 @@
 typedef struct RangeList RangeList;
 typedef struct NSIndexSetCache NSIndexSetCache;
 
-@interface NSIndexSet : NSObject <NSCopying, NSMutableCopying, NSCoding>
+@interface NSIndexSet : NSObject <NSCopying, NSMutableCopying, NSSecureCoding>
 {
 @package
     struct {

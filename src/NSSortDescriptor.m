@@ -10,6 +10,9 @@
 #import <Foundation/NSException.h>
 #import <Foundation/NSKeyValueCoding.h>
 #import <Foundation/NSSet.h>
+#import <Foundation/NSKeyedArchiver.h>
+#import <Foundation/NSCoder.h>
+#import <Foundation/NSString.h>
 #import <objc/runtime.h>
 #import <stdlib.h>
 
@@ -90,11 +93,28 @@ enum {
     return self;
 }
 
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
+
 - (id)initWithCoder:(NSCoder *)aDecoder
 {
-#warning TODO https://code.google.com/p/apportable/issues/detail?id=254
-    [self release];
-    return nil;
+    if (![aDecoder allowsKeyedCoding])
+    {
+        [self release];
+        return nil;
+    }
+    NSString *key = [aDecoder decodeObjectOfClass:[NSString class] forKey:@"NSKey"];
+    NSString *selectorName = [aDecoder decodeObjectOfClass:[NSString class] forKey:@"NSSelector"];
+    BOOL ascending = [aDecoder decodeBoolForKey:@"NSAscending"];
+    SEL selector = selectorName != nil ? NSSelectorFromString(selectorName) : NULL;
+    if (selector == NULL)
+    {
+        [self release];
+        return nil;
+    }
+    return [self initWithKey:key ascending:ascending selector:selector];
 }
 
 - (void)dealloc
@@ -109,7 +129,18 @@ enum {
 
 - (void)encodeWithCoder:(NSCoder *)aCoder
 {
-#warning TODO https://code.google.com/p/apportable/issues/detail?id=254
+    if ((_sortDescriptorFlags & NSSortDescriptorComparator) != 0)
+    {
+        [NSException raise:NSInvalidArchiveOperationException format:@"NSSortDescriptor using Blocks cannot be encoded."];
+    }
+    if (![aCoder allowsKeyedCoding])
+    {
+        [NSException raise:NSInvalidArchiveOperationException format:@"NSSortDescriptor can only be encoded by a keyed archiver."];
+    }
+    [aCoder encodeObject:_key forKey:@"NSKey"];
+    [aCoder encodeBool:(_sortDescriptorFlags & NSSortDescriptorAscending) != 0 forKey:@"NSAscending"];
+    [aCoder encodeObject:NSStringFromSelector(_selector) forKey:@"NSSelector"];
+    [aCoder encodeBool:NO forKey:@"NSReverseNullOrder"];
 }
 
 - (id)copyWithZone:(NSZone *)zone
