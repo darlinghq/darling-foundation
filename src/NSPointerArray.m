@@ -7,6 +7,7 @@
 
 #import <Foundation/NSPointerArray.h>
 #import <Foundation/NSCoder.h>
+#import "NSPointerFunctionsArchiving.h"
 #import "NSPointerFunctionsInternal.h"
 
 CF_PRIVATE
@@ -16,6 +17,11 @@ CF_PRIVATE
 #define NSPointerArraySubclassResponsibility() [NSException raise:@"NSPointerFunctionsAbstractImplementationError" format:@"%s is a subclass responsibility", sel_getName(_cmd)];
 
 @implementation NSPointerArray
+
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
 
 + (id)allocWithZone:(NSZone *)zone
 {
@@ -306,35 +312,48 @@ static inline NSConcretePointerArray *sharedInitialization(NSConcretePointerArra
     {
         [array addPointer:slice.readAt(slice.items + index, NULL)];
     }
+    array->options = options;
     return array;
 }
 
 - (void)encodeWithCoder:(NSCoder *)coder
 {
-    [coder encodeValueOfObjCType:"i" at:&options];
-    [coder encodeValueOfObjCType:"i" at:&count];
-    for (id obj in self)
+    if (!NSPointerFunctionsOptionsAreArchivable(options))
     {
-        [coder encodeObject:obj];
+        [NSException raise:NSInvalidArgumentException format:@"NSPointerArray has invalid options for encoding"];
+    }
+    BOOL weak = NSPointerFunctionsOptionsAreWeak(options);
+    int archivedOptions = (int)options;
+    int archivedCount = (int)count;
+    [coder encodeValueOfObjCType:"i" at:&archivedOptions];
+    [coder encodeValueOfObjCType:"i" at:&archivedCount];
+    for (NSUInteger index = 0; index < count; index++)
+    {
+        id obj = slice.readAt(slice.items + index, NULL);
+        [coder encodeObject:(weak && obj != nil) ? NSPointerFunctionsWeakMemberPlaceholder : obj];
     }
     [coder encodeObject:nil];
 }
 
 - (id)initWithCoder:(NSCoder *)decoder
 {
-    NSPointerFunctionsOptions opts = -1;
+    int opts = -1;
+    int num = -1;
     [decoder decodeValueOfObjCType:"i" at:&opts];
-    self = [self initWithOptions:opts];
+    [decoder decodeValueOfObjCType:"i" at:&num];
+    if (num < 0 || !NSPointerFunctionsOptionsAreArchivable((NSPointerFunctionsOptions)opts))
+    {
+        [self release];
+        return nil;
+    }
+    BOOL weak = NSPointerFunctionsOptionsAreWeak((NSPointerFunctionsOptions)opts);
+    self = [self initWithOptions:(NSPointerFunctionsOptions)opts];
     if (self != nil)
     {
-        NSUInteger num = -1;
-        [decoder decodeValueOfObjCType:"i" at:&num];
-        [self setCount:num];
-
-        for (NSUInteger idx = 0; idx < num; idx++)
+        for (int idx = 0; idx < num; idx++)
         {
             id obj = [decoder decodeObject];
-            [self addPointer:obj];
+            [self addPointer:weak ? NULL : obj];
         }
     }
     return self;
