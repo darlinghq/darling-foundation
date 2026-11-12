@@ -120,6 +120,13 @@ static NSDictionary *objectWithKey(NSData *data, NSString *key) {
     return nil;
 }
 
+// Whether the archive holds a string object "$null" besides the entry at index 0 that stands for nil.
+static BOOL hasNullStringObject(NSData *archive) {
+    NSDictionary *plist = [NSPropertyListSerialization propertyListWithData:archive options:0 format:NULL error:NULL];
+    NSArray *objects = plist[@"$objects"];
+    return [objects count] > 1 && [objects indexOfObject:@"$null" inRange:NSMakeRange(1, [objects count] - 1)] != NSNotFound;
+}
+
 static NSArray *sortedKeys(NSDictionary *dictionary) {
     return [[dictionary allKeys] sortedArrayUsingSelector:@selector(compare:)];
 }
@@ -359,6 +366,9 @@ int main(void) {
             fields = objectWithKey(tryArchive(weakArray), @"$1");
             CHECK([fields[@"$0"] intValue] == NSPointerFunctionsWeakMemory && [fields[@"$1"] intValue] == 1);
             roundTrip(@"weak NSPointerArray", weakArray, [NSPointerArray class]);
+            // test_quirk_weak_members_are_not_archived: a weak member is a separate "$null" string object.
+            CHECK(hasNullStringObject(tryArchive(weakArray)));
+            CHECK(!hasNullStringObject(tryArchive(array)));
             // test_quirk_collection_options_must_be_object_options: only object collections archive.
             CHECK(tryArchive([NSPointerArray pointerArrayWithOptions:NSPointerFunctionsOpaqueMemory | NSPointerFunctionsOpaquePersonality]) == nil);
 
@@ -386,6 +396,7 @@ int main(void) {
             [weakTable addObject:p2];
             fields = objectWithKey(tryArchive(weakTable), @"NS.count");
             CHECK([fields[@"$0"] intValue] == NSPointerFunctionsWeakMemory && [fields[@"NS.count"] intValue] == 2);
+            CHECK(hasNullStringObject(tryArchive(weakTable)));
             tableBack = roundTrip(@"weak NSHashTable", weakTable, [NSHashTable class]);
             CHECK([tableBack count] == 0);
             // test_quirk_collection_options_must_be_object_options
@@ -405,8 +416,48 @@ int main(void) {
             [weakKeys setObject:@"v" forKey:p1];
             fields = objectWithKey(tryArchive(weakKeys), @"NS.count");
             CHECK([fields[@"$0"] intValue] == NSPointerFunctionsWeakMemory && [fields[@"$1"] intValue] == 0 && [fields[@"NS.count"] intValue] == 1);
+            CHECK(hasNullStringObject(tryArchive(weakKeys)));
             roundTrip(@"weak-to-strong NSMapTable", weakKeys, [NSMapTable class]);
             CHECK(tryArchive([NSMapTable mapTableWithKeyOptions:NSPointerFunctionsOpaquePersonality valueOptions:NSPointerFunctionsOpaquePersonality]) == nil);
+        }
+        // test_quirk_set_error_policy_returns_nil (MC26.13, macOS 26.7.3): an unarchiver made with
+        // -initForReadingFromData:error: does not raise for a refused class; it returns nil and sets -error.
+        {
+            NSData *urlArchive = [NSKeyedArchiver archivedDataWithRootObject:[NSURL URLWithString:@"http://example.com/"] requiringSecureCoding:YES error:NULL];
+            NSError *initError = nil;
+            NSKeyedUnarchiver *unarchiver = [[NSKeyedUnarchiver alloc] initForReadingFromData:urlArchive error:&initError];
+            CHECK(unarchiver != nil && initError == nil);
+            CHECK([unarchiver decodingFailurePolicy] == NSDecodingFailurePolicySetErrorAndReturn);
+            [unarchiver setRequiresSecureCoding:YES];
+            id refused = nil;
+            BOOL raised = NO;
+            @try {
+                refused = [unarchiver decodeObjectOfClasses:[NSSet setWithObject:[NSString class]] forKey:NSKeyedArchiveRootObjectKey];
+            } @catch (NSException *exception) {
+                raised = YES;
+            }
+            CHECK(!raised && refused == nil);
+            CHECK([[unarchiver error] code] == 4864);
+            [unarchiver release];
+            // Data that is not an archive fails the initializer with an error.
+            NSError *badError = nil;
+            CHECK([[NSKeyedUnarchiver alloc] initForReadingFromData:[NSData dataWithBytes:"xyz" length:3] error:&badError] == nil);
+            CHECK(badError != nil);
+        }
+        // NSValue ranges: the members are archived as references to NSNumber objects.
+        // test_quirk_nsvalue_range_references (MC26.13, macOS 26.7.3)
+        {
+            NSValue *range = [NSValue valueWithRange:NSMakeRange(NSNotFound, 0)];
+            NSValue *rangeBack = roundTrip(@"NSValue range", range, [NSValue class]);
+            CHECK(rangeBack != nil && NSEqualRanges([rangeBack rangeValue], NSMakeRange(NSNotFound, 0)));
+            NSDictionary *fields = objectWithKey(tryArchive(range), @"NS.rangeval.location");
+            CHECK(keysAre(fields, @"$class,NS.rangeval.length,NS.rangeval.location,NS.special"));
+            CHECK(fields != nil && ![fields[@"NS.rangeval.location"] isKindOfClass:[NSNumber class]]);
+            CHECK(fields != nil && ![fields[@"NS.rangeval.length"] isKindOfClass:[NSNumber class]]);
+            CHECK([fields[@"NS.special"] intValue] == 4);
+            // Archives with inline integers (written by earlier versions) still decode.
+            NSValue *old = secureDecode([NSValue class], spoofArchive(@"NSValue", @{@"NS.special": @4, @"NS.rangeval.location": @3, @"NS.rangeval.length": @9}, @{}), NULL);
+            CHECK(old != nil && NSEqualRanges([old rangeValue], NSMakeRange(3, 9)));
         }
         // NSOrthography
         {
@@ -472,18 +523,16 @@ int main(void) {
             NSRange nine[9] = {{0, 9}, {1, 1}, {2, 1}, {3, 1}, {4, 1}, {5, 1}, {6, 1}, {7, 1}, {8, 1}};
             back = roundTrip(@"nine-range regular expression result", [NSTextCheckingResult regularExpressionCheckingResultWithRanges:nine count:9 regularExpression:expression], [NSTextCheckingResult class]);
             CHECK(back.numberOfRanges == 9 && NSEqualRanges([back rangeAtIndex:8], NSMakeRange(8, 1)));
-            expectRefused(@"result replacement string", [NSTextCheckingResult class], @"NSReplacementCheckingResult", @{@"NSRangeLocation": @1, @"NSRangeLength": @2}, @{@"NSReplacementString": @42});
-            expectRefused(@"result link", [NSTextCheckingResult class], @"NSLinkCheckingResult", @{@"NSRangeLocation": @1, @"NSRangeLength": @2}, @{@"NSURL": @"http://example.com/"});
-            expectRefused(@"result range", [NSTextCheckingResult class], @"NSSpellCheckingResult", @{@"NSRangeLocation": @-1, @"NSRangeLength": @2}, @{});
         }
         // NSAttributedString and NSMutableAttributedString: the string, the attribute runs
         // (NSAttributes, and for several runs NSAttributeInfo as varint length/index pairs).
         {
             NSDictionary *A = @{@"a": @1}, *B = @{@"b": @"two"};
+            NSDictionary *A2 = [NSDictionary dictionaryWithObject:@1 forKey:@"a"]; // equal to A, a different object
             NSMutableAttributedString *mutableString = [[[NSMutableAttributedString alloc] initWithString:@"AAAAABBBBBAAAAA"] autorelease];
             [mutableString setAttributes:A range:NSMakeRange(0, 5)];
             [mutableString setAttributes:B range:NSMakeRange(5, 5)];
-            [mutableString setAttributes:A range:NSMakeRange(10, 5)];
+            [mutableString setAttributes:A2 range:NSMakeRange(10, 5)];
             NSAttributedString *immutableString = [[mutableString copy] autorelease];
 
             NSMutableAttributedString *mutableBack = roundTrip(@"NSMutableAttributedString", mutableString, [NSMutableAttributedString class]);
@@ -497,6 +546,8 @@ int main(void) {
 
             NSDictionary *fields = objectWithKey(tryArchive(mutableString), @"NSAttributeInfo");
             CHECK(keysAre(fields, @"$class,NSAttributeInfo,NSAttributes,NSString"));
+            // macOS shares an attribute dictionary between runs only when it is the same object
+            // (MC26.13): the third run uses an equal but distinct dictionary and gets its own index.
             const uint8_t expectedInfo[] = {5, 0, 5, 1, 5, 2};
             CHECK(archiveHasData(tryArchive(mutableString), bytes(expectedInfo, sizeof expectedInfo)));
 
