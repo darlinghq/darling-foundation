@@ -173,6 +173,19 @@ static CFKeyedArchiverUIDRef _NSKeyedArchiverUIDCreateCached(NSKeyedArchiver *ar
 // Conditional references to an object that has not been encoded (yet) are written as $null and
 // remembered in _conditionals (object -> retained CFArray of [container, key] pairs). If the object
 // is later encoded unconditionally, the recorded keys are pointed at it.
+// Slots of objects that are being encoded hold this placeholder until their final value is
+// known. It is a distinct string instance, compared by identity, so that an archived string
+// whose contents are "$null" is not mistaken for an unresolved slot.
+static NSString *objectPlaceholder(void)
+{
+    static NSString *placeholder;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        placeholder = [[NSString alloc] initWithCharacters:(const unichar[]){'$', 'n', 'u', 'l', 'l'} length:5];
+    });
+    return placeholder;
+}
+
 static void resolveConditionalReferences(NSKeyedArchiver *archiver, id object, int uidIndex)
 {
     CFArrayRef pending = NULL;
@@ -251,7 +264,7 @@ static void _encodeObject(NSKeyedArchiver *archiver, id object, NSString *key)
         }
         else
         {
-            CFArrayAppendValue((CFMutableArrayRef)archiver->_objects, @"$null"); // placeholder
+            CFArrayAppendValue((CFMutableArrayRef)archiver->_objects, objectPlaceholder()); // placeholder
             CFDictionarySetValue(archiver->_objRefMap, object, (const void *)end);
             uidIndex = end;
             resolveConditionalReferences(archiver, object, uidIndex);
@@ -307,7 +320,7 @@ static void _encodeObject(NSKeyedArchiver *archiver, id object, NSString *key)
                 {
                     // TODO
                 }
-                CFArrayAppendValue((CFMutableArrayRef)archiver->_objects, @"$null"); // Another placeholder $null
+                CFArrayAppendValue((CFMutableArrayRef)archiver->_objects, objectPlaceholder()); // Another placeholder
                 uidIndex = CFArrayGetCount((CFArrayRef)archiver->_objects) - 1;
                 CFDictionarySetValue(archiver->_objRefMap, class, (const void *)uidIndex);
             }
@@ -346,7 +359,7 @@ static void _encodeObject(NSKeyedArchiver *archiver, id object, NSString *key)
                 for (;;)
                 {
                     id obj = CFArrayGetValueAtIndex((CFArrayRef)archiver->_objects, objectsIndex);
-                    if ([obj isNSString__] && [obj isEqualToString:@"$null"])
+                    if (obj == objectPlaceholder())
                     {
                         break;
                     }

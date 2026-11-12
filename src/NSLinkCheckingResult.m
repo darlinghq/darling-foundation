@@ -55,8 +55,17 @@
 - (id)initWithCoder:(NSCoder *)coder
 {
     NSRange range;
-    NSURL *url = [coder decodeObjectOfClass:[NSURL class] forKey:@"NSURL"];
-    if (!NSTextCheckingResultDecodeRange(coder, &range) || url == nil)
+    id stored = [coder decodeObjectOfClasses:NSTextCheckingResultLenientClasses([NSURL class]) forKey:@"NSURL"];
+    NSURL *url = nil;
+    if ([stored isKindOfClass:[NSURL class]])
+    {
+        url = stored;
+    }
+    else if ([stored isKindOfClass:[NSString class]])
+    {
+        url = [NSURL URLWithString:stored];
+    }
+    if (!NSTextCheckingResultDecodeRange(coder, &range) || stored == nil)
     {
         [self release];
         return nil;

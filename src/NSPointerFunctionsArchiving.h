@@ -45,10 +45,12 @@ static inline BOOL NSPointerFunctionsOptionsAreWeak(NSPointerFunctionsOptions op
     return memory == NSPointerFunctionsWeakMemory || memory == NSPointerFunctionsZeroingWeakMemory;
 }
 
-// QUIRK: weak members are archived as references to the archive's "$null"
-// entry (the table's member count stays in NS.count); they cannot be
-// restored, so a decoded weak table holds nothing. Encoding nil writes that
-// reference; the string "$null" would be an ordinary string object, which
-// our keyed unarchiver then fails to read back. Evidence: black-box observation on macOS 27
-// (tier 2), same probe. Test: test_quirk_weak_members_are_not_archived.
-#define NSPointerFunctionsWeakMemberPlaceholder nil
+// QUIRK: weak members are archived as a reference to one separate string object
+// "$null" (not the archive's nil entry, which is kept for the nil terminator and
+// for NULL slots); the table's member count stays in NS.count. They cannot be
+// restored, so a decoded weak table holds nothing and a weak array holds NULL
+// slots. Evidence: black-box observation on macOS 26.7.3 (tier 2), MC26.13,
+// probe vd-upstream/mac-probes/v398-pending.m (earlier observation on macOS 27:
+// probe v398-collections-layout.m, which saw the nil entry).
+// Test: test_quirk_weak_members_are_not_archived in tests/secure-coding-conformance.m
+#define NSPointerFunctionsWeakMemberPlaceholder @"$null"

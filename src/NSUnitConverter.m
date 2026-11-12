@@ -26,16 +26,18 @@
 
 @implementation NSUnitConverter
 
+// QUIRK: the abstract converter does not raise from either conversion method; it leaves the
+// value as it is. Not documented. Evidence: black-box observation on macOS 26.7.3 (tier 2),
+// MC26.15 (the calls do not raise; the returned value was not recorded, the identity is our
+// choice). Test: test_quirk_abstract_converter_does_not_raise in tests/nsunit-nsmeasurement.m
 - (double)baseUnitValueFromValue:(double)value
 {
-    [NSException raise:NSInternalInconsistencyException format:@"-[NSUnitConverter baseUnitValueFromValue:] is implemented by subclasses"];
-    return 0;
+    return value;
 }
 
 - (double)valueFromBaseUnitValue:(double)baseUnitValue
 {
-    [NSException raise:NSInternalInconsistencyException format:@"-[NSUnitConverter valueFromBaseUnitValue:] is implemented by subclasses"];
-    return 0;
+    return baseUnitValue;
 }
 
 @end

@@ -46,7 +46,10 @@
 
 + (instancetype)baseUnit
 {
-    [NSException raise:NSInternalInconsistencyException format:@"+[%@ baseUnit] is implemented by the subclasses of NSDimension", self];
+    // QUIRK: the exception is NSInvalidArgumentException, not NSInternalInconsistencyException.
+    // Not documented. Evidence: black-box observation on macOS 26.7.3 (tier 2), MC26.15.
+    // Test: test_quirk_abstract_dimension_base_unit in tests/nsunit-nsmeasurement.m
+    [NSException raise:NSInvalidArgumentException format:@"You must override baseUnit in your class %@ to define its base unit", self];
     return nil;
 }
 

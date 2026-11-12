@@ -28,8 +28,14 @@ static inline void NSTextCheckingResultEncodeRange(NSCoder *coder, NSRange range
     [coder encodeInteger:(NSInteger)range.length forKey:@"NSRangeLength"];
 }
 
-// Returns NO for a coder that is not keyed, a missing range, or one that does
-// not fit in an NSRange.
+// Returns NO for a coder that is not keyed or a missing range.
+//
+// QUIRK: a negative or overflowing location and length are accepted and carried
+// into the NSRange unchanged, not refused. Not documented. Evidence: black-box
+// observation on macOS 26.7.3 (tier 2), MC26.13 (the guest test decoding a
+// result with a stored value of the wrong class does not fail there).
+// Test: test_quirk_text_checking_result_lenient_decoding in
+// tests/secure-coding-conformance.m
 static inline BOOL NSTextCheckingResultDecodeRange(NSCoder *coder, NSRange *range)
 {
     if (![coder allowsKeyedCoding] || ![coder containsValueForKey:@"NSRangeLocation"] || ![coder containsValueForKey:@"NSRangeLength"])
@@ -38,10 +44,18 @@ static inline BOOL NSTextCheckingResultDecodeRange(NSCoder *coder, NSRange *rang
     }
     NSInteger location = [coder decodeIntegerForKey:@"NSRangeLocation"];
     NSInteger length = [coder decodeIntegerForKey:@"NSRangeLength"];
-    if (location < 0 || length < 0 || (NSUInteger)location + (NSUInteger)length < (NSUInteger)location)
-    {
-        return NO;
-    }
     *range = NSMakeRange((NSUInteger)location, (NSUInteger)length);
     return YES;
+}
+
+// QUIRK: a string-valued field (replacement string, link target) stored with
+// another plain value class (a number, or a string where a URL is expected) is
+// not refused: the result still decodes, and the field is dropped when it
+// cannot be converted. Not documented. Evidence: black-box observation on
+// macOS 26.7.3 (tier 2), MC26.13. Test:
+// test_quirk_text_checking_result_lenient_decoding in
+// tests/secure-coding-conformance.m
+static inline NSSet *NSTextCheckingResultLenientClasses(Class primary)
+{
+    return [NSSet setWithObjects:primary, [NSString class], [NSNumber class], nil];
 }
