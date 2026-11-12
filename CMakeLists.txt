@@ -334,25 +334,32 @@ set_property(
 )
 endif (TARGET_ARM64)
 
-# Since macOS 14 the Swift Foundation overlay is part of Foundation.framework, so apps bind symbols such as
-# $sSS10FoundationE19_bridgeToObjectiveCSo8NSStringCyF to Foundation. Re-exporting the overlay from
-# src/external/swift (installed as /usr/lib/swift/libswiftFoundation.dylib) makes those binds resolve on both
-# arm64 and x86_64. Runtime dependencies (@rpath/libswiftCore.dylib) are resolved automatically via dyld's
-# built-in fallback to /usr/lib/swift/.
-set(SWIFT_FOUNDATION_OVERLAY "${CMAKE_SOURCE_DIR}/src/external/swift/libswiftFoundation.dylib")
-if (EXISTS "${SWIFT_FOUNDATION_OVERLAY}")
-if (TARGET_ARM64)
-set_property(
-	TARGET Foundation_arm64 APPEND_STRING PROPERTY
-	LINK_FLAGS " -Wl,-reexport_library,${SWIFT_FOUNDATION_OVERLAY}"
-)
-endif (TARGET_ARM64)
-if (TARGET_x86_64)
-set_property(
-	TARGET Foundation_x86_64 APPEND_STRING PROPERTY
-	LINK_FLAGS " -Wl,-reexport_library,${SWIFT_FOUNDATION_OVERLAY}"
-)
-endif (TARGET_x86_64)
+# Since macOS 14 the Swift Foundation overlay lives in Foundation.framework itself, so applications bind symbols
+# such as $sSS10FoundationE19_bridgeToObjectiveCSo8NSStringCyF to Foundation. Foundation therefore re-exports
+# the overlay, /usr/lib/swift/libswiftFoundation.dylib, which darling-swift builds from source (target
+# swiftFoundation) when a Swift toolchain is available (cmake/swift_toolchain.cmake).
+#
+# The overlay links against Foundation, so Foundation cannot link against the finished overlay. It re-exports an
+# empty placeholder dylib with the overlay's install name instead, which is all the re-export load command needs.
+# The overlay is installed at that install name and dyld loads it from there. ld64 follows the re-export by install
+# name when a client links Foundation, so the Swift dylib install-name map in cmake/swift_dylib_map.cmake
+# (-dylib_file) must be applied to that link.
+#
+# Without a Swift toolchain there is no overlay to re-export, so Foundation is built without the re-export.
+if (SWIFT_TOOLCHAIN_FOUND AND BUILD_TARGET_64BIT)
+	set(DYLIB_INSTALL_NAME "/usr/lib/swift/libswiftFoundation.dylib")
+	set(DARLING_LIB_64BIT_ONLY TRUE)
+	add_darling_library(swiftFoundation_placeholder SHARED swift_overlay_placeholder.c)
+	set(DARLING_LIB_64BIT_ONLY FALSE)
+	unset(DYLIB_INSTALL_NAME)
+	target_link_libraries(swiftFoundation_placeholder system)
+	set_target_properties(swiftFoundation_placeholder PROPERTIES
+		LINKER_LANGUAGE C
+		OUTPUT_NAME "swiftFoundation_placeholder")
+	reexport(Foundation_${APPLE_ARCH_64BIT} swiftFoundation_placeholder
+		"${CMAKE_CURRENT_BINARY_DIR}/libswiftFoundation_placeholder.dylib")
+elseif (NOT SWIFT_TOOLCHAIN_FOUND)
+	message(STATUS "Foundation: no Swift toolchain, so no Swift overlay to re-export")
 endif ()
 
 add_darling_executable(defaults tools/defaults.c)
