@@ -1,5 +1,1 @@
-#import <Foundation/NSUnitConverter.h>
-
-@interface NSUnitConverterLinear : NSUnitConverter
-
-@end
+#import <Foundation/NSUnit.h>

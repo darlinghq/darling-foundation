@@ -10,8 +10,9 @@ typedef NS_OPTIONS(NSUInteger, NSMeasurementFormatterUnitOptions) {
     NSMeasurementFormatterUnitOptionsTemperatureWithoutUnit = (1UL << 2),
 };
 
-// Formatting (stringFromMeasurement:, stringFromUnit:) needs NSMeasurement and NSUnit, which are not
-// implemented yet (darling#986).
+// Formatting (stringFromMeasurement:, stringFromUnit:) is not implemented: it needs the localised
+// unit names and the locale's preferred unit scale, which Foundation does not have yet. NSMeasurement
+// and NSUnit exist.
 @interface NSMeasurementFormatter : NSFormatter
 {
     NSMeasurementFormatterUnitOptions _unitOptions;
