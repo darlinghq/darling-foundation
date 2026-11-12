@@ -459,6 +459,78 @@ static NSError *_NSErrorWithFilePath(int code, id path)
     NSRequestConcreteImplementation();
 }
 
+/* The error-returning forms (macOS 10.15, iOS 13) run the exception-raising ones and report
+   what they raise as the POSIX error the failed call left. */
+static BOOL NSFileHandleRun(NSError **error, void (^body)(void))
+{
+    @try {
+        body();
+        return YES;
+    } @catch (NSException *exception) {
+        if (error != NULL) {
+            int code = errno != 0 ? errno : EIO;
+            *error = [NSError errorWithDomain:NSPOSIXErrorDomain code:code
+                                     userInfo:@{ NSLocalizedDescriptionKey: [exception reason] ?: @"" }];
+        }
+        return NO;
+    }
+}
+
+- (NSData *)readDataToEndOfFileAndReturnError:(NSError **)error
+{
+    __block NSData *data = nil;
+    return NSFileHandleRun(error, ^{ data = [self readDataToEndOfFile]; }) ? data : nil;
+}
+
+- (NSData *)readDataUpToLength:(NSUInteger)length error:(NSError **)error
+{
+    __block NSData *data = nil;
+    return NSFileHandleRun(error, ^{ data = [self readDataOfLength:length]; }) ? data : nil;
+}
+
+- (BOOL)writeData:(NSData *)data error:(NSError **)error
+{
+    return NSFileHandleRun(error, ^{ [self writeData:data]; });
+}
+
+- (BOOL)getOffset:(unsigned long long *)offsetInFile error:(NSError **)error
+{
+    __block unsigned long long offset = 0;
+    BOOL ok = NSFileHandleRun(error, ^{ offset = [self offsetInFile]; });
+    if (ok && offsetInFile != NULL)
+        *offsetInFile = offset;
+    return ok;
+}
+
+- (BOOL)seekToEndReturningOffset:(unsigned long long *)offsetInFile error:(NSError **)error
+{
+    __block unsigned long long offset = 0;
+    BOOL ok = NSFileHandleRun(error, ^{ offset = [self seekToEndOfFile]; });
+    if (ok && offsetInFile != NULL)
+        *offsetInFile = offset;
+    return ok;
+}
+
+- (BOOL)seekToOffset:(unsigned long long)offset error:(NSError **)error
+{
+    return NSFileHandleRun(error, ^{ [self seekToFileOffset:offset]; });
+}
+
+- (BOOL)truncateAtOffset:(unsigned long long)offset error:(NSError **)error
+{
+    return NSFileHandleRun(error, ^{ [self truncateFileAtOffset:offset]; });
+}
+
+- (BOOL)synchronizeAndReturnError:(NSError **)error
+{
+    return NSFileHandleRun(error, ^{ [self synchronizeFile]; });
+}
+
+- (BOOL)closeAndReturnError:(NSError **)error
+{
+    return NSFileHandleRun(error, ^{ [self closeFile]; });
+}
+
 - (int)fileDescriptor
 {
     NSRequestConcreteImplementation();

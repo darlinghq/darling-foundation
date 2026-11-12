@@ -3,6 +3,7 @@
 #import <Foundation/NSSet.h>
 
 @class NSIndexSet, NSString;
+@class NSDictionary<KeyType, ObjectType>;
 
 typedef NS_OPTIONS(NSUInteger, NSKeyValueObservingOptions) {
     NSKeyValueObservingOptionNew     = 0x01,
@@ -25,15 +26,17 @@ typedef NS_OPTIONS(NSUInteger, NSKeyValueSetMutationKind) {
     NSKeyValueSetSetMutation       = 4
 };
 
-FOUNDATION_EXPORT NSString *const NSKeyValueChangeKindKey;
-FOUNDATION_EXPORT NSString *const NSKeyValueChangeNewKey;
-FOUNDATION_EXPORT NSString *const NSKeyValueChangeOldKey;
-FOUNDATION_EXPORT NSString *const NSKeyValueChangeIndexesKey;
-FOUNDATION_EXPORT NSString *const NSKeyValueChangeNotificationIsPriorKey;
+typedef NSString *NSKeyValueChangeKey NS_STRING_ENUM;
+
+FOUNDATION_EXPORT NSKeyValueChangeKey const NSKeyValueChangeKindKey;
+FOUNDATION_EXPORT NSKeyValueChangeKey const NSKeyValueChangeNewKey;
+FOUNDATION_EXPORT NSKeyValueChangeKey const NSKeyValueChangeOldKey;
+FOUNDATION_EXPORT NSKeyValueChangeKey const NSKeyValueChangeIndexesKey;
+FOUNDATION_EXPORT NSKeyValueChangeKey const NSKeyValueChangeNotificationIsPriorKey;
 
 @interface NSObject (NSKeyValueObserving)
 
-- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context;
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey, id> *)change context:(void *)context;
 
 @end
 
