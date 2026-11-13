@@ -49,6 +49,7 @@ typedef struct {
 
 - (void)becomeCurrentWithPendingUnitCount:(int64_t)unitCount;
 - (void)resignCurrent;
+- (void)performAsCurrentWithPendingUnitCount:(int64_t)unitCount usingBlock:(void (NS_NOESCAPE ^)(void))work NS_REFINED_FOR_SWIFT;
 - (void)addChild:(NSProgress *)child withPendingUnitCount:(int64_t)inUnitCount;
 
 @property int64_t totalUnitCount;
@@ -78,8 +79,10 @@ typedef struct {
 
 @property (readonly, copy) NSDictionary<NSProgressUserInfoKey, id> *userInfo;
 @property (nullable, copy) NSProgressKind kind;
-@property (nullable, copy) NSNumber *estimatedTimeRemaining;
-@property (nullable, copy) NSNumber *throughput;
+@property (nullable, copy) NSNumber *estimatedTimeRemaining NS_REFINED_FOR_SWIFT;
+@property (nullable, copy) NSNumber *throughput NS_REFINED_FOR_SWIFT;
+@property (nullable, copy) NSNumber *fileTotalCount NS_REFINED_FOR_SWIFT;
+@property (nullable, copy) NSNumber *fileCompletedCount NS_REFINED_FOR_SWIFT;
 
 @end
 
