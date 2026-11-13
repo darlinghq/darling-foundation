@@ -1055,7 +1055,10 @@ static BOOL typesAreCompatible(const char *archived, const char *requested)
 - (NSInteger)versionForClassName:(NSString *)className
 {
     NSParameterAssert(className);
-    return ((NSNumber*)_versionByClassName[className]).integerValue;
+    // A class the archive does not mention has no recorded version, which
+    // differs from a recorded version 0.
+    NSNumber *version = _versionByClassName[className];
+    return version != nil ? version.integerValue : NSNotFound;
 }
 
 -(void)decodeClassName:(NSString *)archiveName asClassName:(NSString *)runtimeName {
