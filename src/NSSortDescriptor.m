@@ -117,12 +117,8 @@ enum {
     NSString *key = [aDecoder decodeObjectOfClass:[NSString class] forKey:@"NSKey"];
     NSString *selectorName = [aDecoder decodeObjectOfClass:[NSString class] forKey:@"NSSelector"];
     BOOL ascending = [aDecoder decodeBoolForKey:@"NSAscending"];
+    // No selector name decodes as NULL, which initWithKey:ascending:selector: turns into compare:.
     SEL selector = selectorName != nil ? NSSelectorFromString(selectorName) : NULL;
-    if (selector == NULL)
-    {
-        [self release];
-        return nil;
-    }
     return [self initWithKey:key ascending:ascending selector:selector];
 }
 
