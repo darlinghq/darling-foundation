@@ -35,6 +35,7 @@ typedef struct _CFURLCache* CFURLCacheRef;
 + (NSURLCache *)sharedURLCache;
 + (void)setSharedURLCache:(NSURLCache *)cache;
 - (id)initWithMemoryCapacity:(NSUInteger)memoryCapacity diskCapacity:(NSUInteger)diskCapacity diskPath:(NSString *)path;
+- (id)initWithMemoryCapacity:(NSUInteger)memoryCapacity diskCapacity:(NSUInteger)diskCapacity directoryURL:(NSURL *)directoryURL;
 - (NSCachedURLResponse *)cachedResponseForRequest:(NSURLRequest *)request;
 - (void)storeCachedResponse:(NSCachedURLResponse *)cachedResponse forRequest:(NSURLRequest *)request;
 - (void)removeCachedResponseForRequest:(NSURLRequest *)request;
