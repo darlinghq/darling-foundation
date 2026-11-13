@@ -241,6 +241,7 @@ set(foundation_sources
 	src/NSSpellServer.m
 	src/NSSpellEngine.m
 	src/NSFileWrapper.m
+	src/NSFileWrapperSerialization.m
 	src/NSAppleEventDescriptor.m
 
 	src/NSXPCConnection.m
