@@ -169,6 +169,18 @@ Typedefs:
 - Name: NSURLResourceKey
   SwiftWrapper: struct
   SwiftName: URLResourceKey
+- Name: NSURLFileResourceType
+  SwiftWrapper: struct
+  SwiftName: URLFileResourceType
+- Name: NSURLUbiquitousItemDownloadingStatus
+  SwiftWrapper: struct
+  SwiftName: URLUbiquitousItemDownloadingStatus
+- Name: NSURLUbiquitousSharedItemRole
+  SwiftWrapper: struct
+  SwiftName: URLUbiquitousSharedItemRole
+- Name: NSURLUbiquitousSharedItemPermissions
+  SwiftWrapper: struct
+  SwiftName: URLUbiquitousSharedItemPermissions
 # The importer does not infer nesting from NS_TYPED_EXTENSIBLE_ENUM or NS_ENUM, so without the
 # four entries below the macOS spellings NSAttributedString.Key, NSCalendar.Unit,
 # NumberFormatter.Style and RunLoop.Mode do not resolve at all.
