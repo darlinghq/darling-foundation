@@ -20,6 +20,8 @@
 	<dict>
 		<key>com.apple.FileCoordination</key>
 		<true/>
+		<key>org.darlinghq.FileCoordination</key>
+		<true/>
 		<key>com.apple.FileCoordination.kernel.ipc</key>
 		<dict>
 			<key>HostSpecialPort</key>

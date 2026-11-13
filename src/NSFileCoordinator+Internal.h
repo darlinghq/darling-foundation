@@ -2,7 +2,10 @@
 #include <stdint.h>
 #include <xpc/xpc.h>
 
-#define DAEMON_SERVICE_NAME "com.apple.FileCoordination"
+// The service of Darling's own protocol, between Darling's NSFileCoordinator and filecoordinationd.
+#define DAEMON_SERVICE_NAME "org.darlinghq.FileCoordination"
+// The NSXPC service Apple's NSFileCoordinator (the dyld shared cache) asks, answered by filecoordinationd as well.
+#define APPLE_ARBITER_SERVICE_NAME "com.apple.FileCoordination"
 
 //
 // daemon message types
