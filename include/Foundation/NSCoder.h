@@ -61,5 +61,13 @@ typedef NS_ENUM(NSInteger, NSDecodingFailurePolicy) {
 - (id)decodeObjectOfClasses:(NSSet *)classes forKey:(NSString *)key;
 - (id)decodePropertyListForKey:(NSString *)key;
 - (NSSet *)allowedClasses;
+- (id)decodeTopLevelObjectAndReturnError:(NSError **)error NS_SWIFT_UNAVAILABLE("Use 'decodeTopLevelObject() throws' instead");
+- (id)decodeTopLevelObjectForKey:(NSString *)key error:(NSError **)error NS_SWIFT_UNAVAILABLE("Use 'decodeObject(of:, forKey:)' instead");
+- (id)decodeTopLevelObjectOfClass:(Class)aClass forKey:(NSString *)key error:(NSError **)error NS_SWIFT_UNAVAILABLE("Use 'decodeObject(of:, forKey:)' instead");
+- (id)decodeTopLevelObjectOfClasses:(NSSet *)classes forKey:(NSString *)key error:(NSError **)error NS_SWIFT_UNAVAILABLE("Use 'decodeObject(of:, forKey:)' instead");
+- (NSArray *)decodeArrayOfObjectsOfClass:(Class)cls forKey:(NSString *)key NS_REFINED_FOR_SWIFT;
+- (NSArray *)decodeArrayOfObjectsOfClasses:(NSSet *)classes forKey:(NSString *)key NS_REFINED_FOR_SWIFT;
+- (NSDictionary *)decodeDictionaryWithKeysOfClass:(Class)keyCls objectsOfClass:(Class)objectCls forKey:(NSString *)key NS_REFINED_FOR_SWIFT;
+- (NSDictionary *)decodeDictionaryWithKeysOfClasses:(NSSet *)keyClasses objectsOfClasses:(NSSet *)objectClasses forKey:(NSString *)key NS_REFINED_FOR_SWIFT;
 
 @end
