@@ -920,14 +920,23 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
         return;
     }
 
-    [decoder _decodeMessageFromXPCObject: event
-               allowingSimpleMessageSend: NO // TODO: support simple message send as an optimization
-                           outInvocation: &invocation
-                            outArguments: &arguments
-                    outArgumentsMaxCount: 4
-                      outMethodSignature: &signature
-                             outSelector: &selector
-                               interface: interface];
+    // A message the exported interface does not know (an unknown selector, a class that is not allowed or not loaded,
+    // malformed data) invalidates this connection only, as on macOS; it must not take down a service shared by
+    // other clients. Exceptions raised by the invoked method itself are not caught.
+    @try {
+        [decoder _decodeMessageFromXPCObject: event
+                   allowingSimpleMessageSend: NO // TODO: support simple message send as an optimization
+                               outInvocation: &invocation
+                                outArguments: &arguments
+                        outArgumentsMaxCount: 4
+                          outMethodSignature: &signature
+                                 outSelector: &selector
+                                   interface: interface];
+    } @catch (NSException* exception) {
+        os_log_error(nsxpc_get_log(), "invalidating connection %@: could not decode a message: %{public}@: %{public}@", self, exception.name, exception.reason);
+        [self invalidate];
+        return;
+    }
 
     [self _setPeerBplistVersion: [decoder _bplistVersion]];
 
