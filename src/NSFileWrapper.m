@@ -197,6 +197,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 	return [[NSFileWrapperLink alloc] initSymbolicLinkWithDestination: path];
 }
 
+- (id) initSymbolicLinkWithDestinationURL: (NSURL*) url
+{
+	return [self initSymbolicLinkWithDestination: [url path]];
+}
+
 - (NSString *)filename
 {
 	return _filename;
