@@ -6,6 +6,7 @@ add_darling_static_library(nsxpc_test_launchd_service_common
 
 add_darling_executable(nsxpc_test_launchd_service service.m)
 add_darling_executable(nsxpc_test_client client.m)
+add_darling_executable(nsxpc_test_version_client version-client.m)
 
 # force the classes from the static library to be loaded
 target_link_options(nsxpc_test_launchd_service PRIVATE
@@ -26,10 +27,20 @@ target_link_libraries(nsxpc_test_client
 	nsxpc_test_launchd_service_common
 )
 
+# version-client.m includes common.m itself
+target_link_options(nsxpc_test_version_client PRIVATE
+	-Wl,-ObjC
+)
+
+target_link_libraries(nsxpc_test_version_client
+	Foundation
+)
+
 install(
 	TARGETS
 		nsxpc_test_launchd_service
 		nsxpc_test_client
+		nsxpc_test_version_client
 	DESTINATION
 		libexec/darling/usr/libexec
 )
