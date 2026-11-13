@@ -24,6 +24,7 @@
 #import <Foundation/NSPathUtilities.h>
 #import <Foundation/NSXPCInterface.h>
 #import <Foundation/NSMutableDictionary.h>
+#import <objc/runtime.h>
 #import "NSXPCEncoder.h"
 #import "NSXPCDecoder.h"
 #import "_NSXPCDistantObject.h"
@@ -726,6 +727,7 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
                                     initWithStackSpace: buffer
                                                   size: sizeof(buffer)];
         [encoder setConnection: self];
+        [encoder _setBplistVersion: [self _peerBplistVersion]];
         [encoder _encodeInvocation: invocation
                            isReply: NO
                               into: request];
@@ -927,6 +929,8 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
                              outSelector: &selector
                                interface: interface];
 
+    [self _setPeerBplistVersion: [decoder _bplistVersion]];
+
     os_log_debug(nsxpc_get_log(), "decoded invocation %@ with signature %@ and selector %s", invocation, signature, sel_getName(selector));
 
     // if they expect a reply, there's more work
@@ -1022,6 +1026,7 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
                                     unsigned char buffer[1024];
                                     NSXPCEncoder *encoder = [[NSXPCEncoder alloc] initWithStackSpace: buffer size: sizeof(buffer)];
                                     [encoder setConnection: self];
+                                    [encoder _setBplistVersion: [self _peerBplistVersion]];
                                     [encoder _encodeInvocation: invocation isReply: YES into: reply];
                                     os_log_debug(nsxpc_get_log(), "encoded reply invocation: %@", reply);
                                     [encoder release];
@@ -1080,6 +1085,8 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
     [decoder setConnection: self];
 
     invocation = [decoder _decodeReplyFromXPCObject: event forSelector: replyInfo.selector interface: replyInfo.interface];
+
+    [self _setPeerBplistVersion: [decoder _bplistVersion]];
 
     os_log_debug(nsxpc_get_log(), "decoded reply invocation %@ for selector %s", invocation, sel_getName(replyInfo.selector));
 
@@ -1180,6 +1187,19 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
 @end
 
 @implementation NSXPCConnection (NSXPCPrivateStuff)
+
+// The bplist version of the data the peer last sent, which is the one it understands: a peer on current macOS
+// (Apple's Foundation) sends and expects '7', Darling's Foundation '6' (the default until the peer has sent something).
+static const void *peerBplistVersionKey = &peerBplistVersionKey;
+
+- (unsigned char) _peerBplistVersion {
+    NSNumber *version = objc_getAssociatedObject(self, peerBplistVersionKey);
+    return version != nil ? (unsigned char) [version unsignedCharValue] : '6';
+}
+
+- (void) _setPeerBplistVersion: (unsigned char) version {
+    objc_setAssociatedObject(self, peerBplistVersionKey, [NSNumber numberWithUnsignedChar: version], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
 
 - (audit_token_t) auditToken {
     audit_token_t token;

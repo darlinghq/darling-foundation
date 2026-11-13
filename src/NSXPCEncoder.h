@@ -13,6 +13,9 @@ CF_PRIVATE
 - (instancetype) initWithStackSpace: (unsigned char *) buffer
                                size: (size_t) bufferSize;
 
+// Selects the bplist version digit ('6' or '7') written in the header; call it before encoding anything.
+- (void) _setBplistVersion: (unsigned char) version;
+
 - (void) _encodeObject: (id) object;
 - (void) _encodeUnkeyedObject: (id) object;
 

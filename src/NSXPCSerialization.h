@@ -18,6 +18,8 @@ struct NSXPCSerializer {
 struct NSXPCDeserializer {
     unsigned char *buffer;
     CFIndex bufferSize;
+    // The version digit of the "bplist1<digit>" header the data was written with: '6' (Darling, older macOS) or '7' (current macOS).
+    unsigned char version;
 };
 
 struct NSXPCObject {
@@ -45,6 +47,13 @@ enum {
 };
 
 // Encoding.
+
+// Sets the version digit of the header written by `_NSXPCSerializationStartWrite`; call it before anything else is written.
+CF_PRIVATE
+void _NSXPCSerializationSetWriteVersion(
+    struct NSXPCSerializer *serializer,
+    unsigned char version
+);
 
 CF_PRIVATE
 void _NSXPCSerializationStartWrite(
