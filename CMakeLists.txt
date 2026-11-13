@@ -250,8 +250,6 @@ set(foundation_sources
 	src/NSMeasurementFormatter.m
 	src/NSAppleScript.m
 	src/NSMetadata.m
-	src/NSLayoutAnchor.m
-	src/NSLayoutConstraint.m
 	src/NSExtensionContext.m
 	src/NSISO8601DateFormatter.m
 	src/NSScriptObjectSpecifiers.m
@@ -278,9 +276,6 @@ set(foundation_sources
 	src/NSUnitConverter.m
 	src/NSUnitConverterLinear.m
 	src/NSUnitDimensions.m
-	src/NSAutoresizingMaskLayoutConstraint.m
-	src/NSContentSizeLayoutConstraint.m
-	src/NSIBPrototypingLayoutConstraint.m
 	src/NSDeprecatedKeyValueCoding.m
 	src/NSCFType.m
 )
