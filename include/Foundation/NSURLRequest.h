@@ -38,6 +38,8 @@ typedef NS_ENUM(NSUInteger, NSURLRequestNetworkServiceType) {
 - (NSURL *)mainDocumentURL;
 - (NSURLRequestNetworkServiceType)networkServiceType;
 - (BOOL)allowsCellularAccess;
+- (BOOL)allowsExpensiveNetworkAccess;
+- (BOOL)allowsConstrainedNetworkAccess;
 
 @end
 
@@ -49,6 +51,8 @@ typedef NS_ENUM(NSUInteger, NSURLRequestNetworkServiceType) {
 - (void)setMainDocumentURL:(NSURL *)URL;
 - (void)setNetworkServiceType:(NSURLRequestNetworkServiceType)networkServiceType;
 - (void)setAllowsCellularAccess:(BOOL)allow;
+- (void)setAllowsExpensiveNetworkAccess:(BOOL)allow;
+- (void)setAllowsConstrainedNetworkAccess:(BOOL)allow;
 
 @end
 
