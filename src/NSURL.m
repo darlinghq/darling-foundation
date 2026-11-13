@@ -653,6 +653,74 @@ OBJC_PROTOCOL_IMPL_PUSH
 }
 OBJC_PROTOCOL_IMPL_POP
 
+OBJC_PROTOCOL_IMPL_PUSH
+- (id)initWithDataRepresentation:(NSData *)data relativeToURL:(NSURL *)url
+{
+    return [self _initWithDataRepresentation:data relativeToURL:url absolute:NO];
+}
+
+- (id)initAbsoluteURLWithDataRepresentation:(NSData *)data relativeToURL:(NSURL *)url
+{
+    return [self _initWithDataRepresentation:data relativeToURL:url absolute:YES];
+}
+OBJC_PROTOCOL_IMPL_POP
+
+// The data is the URL string in UTF-8. The absolute form resolves it against the base
+// and keeps no base URL.
+- (id)_initWithDataRepresentation:(NSData *)data relativeToURL:(NSURL *)url absolute:(BOOL)absolute
+{
+    CFURLRef created = NULL;
+    if (data != nil)
+    {
+        CFURLRef base = url != nil ? [url _cfurl] : NULL;
+        if (absolute)
+        {
+            created = CFURLCreateAbsoluteURLWithBytes(kCFAllocatorDefault, (const UInt8 *)[data bytes], [data length], kCFStringEncodingUTF8, base, false);
+        }
+        else
+        {
+            created = CFURLCreateWithBytes(kCFAllocatorDefault, (const UInt8 *)[data bytes], [data length], kCFStringEncodingUTF8, base);
+        }
+    }
+    if ([self class] == [NSURL class])
+    {
+        [self release];
+        return (NSURL *)created;
+    }
+    if (created == NULL)
+    {
+        [self release];
+        return nil;
+    }
+    self = [super init];
+    if (self)
+    {
+        _reserved = (void *)created;
+    }
+    else
+    {
+        CFRelease(created);
+    }
+    return self;
+}
+
+OBJC_PROTOCOL_IMPL_PUSH
++ (id)URLWithDataRepresentation:(NSData *)data relativeToURL:(NSURL *)url
+{
+    return [[[self alloc] initWithDataRepresentation:data relativeToURL:url] autorelease];
+}
+
++ (id)absoluteURLWithDataRepresentation:(NSData *)data relativeToURL:(NSURL *)url
+{
+    return [[[self alloc] initAbsoluteURLWithDataRepresentation:data relativeToURL:url] autorelease];
+}
+OBJC_PROTOCOL_IMPL_POP
+
+- (NSData *)dataRepresentation
+{
+    return [(NSData *)CFURLCreateData(kCFAllocatorDefault, [self _cfurl], kCFStringEncodingUTF8, NO) autorelease];
+}
+
 // What is this for?
 #if 0
 - (id)_initWithMinimalBookmarkData:(id)minimalBookmarkData
