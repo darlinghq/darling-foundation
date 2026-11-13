@@ -489,6 +489,19 @@ if (_formatter != NULL) { \
     [self setUsesGroupingSeparator:b];
 }
 
+// Formatting already follows the formatter's locale, as for a 10.4-style formatter, where the
+// flag does not change the output; it is only kept so it can be read back. Defaults to YES.
+- (BOOL)localizesFormat
+{
+    NSNumber *flag = _attributes[@"localizesFormat"];
+    return flag != nil ? [flag boolValue] : YES;
+}
+
+- (void)setLocalizesFormat:(BOOL)flag
+{
+    _attributes[@"localizesFormat"] = @(flag);
+}
+
 // Read back what was set: the formatter's own zero symbol may come from a zero pattern.
 - (NSString *)zeroSymbol
 {
