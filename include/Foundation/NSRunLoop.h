@@ -4,7 +4,9 @@
 
 @class NSTimer, NSPort, NSArray;
 
-typedef NSString *NSRunLoopMode;
+// NS_TYPED_EXTENSIBLE_ENUM as in the macOS SDK. Without the wrapper this is a plain String
+// typealias in Swift, so the nested RunLoop.Mode has nowhere to carry .default and .common.
+typedef NSString *NSRunLoopMode NS_TYPED_EXTENSIBLE_ENUM;
 
 FOUNDATION_EXPORT const NSRunLoopMode NSDefaultRunLoopMode;
 FOUNDATION_EXPORT const NSRunLoopMode NSRunLoopCommonModes;

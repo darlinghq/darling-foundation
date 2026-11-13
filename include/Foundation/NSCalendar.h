@@ -23,22 +23,26 @@ typedef NS_OPTIONS(NSUInteger, NSCalendarUnit) {
     NSCalendarUnitCalendar          = (1 << 20),
     NSCalendarUnitTimeZone          = (1 << 21),
 
-    NSEraCalendarUnit               = NSCalendarUnitEra,
-    NSYearCalendarUnit              = NSCalendarUnitYear,
-    NSMonthCalendarUnit             = NSCalendarUnitMonth,
-    NSDayCalendarUnit               = NSCalendarUnitDay,
-    NSHourCalendarUnit              = NSCalendarUnitHour,
-    NSMinuteCalendarUnit            = NSCalendarUnitMinute,
-    NSSecondCalendarUnit            = NSCalendarUnitSecond,
-    NSWeekCalendarUnit              = kCFCalendarUnitWeek,
-    NSWeekdayCalendarUnit           = NSCalendarUnitWeekday,
-    NSWeekdayOrdinalCalendarUnit    = NSCalendarUnitWeekdayOrdinal,
-    NSQuarterCalendarUnit           = NSCalendarUnitQuarter,
-    NSWeekOfMonthCalendarUnit       = NSCalendarUnitWeekOfMonth,
-    NSWeekOfYearCalendarUnit        = NSCalendarUnitWeekOfYear,
-    NSYearForWeekOfYearCalendarUnit = NSCalendarUnitYearForWeekOfYear,
-    NSCalendarCalendarUnit          = NSCalendarUnitCalendar,
-    NSTimeZoneCalendarUnit          = NSCalendarUnitTimeZone,
+    // Legacy spellings, kept for existing Objective-C callers. NS_SWIFT_UNAVAILABLE takes them out of
+    // the Clang importer's common-prefix computation: without it the longest prefix shared by every
+    // enumerator is just "NS", and the modern names above import into Swift as .calendarUnitEra,
+    // .calendarUnitYear, ... instead of macOS's .era, .year, ...
+    NSEraCalendarUnit NS_SWIFT_UNAVAILABLE("Use NSCalendarUnitEra")                             = NSCalendarUnitEra,
+    NSYearCalendarUnit NS_SWIFT_UNAVAILABLE("Use NSCalendarUnitYear")                           = NSCalendarUnitYear,
+    NSMonthCalendarUnit NS_SWIFT_UNAVAILABLE("Use NSCalendarUnitMonth")                         = NSCalendarUnitMonth,
+    NSDayCalendarUnit NS_SWIFT_UNAVAILABLE("Use NSCalendarUnitDay")                             = NSCalendarUnitDay,
+    NSHourCalendarUnit NS_SWIFT_UNAVAILABLE("Use NSCalendarUnitHour")                           = NSCalendarUnitHour,
+    NSMinuteCalendarUnit NS_SWIFT_UNAVAILABLE("Use NSCalendarUnitMinute")                       = NSCalendarUnitMinute,
+    NSSecondCalendarUnit NS_SWIFT_UNAVAILABLE("Use NSCalendarUnitSecond")                       = NSCalendarUnitSecond,
+    NSWeekCalendarUnit NS_SWIFT_UNAVAILABLE("Use NSCalendarUnitWeekOfYear")                     = kCFCalendarUnitWeek,
+    NSWeekdayCalendarUnit NS_SWIFT_UNAVAILABLE("Use NSCalendarUnitWeekday")                     = NSCalendarUnitWeekday,
+    NSWeekdayOrdinalCalendarUnit NS_SWIFT_UNAVAILABLE("Use NSCalendarUnitWeekdayOrdinal")       = NSCalendarUnitWeekdayOrdinal,
+    NSQuarterCalendarUnit NS_SWIFT_UNAVAILABLE("Use NSCalendarUnitQuarter")                     = NSCalendarUnitQuarter,
+    NSWeekOfMonthCalendarUnit NS_SWIFT_UNAVAILABLE("Use NSCalendarUnitWeekOfMonth")             = NSCalendarUnitWeekOfMonth,
+    NSWeekOfYearCalendarUnit NS_SWIFT_UNAVAILABLE("Use NSCalendarUnitWeekOfYear")               = NSCalendarUnitWeekOfYear,
+    NSYearForWeekOfYearCalendarUnit NS_SWIFT_UNAVAILABLE("Use NSCalendarUnitYearForWeekOfYear") = NSCalendarUnitYearForWeekOfYear,
+    NSCalendarCalendarUnit NS_SWIFT_UNAVAILABLE("Use NSCalendarUnitCalendar")                   = NSCalendarUnitCalendar,
+    NSTimeZoneCalendarUnit NS_SWIFT_UNAVAILABLE("Use NSCalendarUnitTimeZone")                   = NSCalendarUnitTimeZone,
 };
 
 enum {

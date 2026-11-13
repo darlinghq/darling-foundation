@@ -1,6 +1,7 @@
 #import <Foundation/NSError.h>
 #import <Foundation/NSCoder.h>
 #import <Foundation/NSPropertyList.h>
+#import <Foundation/NSSet.h>
 #import <CoreFoundation/CFDictionary.h>
 #import <CoreFoundation/CFNumber.h>
 #import <CoreFoundation/CFSet.h>
@@ -106,8 +107,10 @@ typedef struct offsetDataStruct offsetDataStruct;
     CFMutableDictionaryRef _reservedDictionary;
 }
 
-+ (id)unarchivedObjectOfClass:(Class)cls fromData:(NSData *)data error:(NSError **)error;
-+ (id)unarchivedObjectOfClasses:(NSSet *)classes fromData:(NSData *)data error:(NSError **)error;
++ (id)unarchivedObjectOfClass:(Class)cls fromData:(NSData *)data error:(NSError **)error
+    NS_SWIFT_NAME(__unarchivedObject(ofClass:fromData:)) NS_REFINED_FOR_SWIFT;
++ (id)unarchivedObjectOfClasses:(NSSet<Class> *)classes fromData:(NSData *)data error:(NSError **)error
+    NS_SWIFT_NAME(__unarchivedObject(ofClasses:fromData:)) NS_REFINED_FOR_SWIFT;
 + (id)unarchiveObjectWithData:(NSData *)data;
 + (id)unarchiveObjectWithFile:(NSString *)path;
 - (id)initForReadingWithData:(NSData *)data;
