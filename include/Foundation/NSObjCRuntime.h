@@ -229,8 +229,23 @@
 
 #define NS_SWIFT_UNAVAILABLE(_msg) CF_SWIFT_UNAVAILABLE(_msg)
 
+// Import an Objective-C declaration with Swift's Sendable annotation.
+#ifndef NS_SWIFT_SENDABLE
+#if __has_attribute(swift_attr)
+#define NS_SWIFT_SENDABLE __attribute__((swift_attr("@Sendable")))
+#else
+#define NS_SWIFT_SENDABLE
+#endif
+#endif
+
 #define NS_ASSUME_NONNULL_BEGIN _Pragma("clang assume_nonnull begin")
 #define NS_ASSUME_NONNULL_END   _Pragma("clang assume_nonnull end")
+
+// Headers from recent macOS SDKs open with NS_HEADER_AUDIT_BEGIN(nullability, sendability)
+// instead of NS_ASSUME_NONNULL_BEGIN. Of the audit categories only nullability affects the
+// C and Objective-C parse; sendability is a Swift concurrency audit and has no effect here.
+#define NS_HEADER_AUDIT_BEGIN(...) NS_ASSUME_NONNULL_BEGIN
+#define NS_HEADER_AUDIT_END(...)   NS_ASSUME_NONNULL_END
 
 #if __has_attribute(swift_wrapper)
 #define _CF_TYPED_EXTENSIBLE_ENUM __attribute__((swift_wrapper(struct)))
@@ -247,12 +262,23 @@
 #define NS_TYPED_ENUM _NS_TYPED_ENUM
 #define NS_TYPED_EXTENSIBLE_ENUM _NS_TYPED_EXTENSIBLE_ENUM
 
-#if (__cplusplus && __cplusplus >= 201103L && (__has_extension(cxx_strong_enums) || __has_feature(objc_fixed_enum))) || (!__cplusplus && __has_feature(objc_fixed_enum))
-#define NS_ENUM(_type, _name) enum _name : _type _name; enum _name : _type
-#if (__cplusplus)
-#define NS_OPTIONS(_type, _name) _type _name; enum : _type
+// flag_enum is what tells the Clang importer an enum is a bit-flag set, so Swift sees the type as an
+// OptionSet rather than a plain raw-value struct. CFAvailability.h already applies both attributes in
+// __CF_OPTIONS_ATTRIBUTES; NS_OPTIONS was the one that did not.
+#if __has_attribute(enum_extensibility)
+#define __NS_ENUM_ATTRIBUTES __attribute__((enum_extensibility(open)))
+#define __NS_OPTIONS_ATTRIBUTES __attribute__((flag_enum,enum_extensibility(open)))
 #else
-#define NS_OPTIONS(_type, _name) enum _name : _type _name; enum _name : _type
+#define __NS_ENUM_ATTRIBUTES
+#define __NS_OPTIONS_ATTRIBUTES
+#endif
+
+#if (__cplusplus && __cplusplus >= 201103L && (__has_extension(cxx_strong_enums) || __has_feature(objc_fixed_enum))) || (!__cplusplus && __has_feature(objc_fixed_enum))
+#define NS_ENUM(_type, _name) enum __NS_ENUM_ATTRIBUTES _name : _type _name; enum _name : _type
+#if (__cplusplus)
+#define NS_OPTIONS(_type, _name) _type _name; enum __NS_OPTIONS_ATTRIBUTES : _type
+#else
+#define NS_OPTIONS(_type, _name) enum __NS_OPTIONS_ATTRIBUTES _name : _type _name; enum _name : _type
 #endif
 #else
 #define NS_ENUM(_type, _name) _type _name; enum
