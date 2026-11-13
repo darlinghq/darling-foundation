@@ -179,6 +179,21 @@ static NSMutableDictionary *encodedClassNames = nil;
     }
 }
 
+// QUIRK: a float or double whose value is a whole number in the int range is
+// written as an integer, not as a real (so -0.0 comes back as 0). Not
+// documented. Evidence: black-box observation of NSArchiver on macOS 26.7.3
+// (tier 2), also visible in a color list file written by the system.
+// Test: tests/nsarchiver-integral-reals.m (nsarchiver-integral-reals quirk).
+- (BOOL)_writeIntegralReal:(double)value
+{
+    if (value >= (double)INT_MIN && value <= (double)INT_MAX && value == (double)(int)value)
+    {
+        [self _writeInt:(int)value];
+        return YES;
+    }
+    return NO;
+}
+
 - (void)_writeLong8:(unsigned long long)value
 {
     [self _writeByte:Long8Label];
@@ -318,13 +333,23 @@ static NSMutableDictionary *encodedClassNames = nil;
             break;
         }
         case 'f':
+        {
+            float value = *(const float *)addr;
+            if ([self _writeIntegralReal:value])
+                break;
             [self _writeByte:RealLabel];
             [mdata appendBytes:addr length:sizeof(float)];
             break;
+        }
         case 'd':
+        {
+            double value = *(const double *)addr;
+            if ([self _writeIntegralReal:value])
+                break;
             [self _writeByte:RealLabel];
             [mdata appendBytes:addr length:sizeof(double)];
             break;
+        }
         case '@':
             [self _writeObject:*(id const *)addr];
             break;
