@@ -551,4 +551,16 @@ static void __NSFireDelayedPerform(CFRunLoopTimerRef timer, void *info)
     }
 }
 
+- (void)performInModes:(NSArray<NSRunLoopMode> *)modes block:(void (^)(void))block
+{
+    CFRunLoopPerformBlock(_rl, (CFArrayRef)modes, block);
+    // CFRunLoopPerformBlock does not wake a sleeping run loop, so a block queued from another thread would wait for unrelated input.
+    CFRunLoopWakeUp(_rl);
+}
+
+- (void)performBlock:(void (^)(void))block
+{
+    [self performInModes:@[NSDefaultRunLoopMode] block:block];
+}
+
 @end

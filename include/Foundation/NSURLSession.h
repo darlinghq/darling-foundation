@@ -24,6 +24,8 @@ typedef NS_ENUM(NSInteger, NSURLSessionResponseDisposition) {
     NSURLSessionResponseBecomeDownload = 2,
 };
 
+NS_ASSUME_NONNULL_BEGIN
+
 @class NSArray, NSCachedURLResponse, NSData, NSDictionary, NSError;
 @class NSHTTPCookie, NSHTTPURLResponse, NSInputStream, NSOperationQueue;
 @class NSString, NSURL, NSURLAuthenticationChallenge, NSURLCache;
@@ -35,8 +37,8 @@ typedef NS_ENUM(NSInteger, NSURLSessionResponseDisposition) {
 @protocol NSURLSessionDelegate <NSObject>
 @optional
 
-- (void)URLSession:(NSURLSession *)session didBecomeInvalidWithError:(NSError *)error;
-- (void)URLSession:(NSURLSession *)session didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition disposition, NSURLCredential *credential))completionHandler;
+- (void)URLSession:(NSURLSession *)session didBecomeInvalidWithError:(nullable NSError *)error;
+- (void)URLSession:(NSURLSession *)session didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition disposition, NSURLCredential * _Nullable credential))completionHandler;
 - (void)URLSessionDidFinishEventsForBackgroundURLSession:(NSURLSession *)session;
 
 @end
@@ -44,11 +46,11 @@ typedef NS_ENUM(NSInteger, NSURLSessionResponseDisposition) {
 @protocol NSURLSessionTaskDelegate <NSURLSessionDelegate>
 @optional
 
-- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task willPerformHTTPRedirection:(NSHTTPURLResponse *)response newRequest:(NSURLRequest *)request completionHandler:(void (^)(NSURLRequest *))completionHandler;
-- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge  completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition disposition, NSURLCredential *credential))completionHandler;
-- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task needNewBodyStream:(void (^)(NSInputStream *bodyStream))completionHandler;
+- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task willPerformHTTPRedirection:(NSHTTPURLResponse *)response newRequest:(NSURLRequest *)request completionHandler:(void (^)(NSURLRequest * _Nullable))completionHandler;
+- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge  completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition disposition, NSURLCredential * _Nullable credential))completionHandler;
+- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task needNewBodyStream:(void (^)(NSInputStream * _Nullable bodyStream))completionHandler;
 - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didSendBodyData:(int64_t)bytesSent totalBytesSent:(int64_t)totalBytesSent totalBytesExpectedToSend:(int64_t)totalBytesExpectedToSend;
-- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error;
+- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(nullable NSError *)error;
 
 @end
 
@@ -58,7 +60,7 @@ typedef NS_ENUM(NSInteger, NSURLSessionResponseDisposition) {
 - (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didReceiveResponse:(NSURLResponse *)response completionHandler:(void (^)(NSURLSessionResponseDisposition disposition))completionHandler;
 - (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didBecomeDownloadTask:(NSURLSessionDownloadTask *)downloadTask;
 - (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didReceiveData:(NSData *)data;
-- (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask willCacheResponse:(NSCachedURLResponse *)proposedResponse  completionHandler:(void (^)(NSCachedURLResponse *cachedResponse))completionHandler;
+- (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask willCacheResponse:(NSCachedURLResponse *)proposedResponse  completionHandler:(void (^)(NSCachedURLResponse * _Nullable cachedResponse))completionHandler;
 
 @end
 
@@ -76,13 +78,13 @@ FOUNDATION_EXPORT NSString * const NSURLSessionDownloadTaskResumeData;
 @interface NSURLSession : NSObject
 
 @property (readonly, retain) NSOperationQueue *delegateQueue;
-@property (readonly, retain) id <NSURLSessionDelegate> delegate;
+@property (nullable, readonly, retain) id <NSURLSessionDelegate> delegate;
 @property (readonly, copy) NSURLSessionConfiguration *configuration;
-@property (copy) NSString *sessionDescription;
+@property (nullable, copy) NSString *sessionDescription;
 
-+ (NSURLSession *)sharedSession;
+@property (class, readonly, strong) NSURLSession *sharedSession;
 + (NSURLSession *)sessionWithConfiguration:(NSURLSessionConfiguration *)configuration;
-+ (NSURLSession *)sessionWithConfiguration:(NSURLSessionConfiguration *)configuration delegate:(id <NSURLSessionDelegate>)delegate delegateQueue:(NSOperationQueue *)queue;
++ (NSURLSession *)sessionWithConfiguration:(NSURLSessionConfiguration *)configuration delegate:(nullable id <NSURLSessionDelegate>)delegate delegateQueue:(nullable NSOperationQueue *)queue;
 - (void)finishTasksAndInvalidate;
 - (void)invalidateAndCancel;
 - (void)resetWithCompletionHandler:(void (^)(void))completionHandler;
@@ -101,29 +103,29 @@ FOUNDATION_EXPORT NSString * const NSURLSessionDownloadTaskResumeData;
 
 @interface NSURLSession (NSURLSessionAsynchronousConvenience)
 
-- (NSURLSessionDataTask *)dataTaskWithRequest:(NSURLRequest *)request completionHandler:(void (^)(NSData *data, NSURLResponse *response, NSError *error))completionHandler;
-- (NSURLSessionDataTask *)dataTaskWithURL:(NSURL *)url completionHandler:(void (^)(NSData *data, NSURLResponse *response, NSError *error))completionHandler;
-- (NSURLSessionUploadTask *)uploadTaskWithRequest:(NSURLRequest *)request fromFile:(NSURL *)fileURL completionHandler:(void (^)(NSData *data, NSURLResponse *response, NSError *error))completionHandler;
-- (NSURLSessionUploadTask *)uploadTaskWithRequest:(NSURLRequest *)request fromData:(NSData *)bodyData completionHandler:(void (^)(NSData *data, NSURLResponse *response, NSError *error))completionHandler;
-- (NSURLSessionDownloadTask *)downloadTaskWithRequest:(NSURLRequest *)request completionHandler:(void (^)(NSURL *location, NSURLResponse *response, NSError *error))completionHandler;
-- (NSURLSessionDownloadTask *)downloadTaskWithURL:(NSURL *)url completionHandler:(void (^)(NSURL *location, NSURLResponse *response, NSError *error))completionHandler;
-- (NSURLSessionDownloadTask *)downloadTaskWithResumeData:(NSData *)resumeData completionHandler:(void (^)(NSURL *location, NSURLResponse *response, NSError *error))completionHandler;
+- (NSURLSessionDataTask *)dataTaskWithRequest:(NSURLRequest *)request completionHandler:(void (^)(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error))completionHandler;
+- (NSURLSessionDataTask *)dataTaskWithURL:(NSURL *)url completionHandler:(void (^)(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error))completionHandler;
+- (NSURLSessionUploadTask *)uploadTaskWithRequest:(NSURLRequest *)request fromFile:(NSURL *)fileURL completionHandler:(void (^)(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error))completionHandler;
+- (NSURLSessionUploadTask *)uploadTaskWithRequest:(NSURLRequest *)request fromData:(NSData *)bodyData completionHandler:(void (^)(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error))completionHandler;
+- (NSURLSessionDownloadTask *)downloadTaskWithRequest:(NSURLRequest *)request completionHandler:(void (^)(NSURL * _Nullable location, NSURLResponse * _Nullable response, NSError * _Nullable error))completionHandler;
+- (NSURLSessionDownloadTask *)downloadTaskWithURL:(NSURL *)url completionHandler:(void (^)(NSURL * _Nullable location, NSURLResponse * _Nullable response, NSError * _Nullable error))completionHandler;
+- (NSURLSessionDownloadTask *)downloadTaskWithResumeData:(NSData *)resumeData completionHandler:(void (^)(NSURL * _Nullable location, NSURLResponse * _Nullable response, NSError * _Nullable error))completionHandler;
 
 @end
 
 @interface NSURLSessionTask : NSObject <NSCopying>
 
 @property (readonly) NSUInteger taskIdentifier;
-@property (readonly, copy) NSURLRequest *originalRequest;
-@property (readonly, copy) NSURLRequest *currentRequest;
-@property (readonly, copy) NSURLResponse *response;
+@property (nullable, readonly, copy) NSURLRequest *originalRequest;
+@property (nullable, readonly, copy) NSURLRequest *currentRequest;
+@property (nullable, readonly, copy) NSURLResponse *response;
 @property (readonly) int64_t countOfBytesReceived;
 @property (readonly) int64_t countOfBytesSent;
 @property (readonly) int64_t countOfBytesExpectedToSend;
 @property (readonly) int64_t countOfBytesExpectedToReceive;
-@property (copy) NSString *taskDescription;
+@property (nullable, copy) NSString *taskDescription;
 @property (readonly) NSURLSessionTaskState state;
-@property (readonly, copy) NSError *error;
+@property (nullable, readonly, copy) NSError *error;
 
 - (void)cancel;
 - (void)suspend;
@@ -139,7 +141,7 @@ FOUNDATION_EXPORT NSString * const NSURLSessionDownloadTaskResumeData;
 
 @interface NSURLSessionDownloadTask : NSURLSessionTask
 
-- (void)cancelByProducingResumeData:(void (^)(NSData *resumeData))completionHandler;
+- (void)cancelByProducingResumeData:(void (^)(NSData * _Nullable resumeData))completionHandler;
 
 @end
 
@@ -157,7 +159,7 @@ typedef NS_ENUM(NSInteger, NSURLSessionMultipathServiceType) {
 
 @property(class, readonly, strong) NSURLSessionConfiguration *defaultSessionConfiguration;
 
-@property (readonly, copy) NSString *identifier;
+@property (nullable, readonly, copy) NSString *identifier;
 @property NSURLRequestCachePolicy requestCachePolicy;
 @property NSTimeInterval timeoutIntervalForRequest;
 @property NSTimeInterval timeoutIntervalForResource;
@@ -165,18 +167,18 @@ typedef NS_ENUM(NSInteger, NSURLSessionMultipathServiceType) {
 @property BOOL allowsCellularAccess;
 @property (getter=isDiscretionary) BOOL discretionary;
 @property BOOL sessionSendsLaunchEvents;
-@property (copy) NSDictionary *connectionProxyDictionary;
+@property (nullable, copy) NSDictionary *connectionProxyDictionary;
 @property SSLProtocol TLSMinimumSupportedProtocol;
 @property SSLProtocol TLSMaximumSupportedProtocol;
 @property BOOL HTTPShouldUsePipelining;
 @property BOOL HTTPShouldSetCookies;
 @property NSHTTPCookieAcceptPolicy HTTPCookieAcceptPolicy;
-@property (copy) NSDictionary *HTTPAdditionalHeaders;
+@property (nullable, copy) NSDictionary *HTTPAdditionalHeaders;
 @property NSInteger HTTPMaximumConnectionsPerHost;
-@property (retain) NSHTTPCookieStorage *HTTPCookieStorage;
-@property (retain) NSURLCredentialStorage *URLCredentialStorage;
-@property (retain) NSURLCache *URLCache;
-@property (copy) NSArray *protocolClasses;
+@property (nullable, retain) NSHTTPCookieStorage *HTTPCookieStorage;
+@property (nullable, retain) NSURLCredentialStorage *URLCredentialStorage;
+@property (nullable, retain) NSURLCache *URLCache;
+@property (nullable, copy) NSArray *protocolClasses;
 @property BOOL waitsForConnectivity;
 @property BOOL allowsExpensiveNetworkAccess;
 @property BOOL allowsConstrainedNetworkAccess;
@@ -196,7 +198,8 @@ typedef NS_ENUM(NSInteger, NSURLSessionMultipathServiceType) {
 - (NSURLSessionDataTask *)dataTaskWithHTTPGetRequest:(NSURL *)url;
 
 /* Use -dataTaskWithURL:completionHandler: instead */
-- (NSURLSessionDataTask *)dataTaskWithHTTPGetRequest:(NSURL *)url completionHandler:(void (^)(NSData *data, NSURLResponse *response, NSError *error))completionHandler;
+- (NSURLSessionDataTask *)dataTaskWithHTTPGetRequest:(NSURL *)url completionHandler:(void (^)(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error))completionHandler;
 
 @end
 
+NS_ASSUME_NONNULL_END
