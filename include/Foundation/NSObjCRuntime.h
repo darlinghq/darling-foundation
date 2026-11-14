@@ -285,6 +285,15 @@
 #define NS_OPTIONS(_type, _name) _type _name; enum
 #endif
 
+// NS_ERROR_ENUM(domain, Name): an NSInteger-based enum whose cases are the error codes of an
+// NSError domain. The ns_error_domain attribute is what makes Swift import it as an error struct
+// (Name.Code plus the Swift error conformance) tied to the domain string constant.
+#if ((__cplusplus && __cplusplus >= 201103L && (__has_extension(cxx_strong_enums) || __has_feature(objc_fixed_enum))) || (!__cplusplus && __has_feature(objc_fixed_enum))) && __has_attribute(ns_error_domain)
+#define NS_ERROR_ENUM(_domain, _name) enum __attribute__((ns_error_domain(_domain))) _name : NSInteger _name; enum _name : NSInteger
+#else
+#define NS_ERROR_ENUM(_domain, _name) NS_ENUM(NSInteger, _name)
+#endif
+
 FOUNDATION_EXPORT double NSFoundationVersionNumber;
 
 #if TARGET_OS_IPHONE
