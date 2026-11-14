@@ -42,6 +42,20 @@ int main(void)
     [child setCompletedUnitCount: 10];
     expect([parent completedUnitCount] == 40, @"a child created in the block contributes the pending units");
 
+    // QUIRK pinned: a block that raises leaves the progress current.
+    NSProgress *raiser = [NSProgress progressWithTotalUnitCount: 10];
+    @try {
+        [raiser performAsCurrentWithPendingUnitCount: 1 usingBlock: ^{
+            [NSException raise: @"V430Test" format: @"raised"];
+        }];
+        expect(NO, @"the exception propagates");
+    } @catch (NSException *e) {
+        expect([[e name] isEqualToString: @"V430Test"], @"the block's exception reaches the caller");
+    }
+    expect([NSProgress currentProgress] == raiser, @"a raising block leaves the progress current (quirk)");
+    [raiser resignCurrent];
+    expect([NSProgress currentProgress] == nil, @"explicit resign makes it non-current");
+
     [pool drain];
     return failures ? 1 : 0;
 }

@@ -737,11 +737,11 @@ static void runHandler(void (^handler)(void))
 - (void)performAsCurrentWithPendingUnitCount: (int64_t)unitCount usingBlock: (void (^)(void))work
 {
     [self becomeCurrentWithPendingUnitCount: unitCount];
-    @try {
-        work();
-    } @finally {
-        [self resignCurrent];
-    }
+    // QUIRK: if the block raises, the progress is not resigned; it stays current.
+    // Evidence: black-box observation on macOS 26.7.3 (tier 2).
+    // Test: tests/nsprogress-file-counts.m (raising block leaves progress current)
+    work();
+    [self resignCurrent];
 }
 
 - (NSNumber *)throughput
