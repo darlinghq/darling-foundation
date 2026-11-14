@@ -55,6 +55,25 @@ static NSValue *_NSNewValue(void *value, const char *type);
     NSRequestConcreteImplementation();
 }
 
+- (void)getValue:(void *)value size:(NSUInteger)size
+{
+    NSUInteger expected = 0;
+    NSGetSizeAndAlignment([self objCType], &expected, NULL);
+    // QUIRK: a size that differs from the encoded type's size raises
+    // NSInvalidArgumentException instead of copying a partial or larger value.
+    // The documentation only says the buffer must hold the value. Evidence:
+    // black-box observation on macOS 26.7.3 (tier 2), for int, CGRect and
+    // NSNumber values, sizes both smaller and larger.
+    // Test: tests/nsvalue-get-value-size.m
+    if (size != expected)
+    {
+        [NSException raise:NSInvalidArgumentException
+                    format:@"Cannot get value with size %lu: the type %s has size %lu",
+                           (unsigned long)size, [self objCType], (unsigned long)expected];
+    }
+    [self getValue:value];
+}
+
 - (const char *)objCType
 {
     NSRequestConcreteImplementation();

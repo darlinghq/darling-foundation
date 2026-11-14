@@ -2,16 +2,19 @@
 
 @class NSString, NSDictionary;
 
+NS_ASSUME_NONNULL_BEGIN
+
 @interface NSValue : NSObject <NSCopying, NSSecureCoding>
 
 - (void)getValue:(void *)value;
-- (const char *)objCType NS_RETURNS_INNER_POINTER;
+- (void)getValue:(void *)value size:(NSUInteger)size;
+@property (readonly) const char *objCType NS_RETURNS_INNER_POINTER;
 
 @end
 
 @interface NSValue (NSValueCreation)
 
-- (id)initWithBytes:(const void *)value objCType:(const char *)type;
+- (instancetype)initWithBytes:(const void *)value objCType:(const char *)type;
 + (NSValue *)valueWithBytes:(const void *)value objCType:(const char *)type;
 + (NSValue *)value:(const void *)value withObjCType:(const char *)type;
 
@@ -19,10 +22,10 @@
 
 @interface NSValue (NSValueExtensionMethods)
 
-+ (NSValue *)valueWithNonretainedObject:(id)anObject;
-+ (NSValue *)valueWithPointer:(const void *)pointer;
-- (id)nonretainedObjectValue;
-- (void *)pointerValue;
++ (NSValue *)valueWithNonretainedObject:(nullable id)anObject;
++ (NSValue *)valueWithPointer:(nullable const void *)pointer;
+- (nullable id)nonretainedObjectValue;
+- (nullable void *)pointerValue;
 - (BOOL)isEqualToValue:(NSValue *)value;
 
 @end
@@ -47,7 +50,7 @@
 - (NSString *)stringValue;
 - (NSComparisonResult)compare:(NSNumber *)other;
 - (BOOL)isEqualToNumber:(NSNumber *)other;
-- (NSString *)descriptionWithLocale:(id)locale;
+- (NSString *)descriptionWithLocale:(nullable id)locale;
 
 @end
 
@@ -85,3 +88,5 @@
 - (id)initWithUnsignedInteger:(NSUInteger)value;
 
 @end
+
+NS_ASSUME_NONNULL_END
