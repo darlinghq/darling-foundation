@@ -22,6 +22,7 @@
 #import <Foundation/NSBundle.h>
 #import <Foundation/NSProcessInfo.h>
 #import <Foundation/NSUUID.h>
+#import <Foundation/NSCoder.h>
 
 #include <xpc/xpc.h>
 #include <dispatch/dispatch.h>
@@ -123,6 +124,44 @@
     return copy;
 }
 
++ (BOOL)supportsSecureCoding {
+    return YES;
+}
+
+- (void)encodeWithCoder:(NSCoder *)coder {
+    [coder encodeObject:_identifier forKey:@"identifier"];
+    [coder encodeObject:_title forKey:@"title"];
+    [coder encodeObject:_subtitle forKey:@"subtitle"];
+    [coder encodeObject:_informativeText forKey:@"informativeText"];
+    [coder encodeObject:_actionButtonTitle forKey:@"actionButtonTitle"];
+    [coder encodeObject:_otherButtonTitle forKey:@"otherButtonTitle"];
+    [coder encodeObject:_soundName forKey:@"soundName"];
+    [coder encodeObject:_deliveryDate forKey:@"deliveryDate"];
+    [coder encodeObject:_actualDeliveryDate forKey:@"actualDeliveryDate"];
+    [coder encodeObject:_additionalActions forKey:@"additionalActions"];
+    [coder encodeBool:_hasActionButton forKey:@"hasActionButton"];
+    [coder encodeBool:_hasReplyButton forKey:@"hasReplyButton"];
+}
+
+- (instancetype)initWithCoder:(NSCoder *)coder {
+    self = [super init];
+    if (self) {
+        _identifier = [[coder decodeObjectForKey:@"identifier"] copy];
+        _title = [[coder decodeObjectForKey:@"title"] copy];
+        _subtitle = [[coder decodeObjectForKey:@"subtitle"] copy];
+        _informativeText = [[coder decodeObjectForKey:@"informativeText"] copy];
+        _actionButtonTitle = [[coder decodeObjectForKey:@"actionButtonTitle"] copy];
+        _otherButtonTitle = [[coder decodeObjectForKey:@"otherButtonTitle"] copy];
+        _soundName = [[coder decodeObjectForKey:@"soundName"] copy];
+        _deliveryDate = [[coder decodeObjectForKey:@"deliveryDate"] copy];
+        _actualDeliveryDate = [[coder decodeObjectForKey:@"actualDeliveryDate"] copy];
+        _additionalActions = [[coder decodeObjectForKey:@"additionalActions"] copy];
+        _hasActionButton = [coder decodeBoolForKey:@"hasActionButton"];
+        _hasReplyButton = [coder decodeBoolForKey:@"hasReplyButton"];
+    }
+    return self;
+}
+
 @end
 
 @implementation NSUserNotificationAction
@@ -136,6 +175,24 @@
     action->_identifier = [identifier copy];
     action->_title = [title copy];
     return action;
+}
+
++ (BOOL)supportsSecureCoding {
+    return YES;
+}
+
+- (void)encodeWithCoder:(NSCoder *)coder {
+    [coder encodeObject:_identifier forKey:@"identifier"];
+    [coder encodeObject:_title forKey:@"title"];
+}
+
+- (instancetype)initWithCoder:(NSCoder *)coder {
+    self = [super init];
+    if (self) {
+        _identifier = [[coder decodeObjectForKey:@"identifier"] copy];
+        _title = [[coder decodeObjectForKey:@"title"] copy];
+    }
+    return self;
 }
 
 - (void)dealloc

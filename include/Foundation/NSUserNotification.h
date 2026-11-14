@@ -33,7 +33,7 @@ typedef NS_ENUM(NSInteger, NSUserNotificationActivationType) {
 
 @class NSUserNotificationAction;
 
-@interface NSUserNotification : NSObject <NSCopying> {
+@interface NSUserNotification : NSObject <NSCopying, NSSecureCoding> {
 @package
     NSString *_identifier;
     NSString *_title;
@@ -74,7 +74,7 @@ typedef NS_ENUM(NSInteger, NSUserNotificationActivationType) {
 
 @end
 
-@interface NSUserNotificationAction : NSObject <NSCopying> {
+@interface NSUserNotificationAction : NSObject <NSCopying, NSSecureCoding> {
 @package
     NSString *_identifier;
     NSString *_title;
