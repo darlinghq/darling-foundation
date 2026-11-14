@@ -918,6 +918,8 @@ static char NSOperationNameKey;
     for (NSOperation *operation in [self operations])
     {
         [operation waitUntilFinished];
+        // The queue drops a finished operation a moment later; the waiter must see it gone on return.
+        [self _removeFinishedOperation:operation._internal];
     }
     [self release];
 }
