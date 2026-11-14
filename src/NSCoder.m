@@ -417,7 +417,7 @@ static inline const char *nextType(const char *type)
     return [self decodeObjectOfClasses:[NSSet setWithObject:aClass] forKey:key];
 }
 
-- (id)decodeObjectOfClasses:(NSSet *)classes forKey:(NSString *)key
+- (id)decodeObjectOfClasses:(NSSet<Class> *)classes forKey:(NSString *)key
 {
     if (![self allowsKeyedCoding])
     {
@@ -559,7 +559,7 @@ static inline const char *nextType(const char *type)
     return [NSDeserializer deserializePropertyListFromData: [self decodeDataObject] mutableContainers: NO];
 }
 
-- (NSSet *)allowedClasses
+- (NSSet<Class> *)allowedClasses
 {
     return nil;
 }

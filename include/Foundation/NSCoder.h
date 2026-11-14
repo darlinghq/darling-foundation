@@ -58,9 +58,9 @@ typedef NS_ENUM(NSInteger, NSDecodingFailurePolicy) {
 - (NSInteger)decodeIntegerForKey:(NSString *)key;
 - (BOOL)requiresSecureCoding;
 - (id)decodeObjectOfClass:(Class)aClass forKey:(NSString *)key;
-- (id)decodeObjectOfClasses:(NSSet *)classes forKey:(NSString *)key;
+- (nullable id)decodeObjectOfClasses:(nullable NSSet<Class> *)classes forKey:(NSString *)key;
 - (id)decodePropertyListForKey:(NSString *)key;
-- (NSSet *)allowedClasses;
+@property (nullable, readonly, copy) NSSet<Class> *allowedClasses API_AVAILABLE(macos(10.8), ios(6.0), watchos(2.0), tvos(9.0));
 - (id)decodeTopLevelObjectAndReturnError:(NSError **)error NS_SWIFT_UNAVAILABLE("Use 'decodeTopLevelObject() throws' instead");
 - (id)decodeTopLevelObjectForKey:(NSString *)key error:(NSError **)error NS_SWIFT_UNAVAILABLE("Use 'decodeObject(of:, forKey:)' instead");
 - (id)decodeTopLevelObjectOfClass:(Class)aClass forKey:(NSString *)key error:(NSError **)error NS_SWIFT_UNAVAILABLE("Use 'decodeObject(of:, forKey:)' instead");
