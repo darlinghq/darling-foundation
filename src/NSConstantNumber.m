@@ -108,7 +108,6 @@ static BOOL encodingIsUnsigned(const char *encoding)
         {
             double lhs = (double)(unsigned long long)_value;
             double rhs = [other doubleValue];
-            if (rhs != rhs) return NSOrderedDescending; /* CFNumberCompare orders NaN below every non-negative number */
             if (lhs < rhs) return NSOrderedAscending;
             if (lhs > rhs) return NSOrderedDescending;
             return NSOrderedSame;
