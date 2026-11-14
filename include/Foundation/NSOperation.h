@@ -110,14 +110,11 @@ FOUNDATION_EXPORT NSString * const NSInvocationOperationCancelledException;
 #if NS_BLOCKS_AVAILABLE
 - (void)addOperationWithBlock:(void (^)(void))block;
 #endif
-- (NSArray *)operations;
-- (NSUInteger)operationCount;
-- (NSInteger)maxConcurrentOperationCount;
-- (void)setMaxConcurrentOperationCount:(NSInteger)cnt;
-- (void)setSuspended:(BOOL)b;
-- (BOOL)isSuspended;
-- (void)setName:(NSString *)n;
-- (NSString *)name;
+@property (readonly, copy) NSArray *operations;
+@property (readonly) NSUInteger operationCount;
+@property NSInteger maxConcurrentOperationCount;
+@property (getter=isSuspended) BOOL suspended;
+@property (copy) NSString *name;
 - (void)cancelAllOperations;
 - (void)waitUntilAllOperationsAreFinished;
 
