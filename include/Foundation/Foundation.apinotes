@@ -225,6 +225,9 @@ Typedefs:
 - Name: NSURLFileResourceType
   SwiftWrapper: struct
   SwiftName: URLFileResourceType
+- Name: NSURLThumbnailDictionaryItem
+  SwiftWrapper: struct
+  SwiftName: URLThumbnailDictionaryItem
 - Name: NSURLUbiquitousItemDownloadingStatus
   SwiftWrapper: struct
   SwiftName: URLUbiquitousItemDownloadingStatus
