@@ -547,6 +547,12 @@ static id _NSGetStructValueWithMethod(id obj, SEL cmd, Method method)
     return val;
 }
 
+#if defined(__i386__)
+#define _NSStructReturnedInRegisters(size) ((size) <= 8)
+#else
+#define _NSStructReturnedInRegisters(size) 0
+#endif
+
 #define DEFINE_GET_NUMBER_WITH_METHOD(INFIX, TYPE) \
 static id _NSGet ## INFIX ##ValueWithMethod(id obj, SEL cmd, Method method) \
 { \
@@ -561,9 +567,14 @@ static id _NSGet ## INFIX ##ValueWithMethod(id obj, SEL cmd, Method method) \
     return [NSValue valueWith##INFIX:((TYPE(*)(id, Method))method_invoke)(obj, method)]; \
 }
 #else
+// A struct that the ABI returns in registers (on i386, those of 8 bytes or less: CGPoint, CGSize and
+// NSRange made of 32-bit members) is called with no hidden result pointer, so it goes through
+// method_invoke; the larger ones are returned through memory and need method_invoke_stret.
 #define DEFINE_GET_VALUE_WITH_METHOD(INFIX, TYPE) \
 static id _NSGet ## INFIX ##ValueWithMethod(id obj, SEL cmd, Method method) \
 { \
+    if (_NSStructReturnedInRegisters(sizeof(TYPE))) \
+        return [NSValue valueWith##INFIX:((TYPE(*)(id, Method))method_invoke)(obj, method)]; \
     return [NSValue valueWith##INFIX:((TYPE(*)(id, Method))method_invoke_stret)(obj, method)]; \
 }
 #endif
