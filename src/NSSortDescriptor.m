@@ -102,18 +102,23 @@ enum {
 {
     if (![aDecoder allowsKeyedCoding])
     {
-        [self release];
-        return nil;
+        // Sequence read by the older non-keyed archives (as found in old
+        // nibs holding array controllers): the key, the ascending flag, then
+        // the selector name. It does not depend on the class version.
+        NSString *nonKeyedKey = [[aDecoder decodeObject] retain];
+        char nonKeyedAscending = 0;
+        [aDecoder decodeValuesOfObjCTypes:"c", &nonKeyedAscending];
+        NSString *nonKeyedSelectorName = [aDecoder decodeObject];
+        SEL nonKeyedSelector = [nonKeyedSelectorName isKindOfClass:[NSString class]] ? NSSelectorFromString(nonKeyedSelectorName) : NULL;
+        self = [self initWithKey:nonKeyedKey ascending:nonKeyedAscending != 0 selector:nonKeyedSelector];
+        [nonKeyedKey release];
+        return self;
     }
     NSString *key = [aDecoder decodeObjectOfClass:[NSString class] forKey:@"NSKey"];
     NSString *selectorName = [aDecoder decodeObjectOfClass:[NSString class] forKey:@"NSSelector"];
     BOOL ascending = [aDecoder decodeBoolForKey:@"NSAscending"];
+    // No selector name decodes as NULL, which initWithKey:ascending:selector: turns into compare:.
     SEL selector = selectorName != nil ? NSSelectorFromString(selectorName) : NULL;
-    if (selector == NULL)
-    {
-        [self release];
-        return nil;
-    }
     return [self initWithKey:key ascending:ascending selector:selector];
 }
 
