@@ -714,6 +714,36 @@ static void runHandler(void (^handler)(void))
     [self setUserInfoObject: value forKey: NSProgressEstimatedTimeRemainingKey];
 }
 
+- (NSNumber *)fileTotalCount
+{
+    return [[self userInfo] objectForKey: NSProgressFileTotalCountKey];
+}
+
+- (void)setFileTotalCount: (NSNumber *)value
+{
+    [self setUserInfoObject: value forKey: NSProgressFileTotalCountKey];
+}
+
+- (NSNumber *)fileCompletedCount
+{
+    return [[self userInfo] objectForKey: NSProgressFileCompletedCountKey];
+}
+
+- (void)setFileCompletedCount: (NSNumber *)value
+{
+    [self setUserInfoObject: value forKey: NSProgressFileCompletedCountKey];
+}
+
+- (void)performAsCurrentWithPendingUnitCount: (int64_t)unitCount usingBlock: (void (^)(void))work
+{
+    [self becomeCurrentWithPendingUnitCount: unitCount];
+    // QUIRK: if the block raises, the progress is not resigned; it stays current.
+    // Evidence: black-box observation on macOS 26.7.3 (tier 2).
+    // Test: tests/nsprogress-file-counts.m (raising block leaves progress current)
+    work();
+    [self resignCurrent];
+}
+
 - (NSNumber *)throughput
 {
     return [[self userInfo] objectForKey: NSProgressThroughputKey];

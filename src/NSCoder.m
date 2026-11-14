@@ -14,6 +14,8 @@
 #import <Foundation/NSDictionary.h>
 #import <Foundation/NSString.h>
 #import <Foundation/NSException.h>
+#import <Foundation/NSError.h>
+#import <Foundation/FoundationErrors.h>
 #import <Foundation/NSGeometry.h>
 #import <Foundation/NSSerializer.h>
 #import "NSExternals.h"
@@ -432,6 +434,109 @@ static inline const char *nextType(const char *type)
     {
         return [self decodeObjectForKey:key];
     }
+}
+
+// Runs a decode and reports a failure as an error: an exception raised while decoding becomes
+// NSCoderReadCorruptError, and an error the coder recorded (NSKeyedUnarchiver failWithError:)
+// is returned as it is. A failed decode returns nil.
+- (id)_decodeTopLevelWithError:(NSError **)error using:(id (^)(void))decode
+{
+    id result = nil;
+    NSError *failure = nil;
+    @try
+    {
+        result = decode();
+    }
+    @catch (NSException *exception)
+    {
+        NSString *reason = [exception reason];
+        NSDictionary *info = reason != nil ? [NSDictionary dictionaryWithObject:reason forKey:NSDebugDescriptionErrorKey] : nil;
+        failure = [NSError errorWithDomain:NSCocoaErrorDomain code:NSCoderReadCorruptError userInfo:info];
+        result = nil;
+    }
+    if (failure == nil && [self respondsToSelector:@selector(error)])
+    {
+        failure = [self performSelector:@selector(error)];
+    }
+    if (failure != nil)
+    {
+        result = nil;
+        if (error != NULL)
+        {
+            *error = failure;
+        }
+    }
+    return result;
+}
+
+- (id)decodeTopLevelObjectAndReturnError:(NSError **)error
+{
+    return [self _decodeTopLevelWithError:error using:^id{ return [self decodeObject]; }];
+}
+
+// A key that the archive does not contain is an error (NSCoderValueNotFoundError), unlike the
+// plain decode, which returns nil.
+- (BOOL)_reportMissingTopLevelKey:(NSString *)key error:(NSError **)error
+{
+    if (![self allowsKeyedCoding] || [self containsValueForKey:key])
+    {
+        return NO;
+    }
+    if (error != NULL)
+    {
+        NSString *reason = [NSString stringWithFormat:@"requested key: '%@'", key];
+        *error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSCoderValueNotFoundError userInfo:[NSDictionary dictionaryWithObject:reason forKey:NSDebugDescriptionErrorKey]];
+    }
+    return YES;
+}
+
+- (id)decodeTopLevelObjectForKey:(NSString *)key error:(NSError **)error
+{
+    if ([self _reportMissingTopLevelKey:key error:error])
+    {
+        return nil;
+    }
+    return [self _decodeTopLevelWithError:error using:^id{ return [self decodeObjectForKey:key]; }];
+}
+
+- (id)decodeTopLevelObjectOfClass:(Class)aClass forKey:(NSString *)key error:(NSError **)error
+{
+    return [self decodeTopLevelObjectOfClasses:[NSSet setWithObject:aClass] forKey:key error:error];
+}
+
+- (id)decodeTopLevelObjectOfClasses:(NSSet *)classes forKey:(NSString *)key error:(NSError **)error
+{
+    if ([self _reportMissingTopLevelKey:key error:error])
+    {
+        return nil;
+    }
+    return [self _decodeTopLevelWithError:error using:^id{ return [self decodeObjectOfClasses:classes forKey:key]; }];
+}
+
+// The collection class is added to the allowed classes next to the element classes; what is
+// decoded is then what the coder's class checks (secure coding) let through.
+- (NSArray *)decodeArrayOfObjectsOfClass:(Class)cls forKey:(NSString *)key
+{
+    return [self decodeArrayOfObjectsOfClasses:[NSSet setWithObject:cls] forKey:key];
+}
+
+- (NSArray *)decodeArrayOfObjectsOfClasses:(NSSet *)classes forKey:(NSString *)key
+{
+    NSSet *allowed = [classes setByAddingObject:[NSArray class]];
+    id result = [self decodeObjectOfClasses:allowed forKey:key];
+    return result;
+}
+
+- (NSDictionary *)decodeDictionaryWithKeysOfClass:(Class)keyCls objectsOfClass:(Class)objectCls forKey:(NSString *)key
+{
+    return [self decodeDictionaryWithKeysOfClasses:[NSSet setWithObject:keyCls] objectsOfClasses:[NSSet setWithObject:objectCls] forKey:key];
+}
+
+- (NSDictionary *)decodeDictionaryWithKeysOfClasses:(NSSet *)keyClasses objectsOfClasses:(NSSet *)objectClasses forKey:(NSString *)key
+{
+    NSSet *allowed = [[keyClasses setByAddingObjectsFromSet:objectClasses] setByAddingObject:[NSDictionary class]];
+    id result = [self decodeObjectOfClasses:allowed forKey:key];
+    return result;
 }
 
 - (id)decodePropertyListForKey:(NSString *)key

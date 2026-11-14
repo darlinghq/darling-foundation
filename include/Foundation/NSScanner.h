@@ -29,6 +29,7 @@ NS_ASSUME_NONNULL_END
 - (BOOL)scanHexDouble:(double *)result;
 - (BOOL)scanHexInt:(unsigned *)value;
 - (BOOL)scanLongLong:(long long *)value;
+- (BOOL)scanUnsignedLongLong:(unsigned long long *)result;
 - (BOOL)scanFloat:(float *)value;
 - (BOOL)scanDouble:(double *)value;
 - (BOOL)scanString:(NSString *)string intoString:(NSString **)value;

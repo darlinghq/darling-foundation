@@ -5,6 +5,7 @@
 //  Copyright (c) 2014 Apportable. All rights reserved.
 //
 
+#include <limits.h>
 #import <Foundation/NSScanner.h>
 #import "NSConcreteScanner.h"
 #import <Foundation/NSLocale.h>
@@ -351,6 +352,68 @@ static inline NSUInteger skipLeading(unichar** ptrRef, NSUInteger length, NSChar
     }
     free(buf);
     return foundInt;
+}
+
+// QUIRK: a leading "+" is accepted and a leading "-" is not (the scan fails and the location
+// is unchanged); digits beyond the range clamp to ULLONG_MAX and are all consumed. The
+// documentation only says the value is read from a decimal representation. Evidence:
+// black-box observation on Mac OS X 10.14.4 and macOS 26.7.3 (tier 2), vd-upstream
+// MC-NSSCANNER-ULL. Test: nsscanner-unsigned-longlong (sign and overflow cases).
+- (BOOL)scanUnsignedLongLong:(unsigned long long *)value
+{
+    NSString *scanString = [self string];
+    NSUInteger scanLocation = [self scanLocation];
+    NSUInteger length = [scanString length] - scanLocation;
+    if (length == 0)
+    {
+        return NO;
+    }
+    unichar *buf = malloc((length+1) * sizeof(unichar));
+    buf[length] = (unichar)0x0;
+    unichar *ptr = buf;
+    [scanString getCharacters:ptr range:NSMakeRange(scanLocation, length)];
+
+    length -= skipLeading(&ptr, length, [self charactersToBeSkipped]);
+    if (length == 0)
+    {
+        free(buf);
+        return NO;
+    }
+    if (*ptr == '+')
+    {
+        ptr++;
+    }
+
+    unsigned long long counter = 0;
+    BOOL found = NO;
+    BOOL overflow = NO;
+    while (*ptr >= '0' && *ptr <= '9')
+    {
+        found = YES;
+        unsigned int digit = *ptr - '0';
+        if (!overflow)
+        {
+            if (counter > ULLONG_MAX / 10 || (counter == ULLONG_MAX / 10 && digit > ULLONG_MAX % 10))
+            {
+                overflow = YES;
+            }
+            else
+            {
+                counter = counter * 10 + digit;
+            }
+        }
+        ptr++;
+    }
+    if (found)
+    {
+        [self setScanLocation:scanLocation + (ptr - buf)];
+        if (value)
+        {
+            *value = overflow ? ULLONG_MAX : counter;
+        }
+    }
+    free(buf);
+    return found;
 }
 
 - (BOOL)scanInt:(int *)value
