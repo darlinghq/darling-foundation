@@ -4,3 +4,6 @@
 #import "XPCObject.h"
 
 extern NSMutableSet<XPCObject*>* clients;
+
+// AppleArbiter.m
+void FCDStartAppleArbiter(void);

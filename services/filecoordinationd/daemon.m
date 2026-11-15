@@ -157,6 +157,8 @@ int main(int argc, char** argv) {
 	});
 	xpc_connection_resume(server);
 
+	FCDStartAppleArbiter();
+
 	dispatch_main();
 	return 0;
 };

@@ -6,6 +6,7 @@ include_directories(
 
 add_darling_executable(filecoordinationd
 	daemon.m
+	AppleArbiter.m
 	XPCObject.m
 	FileAccessRequest.m
 	logging.m
