@@ -13,6 +13,9 @@
 #import <Foundation/NSNotification.h>
 #import <Foundation/NSURL.h>
 #import <Foundation/NSKeyedArchiver.h>
+#import <Foundation/NSPropertyList.h>
+#import <Foundation/NSCharacterSet.h>
+#import <Foundation/NSData.h>
 #import "NSObjectInternal.h"
 #import <pthread.h>
 #include <stdlib.h>
@@ -107,9 +110,21 @@ static void initQueues() {
     [super dealloc];
 }
 
+// Argument values that start with one of these characters (after leading white space) are
+// property lists (old-style or XML); anything else stays the string it was given.
 - (id) parseArgumentValue: (NSString *) value {
-    // TODO: NSPropertyListSerialization
-    return value;
+    NSString *lead = [value stringByTrimmingCharactersInSet: [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    if ([lead length] == 0 || [@"({<\"[" rangeOfString: [lead substringToIndex: 1]].location == NSNotFound) {
+        return value;
+    }
+
+    NSData *data = [value dataUsingEncoding: NSUTF8StringEncoding];
+    id plist = [data length] != 0 ? [NSPropertyListSerialization propertyListWithData: data
+                                                                              options: NSPropertyListImmutable
+                                                                               format: NULL
+                                                                                error: NULL] : nil;
+    // a property list that does not parse sets nothing: the caller drops the argument
+    return plist;
 }
 
 - (NSDictionary *) parseArguments {
@@ -118,19 +133,22 @@ static void initQueues() {
 
     NSUInteger count = [args count];
 
-    for (int i = 1; i + 1 < count; i++) {
+    for (NSUInteger i = 1; i + 1 < count; i++) {
         NSString *key = args[i];
         NSString *value = args[i + 1];
 
+        // "-Key value": the value is the next argument unless that starts with "-", in which
+        // case the key has no value and the scan goes on at that argument. Neither the key
+        // nor the value is trimmed ("--" and "-psn_..." are keys like any other).
         if (![key hasPrefix: @"-"] || [value hasPrefix: @"-"]) continue;
         key = [key substringFromIndex: 1];
-        key = [key stringByTrimmingCharactersInSet: [NSCharacterSet whitespaceAndNewlineCharacterSet]];
-        if ([key length] == 0) continue;
 
-        value = [value stringByTrimmingCharactersInSet: [NSCharacterSet whitespaceAndNewlineCharacterSet]];
-        res[key] = [self parseArgumentValue: value];
+        id parsed = [self parseArgumentValue: value];
+        if (parsed != nil) {
+            res[key] = parsed;
+        }
 
-        // Skip the just parsed value and move to the next pair.
+        // Skip the value and move to the next pair.
         i++;
     }
 
