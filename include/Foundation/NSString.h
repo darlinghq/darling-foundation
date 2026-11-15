@@ -100,6 +100,7 @@ FOUNDATION_EXPORT NSString * const NSCharacterConversionException;
 + (instancetype)stringWithContentsOfFile:(NSString *)path usedEncoding:(NSStringEncoding *)enc error:(NSError **)error;
 - (instancetype)init;
 - (instancetype)initWithCharactersNoCopy:(unichar *)characters length:(NSUInteger)length freeWhenDone:(BOOL)freeBuffer;
+- (instancetype)initWithCharactersNoCopy:(unichar *)chars length:(NSUInteger)len deallocator:(void (^)(unichar *, NSUInteger))deallocator;
 - (instancetype)initWithCharacters:(const unichar *)characters length:(NSUInteger)length;
 - (instancetype)initWithUTF8String:(const char *)nullTerminatedCString;
 - (instancetype)initWithString:(NSString *)str;
@@ -110,6 +111,7 @@ FOUNDATION_EXPORT NSString * const NSCharacterConversionException;
 - (instancetype)initWithData:(NSData *)data encoding:(NSStringEncoding)encoding;
 - (instancetype)initWithBytes:(const void *)bytes length:(NSUInteger)len encoding:(NSStringEncoding)encoding;
 - (instancetype)initWithBytesNoCopy:(void *)bytes length:(NSUInteger)len encoding:(NSStringEncoding)encoding freeWhenDone:(BOOL)freeBuffer;
+- (instancetype)initWithBytesNoCopy:(void *)bytes length:(NSUInteger)len encoding:(NSStringEncoding)encoding deallocator:(void (^)(void *, NSUInteger))deallocator;
 - (instancetype)initWithCString:(const char *)nullTerminatedCString encoding:(NSStringEncoding)encoding;
 - (instancetype)initWithContentsOfURL:(NSURL *)url encoding:(NSStringEncoding)enc error:(NSError **)error;
 - (instancetype)initWithContentsOfFile:(NSString *)path encoding:(NSStringEncoding)enc error:(NSError **)error;
@@ -190,6 +192,12 @@ FOUNDATION_EXPORT NSString * const NSCharacterConversionException;
 - (BOOL)writeToURL:(NSURL *)url atomically:(BOOL)useAuxiliaryFile encoding:(NSStringEncoding)enc error:(NSError **)error;
 - (BOOL)writeToFile:(NSString *)path atomically:(BOOL)useAuxiliaryFile encoding:(NSStringEncoding)enc error:(NSError **)error;
 - (BOOL)containsString:(NSString *)string;
+- (BOOL)localizedCaseInsensitiveContainsString:(NSString *)string;
+- (BOOL)localizedStandardContainsString:(NSString *)string;
+- (NSRange)localizedStandardRangeOfString:(NSString *)string;
+@property (readonly, copy) NSString *localizedUppercaseString;
+@property (readonly, copy) NSString *localizedLowercaseString;
+@property (readonly, copy) NSString *localizedCapitalizedString;
 
 @end
 
@@ -197,6 +205,33 @@ FOUNDATION_EXPORT NSString * const NSCharacterConversionException;
 
 - (void)replaceCharactersInRange:(NSRange)range withString:(NSString *)str;
 
+@end
+
+typedef NSString *NSStringTransform;
+
+FOUNDATION_EXPORT NSStringTransform const NSStringTransformLatinToKatakana;
+FOUNDATION_EXPORT NSStringTransform const NSStringTransformLatinToHiragana;
+FOUNDATION_EXPORT NSStringTransform const NSStringTransformLatinToHangul;
+FOUNDATION_EXPORT NSStringTransform const NSStringTransformLatinToArabic;
+FOUNDATION_EXPORT NSStringTransform const NSStringTransformLatinToHebrew;
+FOUNDATION_EXPORT NSStringTransform const NSStringTransformLatinToThai;
+FOUNDATION_EXPORT NSStringTransform const NSStringTransformLatinToCyrillic;
+FOUNDATION_EXPORT NSStringTransform const NSStringTransformLatinToGreek;
+FOUNDATION_EXPORT NSStringTransform const NSStringTransformToLatin;
+FOUNDATION_EXPORT NSStringTransform const NSStringTransformMandarinToLatin;
+FOUNDATION_EXPORT NSStringTransform const NSStringTransformHiraganaToKatakana;
+FOUNDATION_EXPORT NSStringTransform const NSStringTransformFullwidthToHalfwidth;
+FOUNDATION_EXPORT NSStringTransform const NSStringTransformToXMLHex;
+FOUNDATION_EXPORT NSStringTransform const NSStringTransformToUnicodeName;
+FOUNDATION_EXPORT NSStringTransform const NSStringTransformStripCombiningMarks;
+FOUNDATION_EXPORT NSStringTransform const NSStringTransformStripDiacritics;
+
+@interface NSString (NSStringTransform)
+- (NSString *)stringByApplyingTransform:(NSStringTransform)transform reverse:(BOOL)reverse;
+@end
+
+@interface NSMutableString (NSMutableStringTransform)
+- (BOOL)applyTransform:(NSStringTransform)transform reverse:(BOOL)reverse range:(NSRange)range updatedRange:(NSRangePointer)resultingRange;
 @end
 
 @interface NSMutableString (NSMutableStringExtensionMethods)
