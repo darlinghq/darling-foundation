@@ -34,6 +34,7 @@ typedef double NSTimeInterval;
 @interface NSDate (NSDateCreation)
 
 + (instancetype)date;
+@property (class, readonly, copy) NSDate *now;
 + (instancetype)dateWithTimeIntervalSinceNow:(NSTimeInterval)ti;
 
 + (instancetype)dateWithTimeIntervalSinceReferenceDate:(NSTimeInterval)ti;

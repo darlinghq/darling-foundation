@@ -17,6 +17,7 @@
 #import <Foundation/NSException.h>
 #import <Foundation/NSKeyedArchiver.h>
 #import <Foundation/NSLocale.h>
+#include <Block.h>
 #import <Foundation/NSRegularExpression.h>
 #import "NSStringInternal.h"
 #import <Foundation/NSURL.h>
@@ -2769,4 +2770,111 @@ static BOOL _NSScanStringValue(NSString *self, NSNumericValueType type, NSNumeri
     free(buf);
     return [[[NSString alloc] initWithCharactersNoCopy:out length:outPos freeWhenDone:YES] autorelease];
 }
+@end
+
+// The transform identifiers are the same strings CoreFoundation's kCFStringTransform*
+// constants hold, which is what CFStringTransform() recognises.
+NSStringTransform const NSStringTransformLatinToKatakana = @")kCFStringTransformLatinKatakana";
+NSStringTransform const NSStringTransformLatinToHiragana = @")kCFStringTransformLatinHiragana";
+NSStringTransform const NSStringTransformLatinToHangul = @")kCFStringTransformLatinHangul";
+NSStringTransform const NSStringTransformLatinToArabic = @")kCFStringTransformLatinArabic";
+NSStringTransform const NSStringTransformLatinToHebrew = @")kCFStringTransformLatinHebrew";
+NSStringTransform const NSStringTransformLatinToThai = @")kCFStringTransformLatinThai";
+NSStringTransform const NSStringTransformLatinToCyrillic = @")kCFStringTransformLatinCyrillic";
+NSStringTransform const NSStringTransformLatinToGreek = @")kCFStringTransformLatinGreek";
+NSStringTransform const NSStringTransformToLatin = @")kCFStringTransformToLatin";
+NSStringTransform const NSStringTransformMandarinToLatin = @")kCFStringTransformMandarinLatin";
+NSStringTransform const NSStringTransformHiraganaToKatakana = @")kCFStringTransformHiraganaKatakana";
+NSStringTransform const NSStringTransformFullwidthToHalfwidth = @")kCFStringTransformFullwidthHalfwidth";
+NSStringTransform const NSStringTransformToXMLHex = @")kCFStringTransformToXMLHex";
+NSStringTransform const NSStringTransformToUnicodeName = @")kCFStringTransformToUnicodeName";
+NSStringTransform const NSStringTransformStripCombiningMarks = @")kCFStringTransformStripCombiningMarks";
+NSStringTransform const NSStringTransformStripDiacritics = @")kCFStringTransformStripDiacritics";
+
+@implementation NSString (NSStringTransform)
+
+- (NSString *)stringByApplyingTransform:(NSStringTransform)transform reverse:(BOOL)reverse
+{
+    NSMutableString *result = [[self mutableCopy] autorelease];
+    if (!CFStringTransform((CFMutableStringRef)result, NULL, (CFStringRef)transform, reverse))
+    {
+        return nil;
+    }
+    return [[result copy] autorelease];
+}
+
+@end
+
+@implementation NSMutableString (NSMutableStringTransform)
+
+- (BOOL)applyTransform:(NSStringTransform)transform reverse:(BOOL)reverse range:(NSRange)range updatedRange:(NSRangePointer)resultingRange
+{
+    CFRange cfRange = CFRangeMake(range.location, range.length);
+    BOOL ok = CFStringTransform((CFMutableStringRef)self, &cfRange, (CFStringRef)transform, reverse);
+    if (ok && resultingRange)
+    {
+        *resultingRange = NSMakeRange(cfRange.location, cfRange.length);
+    }
+    return ok;
+}
+
+@end
+
+// Contents deallocator for the no-copy initializers that take a block: when the
+// string is done with its buffer, the block is called with it and the length.
+typedef struct {
+    void *block;
+    NSUInteger length;
+    BOOL isCharacters;
+} NSStringBlockDeallocatorInfo;
+
+static void NSStringBlockDeallocate(void *ptr, void *info)
+{
+    NSStringBlockDeallocatorInfo *details = info;
+    if (details->isCharacters)
+    {
+        ((void (^)(unichar *, NSUInteger))details->block)(ptr, details->length);
+    }
+    else
+    {
+        ((void (^)(void *, NSUInteger))details->block)(ptr, details->length);
+    }
+    Block_release(details->block);
+    free(details);
+}
+
+static CFAllocatorRef NSStringCreateBlockDeallocator(id block, NSUInteger length, BOOL isCharacters)
+{
+    NSStringBlockDeallocatorInfo *details = malloc(sizeof(*details));
+    details->block = Block_copy(block);
+    details->length = length;
+    details->isCharacters = isCharacters;
+    CFAllocatorContext context = {0, details, NULL, NULL, NULL, NULL, NULL, NULL, NSStringBlockDeallocate};
+    return CFAllocatorCreate(kCFAllocatorDefault, &context);
+}
+
+@implementation NSString (NSStringDeallocatorInit)
+
+- (instancetype)initWithCharactersNoCopy:(unichar *)chars length:(NSUInteger)len deallocator:(void (^)(unichar *, NSUInteger))deallocator
+{
+    CFAllocatorRef contents = deallocator ? NSStringCreateBlockDeallocator(deallocator, len, YES) : kCFAllocatorNull;
+    CFStringRef string = CFStringCreateWithCharactersNoCopy(kCFAllocatorDefault, chars, len, contents);
+    if (deallocator)
+    {
+        CFRelease(contents);
+    }
+    return (id)string;
+}
+
+- (instancetype)initWithBytesNoCopy:(void *)bytes length:(NSUInteger)len encoding:(NSStringEncoding)encoding deallocator:(void (^)(void *, NSUInteger))deallocator
+{
+    CFAllocatorRef contents = deallocator ? NSStringCreateBlockDeallocator(deallocator, len, NO) : kCFAllocatorNull;
+    CFStringRef string = CFStringCreateWithBytesNoCopy(kCFAllocatorDefault, bytes, len, CFStringConvertNSStringEncodingToEncoding(encoding), true, contents);
+    if (deallocator)
+    {
+        CFRelease(contents);
+    }
+    return (id)string;
+}
+
 @end
