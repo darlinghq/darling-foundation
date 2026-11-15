@@ -1197,8 +1197,13 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
 
 @implementation NSXPCConnection (NSXPCPrivateStuff)
 
-// The bplist version of the data the peer last sent, which is the one it understands: a peer on current macOS
-// (Apple's Foundation) sends and expects '7', Darling's Foundation '6' (the default until the peer has sent something).
+// The bplist version of the data the peer last sent, which is the one it understands.
+// QUIRK: the data header of NSXPC carries a version digit and a peer accepts only its own: Apple's Foundation on macOS
+// 10.14 writes and reads only '6', on macOS 26 only '7' (a message with another digit invalidates the connection on
+// 26 and aborts the process on 10.14). Darling reads both, and answers in the digit the peer last sent; '6' until
+// the peer has sent something.
+// Evidence: black-box observation, tier 2, macOS 10.14.4 and 26.7.3 (vd-upstream MAC-EVIDENCE.md, MC-V550).
+// Test: tests/nsxpc-bplist-version.c and test/nsxpc-launchd-service/version-client.m
 static const void *peerBplistVersionKey = &peerBplistVersionKey;
 
 - (unsigned char) _peerBplistVersion {
@@ -1207,7 +1212,7 @@ static const void *peerBplistVersionKey = &peerBplistVersionKey;
 }
 
 - (void) _setPeerBplistVersion: (unsigned char) version {
-    objc_setAssociatedObject(self, peerBplistVersionKey, [NSNumber numberWithUnsignedChar: version], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    objc_setAssociatedObject(self, peerBplistVersionKey, [NSNumber numberWithUnsignedChar: version], OBJC_ASSOCIATION_RETAIN);
 }
 
 - (audit_token_t) auditToken {
