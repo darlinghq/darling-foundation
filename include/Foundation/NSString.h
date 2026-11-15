@@ -190,6 +190,12 @@ FOUNDATION_EXPORT NSString * const NSCharacterConversionException;
 - (BOOL)writeToURL:(NSURL *)url atomically:(BOOL)useAuxiliaryFile encoding:(NSStringEncoding)enc error:(NSError **)error;
 - (BOOL)writeToFile:(NSString *)path atomically:(BOOL)useAuxiliaryFile encoding:(NSStringEncoding)enc error:(NSError **)error;
 - (BOOL)containsString:(NSString *)string;
+- (BOOL)localizedCaseInsensitiveContainsString:(NSString *)string;
+- (BOOL)localizedStandardContainsString:(NSString *)string;
+- (NSRange)localizedStandardRangeOfString:(NSString *)string;
+@property (readonly, copy) NSString *localizedUppercaseString;
+@property (readonly, copy) NSString *localizedLowercaseString;
+@property (readonly, copy) NSString *localizedCapitalizedString;
 
 @end
 

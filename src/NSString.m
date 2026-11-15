@@ -2258,6 +2258,53 @@ static BOOL _NSScanStringValue(NSString *self, NSNumericValueType type, NSNumeri
     return range.location != NSNotFound;
 }
 
+- (BOOL)localizedCaseInsensitiveContainsString:(NSString *)string
+{
+    if ([string length] == 0)
+    {
+        return NO;
+    }
+    NSRange range = [self rangeOfString:string options:NSCaseInsensitiveSearch range:NSMakeRange(0, [self length]) locale:[NSLocale currentLocale]];
+    return range.location != NSNotFound;
+}
+
+- (NSRange)localizedStandardRangeOfString:(NSString *)string
+{
+    if ([string length] == 0)
+    {
+        return NSMakeRange(NSNotFound, 0);
+    }
+    // Case and diacritic insensitive, using the user's locale
+    NSRange range = [self rangeOfString:string options:NSCaseInsensitiveSearch|NSDiacriticInsensitiveSearch range:NSMakeRange(0, [self length]) locale:[NSLocale currentLocale]];
+    if (range.location == NSNotFound)
+    {
+        return range;
+    }
+    // Do not end in the middle of a composed character sequence
+    NSRange sequence = [self rangeOfComposedCharacterSequencesForRange:range];
+    return sequence;
+}
+
+- (BOOL)localizedStandardContainsString:(NSString *)string
+{
+    return [self localizedStandardRangeOfString:string].location != NSNotFound;
+}
+
+- (NSString *)localizedUppercaseString
+{
+    return [self uppercaseStringWithLocale:[NSLocale currentLocale]];
+}
+
+- (NSString *)localizedLowercaseString
+{
+    return [self lowercaseStringWithLocale:[NSLocale currentLocale]];
+}
+
+- (NSString *)localizedCapitalizedString
+{
+    return [self capitalizedStringWithLocale:[NSLocale currentLocale]];
+}
+
 @end
 
 @implementation NSMutableString (NSMutableStringExtensionMethods)
