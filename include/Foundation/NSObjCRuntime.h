@@ -329,14 +329,18 @@ typedef unsigned int NSUInteger;
 
 @class NSString, Protocol;
 
+NS_ASSUME_NONNULL_BEGIN
+
 FOUNDATION_EXPORT NSString *NSStringFromSelector(SEL aSelector);
 FOUNDATION_EXPORT SEL NSSelectorFromString(NSString *aSelectorName);
 
 FOUNDATION_EXPORT NSString *NSStringFromClass(Class aClass);
-FOUNDATION_EXPORT Class NSClassFromString(NSString *aClassName);
+FOUNDATION_EXPORT Class _Nullable NSClassFromString(NSString *aClassName);
 
 FOUNDATION_EXPORT NSString *NSStringFromProtocol(Protocol *proto) NS_AVAILABLE(10_5, 2_0);
-FOUNDATION_EXPORT Protocol *NSProtocolFromString(NSString *namestr) NS_AVAILABLE(10_5, 2_0);
+FOUNDATION_EXPORT Protocol * _Nullable NSProtocolFromString(NSString *namestr) NS_AVAILABLE(10_5, 2_0);
+
+NS_ASSUME_NONNULL_END
 
 FOUNDATION_EXPORT const char *NSGetSizeAndAlignment(const char *typePtr, NSUInteger *sizep, NSUInteger *alignp);
 
@@ -373,21 +377,21 @@ enum {NSNotFound = NSIntegerMax};
 
 #if __clang__
 
-#define __MINMAXPASTE__(A,B) A##B
+#define __NSX_PASTE__(A,B) A##B
 
 #if !defined(MIN)
-    #define __MIN(A,B,C) ({ __typeof__(A) __MINMAXPASTE__(__a,C) = (A); __typeof__(B) __MINMAXPASTE__(__b,C) = (B); __MINMAXPASTE__(__a,C) < __MINMAXPASTE__(__b,C) ? __MINMAXPASTE__(__a,C) : __MINMAXPASTE__(__b,C); })
-    #define MIN(A,B) __MIN(A,B,__COUNTER__)
+    #define __NSMIN_IMPL__(A,B,C) ({ __typeof__(A) __NSX_PASTE__(__a,C) = (A); __typeof__(B) __NSX_PASTE__(__b,C) = (B); __NSX_PASTE__(__a,C) < __NSX_PASTE__(__b,C) ? __NSX_PASTE__(__a,C) : __NSX_PASTE__(__b,C); })
+    #define MIN(A,B) __NSMIN_IMPL__(A,B,__COUNTER__)
 #endif
 
 #if !defined(MAX)
-    #define __MAX(A,B,C) ({ __typeof__(A) __MINMAXPASTE__(__a,C) = (A); __typeof__(B) __MINMAXPASTE__(__b,C) = (B); __MINMAXPASTE__(__a,C) < __MINMAXPASTE__(__b,C) ? __MINMAXPASTE__(__b,C) : __MINMAXPASTE__(__a,C); })
-    #define MAX(A,B) __MAX(A,B,__COUNTER__)
+    #define __NSMAX_IMPL__(A,B,C) ({ __typeof__(A) __NSX_PASTE__(__a,C) = (A); __typeof__(B) __NSX_PASTE__(__b,C) = (B); __NSX_PASTE__(__a,C) < __NSX_PASTE__(__b,C) ? __NSX_PASTE__(__b,C) : __NSX_PASTE__(__a,C); })
+    #define MAX(A,B) __NSMAX_IMPL__(A,B,__COUNTER__)
 #endif
 
 #if !defined(ABS)
-    #define __ABS(A,C)    ({ __typeof__(A) __MINMAXPASTE__(__a,C) = (A); __MINMAXPASTE__(__a,C) < 0 ? -__MINMAXPASTE__(__a,C) : __MINMAXPASTE__(__a,C); })
-    #define ABS(A) __ABS(A,__COUNTER__)
+    #define __NSABS_IMPL__(A,C)    ({ __typeof__(A) __NSX_PASTE__(__a,C) = (A); __NSX_PASTE__(__a,C) < 0 ? -__NSX_PASTE__(__a,C) : __NSX_PASTE__(__a,C); })
+    #define ABS(A) __NSABS_IMPL__(A,__COUNTER__)
 #endif
 
 #else
