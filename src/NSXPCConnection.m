@@ -24,6 +24,7 @@
 #import <Foundation/NSPathUtilities.h>
 #import <Foundation/NSXPCInterface.h>
 #import <Foundation/NSMutableDictionary.h>
+#import <objc/runtime.h>
 #import "NSXPCEncoder.h"
 #import "NSXPCDecoder.h"
 #import "_NSXPCDistantObject.h"
@@ -726,6 +727,7 @@ static void __NSXPCCONNECTION_IS_CALLING_OUT_TO_REPLY_BLOCK__(NSInvocation* invo
                                     initWithStackSpace: buffer
                                                   size: sizeof(buffer)];
         [encoder setConnection: self];
+        [encoder _setBplistVersion: [self _peerBplistVersion]];
         [encoder _encodeInvocation: invocation
                            isReply: NO
                               into: request];
@@ -918,14 +920,25 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
         return;
     }
 
-    [decoder _decodeMessageFromXPCObject: event
-               allowingSimpleMessageSend: NO // TODO: support simple message send as an optimization
-                           outInvocation: &invocation
-                            outArguments: &arguments
-                    outArgumentsMaxCount: 4
-                      outMethodSignature: &signature
-                             outSelector: &selector
-                               interface: interface];
+    // A message the exported interface does not know (an unknown selector, a class that is not allowed or not loaded,
+    // malformed data) invalidates this connection only, as on macOS; it must not take down a service shared by
+    // other clients. Exceptions raised by the invoked method itself are not caught.
+    @try {
+        [decoder _decodeMessageFromXPCObject: event
+                   allowingSimpleMessageSend: NO // TODO: support simple message send as an optimization
+                               outInvocation: &invocation
+                                outArguments: &arguments
+                        outArgumentsMaxCount: 4
+                          outMethodSignature: &signature
+                                 outSelector: &selector
+                                   interface: interface];
+    } @catch (NSException* exception) {
+        os_log_error(nsxpc_get_log(), "invalidating connection %@: could not decode a message: %{public}@: %{public}@", self, exception.name, exception.reason);
+        [self invalidate];
+        return;
+    }
+
+    [self _setPeerBplistVersion: [decoder _bplistVersion]];
 
     os_log_debug(nsxpc_get_log(), "decoded invocation %@ with signature %@ and selector %s", invocation, signature, sel_getName(selector));
 
@@ -1022,6 +1035,7 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
                                     unsigned char buffer[1024];
                                     NSXPCEncoder *encoder = [[NSXPCEncoder alloc] initWithStackSpace: buffer size: sizeof(buffer)];
                                     [encoder setConnection: self];
+                                    [encoder _setBplistVersion: [self _peerBplistVersion]];
                                     [encoder _encodeInvocation: invocation isReply: YES into: reply];
                                     os_log_debug(nsxpc_get_log(), "encoded reply invocation: %@", reply);
                                     [encoder release];
@@ -1080,6 +1094,8 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
     [decoder setConnection: self];
 
     invocation = [decoder _decodeReplyFromXPCObject: event forSelector: replyInfo.selector interface: replyInfo.interface];
+
+    [self _setPeerBplistVersion: [decoder _bplistVersion]];
 
     os_log_debug(nsxpc_get_log(), "decoded reply invocation %@ for selector %s", invocation, sel_getName(replyInfo.selector));
 
@@ -1180,6 +1196,24 @@ static xpc_object_t __NSXPCCONNECTION_IS_CREATING_REPLY__(xpc_object_t original)
 @end
 
 @implementation NSXPCConnection (NSXPCPrivateStuff)
+
+// The bplist version of the data the peer last sent, which is the one it understands.
+// QUIRK: the data header of NSXPC carries a version digit and a peer accepts only its own: Apple's Foundation on macOS
+// 10.14 writes and reads only '6', on macOS 26 only '7' (a message with another digit invalidates the connection on
+// 26 and aborts the process on 10.14). Darling reads both, and answers in the digit the peer last sent; '6' until
+// the peer has sent something.
+// Evidence: black-box observation, tier 2, macOS 10.14.4 and 26.7.3 (vd-upstream MAC-EVIDENCE.md, MC-V550).
+// Test: tests/nsxpc-bplist-version.c and test/nsxpc-launchd-service/version-client.m
+static const void *peerBplistVersionKey = &peerBplistVersionKey;
+
+- (unsigned char) _peerBplistVersion {
+    NSNumber *version = objc_getAssociatedObject(self, peerBplistVersionKey);
+    return version != nil ? (unsigned char) [version unsignedCharValue] : '6';
+}
+
+- (void) _setPeerBplistVersion: (unsigned char) version {
+    objc_setAssociatedObject(self, peerBplistVersionKey, [NSNumber numberWithUnsignedChar: version], OBJC_ASSOCIATION_RETAIN);
+}
 
 - (audit_token_t) auditToken {
     audit_token_t token;

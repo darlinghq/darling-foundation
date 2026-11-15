@@ -91,6 +91,10 @@ static Class _XPCObjectClass = nil;
     return self;
 }
 
+- (void) _setBplistVersion: (unsigned char) version {
+    _NSXPCSerializationSetWriteVersion(&_serializer, version);
+}
+
 - (BOOL) allowsKeyedCoding {
     return YES;
 }

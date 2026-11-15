@@ -203,6 +203,12 @@ CF_PRIVATE
 - (id)_exportedObjectForProxyNumber: (NSUInteger)proxyNumber;
 
 /**
+ * The bplist version digit ('6' or '7') of the NSXPC data the peer last sent; '6' until it has sent something.
+ */
+- (unsigned char)_peerBplistVersion;
+- (void)_setPeerBplistVersion: (unsigned char)version;
+
+/**
  * Returns the exported interface for the given proxy number, or `nil` if none is associated with it.
  */
 - (NSXPCInterface*)_interfaceForProxyNumber: (NSUInteger)proxyNumber;

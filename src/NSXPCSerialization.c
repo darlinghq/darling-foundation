@@ -117,6 +117,13 @@ void _NSXPCSerializationStartWrite(
     serializer->ptr += HEADER_LENGTH;
 }
 
+void _NSXPCSerializationSetWriteVersion(
+    struct NSXPCSerializer *serializer,
+    unsigned char version
+) {
+    serializer->buffer[HEADER_LENGTH - 1] = version;
+}
+
 void _NSXPCSerializationAddNull(struct NSXPCSerializer *serializer) {
     ensureSpace(serializer, 1);
     *serializer->ptr++ = NSXPC_NULL;
@@ -423,9 +430,12 @@ Boolean _NSXPCSerializationStartRead(
     if (length < HEADER_LENGTH) {
         return false;
     }
-    if (memcmp(data, header, HEADER_LENGTH) != 0) {
+    // macOS moved from bplist16 to bplist17; the two layouts of the objects NSXPC uses are the same (the 17 data
+    // observed on the wire matches the format described above), so both are read, and the writer is told which to use.
+    if (memcmp(data, header, HEADER_LENGTH - 1) != 0 || (data[HEADER_LENGTH - 1] != '6' && data[HEADER_LENGTH - 1] != '7')) {
         return false;
     }
+    deserializer->version = data[HEADER_LENGTH - 1];
 
     deserializer->buffer = (unsigned char *) data;
     deserializer->bufferSize = length;

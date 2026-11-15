@@ -59,6 +59,10 @@
     _collection = &_rootObject;
 }
 
+- (unsigned char) _bplistVersion {
+    return _deserializer.version;
+}
+
 - (BOOL) allowsKeyedCoding {
     return YES;
 }

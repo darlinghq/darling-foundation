@@ -283,6 +283,8 @@ set(foundation_sources
 
 # Includes ObjC headers -> must be compiled as ObjC
 set_source_files_properties(src/NSPredicateParser.tab.c PROPERTIES COMPILE_FLAGS "-x objective-c -fblocks")
+# the decoder raises Objective-C exceptions from blocks that this C file calls; they must unwind through its frames
+set_source_files_properties(src/NSXPCSerialization.c PROPERTIES COMPILE_FLAGS "-fexceptions")
 
 set(DYLIB_COMPAT_VERSION "300.0.0")
 set(DYLIB_CURRENT_VERSION "1349.0.0")

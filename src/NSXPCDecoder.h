@@ -15,6 +15,9 @@ CF_PRIVATE
 
 - (void) _startReadingFromXPCObject: (xpc_object_t) object;
 
+// The bplist version digit of the data read: '6' or '7'.
+- (unsigned char) _bplistVersion;
+
 - (id) _decodeObjectOfClasses: (NSSet *) classes
                      atObject: (const struct NSXPCObject *) object;
 
