@@ -1890,7 +1890,7 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
     return (_flags & NSSecureCodingFlag) != 0;
 }
 
-- (NSSet *)allowedClasses
+- (NSSet<Class> *)allowedClasses
 {
     if ([self requiresSecureCoding])
     {
@@ -1902,7 +1902,7 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
     }
 }
 
-- (id)decodeObjectOfClasses:(NSSet *)classes forKey:(NSString *)key
+- (id)decodeObjectOfClasses:(NSSet<Class> *)classes forKey:(NSString *)key
 {
     if ([self requiresSecureCoding])
     {
