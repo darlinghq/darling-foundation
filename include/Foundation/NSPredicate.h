@@ -26,6 +26,8 @@ typedef NS_OPTIONS(NSUInteger, NSPredicateEvaluationFlags) {
 - (BOOL)evaluateWithObject:(id)object;
 - (BOOL)evaluateWithObject:(id)object substitutionVariables:(NSDictionary *)bindings;
 
+- (void)allowEvaluation;
+
 @end
 
 @interface NSArray (NSPredicateSupport)

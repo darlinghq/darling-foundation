@@ -133,7 +133,7 @@ static NSString * const NSPredicateOperatorKey = @"NSPredicateOperator";
     if (self != nil)
     {
         NSSet *predicateAllowedExpressionClasses = [_NSPredicateUtilities _extendedExpressionClassesForSecureCoding];
-        NSSet *predicateAllowedOperatorClasses = [_NSPredicateUtilities _expressionClassesForSecureCoding];
+        NSSet *predicateAllowedOperatorClasses = [_NSPredicateUtilities _operatorClassesForSecureCoding];
 
         NSSet *allowedExpressionClasses = _NSPredicateAllowedClasses(decoder, predicateAllowedExpressionClasses);
         NSSet *allowedOperatorClasses = _NSPredicateAllowedClasses(decoder, predicateAllowedOperatorClasses);
