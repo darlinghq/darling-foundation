@@ -150,6 +150,11 @@ FOUNDATION_EXPORT NSURLUbiquitousItemDownloadingStatus const NSURLUbiquitousItem
 FOUNDATION_EXPORT NSURLUbiquitousItemDownloadingStatus const NSURLUbiquitousItemDownloadingStatusDownloaded;
 FOUNDATION_EXPORT NSURLUbiquitousItemDownloadingStatus const NSURLUbiquitousItemDownloadingStatusCurrent;
 
+// The keys of the NSURLThumbnailDictionaryKey resource value, a dictionary of thumbnail images.
+typedef NSString * NSURLThumbnailDictionaryItem;
+
+FOUNDATION_EXPORT NSURLThumbnailDictionaryItem const NSThumbnail1024x1024SizeKey API_AVAILABLE(macos(10.10), ios(8.0), watchos(2.0), tvos(9.0));
+
 typedef NSString * NSURLUbiquitousSharedItemRole;
 
 FOUNDATION_EXPORT NSURLUbiquitousSharedItemRole const NSURLUbiquitousSharedItemRoleOwner;

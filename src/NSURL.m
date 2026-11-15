@@ -17,6 +17,9 @@
 #import <CoreFoundation/CFURL.h>
 #import <objc/runtime.h>
 
+// The key string is the constant's own name, like the other NSURL keys.
+NSURLThumbnailDictionaryItem const NSThumbnail1024x1024SizeKey = @"NSThumbnail1024x1024SizeKey";
+
 // Private classes
 @interface NSURLFileTypeMappings : NSObject
 @end
