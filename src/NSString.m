@@ -1231,7 +1231,9 @@ SINGLETON_RR()
     }
     composed.location = minRange.location;
 
-    NSRange maxRange = [self rangeOfComposedCharacterSequenceAtIndex:NSMaxRange(range)];
+    // the sequence containing the last character of the range (not the one after it)
+    NSUInteger lastIndex = range.length > 0 ? NSMaxRange(range) - 1 : range.location;
+    NSRange maxRange = [self rangeOfComposedCharacterSequenceAtIndex:lastIndex];
     composed.length = NSMaxRange(maxRange) - minRange.location;
 
     return composed;
