@@ -2,6 +2,7 @@
  This file is part of Darling.
 
  Copyright (C) 2019 Lubos Dolezel
+ Copyright (C) 2026 Darling developers
 
  Darling is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -20,8 +21,19 @@
 #import <Foundation/NSString.h>
 #import <Foundation/NSDictionary.h>
 #import <Foundation/NSArray.h>
+#import <Foundation/NSDate.h>
 
-@interface NSUserNotification : NSObject <NSCopying> {
+typedef NS_ENUM(NSInteger, NSUserNotificationActivationType) {
+    NSUserNotificationActivationTypeNone = 0,
+    NSUserNotificationActivationTypeContentsClicked = 1,
+    NSUserNotificationActivationTypeActionButtonClicked = 2,
+    NSUserNotificationActivationTypeReplied = 3,
+    NSUserNotificationActivationTypeAdditionalActionClicked = 4
+};
+
+@class NSUserNotificationAction;
+
+@interface NSUserNotification : NSObject <NSCopying, NSSecureCoding> {
 @package
     NSString *_identifier;
     NSString *_title;
@@ -31,8 +43,15 @@
     NSString *_otherButtonTitle;
     NSString *_soundName;
     NSDictionary *_userInfo;
+    NSDate *_deliveryDate;
+    NSDate *_actualDeliveryDate;
     BOOL _hasActionButton;
     BOOL _hasReplyButton;
+    BOOL _presented;
+    BOOL _remote;
+    NSUserNotificationActivationType _activationType;
+    NSUserNotificationAction *_additionalActivationAction;
+    NSArray<NSUserNotificationAction *> *_additionalActions;
 }
 
 @property (copy) NSString *identifier;
@@ -43,15 +62,38 @@
 @property (copy) NSString *otherButtonTitle;
 @property (copy) NSString *soundName;
 @property (copy) NSDictionary *userInfo;
+@property (copy) NSDate *deliveryDate;
+@property (copy) NSDate *actualDeliveryDate;
 @property BOOL hasActionButton;
 @property BOOL hasReplyButton;
+@property (readonly, getter=isPresented) BOOL presented;
+@property (readonly, getter=isRemote) BOOL remote;
+@property (readonly) NSUserNotificationActivationType activationType;
+@property (readonly, copy) NSUserNotificationAction *additionalActivationAction;
+@property (copy) NSArray<NSUserNotificationAction *> *additionalActions;
 
 @end
 
-@interface NSUserNotificationAction : NSObject <NSCopying>
+@interface NSUserNotificationAction : NSObject <NSCopying, NSSecureCoding> {
+@package
+    NSString *_identifier;
+    NSString *_title;
+}
+
++ (instancetype)actionWithIdentifier:(NSString *)identifier title:(NSString *)title;
+
+@property (readonly, copy) NSString *identifier;
+@property (readonly, copy) NSString *title;
+
 @end
+
+@class NSUserNotificationCenter;
 
 @protocol NSUserNotificationCenterDelegate <NSObject>
+@optional
+- (void)userNotificationCenter:(NSUserNotificationCenter *)center didDeliverNotification:(NSUserNotification *)notification;
+- (void)userNotificationCenter:(NSUserNotificationCenter *)center didActivateNotification:(NSUserNotification *)notification;
+- (BOOL)userNotificationCenter:(NSUserNotificationCenter *)center shouldPresentNotification:(NSUserNotification *)notification;
 @end
 
 @interface NSUserNotificationCenter : NSObject {
