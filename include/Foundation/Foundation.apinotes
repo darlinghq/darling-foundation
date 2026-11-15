@@ -127,6 +127,10 @@ Classes:
   SwiftName: URLSessionDataTask
 - Name: NSFileManager
   SwiftName: FileManager
+  Methods:
+  - Selector: "URLsForDirectory:inDomains:"
+    MethodKind: Instance
+    SwiftName: "urls(for:in:)"
 - Name: NSProcessInfo
   SwiftName: ProcessInfo
 - Name: NSTimer
