@@ -2851,7 +2851,7 @@ static CFAllocatorRef NSStringCreateBlockDeallocator(id block, NSUInteger length
     details->block = Block_copy(block);
     details->length = length;
     details->isCharacters = isCharacters;
-    CFAllocatorContext context = {0, details, NULL, NULL, NULL, NULL, NULL, NULL, NSStringBlockDeallocate};
+    CFAllocatorContext context = {0, details, NULL, NULL, NULL, NULL, NULL, NSStringBlockDeallocate, NULL};
     return CFAllocatorCreate(kCFAllocatorDefault, &context);
 }
 
