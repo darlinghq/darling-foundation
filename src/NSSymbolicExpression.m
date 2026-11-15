@@ -73,7 +73,7 @@ static NSString * const NSTokenKey = @"NSToken";
 
 - (void)encodeWithCoder:(NSCoder *)coder
 {
-    if (_NSPredicateKeyedArchiverCheck(coder))
+    if (!_NSPredicateKeyedArchiverCheck(coder))
     {
         return;
     }

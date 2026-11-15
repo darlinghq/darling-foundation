@@ -116,7 +116,7 @@
 
 - (id)initWithCoder:(NSCoder *)decoder
 {
-    if (_NSPredicateKeyedArchiverCheck(decoder))
+    if (!_NSPredicateKeyedArchiverCheck(decoder))
     {
         [self release];
         return nil;

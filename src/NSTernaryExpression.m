@@ -60,7 +60,7 @@ static NSString * const NSFalseExpressionKey = @"NSFalseExpression";
 
 - (id)initWithCoder:(NSCoder *)decoder
 {
-    if (_NSPredicateKeyedArchiverCheck(decoder))
+    if (!_NSPredicateKeyedArchiverCheck(decoder))
     {
         [self release];
         return nil;
@@ -103,7 +103,7 @@ static NSString * const NSFalseExpressionKey = @"NSFalseExpression";
 
 - (void)encodeWithCoder:(NSCoder *)coder
 {
-    if (_NSPredicateKeyedArchiverCheck(coder))
+    if (!_NSPredicateKeyedArchiverCheck(coder))
     {
         return;
     }

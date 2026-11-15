@@ -19,7 +19,7 @@ typedef NS_ENUM(NSUInteger, NSExpressionType) {
 #endif
 };
 
-@interface NSExpression : NSObject <NSCoding, NSCopying>
+@interface NSExpression : NSObject <NSSecureCoding, NSCopying>
 {
 @package
     NSUInteger _expressionFlags;

@@ -139,7 +139,7 @@ static NSString * const NSSubstringContainsSymbol = @"CONTAINS";
 
 - (id)initWithCoder:(NSCoder *)decoder
 {
-    if (_NSPredicateKeyedArchiverCheck(decoder))
+    if (!_NSPredicateKeyedArchiverCheck(decoder))
     {
         [self release];
         return nil;
@@ -155,7 +155,7 @@ static NSString * const NSSubstringContainsSymbol = @"CONTAINS";
 
 - (void)encodeWithCoder:(NSCoder *)coder
 {
-    if (_NSPredicateKeyedArchiverCheck(coder))
+    if (!_NSPredicateKeyedArchiverCheck(coder))
     {
         return;
     }
