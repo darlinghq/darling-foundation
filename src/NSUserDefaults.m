@@ -52,8 +52,6 @@ static void initQueues() {
     if (standardDefaults == nil)
     {
         standardDefaults = [[NSUserDefaults alloc] init];
-        [standardDefaults setObject:[NSLocale preferredLanguages] forKey:@"AppleLanguages"];
-        [standardDefaults setObject:[[NSLocale systemLocale] languageCode] forKey:@"AppleLocale"];
     }
     pthread_mutex_unlock(&defaultsLock);
     return standardDefaults;
