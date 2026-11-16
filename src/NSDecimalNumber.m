@@ -195,8 +195,23 @@ static NSString *NSDecimalNumberBehaviors = @"NSDecimalNumberBehaviors";
     }
     else
     {
-        DEBUG_LOG("%s not supported with a coder that disallows keyed coding", __PRETTY_FUNCTION__);
-        DEBUG_BREAK();
+        // NSArchiver (typedstream): the same fields, each as its own value, then the mantissa as
+        // an array of eight unsigned shorts. The word after the flags is written as 8, the value
+        // seen in every archive written by macOS 10.14.4 (black-box,
+        // tests/src/typedstream_decimalnumber.m).
+        NSDecimal decimal = [self decimalValue];
+        int exponent = decimal._exponent;
+        unsigned short length = decimal._length;
+        unsigned char isNegative = decimal._isNegative;
+        unsigned char isCompact = decimal._isCompact;
+        unsigned int reserved = 8;
+
+        [encoder encodeValueOfObjCType:@encode(int) at:&exponent];
+        [encoder encodeValueOfObjCType:@encode(unsigned short) at:&length];
+        [encoder encodeValueOfObjCType:@encode(unsigned char) at:&isNegative];
+        [encoder encodeValueOfObjCType:@encode(unsigned char) at:&isCompact];
+        [encoder encodeValueOfObjCType:@encode(unsigned int) at:&reserved];
+        [encoder encodeArrayOfObjCType:@encode(unsigned short) count:NSDecimalMaxSize at:decimal._mantissa];
     }
 }
 
@@ -582,8 +597,37 @@ static NSString *NSDecimalNumberBehaviors = @"NSDecimalNumberBehaviors";
 
     else 
     {
-        DEBUG_LOG("%s not supported with a coder that disallows keyed coding", __PRETTY_FUNCTION__);
-        DEBUG_BREAK();
+        // NSArchiver (typedstream) data: the fields of NSDecimal one by one, in declaration order
+        // (exponent, length, isNegative, isCompact, reserved), each as its own value, then the
+        // mantissa as an array of eight unsigned shorts. Layout established by archiving decimal
+        // numbers with NSArchiver on macOS 10.14.4 (black-box, tests/src/typedstream_decimalnumber.m).
+        int exponent = 0;
+        unsigned short length = 0;
+        unsigned char isNegative = 0, isCompact = 0;
+        unsigned int reserved = 0;
+        unsigned short mantissa[NSDecimalMaxSize] = {0};
+
+        [coder decodeValueOfObjCType:@encode(int) at:&exponent];
+        [coder decodeValueOfObjCType:@encode(unsigned short) at:&length];
+        [coder decodeValueOfObjCType:@encode(unsigned char) at:&isNegative];
+        [coder decodeValueOfObjCType:@encode(unsigned char) at:&isCompact];
+        [coder decodeValueOfObjCType:@encode(unsigned int) at:&reserved];
+        [coder decodeArrayOfObjCType:@encode(unsigned short) count:NSDecimalMaxSize at:mantissa];
+
+        if (length > NSDecimalMaxSize)
+        {
+            [NSException raise:NSInvalidUnarchiveOperationException format:@"%@", @"data encoded in mantissa is too large"];
+        }
+
+        NSDecimal decimal = {0};
+        decimal._exponent = exponent;
+        decimal._length = length;
+        decimal._isNegative = isNegative;
+        decimal._isCompact = isCompact;
+        decimal._reserved = reserved;
+        memcpy(decimal._mantissa, mantissa, sizeof(mantissa));
+
+        number = [self initWithDecimal:decimal];
     }
     
     return (id)number;
