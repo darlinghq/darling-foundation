@@ -850,6 +850,13 @@ SINGLETON_RR()
 
 @implementation NSDecimalNumberHandler
 
+@synthesize roundingMode = _roundingMode;
+@synthesize scale = _scale;
+@synthesize raiseOnExact = _raiseOnExact;
+@synthesize raiseOnOverflow = _raiseOnOverflow;
+@synthesize raiseOnUnderflow = _raiseOnUnderflow;
+@synthesize raiseOnDivideByZero = _raiseOnDivideByZero;
+
 // NSArchiver (typedstream) archives a handler with no fields of its own (observed on macOS
 // 10.14.4, tests/src/typedstream_numberformatter.m, which holds one in a default-behavior
 // formatter). It is read back as the default handler configuration: plain rounding, no scale

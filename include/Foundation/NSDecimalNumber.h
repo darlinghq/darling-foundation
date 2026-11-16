@@ -67,6 +67,15 @@ FOUNDATION_EXPORT NSString * const NSDecimalNumberDivideByZeroException;
 @end
 
 @interface NSDecimalNumberHandler : NSObject <NSDecimalNumberBehaviors, NSCoding>
+{
+@private
+    NSRoundingMode _roundingMode;
+    short _scale;
+    BOOL _raiseOnExact;
+    BOOL _raiseOnOverflow;
+    BOOL _raiseOnUnderflow;
+    BOOL _raiseOnDivideByZero;
+}
 
 + (id)defaultDecimalNumberHandler;
 + (id)decimalNumberHandlerWithRoundingMode:(NSRoundingMode)roundingMode scale:(short)scale raiseOnExactness:(BOOL)exact raiseOnOverflow:(BOOL)overflow raiseOnUnderflow:(BOOL)underflow raiseOnDivideByZero:(BOOL)divideByZero;
