@@ -523,7 +523,44 @@ static NSSet *attributeValueClasses(void)
 {
     if (![coder allowsKeyedCoding])
     {
-        [NSException raise:NSInvalidArgumentException format:@"%@ cannot be encoded by non-keyed archivers", NSStringFromClass([self class])];
+        // NSArchiver (typedstream): the string, then one entry per run holding the 1-based number
+        // of the run's attribute dictionary and the run length; a dictionary is written after the
+        // first entry that uses it (see -initWithCoder:). Nothing follows an empty string.
+        NSString *string = [self string];
+        BOOL mutableAttributed = [[self classForCoder] isSubclassOfClass:[NSMutableAttributedString class]];
+        [coder encodeObject:mutableAttributed ? (NSString *)[NSMutableString stringWithString:string] : string];
+        NSUInteger length = [string length];
+        NSMutableArray *dictionaries = [NSMutableArray array];
+        NSUInteger location = 0;
+        while (location < length)
+        {
+            NSRange run;
+            NSDictionary *attributes = [self attributesAtIndex:location effectiveRange:&run];
+            if (run.length == 0)
+            {
+                break;
+            }
+            if (attributes == nil)
+            {
+                attributes = [NSDictionary dictionary];
+            }
+            NSUInteger index = [dictionaries indexOfObject:attributes];
+            BOOL isNew = index == NSNotFound;
+            if (isNew)
+            {
+                index = [dictionaries count];
+                [dictionaries addObject:attributes];
+            }
+            int number = (int)index + 1;
+            unsigned int runLength = (unsigned int)run.length;
+            [coder encodeValuesOfObjCTypes:"iI", &number, &runLength];
+            if (isNew)
+            {
+                [coder encodeObject:attributes];
+            }
+            location = NSMaxRange(run);
+        }
+        return;
     }
     BOOL mutableString = [[self classForCoder] isSubclassOfClass:[NSMutableAttributedString class]];
     NSString *string = [self string];
