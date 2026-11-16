@@ -763,11 +763,11 @@ static NSError *_NSErrorWithFilePathAndErrno(id path, int code)
     int err = 0;
     if (yorn)
     {
-        err = lstat([path UTF8String], &s);
+        err = stat([path UTF8String], &s);
     }
     else
     {
-        err = stat([path UTF8String], &s);
+        err = lstat([path UTF8String], &s);
     }
     if (err == -1)
     {
@@ -1446,21 +1446,46 @@ static BOOL _NSFileContentsEqual(const char *a, const char *b)
     NSString *original = originalItemURL.path;
     NSString *replacement = newItemURL.path;
     struct stat st;
+    BOOL originalExists = YES;
     if (lstat([original fileSystemRepresentation], &st) != 0)
     {
-        if (error)
+        // Without an original there is nothing to move aside: the new item is moved into place.
+        if (errno != ENOENT)
         {
-            *error = _NSCocoaErrorForErrno(errno, original, NO);
+            if (error)
+            {
+                *error = _NSCocoaErrorForErrno(errno, original, NO);
+            }
+            return NO;
         }
-        return NO;
+        originalExists = NO;
     }
     if (lstat([replacement fileSystemRepresentation], &st) != 0)
     {
+        // A missing new item is reported as a generic write error rather than as "no such file".
         if (error)
         {
-            *error = _NSCocoaErrorForErrno(errno, replacement, NO);
+            *error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileWriteUnknownError userInfo:@{
+                NSFilePathErrorKey: replacement
+            }];
         }
         return NO;
+    }
+    if (!originalExists)
+    {
+        if (rename([replacement fileSystemRepresentation], [original fileSystemRepresentation]) != 0)
+        {
+            if (error)
+            {
+                *error = _NSCocoaErrorForErrno(errno, original, NO);
+            }
+            return NO;
+        }
+        if (resultingURL)
+        {
+            *resultingURL = originalItemURL;
+        }
+        return YES;
     }
 
     // The original is first moved aside (to the backup name, or a unique temporary one next to it),
