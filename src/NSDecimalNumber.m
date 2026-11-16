@@ -115,6 +115,37 @@ static NSString *NSDecimalNumberBehaviors = @"NSDecimalNumberBehaviors";
     return one;
 }
 
++ (NSDecimalNumber *)maximumDecimalNumber
+{
+    static NSDecimalNumber *maximum = nil;
+    static dispatch_once_t once = 0L;
+    dispatch_once(&once, ^{
+        NSDecimal decimal = {0};
+        decimal._exponent = 127;
+        decimal._length = NSDecimalMaxSize;
+        memset(decimal._mantissa, 0xff, sizeof(decimal._mantissa));
+        maximum = [[NSDecimalNumber alloc] initWithDecimal:decimal];
+    });
+
+    return maximum;
+}
+
++ (NSDecimalNumber *)minimumDecimalNumber
+{
+    static NSDecimalNumber *minimum = nil;
+    static dispatch_once_t once = 0L;
+    dispatch_once(&once, ^{
+        NSDecimal decimal = {0};
+        decimal._exponent = 127;
+        decimal._length = NSDecimalMaxSize;
+        decimal._isNegative = 1;
+        memset(decimal._mantissa, 0xff, sizeof(decimal._mantissa));
+        minimum = [[NSDecimalNumber alloc] initWithDecimal:decimal];
+    });
+
+    return minimum;
+}
+
 + (NSDecimalNumber *)notANumber
 {
     static NSDecimalNumber *notANumber = nil;
@@ -179,6 +210,19 @@ static NSString *NSDecimalNumberBehaviors = @"NSDecimalNumberBehaviors";
     [self release];
     NSRequestConcreteImplementation();
     return nil;
+}
+
+// NSArchiver (typedstream) records the class of a decimal number as the placeholder class (the
+// layout read by -[NSDecimalNumberPlaceholder initWithCoder:]); keyed archives keep the class
+// they have always used.
+- (Class)classForArchiver
+{
+    return [NSDecimalNumberPlaceholder class];
+}
+
+- (Class)classForKeyedArchiver
+{
+    return [self classForCoder];
 }
 
 - (void)encodeWithCoder:(NSCoder *)encoder
@@ -805,6 +849,24 @@ SINGLETON_RR()
 @end
 
 @implementation NSDecimalNumberHandler
+
+// NSArchiver (typedstream) archives a handler with no fields of its own (observed on macOS
+// 10.14.4, tests/src/typedstream_numberformatter.m, which holds one in a default-behavior
+// formatter). It is read back as the default handler configuration: plain rounding, no scale
+// limit and no exceptions raised.
+- (id)initWithCoder:(NSCoder *)coder
+{
+    return [self initWithRoundingMode:NSRoundPlain
+                                scale:NSDecimalNoScale
+                     raiseOnExactness:NO
+                      raiseOnOverflow:NO
+                     raiseOnUnderflow:NO
+                  raiseOnDivideByZero:NO];
+}
+
+- (void)encodeWithCoder:(NSCoder *)coder
+{
+}
 
 - (NSDecimalNumber *)exceptionDuringOperation:(SEL)method error:(NSCalculationError)error
                                   leftOperand:(NSDecimalNumber *)leftOperand
