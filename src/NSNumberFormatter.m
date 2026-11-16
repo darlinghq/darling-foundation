@@ -148,8 +148,10 @@ static NSNumberFormatterBehavior defaultBehavior = NSNumberFormatterBehaviorDefa
         [self setTextAttributesForPositiveValues:positiveAttributes];
     if (negativeAttributes != nil)
         [self setTextAttributesForNegativeValues:negativeAttributes];
-    if (zero != nil)
-        [self setZeroSymbol:[zero string]];
+    // The zero symbol is "0" unless the archive carries a non-empty one (observed on macOS 10.14.4,
+    // tests/src/typedstream_numberformatter.m, nf-default: nil there).
+    NSString *zeroString = [zero string];
+    [self setZeroSymbol:[zeroString length] > 0 ? zeroString : @"0"];
     if (nilValue != nil)
         [self setNilSymbol:[nilValue string]];
     if (notANumber != nil)
@@ -161,6 +163,11 @@ static NSNumberFormatterBehavior defaultBehavior = NSNumberFormatterBehaviorDefa
     [self setAllowsFloats:allowsFloats != 0];
     [self setHasThousandSeparators:hasThousandSeparators != 0];
     [self setLocalizesFormat:localizesFormat != 0];
+    // With localizesFormat set, the thousand separators flag follows the positive format instead
+    // of the archived flag (observed on macOS 10.14.4, tests/src/typedstream_numberformatter.m:
+    // on only for the formats with a grouping separator, flag cases and nf-default).
+    if (localizesFormat && [positiveFormat length] > 0)
+        [self setHasThousandSeparators:[positiveFormat rangeOfString:@","].location != NSNotFound];
 
     [positiveFormat release];
     [negativeFormat release];
