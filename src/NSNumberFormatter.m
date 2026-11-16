@@ -109,6 +109,81 @@ static NSNumberFormatterBehavior defaultBehavior = NSNumberFormatterBehaviorDefa
     return self;
 }
 
+- (id)initWithCoder:(NSCoder *)coder
+{
+    self = [self init];
+    if (self == nil || [coder allowsKeyedCoding])
+    {
+        return self;
+    }
+
+    // NSArchiver (typedstream) data, as written for every number formatter regardless of its
+    // behavior (and decoded as one of the original 10.0 behavior): seven objects (positive format,
+    // negative format, the text attributes for negative and for positive values, then the
+    // attributed strings for zero, nil and not-a-number), followed by five objects (minimum,
+    // maximum, one that is always nil, decimal separator, thousand separator; the limits are
+    // decimal numbers, not-a-number when unset) and three flags (has thousand separators,
+    // localizes format, allows floats). Layout established by archiving formatters with
+    // NSArchiver on macOS 10.14.4 (black-box, tests/src/typedstream_numberformatter.m).
+    // The minimum and maximum are decoded but not applied: this formatter does not implement
+    // them.
+    NSString *positiveFormat = nil, *negativeFormat = nil;
+    id positiveAttributes = nil, negativeAttributes = nil;
+    NSAttributedString *zero = nil, *nilValue = nil, *notANumber = nil;
+    NSDecimalNumber *minimum = nil, *maximum = nil;
+    id unused = nil;
+    NSString *decimalSeparator = nil, *thousandSeparator = nil;
+    char hasThousandSeparators = 0, localizesFormat = 0, allowsFloats = 0;
+
+    [coder decodeValuesOfObjCTypes:"@@@@@@@", &positiveFormat, &negativeFormat, &negativeAttributes,
+        &positiveAttributes, &zero, &nilValue, &notANumber];
+    [coder decodeValuesOfObjCTypes:"@@@@@ccc", &minimum, &maximum, &unused, &decimalSeparator,
+        &thousandSeparator, &hasThousandSeparators, &localizesFormat, &allowsFloats];
+
+    if ([positiveFormat length] > 0)
+        [self setPositiveFormat:positiveFormat];
+    if ([negativeFormat length] > 0)
+        [self setNegativeFormat:negativeFormat];
+    if (positiveAttributes != nil)
+        [self setTextAttributesForPositiveValues:positiveAttributes];
+    if (negativeAttributes != nil)
+        [self setTextAttributesForNegativeValues:negativeAttributes];
+    // The zero symbol is "0" unless the archive carries a non-empty one (observed on macOS 10.14.4,
+    // tests/src/typedstream_numberformatter.m, nf-default: nil there).
+    NSString *zeroString = [zero string];
+    [self setZeroSymbol:[zeroString length] > 0 ? zeroString : @"0"];
+    if (nilValue != nil)
+        [self setNilSymbol:[nilValue string]];
+    if (notANumber != nil)
+        [self setNotANumberSymbol:[notANumber string]];
+    if (decimalSeparator != nil)
+        [self setDecimalSeparator:decimalSeparator];
+    if (thousandSeparator != nil)
+        [self setThousandSeparator:thousandSeparator];
+    [self setAllowsFloats:allowsFloats != 0];
+    [self setHasThousandSeparators:hasThousandSeparators != 0];
+    [self setLocalizesFormat:localizesFormat != 0];
+    // With localizesFormat set, the thousand separators flag follows the positive format instead
+    // of the archived flag (observed on macOS 10.14.4, tests/src/typedstream_numberformatter.m:
+    // on only for the formats with a grouping separator, flag cases and nf-default).
+    if (localizesFormat && [positiveFormat length] > 0)
+        [self setHasThousandSeparators:[positiveFormat rangeOfString:@","].location != NSNotFound];
+
+    [positiveFormat release];
+    [negativeFormat release];
+    [positiveAttributes release];
+    [negativeAttributes release];
+    [zero release];
+    [nilValue release];
+    [notANumber release];
+    [minimum release];
+    [maximum release];
+    [unused release];
+    [decimalSeparator release];
+    [thousandSeparator release];
+    return self;
+}
+
 - (id)copyWithZone:(NSZone *)zone
 {
     NSNumberFormatter *formatter = [[NSNumberFormatter alloc] init];

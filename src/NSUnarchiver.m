@@ -1097,8 +1097,26 @@ static BOOL typesAreCompatible(const char *archived, const char *requested)
 -(void)_setAllowedClasses:(NSSet *)classes {
 }
 
+// Whether the next item of the archive closes the object being decoded; lets a decoder tell
+// optional trailing values apart without consuming anything.
+-(BOOL)_atEndOfObject {
+   if (_pos >= _data.length)
+      return NO;
+   uint8_t next;
+   [_data getBytes:&next range:NSMakeRange(_pos, 1)];
+   return (signed char)next == EndOfObjectLabel;
+}
+
+// Documented (NSUnarchiver): later references in the archive to the already decoded object decode
+// to the replacement instead. References are kept as shared-object labels, so the entries that
+// hold the original are repointed; pointers the object that asked already received are unchanged.
 -(void)replaceObject:original withObject:replacement {
-   NSUnimplementedMethod();
+   if (original == nil)
+      return;
+
+   NSArray *labels = [_sharedObjects allKeysForObject:original];
+   for (NSNumber *label in labels)
+      _sharedObjects[label] = replacement;
 }
 
 @end

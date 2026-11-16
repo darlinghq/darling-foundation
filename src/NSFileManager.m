@@ -865,6 +865,13 @@ static NSError *_NSErrorWithFilePathAndErrno(id path, int code)
     return [self setAttributes:attributes ofItemAtPath:path error:nil];
 }
 
+// Deprecated since macOS 10.5 but still part of the interface: the shallow contents of the
+// directory, or nil when it cannot be read.
+- (NSArray *)directoryContentsAtPath:(NSString *)path
+{
+    return [self contentsOfDirectoryAtPath:path error:NULL];
+}
+
 - (NSArray *)contentsOfDirectoryAtPath:(NSString *)path error:(NSError **)error
 {
     return [self directoryContentsAtPath:path matchingExtension:nil options:0 keepExtension:YES error:error];
