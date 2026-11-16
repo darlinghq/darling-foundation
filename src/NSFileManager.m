@@ -84,6 +84,30 @@ enum {
 - (NSArray *)directoryContentsAtPath:(NSString *)path matchingExtension:(NSString *)extension options:(NSDirectoryEnumerationOptions)options keepExtension:(BOOL)keepExtension error:(NSError **)error;
 @end
 
+// QUIRK: macOS file systems treat the precomposed and the decomposed spelling of a name as the same
+// file, so a path finds an existing file whichever spelling it uses; names are created in the
+// decomposed spelling of -fileSystemRepresentation. Linux file systems compare the bytes, so the
+// lookups here try the file system representation and then the path as given, which finds files that
+// exist only in the spelling of the caller. Evidence: black-box observation of NSFileManager on
+// macOS 26.7.3 (tier 2, MAC-EVIDENCE "Unicode normalization of paths").
+// Test: tests/filemanager-unicode-normalization.m
+static int _NSFileManagerStat(NSString *path, struct stat *s, BOOL followLinks)
+{
+    const char *representation = [path fileSystemRepresentation];
+    int err = followLinks ? stat(representation, s) : lstat(representation, s);
+
+    if (err == -1 && errno == ENOENT)
+    {
+        const char *literal = [path UTF8String];
+
+        if (literal != NULL && strcmp(literal, representation) != 0)
+        {
+            err = followLinks ? stat(literal, s) : lstat(literal, s);
+        }
+    }
+    return err;
+}
+
 @implementation NSFileManager
 
 static void initializeDirectories(NSMutableSet *paths, NSSearchPathDirectory directory)
@@ -200,7 +224,7 @@ static void initializeDirectories(NSMutableSet *paths, NSSearchPathDirectory dir
     BOOL exists = NO;
     BOOL isDir = NO;
     struct stat s;
-    int err = stat([path UTF8String], &s); // this should use the fileSystemRep
+    int err = _NSFileManagerStat(path, &s, YES);
     if (err == 0)
     {
         exists = YES;
@@ -374,7 +398,7 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
     for (NSURL *url in urls)
     {
         struct stat s;
-        int err = stat([[url path] UTF8String], &s);
+        int err = _NSFileManagerStat([url path], &s, YES);
         if (err != 0)
         {
             if (error)
@@ -593,7 +617,7 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
         // NSFileGroupOwnerAccountName
         // are possible, but not reasonable atm
 
-        int err = mkdir([[url path] UTF8String], mode);
+        int err = mkdir([[url path] fileSystemRepresentation], mode);
         if (err == -1)
         {
             if (error)
@@ -630,7 +654,7 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
         return nil;
     }
     struct stat s;
-    int err = lstat([path UTF8String], &s);
+    int err = _NSFileManagerStat(path, &s, NO);
     if (err == -1)
     {
         if (error)
@@ -763,11 +787,11 @@ static NSError *_NSErrorWithFilePathAndErrno(id path, int code)
     int err = 0;
     if (yorn)
     {
-        err = stat([path UTF8String], &s);
+        err = _NSFileManagerStat(path, &s, YES);
     }
     else
     {
-        err = lstat([path UTF8String], &s);
+        err = _NSFileManagerStat(path, &s, NO);
     }
     if (err == -1)
     {
@@ -899,7 +923,7 @@ static NSError *_NSErrorWithFilePathAndErrno(id path, int code)
     {
         return NO;
     }
-    int err = symlink([destPath UTF8String], [path UTF8String]);
+    int err = symlink([destPath UTF8String], [path fileSystemRepresentation]);
     if (err == -1)
     {
         if (error)
@@ -1013,7 +1037,7 @@ static NSError *_NSErrorWithFilePathAndErrno(id path, int code)
         return NO;
     }
 
-    if (rename([srcPath UTF8String], [dstPath UTF8String]) != -1) {
+    if (rename([srcPath fileSystemRepresentation], [dstPath fileSystemRepresentation]) != -1) {
         return YES;
     }
 

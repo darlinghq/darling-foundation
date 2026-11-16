@@ -49,7 +49,13 @@ void *_NSReadBytesFromFile(NSString *path, NSDataReadingOptions readOptionsMask,
 {
     *length = 0;
 
-    int fd = open([path UTF8String], O_RDONLY);
+    // Paths are used in the file system representation, which is how files are created; a file that
+    // exists only under the spelling of the caller is found as a fallback (see NSFileManager.m).
+    int fd = open([path fileSystemRepresentation], O_RDONLY);
+    if (fd < 0 && errno == ENOENT && strcmp([path UTF8String], [path fileSystemRepresentation]) != 0)
+    {
+        fd = open([path UTF8String], O_RDONLY);
+    }
     if (fd < 0)
     {
         if (err != NULL)
@@ -190,7 +196,7 @@ BOOL _NSWriteBytesToFile(NSData *data, id pathOrURL, NSDataWritingOptions option
         pathOrURL = [pathOrURL stringByAppendingFormat:@".tmp%d", atomicId];
     }
     int fd = -1;
-    const char *path = [pathOrURL UTF8String];
+    const char *path = [pathOrURL fileSystemRepresentation];
     if ((options & NSDataWritingWithoutOverwriting) != 0)
     {
         struct stat info;
@@ -260,7 +266,7 @@ BOOL _NSWriteBytesToFile(NSData *data, id pathOrURL, NSDataWritingOptions option
     close(fd);
     if (remaining == 0 && dest != pathOrURL)
     {
-        if (rename([pathOrURL UTF8String], [dest UTF8String]) != -1)
+        if (rename([pathOrURL fileSystemRepresentation], [dest fileSystemRepresentation]) != -1)
         {
             return YES;
         }
