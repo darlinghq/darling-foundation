@@ -333,7 +333,9 @@ static void endContainer(struct NSXPCSerializer *serializer) {
     CFIndex level = --serializer->containerNestingLevel;
     CFIndex startOffset = serializer->containerOffsets[level];
 
-    CFIndex endOffset = currentOffset(serializer) - 1;
+    // The slot reserved by startContainer() is 8 bytes wide on the wire whatever the architecture; CFIndex is only 4
+    // bytes on i386, which would leave the upper half of the slot unwritten.
+    uint64_t endOffset = (uint64_t) (currentOffset(serializer) - 1);
     memcpy(&serializer->buffer[startOffset], &endOffset, sizeof(endOffset));
 }
 
