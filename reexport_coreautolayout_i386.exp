@@ -1,0 +1,11 @@
+# The layout classes of CoreAutoLayout, which Foundation re-exports. The legacy Objective-C ABI binds classes by
+# the .objc_class_name_ symbols. Only these are listed: the full lists of the other architectures are not applied to i386.
+.objc_class_name_NSLayoutConstraint
+.objc_class_name_NSLayoutAnchor
+.objc_class_name_NSLayoutXAxisAnchor
+.objc_class_name_NSLayoutYAxisAnchor
+.objc_class_name_NSLayoutDimension
+.objc_class_name_NSAutoresizingMaskLayoutConstraint
+.objc_class_name_NSContentSizeLayoutConstraint
+.objc_class_name_NSIBPrototypingLayoutConstraint
+__NSDictionaryOfVariableBindings
