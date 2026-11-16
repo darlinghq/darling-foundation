@@ -15,6 +15,7 @@
 #import <dispatch/dispatch.h>
 #import <Foundation/NSArray.h>
 #import <Foundation/NSCoder.h>
+#import <Foundation/NSArchiver.h>
 #import <Foundation/NSData.h>
 #import <Foundation/NSDictionary.h>
 #import <Foundation/NSSet.h>
@@ -507,6 +508,10 @@ static NSSet *attributeValueClasses(void)
     return classes;
 }
 
+@interface NSUnarchiver (NSAttributedStringLegacyDecoding)
+- (BOOL)_atEndOfObject;
+@end
+
 @implementation NSAttributedString (NSAttributedStringKeyedCoding)
 
 + (BOOL)supportsSecureCoding
@@ -560,8 +565,61 @@ static NSSet *attributeValueClasses(void)
 {
     if (![coder allowsKeyedCoding])
     {
-        [self release];
-        return nil;
+        // NSArchiver (typedstream) data: the string, then one entry per attribute run in text
+        // order. An entry is the 1-based number of the run's attribute dictionary and the run's
+        // length. The dictionary object follows the entry that first uses its number; later runs
+        // with the same attributes carry only the number. A string without runs (an empty one)
+        // is archived as the string alone.
+        // Layout established by archiving attributed strings with NSArchiver on macOS 10.14.4
+        // (black-box, tests/src/typedstream_attributedstring.m).
+        NSString *string = [coder decodeObject];
+        if (string == nil)
+        {
+            [self release];
+            return nil;
+        }
+
+        NSMutableAttributedString *result = [[NSMutableAttributedString alloc] initWithString:string];
+        NSMutableArray *dictionaries = [[NSMutableArray alloc] init];
+        NSUInteger location = 0;
+        BOOL valid = YES;
+        while (valid && ![(NSUnarchiver *)coder _atEndOfObject])
+        {
+            int number = 0;
+            unsigned int runLength = 0;
+            [coder decodeValuesOfObjCTypes:"iI", &number, &runLength];
+            if (number < 1 || (NSUInteger)number > [dictionaries count] + 1)
+            {
+                valid = NO;
+                break;
+            }
+            if ((NSUInteger)number == [dictionaries count] + 1)
+            {
+                id attributes = [coder decodeObject];
+                [dictionaries addObject:attributes != nil ? attributes : [NSNull null]];
+            }
+            NSDictionary *attributes = [dictionaries objectAtIndex:number - 1];
+            if (runLength > [string length] - location)
+            {
+                runLength = (unsigned int)([string length] - location);
+            }
+            if ([attributes isKindOfClass:[NSDictionary class]] && runLength > 0)
+            {
+                [result setAttributes:attributes range:NSMakeRange(location, runLength)];
+            }
+            location += runLength;
+        }
+        [dictionaries release];
+        if (!valid)
+        {
+            [result release];
+            [self release];
+            return nil;
+        }
+
+        id decoded = [self initWithAttributedString:result];
+        [result release];
+        return decoded;
     }
     NSString *string = [coder decodeObjectOfClass:[NSString class] forKey:@"NSString"];
     id attributes = [coder decodeObjectOfClasses:attributeValueClasses() forKey:@"NSAttributes"];
