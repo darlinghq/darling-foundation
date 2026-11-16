@@ -326,9 +326,22 @@ static BOOL findObject(
                 [NSException raise: NSInvalidArgumentException
                             format: @"Missing method signature"];
             }
-            signature = [NSMethodSignature signatureWithObjCTypes:
-                [types UTF8String]
-            ];
+            // The sender's type string is laid out for the sender's
+            // architecture (pointer and long sizes differ between i386 and
+            // x86_64). NSXPCInterface describes methods by the protocol, so
+            // build the invocation from the receiving side's own signature
+            // when the interface knows the method; the wire signature is
+            // only used for methods the interface does not describe.
+            if (isReply) {
+                signature = [interface replyBlockSignatureForSelector: replySelector];
+            } else if (selector != NULL) {
+                signature = [interface _methodSignatureForRemoteSelector: selector];
+            }
+            if (signature == nil) {
+                signature = [NSMethodSignature signatureWithObjCTypes:
+                    [types UTF8String]
+                ];
+            }
             invocation = [NSInvocation invocationWithMethodSignature:
                 signature
             ];
