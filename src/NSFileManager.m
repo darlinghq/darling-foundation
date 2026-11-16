@@ -14,6 +14,8 @@
 #import <stdlib.h>
 #import <sys/param.h>
 #import <sys/mount.h>
+#import <sys/stat.h>
+#import <fcntl.h>
 #import <copyfile.h>
 #import <CoreFoundation/CFURL.h>
 #import <MacTypes.h> // for kUnknownType
@@ -1095,6 +1097,552 @@ static inline NSStringEncoding defaultEncoding()
 - (NSString *)stringWithFileSystemRepresentation:(const char *)str length:(NSUInteger)len
 {
     return [[[NSString alloc] initWithBytes:str length:len encoding:defaultEncoding()] autorelease];
+}
+
+#pragma mark - Hard links, content comparison and item replacement
+
+// Cocoa-domain error for a failed file operation. Read failures of a missing item are reported
+// as NSFileReadNoSuchFileError, write-side ones as NSFileNoSuchFileError, like the path-based
+// calls of the same family.
+static NSError *_NSCocoaErrorForErrno(int err, NSString *path, BOOL reading)
+{
+    NSInteger code;
+    switch (err)
+    {
+        case ENOENT:
+            code = reading ? NSFileReadNoSuchFileError : NSFileNoSuchFileError;
+            break;
+        case EEXIST:
+            code = NSFileWriteFileExistsError;
+            break;
+        case EACCES:
+        case EPERM:
+            code = reading ? NSFileReadNoPermissionError : NSFileWriteNoPermissionError;
+            break;
+        case ENOSPC:
+            code = NSFileWriteOutOfSpaceError;
+            break;
+        case EROFS:
+            code = NSFileWriteVolumeReadOnlyError;
+            break;
+        default:
+            code = reading ? NSFileReadUnknownError : NSFileWriteUnknownError;
+            break;
+    }
+    NSMutableDictionary *info = [NSMutableDictionary dictionary];
+    if (path)
+    {
+        [info setObject:path forKey:NSFilePathErrorKey];
+    }
+    [info setObject:[NSError errorWithDomain:NSPOSIXErrorDomain code:err userInfo:nil] forKey:NSUnderlyingErrorKey];
+    return [NSError errorWithDomain:NSCocoaErrorDomain code:code userInfo:info];
+}
+
+- (BOOL)_linkItemAtFileSystemPath:(const char *)src toFileSystemPath:(const char *)dst failedPath:(NSString **)failed
+{
+    struct stat st;
+    if (lstat(src, &st) != 0)
+    {
+        *failed = [self stringWithFileSystemRepresentation:src length:strlen(src)];
+        return NO;
+    }
+    if (S_ISDIR(st.st_mode))
+    {
+        // A directory is recreated and its entries are linked one by one.
+        if (mkdir(dst, st.st_mode & 07777) != 0)
+        {
+            *failed = [self stringWithFileSystemRepresentation:dst length:strlen(dst)];
+            return NO;
+        }
+        DIR *dir = opendir(src);
+        if (dir == NULL)
+        {
+            *failed = [self stringWithFileSystemRepresentation:src length:strlen(src)];
+            return NO;
+        }
+        BOOL ok = YES;
+        int savedErrno = 0;
+        struct dirent *entry;
+        while (ok && (entry = readdir(dir)) != NULL)
+        {
+            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+            {
+                continue;
+            }
+            char childSrc[BUG_COMPLIANT_PATH_MAX], childDst[BUG_COMPLIANT_PATH_MAX];
+            if (snprintf(childSrc, sizeof(childSrc), "%s/%s", src, entry->d_name) >= (int)sizeof(childSrc) ||
+                snprintf(childDst, sizeof(childDst), "%s/%s", dst, entry->d_name) >= (int)sizeof(childDst))
+            {
+                errno = ENAMETOOLONG;
+                ok = NO;
+                *failed = [self stringWithFileSystemRepresentation:src length:strlen(src)];
+                break;
+            }
+            ok = [self _linkItemAtFileSystemPath:childSrc toFileSystemPath:childDst failedPath:failed];
+        }
+        if (!ok)
+        {
+            savedErrno = errno;
+        }
+        closedir(dir);
+        if (!ok)
+        {
+            errno = savedErrno;
+        }
+        return ok;
+    }
+    if (link(src, dst) != 0)
+    {
+        *failed = [self stringWithFileSystemRepresentation:dst length:strlen(dst)];
+        return NO;
+    }
+    return YES;
+}
+
+- (BOOL)linkItemAtPath:(NSString *)srcPath toPath:(NSString *)dstPath error:(NSError **)error
+{
+    if (error)
+    {
+        *error = nil;
+    }
+    if (_flags.shouldLinkItemAtPathToPath && ![_delegate fileManager:self shouldLinkItemAtPath:srcPath toPath:dstPath])
+    {
+        return NO;
+    }
+    char src[BUG_COMPLIANT_PATH_MAX], dst[BUG_COMPLIANT_PATH_MAX];
+    if (![self getFileSystemRepresentation:src maxLength:sizeof(src) withPath:srcPath] ||
+        ![self getFileSystemRepresentation:dst maxLength:sizeof(dst) withPath:dstPath])
+    {
+        if (error)
+        {
+            *error = _NSCocoaErrorForErrno(ENOENT, srcPath, YES);
+        }
+        return NO;
+    }
+    struct stat st;
+    if (lstat(src, &st) != 0)
+    {
+        if (error)
+        {
+            *error = _NSCocoaErrorForErrno(errno, srcPath, YES);
+        }
+        return NO;
+    }
+    NSString *failedPath = nil;
+    if (![self _linkItemAtFileSystemPath:src toFileSystemPath:dst failedPath:&failedPath])
+    {
+        if (error)
+        {
+            *error = _NSCocoaErrorForErrno(errno, failedPath ?: dstPath, NO);
+        }
+        return NO;
+    }
+    return YES;
+}
+
+- (BOOL)linkItemAtURL:(NSURL *)srcURL toURL:(NSURL *)dstURL error:(NSError **)error
+{
+    return [self linkItemAtPath:srcURL.path toPath:dstURL.path error:error];
+}
+
+- (BOOL)createSymbolicLinkAtPath:(NSString *)path pathContent:(NSString *)otherpath
+{
+    return [self createSymbolicLinkAtPath:path withDestinationPath:otherpath error:NULL];
+}
+
+- (BOOL)createSymbolicLinkAtURL:(NSURL *)url withDestinationURL:(NSURL *)destURL error:(NSError **)error
+{
+    return [self createSymbolicLinkAtPath:url.path withDestinationPath:destURL.path error:error];
+}
+
+- (NSDictionary *)fileSystemAttributesAtPath:(NSString *)path
+{
+    return [self attributesOfFileSystemForPath:path error:NULL];
+}
+
+static BOOL _NSFileContentsEqual(const char *a, const char *b);
+
+static BOOL _NSRegularFilesEqual(const char *a, const char *b)
+{
+    int fa = open(a, O_RDONLY);
+    int fb = open(b, O_RDONLY);
+    BOOL equal = fa >= 0 && fb >= 0;
+    while (equal)
+    {
+        char bufA[16384], bufB[16384];
+        ssize_t na = read(fa, bufA, sizeof(bufA));
+        if (na < 0)
+        {
+            equal = NO;
+            break;
+        }
+        // Fill bufB with exactly as many bytes as bufA got, so short reads cannot cause a false mismatch.
+        ssize_t got = 0;
+        while (got < na)
+        {
+            ssize_t n = read(fb, bufB + got, (size_t)(na - got));
+            if (n <= 0)
+            {
+                break;
+            }
+            got += n;
+        }
+        if (got != na || memcmp(bufA, bufB, (size_t)na) != 0)
+        {
+            equal = NO;
+        }
+        else if (na == 0)
+        {
+            break;
+        }
+    }
+    if (fa >= 0)
+    {
+        close(fa);
+    }
+    if (fb >= 0)
+    {
+        close(fb);
+    }
+    return equal;
+}
+
+static int _NSNameCompare(const void *x, const void *y)
+{
+    return strcmp(*(char *const *)x, *(char *const *)y);
+}
+
+static BOOL _NSDirectoriesEqual(const char *a, const char *b)
+{
+    char **namesA[2] = {NULL, NULL};
+    size_t count[2] = {0, 0}, capacity[2] = {0, 0};
+    const char *roots[2] = {a, b};
+    BOOL ok = YES;
+    for (int i = 0; i < 2 && ok; i++)
+    {
+        DIR *dir = opendir(roots[i]);
+        if (dir == NULL)
+        {
+            ok = NO;
+            break;
+        }
+        struct dirent *entry;
+        while ((entry = readdir(dir)) != NULL)
+        {
+            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+            {
+                continue;
+            }
+            if (count[i] == capacity[i])
+            {
+                size_t newCapacity = capacity[i] ? capacity[i] * 2 : 32;
+                char **grown = realloc(namesA[i], newCapacity * sizeof(char *));
+                if (grown == NULL)
+                {
+                    ok = NO;
+                    break;
+                }
+                namesA[i] = grown;
+                capacity[i] = newCapacity;
+            }
+            char *copy = strdup(entry->d_name);
+            if (copy == NULL)
+            {
+                ok = NO;
+                break;
+            }
+            namesA[i][count[i]++] = copy;
+        }
+        closedir(dir);
+    }
+    if (ok && count[0] != count[1])
+    {
+        ok = NO;
+    }
+    if (ok)
+    {
+        qsort(namesA[0], count[0], sizeof(char *), _NSNameCompare);
+        qsort(namesA[1], count[1], sizeof(char *), _NSNameCompare);
+        for (size_t i = 0; ok && i < count[0]; i++)
+        {
+            char pa[BUG_COMPLIANT_PATH_MAX], pb[BUG_COMPLIANT_PATH_MAX];
+            if (strcmp(namesA[0][i], namesA[1][i]) != 0 ||
+                snprintf(pa, sizeof(pa), "%s/%s", a, namesA[0][i]) >= (int)sizeof(pa) ||
+                snprintf(pb, sizeof(pb), "%s/%s", b, namesA[1][i]) >= (int)sizeof(pb))
+            {
+                ok = NO;
+                break;
+            }
+            ok = _NSFileContentsEqual(pa, pb);
+        }
+    }
+    for (int i = 0; i < 2; i++)
+    {
+        for (size_t j = 0; j < count[i]; j++)
+        {
+            free(namesA[i][j]);
+        }
+        free(namesA[i]);
+    }
+    return ok;
+}
+
+// Items are equal when they are the same file, or of the same kind with equal contents. Symbolic
+// links are compared by their destination text, not by what they point at.
+static BOOL _NSFileContentsEqual(const char *a, const char *b)
+{
+    struct stat sa, sb;
+    if (lstat(a, &sa) != 0 || lstat(b, &sb) != 0)
+    {
+        return NO;
+    }
+    if (sa.st_dev == sb.st_dev && sa.st_ino == sb.st_ino)
+    {
+        return YES;
+    }
+    if ((sa.st_mode & S_IFMT) != (sb.st_mode & S_IFMT))
+    {
+        return NO;
+    }
+    if (S_ISLNK(sa.st_mode))
+    {
+        char la[PATH_MAX], lb[PATH_MAX];
+        ssize_t na = readlink(a, la, sizeof(la));
+        ssize_t nb = readlink(b, lb, sizeof(lb));
+        return na >= 0 && na == nb && memcmp(la, lb, (size_t)na) == 0;
+    }
+    if (S_ISREG(sa.st_mode))
+    {
+        return sa.st_size == sb.st_size && _NSRegularFilesEqual(a, b);
+    }
+    if (S_ISDIR(sa.st_mode))
+    {
+        return _NSDirectoriesEqual(a, b);
+    }
+    return NO;
+}
+
+- (BOOL)contentsEqualAtPath:(NSString *)path1 andPath:(NSString *)path2
+{
+    char a[BUG_COMPLIANT_PATH_MAX], b[BUG_COMPLIANT_PATH_MAX];
+    if (![self getFileSystemRepresentation:a maxLength:sizeof(a) withPath:path1] ||
+        ![self getFileSystemRepresentation:b maxLength:sizeof(b) withPath:path2])
+    {
+        return NO;
+    }
+    return _NSFileContentsEqual(a, b);
+}
+
+- (BOOL)replaceItemAtURL:(NSURL *)originalItemURL withItemAtURL:(NSURL *)newItemURL backupItemName:(NSString *)backupItemName options:(NSFileManagerItemReplacementOptions)options resultingItemURL:(NSURL **)resultingURL error:(NSError **)error
+{
+    if (error)
+    {
+        *error = nil;
+    }
+    if (resultingURL)
+    {
+        *resultingURL = nil;
+    }
+    NSString *original = originalItemURL.path;
+    NSString *replacement = newItemURL.path;
+    struct stat st;
+    if (lstat([original fileSystemRepresentation], &st) != 0)
+    {
+        if (error)
+        {
+            *error = _NSCocoaErrorForErrno(errno, original, NO);
+        }
+        return NO;
+    }
+    if (lstat([replacement fileSystemRepresentation], &st) != 0)
+    {
+        if (error)
+        {
+            *error = _NSCocoaErrorForErrno(errno, replacement, NO);
+        }
+        return NO;
+    }
+
+    // The original is first moved aside (to the backup name, or a unique temporary one next to it),
+    // then the new item takes its place; the moved-aside item is deleted unless the caller asked
+    // to keep the backup.
+    NSString *directory = [original stringByDeletingLastPathComponent];
+    BOOL keepAside = backupItemName != nil && (options & NSFileManagerItemReplacementWithoutDeletingBackupItem);
+    NSString *aside;
+    if (backupItemName != nil)
+    {
+        aside = [directory stringByAppendingPathComponent:backupItemName];
+        // A stale backup with this name is replaced.
+        if (lstat([aside fileSystemRepresentation], &st) == 0)
+        {
+            NSError *removeError = nil;
+            if (![self removeItemAtPath:aside error:&removeError])
+            {
+                if (error)
+                {
+                    *error = removeError;
+                }
+                return NO;
+            }
+        }
+    }
+    else
+    {
+        char templ[BUG_COMPLIANT_PATH_MAX];
+        snprintf(templ, sizeof(templ), "%s/.replaceItem.XXXXXX", [directory fileSystemRepresentation]);
+        int fd = mkstemp(templ);
+        if (fd < 0)
+        {
+            if (error)
+            {
+                *error = _NSCocoaErrorForErrno(errno, directory, NO);
+            }
+            return NO;
+        }
+        close(fd);
+        aside = [self stringWithFileSystemRepresentation:templ length:strlen(templ)];
+        unlink(templ);
+    }
+
+    if (rename([original fileSystemRepresentation], [aside fileSystemRepresentation]) != 0)
+    {
+        if (error)
+        {
+            *error = _NSCocoaErrorForErrno(errno, original, NO);
+        }
+        return NO;
+    }
+    if (rename([replacement fileSystemRepresentation], [original fileSystemRepresentation]) != 0)
+    {
+        int savedErrno = errno;
+        rename([aside fileSystemRepresentation], [original fileSystemRepresentation]);
+        if (error)
+        {
+            *error = _NSCocoaErrorForErrno(savedErrno, replacement, NO);
+        }
+        return NO;
+    }
+    if (!keepAside)
+    {
+        [self removeItemAtPath:aside error:NULL];
+    }
+    if (resultingURL)
+    {
+        *resultingURL = originalItemURL;
+    }
+    return YES;
+}
+
+- (BOOL)trashItemAtURL:(NSURL *)url resultingItemURL:(NSURL **)outResultingURL error:(NSError **)error
+{
+    if (error)
+    {
+        *error = nil;
+    }
+    if (outResultingURL)
+    {
+        *outResultingURL = nil;
+    }
+    NSString *path = url.path;
+    struct stat st;
+    if (lstat([path fileSystemRepresentation], &st) != 0)
+    {
+        if (error)
+        {
+            *error = _NSCocoaErrorForErrno(errno, path, NO);
+        }
+        return NO;
+    }
+    NSString *trash = [NSHomeDirectory() stringByAppendingPathComponent:@".Trash"];
+    if (mkdir([trash fileSystemRepresentation], 0700) != 0 && errno != EEXIST)
+    {
+        if (error)
+        {
+            *error = _NSCocoaErrorForErrno(errno, trash, NO);
+        }
+        return NO;
+    }
+    NSString *name = [path lastPathComponent];
+    NSString *base = [name stringByDeletingPathExtension];
+    NSString *extension = [name pathExtension];
+    NSString *target = [trash stringByAppendingPathComponent:name];
+    // An existing trashed item of the same name is kept; the new one gets a counter in its name.
+    for (int n = 2; lstat([target fileSystemRepresentation], &st) == 0; n++)
+    {
+        NSString *candidate = extension.length ? [NSString stringWithFormat:@"%@ %d.%@", base, n, extension]
+                                               : [NSString stringWithFormat:@"%@ %d", base, n];
+        target = [trash stringByAppendingPathComponent:candidate];
+    }
+    if (rename([path fileSystemRepresentation], [target fileSystemRepresentation]) != 0)
+    {
+        if (error)
+        {
+            *error = _NSCocoaErrorForErrno(errno, path, NO);
+        }
+        return NO;
+    }
+    if (outResultingURL)
+    {
+        *outResultingURL = [NSURL fileURLWithPath:target];
+    }
+    return YES;
+}
+
+#pragma mark - iCloud (no ubiquity containers exist)
+
+- (id <NSObject, NSCopying, NSCoding>)ubiquityIdentityToken
+{
+    return nil;
+}
+
+- (NSURL *)URLForUbiquityContainerIdentifier:(NSString *)containerIdentifier
+{
+    return nil;
+}
+
+- (BOOL)isUbiquitousItemAtURL:(NSURL *)url
+{
+    return NO;
+}
+
+- (BOOL)setUbiquitous:(BOOL)flag itemAtURL:(NSURL *)url destinationURL:(NSURL *)destinationURL error:(NSError **)error
+{
+    if (error)
+    {
+        *error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileWriteUnknownError userInfo:nil];
+    }
+    return NO;
+}
+
+- (BOOL)startDownloadingUbiquitousItemAtURL:(NSURL *)url error:(NSError **)error
+{
+    if (error)
+    {
+        *error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileWriteUnknownError userInfo:nil];
+    }
+    return NO;
+}
+
+- (BOOL)evictUbiquitousItemAtURL:(NSURL *)url error:(NSError **)error
+{
+    if (error)
+    {
+        *error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileWriteUnknownError userInfo:nil];
+    }
+    return NO;
+}
+
+- (NSURL *)URLForPublishingUbiquitousItemAtURL:(NSURL *)url expirationDate:(NSDate **)outDate error:(NSError **)error
+{
+    if (outDate)
+    {
+        *outDate = nil;
+    }
+    if (error)
+    {
+        *error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileReadUnknownError userInfo:nil];
+    }
+    return nil;
 }
 
 @end
