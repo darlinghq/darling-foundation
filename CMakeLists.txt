@@ -309,6 +309,9 @@ add_separated_framework(Foundation
 		system
 		CoreFoundation
 		CFNetwork_firstpass
+		# Foundation re-exports the Auto Layout classes of CoreAutoLayout (reexport_*.exp); CoreAutoLayout links
+		# the finished Foundation upward, so Foundation links its first pass
+		CoreAutoLayout_firstpass
 		xml2
 	LINK_FLAGS " -Wl,-reexport_library,${CMAKE_BINARY_DIR}/src/external/corefoundation/CoreFoundation \
 				-Wl,-reexport_library,${CMAKE_BINARY_DIR}/src/external/objc4/runtime/libobjc.A.dylib"
@@ -319,6 +322,12 @@ add_separated_framework(Foundation
 # 	TARGET CoreFoundation_i386 APPEND_STRING PROPERTY
 # 	LINK_FLAGS " -Wl,-reexported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/reexport_i386.exp")
 # endif (TARGET_i386)
+if (TARGET_i386)
+set_property(
+	TARGET Foundation_i386 APPEND_STRING PROPERTY
+	LINK_FLAGS " -Wl,-reexported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/reexport_coreautolayout_i386.exp"
+)
+endif (TARGET_i386)
 if (TARGET_x86_64)
 set_property(
 	TARGET Foundation_x86_64 APPEND_STRING PROPERTY
