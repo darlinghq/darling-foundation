@@ -54,6 +54,12 @@ static NSUInteger NSStringEncodingConversionFailOnPartial = 4;
 @end
 
 @implementation __NSStringRegexPatternKey
+
+// Explicit: the i386 slice (legacy runtime) does not synthesize properties on its own, so the
+// accessors used by -isEqual: were missing there.
+@synthesize pattern = _pattern;
+@synthesize options = _options;
+
 - (id)initWithPattern:(NSString *)pattern options:(NSStringCompareOptions)options
 {
     self = [super init];
