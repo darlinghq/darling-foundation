@@ -49,6 +49,7 @@ static struct {
     __typeof__(AECreateAppleEvent) *createAppleEvent;
     __typeof__(AEPutAttributeDesc) *putAttributeDesc;
     __typeof__(AEGetAttributeDesc) *getAttributeDesc;
+    __typeof__(AECoerceDesc) *coerceDesc; // optional: the coercions the Apple Event Manager provides
 } ae;
 
 static void loadAE(void)
@@ -75,6 +76,7 @@ static void loadAE(void)
         ae.createAppleEvent = dlsym(h, "AECreateAppleEvent");
         ae.putAttributeDesc = dlsym(h, "AEPutAttributeDesc");
         ae.getAttributeDesc = dlsym(h, "AEGetAttributeDesc");
+        ae.coerceDesc = dlsym(h, "AECoerceDesc");
         loaded = ae.createDesc && ae.disposeDesc && ae.duplicateDesc && ae.getDescDataSize && ae.getDescData &&
             ae.createList && ae.countItems && ae.putDesc && ae.getNthDesc && ae.deleteItem && ae.putParamDesc &&
             ae.getParamDesc && ae.deleteParam && ae.createAppleEvent && ae.putAttributeDesc && ae.getAttributeDesc;
@@ -327,6 +329,12 @@ static BOOL isTextType(DescType type)
             return bytes ? [NSAppleEventDescriptor descriptorWithDescriptorType: type data: bytes] : nil;
         }
     }
+
+    // Other coercions (such as bookmark data to a file URL) are the Apple Event Manager's.
+    loadAE();
+    AEDesc coerced;
+    if (ae.coerceDesc != NULL && ae.coerceDesc(&_desc, type, &coerced) == noErr)
+        return [[[NSAppleEventDescriptor alloc] initWithAEDescNoCopy: &coerced] autorelease];
     return nil;
 }
 
