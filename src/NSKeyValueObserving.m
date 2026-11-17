@@ -476,6 +476,39 @@ static NSKeyValueProperty *_NSKeyValuePropertyForIsaAndKeyPath(Class isa, NSStri
 
 
 
+// A class may keep its own observation info in an instance variable by overriding
+// -observationInfo and -setObservationInfo: with a pointer argument. Such a setter only stores
+// the pointer, so the info has to be kept alive on its behalf: NSObject's own storage retains the
+// value it is given, and a class that overrides the accessors takes over only the storage.
+static BOOL _NSKeyValueClassStoresObservationInfoItself(Class cls)
+{
+    Method setter = class_getInstanceMethod(cls, @selector(setObservationInfo:));
+    if (setter == NULL || method_getImplementation(setter) == method_getImplementation(class_getInstanceMethod([NSObject class], @selector(setObservationInfo:))))
+    {
+        return NO;
+    }
+    char argumentType = 0;
+    method_getArgumentType(setter, 2, &argumentType, 1);
+    return argumentType != '@';
+}
+
+static void _NSKeyValueStoreObservationInfo(NSObject *object, id observationInfo)
+{
+    if (!_NSKeyValueClassStoresObservationInfoItself(object_getClass(object)))
+    {
+        [object setObservationInfo:observationInfo];
+        return;
+    }
+    id previous = [object observationInfo];
+    if (previous == observationInfo)
+    {
+        return;
+    }
+    [observationInfo retain];
+    [object setObservationInfo:observationInfo];
+    [previous release];
+}
+
 id __NSKeyValueRetainedObservationInfoForObject(NSObject *object, NSKeyValueContainerClass *containerClass)
 {
     id observationInfo = nil;
@@ -538,7 +571,7 @@ id __NSKeyValueRetainedObservationInfoForObject(NSObject *object, NSKeyValueCont
     // TODO: cache/share these to improve performance.
     OSSpinLockLock(&_NSKeyValueObservationInfoSpinLock);
     [observationInfo addObservance:newObservance];
-    [self setObservationInfo:observationInfo];
+    _NSKeyValueStoreObservationInfo(self, observationInfo);
     OSSpinLockUnlock(&_NSKeyValueObservationInfoSpinLock);
     OSSpinLockUnlock(&_NSKeyValueObservationInfoCreationSpinLock);
     [property object:self didAddObservance:newObservance recurse:YES];
@@ -631,7 +664,7 @@ static void NSKeyValueRaiseUnregistered(NSObject *receiver, NSObject *observer, 
     {
         if (object_getClass(self) != containerClass.originalClass)
         {
-            [self setObservationInfo:nil];
+            _NSKeyValueStoreObservationInfo(self, nil);
             [observationInfo release];
             object_setClass(self, containerClass.originalClass);
         }
