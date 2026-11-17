@@ -116,6 +116,13 @@ static void NSThreadEnd(void *context)
     [thread release];
 }
 
++ (void)detachNewThreadWithBlock:(void (^)(void))block
+{
+    NSThread *thread = [[NSThread alloc] initWithBlock:block];
+    [thread start];
+    [thread release];
+}
+
 + (BOOL)isMultiThreaded
 {
     return _NSIsMultiThreaded;
@@ -225,8 +232,19 @@ static void NSThreadEnd(void *context)
     return self;
 }
 
+- (instancetype)initWithBlock:(void (^)(void))block
+{
+    self = [self init];
+    if (self)
+    {
+        _block = [block copy];
+    }
+    return self;
+}
+
 - (void)dealloc
 {
+    [_block release];
     [_target release];
     [_argument release];
     [_threadDictionary release];
@@ -394,7 +412,11 @@ static void *__NSThread__main__(void *context)
 
 - (void)main
 {
-    if (_target && _selector)
+    if (_block)
+    {
+        _block();
+    }
+    else if (_target && _selector)
     {
         ((void (*)(id, SEL, id))objc_msgSend)(_target, _selector, _argument);
     }
