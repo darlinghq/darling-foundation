@@ -66,7 +66,8 @@ typedef NS_ENUM(NSUInteger, NSSearchPathDirectory) {
     NSApplicationScriptsDirectory = 23,
     NSItemReplacementDirectory = 99,
     NSAllApplicationsDirectory = 100,
-    NSAllLibrariesDirectory = 101
+    NSAllLibrariesDirectory = 101,
+    NSTrashDirectory = 102
 };
 
 typedef NS_OPTIONS(NSUInteger, NSSearchPathDomainMask) {

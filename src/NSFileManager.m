@@ -385,7 +385,41 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
 
 - (NSArray *)mountedVolumeURLsIncludingResourceValuesForKeys:(NSArray *)propertyKeys options:(NSVolumeEnumerationOptions)options
 {
-    return nil;
+    // NSVolumeEnumerationProduceFileReferenceURLs is accepted; path URLs are returned either way.
+    int count = getfsstat(NULL, 0, MNT_NOWAIT);
+    if (count < 0)
+    {
+        return nil;
+    }
+    struct statfs *entries = malloc(sizeof(struct statfs) * (count + 1));
+    if (entries == NULL)
+    {
+        return nil;
+    }
+    count = getfsstat(entries, (int)(sizeof(struct statfs) * (count + 1)), MNT_NOWAIT);
+    if (count < 0)
+    {
+        free(entries);
+        return nil;
+    }
+
+    NSMutableArray *volumes = [NSMutableArray arrayWithCapacity:count];
+    for (int i = 0; i < count; i++)
+    {
+        if ((options & NSVolumeEnumerationSkipHiddenVolumes) && (entries[i].f_flags & MNT_DONTBROWSE))
+        {
+            continue;
+        }
+        NSString *path = [self stringWithFileSystemRepresentation:entries[i].f_mntonname length:strlen(entries[i].f_mntonname)];
+        NSURL *url = [NSURL fileURLWithPath:path isDirectory:YES];
+        if (propertyKeys.count > 0)
+        {
+            [url resourceValuesForKeys:propertyKeys error:NULL];
+        }
+        [volumes addObject:url];
+    }
+    free(entries);
+    return volumes;
 }
 
 - (NSArray *)contentsOfDirectoryAtURL:(NSURL *)directoryUrl includingPropertiesForKeys:(NSArray *)keys options:(NSDirectoryEnumerationOptions)mask error:(NSError **)error
@@ -533,7 +567,92 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
     return [NSURL fileURLWithPath:NSTemporaryDirectory() isDirectory:YES];
 }
 
+static NSError *_NSCocoaErrorForErrno(int err, NSString *path, BOOL reading);
+
+// The trash of the volume an item is on, with a POSIX error number when it can't be had: ~/.Trash on the home volume
+// (and for no item), <mount point>/.Trashes/<uid> on any other. With `create`, missing directories are made: ~/.Trash
+// and the uid directory with mode 0700, .Trashes with 01333 (anyone may add their own directory, nobody may list
+// others').
+static NSString *_NSTrashPathForItem(NSString *item, BOOL create, int *outErrno)
+{
+    NSString *home = NSHomeDirectory();
+    struct statfs itemVolume, homeVolume;
+    struct stat st;
+
+    *outErrno = 0;
+    if (item != nil && statfs([item fileSystemRepresentation], &itemVolume) != 0)
+    {
+        *outErrno = errno;
+        return nil;
+    }
+    if (item == nil || (statfs([home fileSystemRepresentation], &homeVolume) == 0
+        && memcmp(&itemVolume.f_fsid, &homeVolume.f_fsid, sizeof(fsid_t)) == 0))
+    {
+        NSString *trash = [home stringByAppendingPathComponent:@".Trash"];
+        if (create && mkdir([trash fileSystemRepresentation], 0700) != 0 && errno != EEXIST)
+        {
+            *outErrno = errno;
+            return nil;
+        }
+        if (stat([trash fileSystemRepresentation], &st) != 0)
+        {
+            *outErrno = errno;
+            return nil;
+        }
+        return trash;
+    }
+
+    NSString *mountPoint = [[NSFileManager defaultManager] stringWithFileSystemRepresentation:itemVolume.f_mntonname
+                                                                                      length:strlen(itemVolume.f_mntonname)];
+    NSString *trashes = [mountPoint stringByAppendingPathComponent:@".Trashes"];
+    NSString *trash = [trashes stringByAppendingPathComponent:[NSString stringWithFormat:@"%u", getuid()]];
+    if (create)
+    {
+        if (mkdir([trashes fileSystemRepresentation], 01333) == 0)
+        {
+            chmod([trashes fileSystemRepresentation], 01333); // mkdir's mode is reduced by the umask
+        }
+        else if (errno != EEXIST)
+        {
+            *outErrno = errno;
+            return nil;
+        }
+        if (mkdir([trash fileSystemRepresentation], 0700) != 0 && errno != EEXIST)
+        {
+            *outErrno = errno;
+            return nil;
+        }
+    }
+    if (stat([trash fileSystemRepresentation], &st) != 0)
+    {
+        *outErrno = errno;
+        return nil;
+    }
+    return trash;
+}
+
+// What the trash calls give when an item's volume has no trash to be had: NSFeatureUnsupportedError, with the POSIX
+// error underneath.
+static NSError *_NSTrashUnavailableError(int err, NSURL *item)
+{
+    NSMutableDictionary *info = [NSMutableDictionary dictionary];
+    info[NSUnderlyingErrorKey] = [NSError errorWithDomain:NSPOSIXErrorDomain code:err userInfo:nil];
+    if (item != nil)
+    {
+        info[NSURLErrorKey] = item;
+    }
+    return [NSError errorWithDomain:NSCocoaErrorDomain code:NSFeatureUnsupportedError userInfo:info];
+}
+
 - (NSArray *)URLsForDirectory:(NSSearchPathDirectory)directory inDomains:(NSSearchPathDomainMask)domainMask {
+    if (directory == NSTrashDirectory)
+    {
+        if (!(domainMask & NSUserDomainMask))
+        {
+            return @[];
+        }
+        return @[ [NSURL fileURLWithPath:[NSHomeDirectory() stringByAppendingPathComponent:@".Trash"] isDirectory:YES] ];
+    }
     NSArray *pathsForDirectory = NSSearchPathForDirectoriesInDomains(directory, domainMask, YES);
     NSMutableArray *urls = [NSMutableArray arrayWithCapacity:[pathsForDirectory count]];
 
@@ -547,6 +666,21 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
 
 - (NSURL *)URLForDirectory:(NSSearchPathDirectory)directory inDomain:(NSSearchPathDomainMask)domain appropriateForURL:(NSURL *)url create:(BOOL)shouldCreate error:(NSError **)error
 {
+    if (directory == NSTrashDirectory)
+    {
+        int err;
+        NSString *trash = (domain & NSUserDomainMask) ? _NSTrashPathForItem(url.isFileURL ? url.path : nil, shouldCreate, &err) : nil;
+        if (trash == nil)
+        {
+            if (error)
+            {
+                *error = _NSTrashUnavailableError((domain & NSUserDomainMask) ? err : EINVAL, url);
+            }
+            return nil;
+        }
+        return [NSURL fileURLWithPath:trash isDirectory:YES];
+    }
+
     // how is appropriateForURL come into play? it does not seem to be used...
     NSArray *paths = NSSearchPathForDirectoriesInDomains(directory, domain, YES);
     if ([paths count] == 0)
@@ -1609,6 +1743,15 @@ static BOOL _NSFileContentsEqual(const char *a, const char *b)
     {
         *outResultingURL = nil;
     }
+    if (!url.isFileURL)
+    {
+        if (error)
+        {
+            *error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileReadUnsupportedSchemeError
+                                     userInfo:url ? @{ NSURLErrorKey: url } : nil];
+        }
+        return NO;
+    }
     NSString *path = url.path;
     struct stat st;
     if (lstat([path fileSystemRepresentation], &st) != 0)
@@ -1619,12 +1762,14 @@ static BOOL _NSFileContentsEqual(const char *a, const char *b)
         }
         return NO;
     }
-    NSString *trash = [NSHomeDirectory() stringByAppendingPathComponent:@".Trash"];
-    if (mkdir([trash fileSystemRepresentation], 0700) != 0 && errno != EEXIST)
+    // The volume is the one the item's parent is on: a symbolic link is trashed itself, not what it points to.
+    int trashErrno;
+    NSString *trash = _NSTrashPathForItem([path stringByDeletingLastPathComponent], YES, &trashErrno);
+    if (trash == nil)
     {
         if (error)
         {
-            *error = _NSCocoaErrorForErrno(errno, trash, NO);
+            *error = _NSTrashUnavailableError(trashErrno, url);
         }
         return NO;
     }
