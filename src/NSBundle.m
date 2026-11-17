@@ -214,7 +214,9 @@ static NSString* frameworkPathForPath(NSString *filePath) {
 
 + (NSBundle *)bundleForClass:(Class)aClass
 {
-    if ([aClass respondsToSelector: @selector(bundleForClass)]) {
+    // Not [aClass respondsToSelector:]: a root class (a Swift class with no superclass, say) has no
+    // NSObject methods to send.
+    if (aClass != Nil && class_respondsToSelector(object_getClass(aClass), @selector(bundleForClass))) {
         return [aClass bundleForClass];
     }
 
