@@ -20,6 +20,7 @@
 #import <Foundation/NSURL.h>
 #import <Foundation/NSData.h>
 #import <Foundation/NSError.h>
+#import <Foundation/FoundationErrors.h>
 #import <Foundation/NSProgress.h>
 
 NSString * const NSFileHandleConnectionAcceptedNotification = @"NSFileHandleConnectionAcceptedNotification";
@@ -90,10 +91,21 @@ CF_PRIVATE
 - (id)loadWeak;
 @end
 
+static NSString * const _NSFileHandleErrnoKey = @"_NSFileHandleErrno";
+
+// reportedErrno is the POSIX error the error-returning methods report; 0 means errno as it is now.
+static void _NSFileHandleRaiseOperationExceptionWithErrno(id object, SEL selector, int reportedErrno)
+{
+    int code = errno;
+    NSString *reason = [NSString stringWithFormat:@"%@: %s", _NSMethodExceptionProem(object, selector),
+        code ? strerror(code) : "unknown error"];
+    NSDictionary *userInfo = @{ _NSFileHandleErrnoKey: @(reportedErrno != 0 ? reportedErrno : (code != 0 ? code : EIO)) };
+    [[NSException exceptionWithName:@"NSFileHandleOperationException" reason:reason userInfo:userInfo] raise];
+}
+
 static void _NSFileHandleRaiseOperationException(id object, SEL selector)
 {
-    [NSException raise:@"NSFileHandleOperationException" format:@"%@: %s", _NSMethodExceptionProem(object, selector),
-        errno ? strerror(errno) : "unknown error"];
+    _NSFileHandleRaiseOperationExceptionWithErrno(object, selector, 0);
 }
 
 static int _NSOpenFileDescriptor(const char *path, int flags, NSInteger createMode)
@@ -459,18 +471,42 @@ static NSError *_NSErrorWithFilePath(int code, id path)
     NSRequestConcreteImplementation();
 }
 
-/* The error-returning forms (macOS 10.15, iOS 13) run the exception-raising ones and report
-   what they raise as the POSIX error the failed call left. */
-static BOOL NSFileHandleRun(NSError **error, void (^body)(void))
+/* The Cocoa error for a POSIX error of a file handle operation: the file error codes that exist
+   for it, else the unknown read or write error (reading and positioning count as reading;
+   writing, truncating and synchronizing as writing). */
+static NSInteger _NSFileHandleCocoaCode(int posix, BOOL reading)
+{
+    switch (posix)
+    {
+        case ENOENT: return reading ? NSFileReadNoSuchFileError : NSFileNoSuchFileError;
+        case EACCES:
+        case EPERM: return reading ? NSFileReadNoPermissionError : NSFileWriteNoPermissionError;
+        case ENOSPC: return reading ? NSFileReadUnknownError : NSFileWriteOutOfSpaceError;
+        case EROFS: return reading ? NSFileReadUnknownError : NSFileWriteVolumeReadOnlyError;
+        default: return reading ? NSFileReadUnknownError : NSFileWriteUnknownError;
+    }
+}
+
+/* The error-returning forms (macOS 10.15) run the exception-raising ones. A failure comes back
+   as an NSCocoaErrorDomain error with the POSIX error of the failed call as its underlying
+   error (and no other user info). The operation exception records that POSIX error in its user
+   info, as errno does not survive the raise. */
+static BOOL NSFileHandleRun(NSError **error, BOOL reading, void (^body)(void))
 {
     @try {
         body();
         return YES;
     } @catch (NSException *exception) {
+        if (![[exception name] isEqualToString:@"NSFileHandleOperationException"])
+        {
+            @throw;
+        }
         if (error != NULL) {
-            int code = errno != 0 ? errno : EIO;
-            *error = [NSError errorWithDomain:NSPOSIXErrorDomain code:code
-                                     userInfo:@{ NSLocalizedDescriptionKey: [exception reason] ?: @"" }];
+            NSNumber *posix = [[exception userInfo] objectForKey:_NSFileHandleErrnoKey];
+            int code = posix != nil ? [posix intValue] : EIO;
+            NSError *underlying = [NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:nil];
+            *error = [NSError errorWithDomain:NSCocoaErrorDomain code:_NSFileHandleCocoaCode(code, reading)
+                                     userInfo:@{ NSUnderlyingErrorKey: underlying }];
         }
         return NO;
     }
@@ -479,24 +515,24 @@ static BOOL NSFileHandleRun(NSError **error, void (^body)(void))
 - (NSData *)readDataToEndOfFileAndReturnError:(NSError **)error
 {
     __block NSData *data = nil;
-    return NSFileHandleRun(error, ^{ data = [self readDataToEndOfFile]; }) ? data : nil;
+    return NSFileHandleRun(error, YES, ^{ data = [self readDataToEndOfFile]; }) ? data : nil;
 }
 
 - (NSData *)readDataUpToLength:(NSUInteger)length error:(NSError **)error
 {
     __block NSData *data = nil;
-    return NSFileHandleRun(error, ^{ data = [self readDataOfLength:length]; }) ? data : nil;
+    return NSFileHandleRun(error, YES, ^{ data = [self readDataOfLength:length]; }) ? data : nil;
 }
 
 - (BOOL)writeData:(NSData *)data error:(NSError **)error
 {
-    return NSFileHandleRun(error, ^{ [self writeData:data]; });
+    return NSFileHandleRun(error, NO, ^{ [self writeData:data]; });
 }
 
 - (BOOL)getOffset:(unsigned long long *)offsetInFile error:(NSError **)error
 {
     __block unsigned long long offset = 0;
-    BOOL ok = NSFileHandleRun(error, ^{ offset = [self offsetInFile]; });
+    BOOL ok = NSFileHandleRun(error, YES, ^{ offset = [self offsetInFile]; });
     if (ok && offsetInFile != NULL)
         *offsetInFile = offset;
     return ok;
@@ -505,7 +541,7 @@ static BOOL NSFileHandleRun(NSError **error, void (^body)(void))
 - (BOOL)seekToEndReturningOffset:(unsigned long long *)offsetInFile error:(NSError **)error
 {
     __block unsigned long long offset = 0;
-    BOOL ok = NSFileHandleRun(error, ^{ offset = [self seekToEndOfFile]; });
+    BOOL ok = NSFileHandleRun(error, YES, ^{ offset = [self seekToEndOfFile]; });
     if (ok && offsetInFile != NULL)
         *offsetInFile = offset;
     return ok;
@@ -513,22 +549,24 @@ static BOOL NSFileHandleRun(NSError **error, void (^body)(void))
 
 - (BOOL)seekToOffset:(unsigned long long)offset error:(NSError **)error
 {
-    return NSFileHandleRun(error, ^{ [self seekToFileOffset:offset]; });
+    return NSFileHandleRun(error, YES, ^{ [self seekToFileOffset:offset]; });
 }
 
 - (BOOL)truncateAtOffset:(unsigned long long)offset error:(NSError **)error
 {
-    return NSFileHandleRun(error, ^{ [self truncateFileAtOffset:offset]; });
+    return NSFileHandleRun(error, NO, ^{ [self truncateFileAtOffset:offset]; });
 }
 
 - (BOOL)synchronizeAndReturnError:(NSError **)error
 {
-    return NSFileHandleRun(error, ^{ [self synchronizeFile]; });
+    return NSFileHandleRun(error, NO, ^{ [self synchronizeFile]; });
 }
 
 - (BOOL)closeAndReturnError:(NSError **)error
 {
-    return NSFileHandleRun(error, ^{ [self closeFile]; });
+    // Closing never fails, and closing a closed handle again succeeds.
+    [self closeFile];
+    return YES;
 }
 
 - (int)fileDescriptor
@@ -543,10 +581,12 @@ static BOOL NSFileHandleRun(NSError **error, void (^body)(void))
 
 #define FAIL() _NSFileHandleRaiseOperationException(self, _cmd)
 
+// An operation on a closed handle reports EBADF as the underlying POSIX error of the error-returning
+// forms. (macOS reports whatever errno held at the time, so only the Cocoa error is comparable.)
 #define FAIL_IF_CLOSED(retval) \
 if ((_flags & NSConcreteFileHandleClosed) != 0) \
 { \
-    FAIL(); \
+    _NSFileHandleRaiseOperationExceptionWithErrno(self, _cmd, EBADF); \
     return retval; \
 }
 
