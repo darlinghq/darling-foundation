@@ -26,6 +26,16 @@ FOUNDATION_EXPORT NSString * const NSFileHandleNotificationMonitorModes;
 - (void)synchronizeFile;
 - (void)closeFile;
 
+- (NSData *)readDataToEndOfFileAndReturnError:(out NSError **)error;
+- (NSData *)readDataUpToLength:(NSUInteger)length error:(out NSError **)error;
+- (BOOL)writeData:(NSData *)data error:(out NSError **)error;
+- (BOOL)getOffset:(out unsigned long long *)offsetInFile error:(out NSError **)error;
+- (BOOL)seekToEndReturningOffset:(out unsigned long long *)offsetInFile error:(out NSError **)error;
+- (BOOL)seekToOffset:(unsigned long long)offset error:(out NSError **)error;
+- (BOOL)truncateAtOffset:(unsigned long long)offset error:(out NSError **)error;
+- (BOOL)synchronizeAndReturnError:(out NSError **)error;
+- (BOOL)closeAndReturnError:(out NSError **)error;
+
 @end
 
 @interface NSFileHandle (NSFileHandleCreation)

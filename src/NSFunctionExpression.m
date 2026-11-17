@@ -106,7 +106,9 @@ static NSString * const NSSelectorNameKey = @"NSSelectorName";
 
 - (id)copyWithZone:(NSZone *)zone
 {
-    return [[[self class] alloc] initWithExpressionType:NSFunctionExpressionType operand:[self operand] selector:_selector argumentArray:_arguments];
+    // [self expressionType], not NSFunctionExpressionType: NSKeyPathExpression inherits this, and
+    // its copies must stay key-path expressions.
+    return [[[self class] alloc] initWithExpressionType:[self expressionType] operand:[self operand] selector:_selector argumentArray:_arguments];
 }
 
 - (id)initWithCoder:(NSCoder *)decoder

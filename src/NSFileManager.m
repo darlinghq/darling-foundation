@@ -530,6 +530,11 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
     return urls;
 }
 
+- (NSURL *)temporaryDirectory
+{
+    return [NSURL fileURLWithPath:NSTemporaryDirectory() isDirectory:YES];
+}
+
 - (NSArray *)URLsForDirectory:(NSSearchPathDirectory)directory inDomains:(NSSearchPathDomainMask)domainMask {
     // Only NSUserDomain is supported on iOS
     if (domainMask != NSUserDomainMask)
@@ -564,6 +569,20 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
     }
 
     return dirUrl;
+}
+
+// The directory apps in an app group share, where macOS keeps it:
+// ~/Library/Group Containers/<identifier>. An application that holds no group entitlement still
+// gets the URL on macOS, and the directory is not created by this call (macOS 10.14 and 26).
+// An empty identifier names the Group Containers directory itself, as it does on macOS 10.14.
+- (NSURL *)containerURLForSecurityApplicationGroupIdentifier:(NSString *)groupIdentifier
+{
+    if (groupIdentifier == nil)
+    {
+        return nil;
+    }
+    NSString *path = [[NSHomeDirectory() stringByAppendingPathComponent:@"Library/Group Containers"] stringByAppendingPathComponent:groupIdentifier];
+    return [NSURL fileURLWithPath:path isDirectory:YES];
 }
 
 - (BOOL)createDirectoryAtURL:(NSURL *)url withIntermediateDirectories:(BOOL)createIntermediates attributes:(NSDictionary *)attributes error:(NSError **)error

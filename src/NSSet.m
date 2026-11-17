@@ -493,3 +493,23 @@ OBJC_PROTOCOL_IMPL_POP
 }
 
 @end
+
+// The private messages CoreFoundation sends an NSSet that is not one of its own (see
+// CF_OBJC_FUNCDISPATCHV in CFSet.c), such as Swift's bridged sets.
+@implementation NSSet (NSCFSetDispatch)
+
+- (BOOL)__getValue:(id *)value forObj:(id)object
+{
+    id member = [self member:object];
+    if (member != nil && value != NULL) *value = member;
+    return member != nil;
+}
+
+- (void)__applyValues:(void (*)(const void *, void *))applier context:(void *)context
+{
+    for (id object in [self allObjects]) {
+        applier(object, context);
+    }
+}
+
+@end
