@@ -224,6 +224,11 @@ OBJC_PROTOCOL_IMPL_PUSH
     return _CFURLIsFileURL([self _cfurl]);
 }
 
+- (BOOL)hasDirectoryPath
+{
+    return CFURLHasDirectoryPath([self _cfurl]);
+}
+
 - (NSString *)fragment
 {
     return [(NSString *)CFURLCopyFragment([self _cfurl], NULL) autorelease];
