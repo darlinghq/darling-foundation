@@ -33,6 +33,7 @@ typedef enum {
     id _target;
     SEL _selector;
     id _argument;
+    void (^_block)(void);
 #ifdef DARLING
     // for Cocotron additions (see below)
     NSMutableDictionary *_sharedObjects;
@@ -45,6 +46,7 @@ typedef enum {
 
 @property (class, readonly, retain) NSThread *currentThread;
 + (void)detachNewThreadSelector:(SEL)selector toTarget:(id)target withObject:(id)argument;
++ (void)detachNewThreadWithBlock:(void (^)(void))block API_AVAILABLE(macos(10.12), ios(10.0));
 + (BOOL)isMultiThreaded;
 + (void)sleepUntilDate:(NSDate *)date;
 + (void)sleepForTimeInterval:(NSTimeInterval)ti;
@@ -57,6 +59,7 @@ typedef enum {
 @property (class, readonly, retain) NSThread *mainThread;
 - (id)init;
 - (id)initWithTarget:(id)target selector:(SEL)selector object:(id)argument;
+- (instancetype)initWithBlock:(void (^)(void))block API_AVAILABLE(macos(10.12), ios(10.0));
 - (NSMutableDictionary *)threadDictionary;
 - (double)threadPriority;
 - (void)setThreadPriority:(double)p;
