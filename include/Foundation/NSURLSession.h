@@ -75,6 +75,11 @@ NS_ASSUME_NONNULL_BEGIN
 FOUNDATION_EXPORT const int64_t NSURLSessionTransferSizeUnknown;
 FOUNDATION_EXPORT NSString * const NSURLSessionDownloadTaskResumeData;
 
+/* Task priorities, a value between 0.0 (lowest) and 1.0 (highest). */
+FOUNDATION_EXPORT const float NSURLSessionTaskPriorityDefault;
+FOUNDATION_EXPORT const float NSURLSessionTaskPriorityLow;
+FOUNDATION_EXPORT const float NSURLSessionTaskPriorityHigh;
+
 @interface NSURLSession : NSObject
 
 @property (readonly, retain) NSOperationQueue *delegateQueue;
@@ -199,6 +204,30 @@ typedef NS_ENUM(NSInteger, NSURLSessionMultipathServiceType) {
 
 /* Use -dataTaskWithURL:completionHandler: instead */
 - (NSURLSessionDataTask *)dataTaskWithHTTPGetRequest:(NSURL *)url completionHandler:(void (^)(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error))completionHandler;
+
+@end
+
+typedef NS_ENUM(NSInteger, NSURLSessionWebSocketMessageType) {
+    NSURLSessionWebSocketMessageTypeData = 0,
+    NSURLSessionWebSocketMessageTypeString = 1,
+};
+
+/* A message sent or received on a WebSocket connection: binary data or a string. */
+@interface NSURLSessionWebSocketMessage : NSObject {
+@private
+    NSURLSessionWebSocketMessageType _type;
+    NSData *_data;
+    NSString *_string;
+}
+
+- (instancetype)initWithData:(NSData *)data NS_DESIGNATED_INITIALIZER;
+- (instancetype)initWithString:(NSString *)string NS_DESIGNATED_INITIALIZER;
+- (instancetype)init NS_UNAVAILABLE;
++ (instancetype)new NS_UNAVAILABLE;
+
+@property (readonly) NSURLSessionWebSocketMessageType type;
+@property (nullable, readonly, copy) NSData *data;
+@property (nullable, readonly, copy) NSString *string;
 
 @end
 

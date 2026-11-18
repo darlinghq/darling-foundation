@@ -105,9 +105,9 @@ _NSURLProtectionSpaceHTTPSProxy
 _NSURLProtectionSpaceSOCKSProxy
 _NSURLQuarantinePropertiesKey
 _NSURLSessionDownloadTaskResumeData
-#_NSURLSessionTaskPriorityDefault
-#_NSURLSessionTaskPriorityHigh
-#_NSURLSessionTaskPriorityLow
+_NSURLSessionTaskPriorityDefault
+_NSURLSessionTaskPriorityHigh
+_NSURLSessionTaskPriorityLow
 _NSURLSessionTransferSizeUnknown
 _NSURLTagNamesKey
 _NSURLThumbnailDictionaryKey
@@ -221,7 +221,7 @@ _OBJC_CLASS_$_NSURLSessionTask
 _OBJC_CLASS_$_NSURLSessionTaskMetrics
 #_OBJC_CLASS_$_NSURLSessionTaskTransactionMetrics
 _OBJC_CLASS_$_NSURLSessionUploadTask
-#_OBJC_CLASS_$_NSURLSessionWebSocketMessage
+_OBJC_CLASS_$_NSURLSessionWebSocketMessage
 #_OBJC_CLASS_$_NSURLSessionWebSocketTask
 _OBJC_IVAR_$_NSURL._baseURL
 _OBJC_IVAR_$_NSURL._clients
@@ -252,6 +252,6 @@ _OBJC_METACLASS_$_NSURLSessionTask
 _OBJC_METACLASS_$_NSURLSessionTaskMetrics
 #_OBJC_METACLASS_$_NSURLSessionTaskTransactionMetrics
 _OBJC_METACLASS_$_NSURLSessionUploadTask
-#_OBJC_METACLASS_$_NSURLSessionWebSocketMessage
+_OBJC_METACLASS_$_NSURLSessionWebSocketMessage
 #_OBJC_METACLASS_$_NSURLSessionWebSocketTask
 #__NSURLUbiquitousItemDownloadRequestedKey
