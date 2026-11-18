@@ -76,12 +76,31 @@
 
 - (NSString *)lastPathComponent
 {
-    if ([self length] == 0)
+    // Scanned from the end instead of splitting the whole path: the last component is asked for by
+    // sorting and filtering code once per comparison, and the split array and strings add up.
+    NSUInteger end = [self length];
+    while (end > 1 && [self characterAtIndex:end - 1] == PATH_SEP)
+    {
+        end--;
+    }
+
+    if (end == 0)
     {
         return @"";
     }
-    
-    return [[self pathComponents] lastObject];
+
+    if (end == 1 && [self characterAtIndex:0] == PATH_SEP)
+    {
+        return NSPathSep;
+    }
+
+    NSUInteger start = end;
+    while (start > 0 && [self characterAtIndex:start - 1] != PATH_SEP)
+    {
+        start--;
+    }
+
+    return [self substringWithRange:NSMakeRange(start, end - start)];
 }
 
 - (NSString *)stringByDeletingLastPathComponent
