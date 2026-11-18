@@ -435,10 +435,12 @@ static void __NSThreadInfoPerformer(void *info)
             [performInfo->waiter signal];
             [performInfo->waiter unlock];
         }
+        // One source serves all the modes: it is removed from each of them once it has fired
         for (NSString *mode in performInfo->modes)
         {
             CFRunLoopRemoveSource(CFRunLoopGetCurrent(), performInfo->source, (CFStringRef)mode);
         }
+        CFRelease(performInfo->source);
         performInfo->source = NULL;
         @synchronized(t) {
             [t->_performers removeObject:performInfo];
@@ -452,18 +454,19 @@ static void __NSThreadInfoPerformer(void *info)
         [_performers addObject:info];
     }
     CFRunLoopRef rl = _CFRunLoopGet0(_thread);
+    CFRunLoopSourceContext ctx = {
+        .version = 0,
+        .info = info,
+        .perform = &__NSThreadInfoPerformer,
+    };
+    // A single source, added to every mode: the selector is performed once, and the source the
+    // performer removes is the one that was added
+    info->source = CFRunLoopSourceCreate(kCFAllocatorDefault, 0, &ctx);
     for (NSString *mode in info->modes)
     {
-        CFRunLoopSourceContext ctx = {
-            .version = 0,
-            .info = info,
-            .perform = &__NSThreadInfoPerformer,
-        };
-        info->source = CFRunLoopSourceCreate(kCFAllocatorDefault, 0, &ctx);
         CFRunLoopAddSource(rl, info->source, (CFStringRef)mode);
-        CFRelease(info->source);
-        CFRunLoopSourceSignal(info->source);
     }
+    CFRunLoopSourceSignal(info->source);
     CFRunLoopWakeUp(rl);
 }
 
