@@ -307,16 +307,19 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
         }
         return nil;
     }
+    // The entries are paths or names; they are sorted as strings and, if URLs were asked for, turned
+    // into URLs afterwards, so that no URL has to be asked for its path on every comparison.
+    NSArray *sorted = [files sortedArrayUsingSelector:@selector(caseInsensitiveCompare:)];
     if (options & NSDirectoryEnumerationGenerateURLs)
     {
-        return [files sortedArrayUsingComparator:^(NSURL *url1, NSURL *url2){
-            return [url1.path caseInsensitiveCompare:url2.path];
-        }];
+        NSMutableArray *urls = [NSMutableArray arrayWithCapacity:[sorted count]];
+        for (NSString *entryPath in sorted)
+        {
+            [urls addObject:[NSURL fileURLWithPath:entryPath]];
+        }
+        return urls;
     }
-    else
-    {
-        return [files sortedArrayUsingSelector:@selector(caseInsensitiveCompare:)];
-    }
+    return sorted;
 }
 
 - (void)_directoryContentsAtPath:(NSString *)path matchingExtension:(NSString *)extension options:(NSDirectoryEnumerationOptions)options keepExtension:(BOOL)keepExtension error:(NSError **)error toResult:(NSMutableArray *)files
@@ -352,7 +355,7 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
         {
             if ((options & NSDirectoryEnumerationGenerateURLs) != 0)
             {
-                [files addObject:[NSURL fileURLWithPath:[path stringByAppendingPathComponent:item]]];
+                [files addObject:[path stringByAppendingPathComponent:item]];
             }
             else
             {
@@ -395,7 +398,8 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
                                     keepExtension:YES 
                                             error:error];
     // TODO: refactor this... it is rather ineffecient
-    for (NSURL *url in urls)
+    // Nothing needs to be read from the entries when no properties were asked for.
+    for (NSURL *url in ([keys count] > 0 ? urls : nil))
     {
         struct stat s;
         int err = _NSFileManagerStat([url path], &s, YES);
