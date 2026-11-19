@@ -296,13 +296,13 @@ SINGLETON_RR()
 
 - (NSTimeInterval)systemUptime
 {
-    struct timeval t;
-    size_t len = sizeof(struct timeval);
-    if (sysctlbyname("kern.boottime", &t, &len, 0, 0) != 0)
+    // Time since the system started, on the same clock as mach_absolute_time().
+    mach_timebase_info_data_t timebase;
+    if (mach_timebase_info(&timebase) != KERN_SUCCESS || timebase.denom == 0)
     {
         return 0.0;
     }
-    return t.tv_sec + t.tv_usec / (NSTimeInterval)USEC_PER_SEC;
+    return (NSTimeInterval) mach_absolute_time() * timebase.numer / timebase.denom / (NSTimeInterval) NSEC_PER_SEC;
 }
 
 - (NSOperatingSystemVersion)operatingSystemVersion
