@@ -9,6 +9,7 @@
 #import <Foundation/NSNumberFormatter.h>
 #import <Foundation/NSDictionary.h>
 #import <Foundation/NSError.h>
+#import <Foundation/FoundationErrors.h>
 #import <Foundation/NSString.h>
 #import <Foundation/NSLocale.h>
 #import <Foundation/NSException.h>
@@ -71,6 +72,16 @@ static NSString *literalPattern(NSString *pattern)
     return text;
 }
 
+// The error for a number outside the formatter's minimum and maximum. As on macOS 26.7.3
+// (black-box), the message shows the number in the decimal style of the current locale.
+static NSError *limitError(NSNumber *number, BOOL tooSmall)
+{
+    NSString *value = [NSNumberFormatter localizedStringFromNumber:number numberStyle:NSNumberFormatterDecimalStyle];
+    NSString *description = [NSString stringWithFormat:tooSmall ? @"The value %@ is too small." : @"The value %@ is too large.", value];
+    return [NSError errorWithDomain:NSCocoaErrorDomain code:NSFormattingError
+                           userInfo:@{NSLocalizedDescriptionKey: description}];
+}
+
 @implementation NSNumberFormatter
 
 + (NSString *)localizedStringFromNumber:(NSNumber *)num numberStyle:(NSNumberFormatterStyle)nstyle
@@ -125,8 +136,7 @@ static NSNumberFormatterBehavior defaultBehavior = NSNumberFormatterBehaviorDefa
     // decimal numbers, not-a-number when unset) and three flags (has thousand separators,
     // localizes format, allows floats). Layout established by archiving formatters with
     // NSArchiver on macOS 10.14.4 (black-box, tests/src/typedstream_numberformatter.m).
-    // The minimum and maximum are decoded but not applied: this formatter does not implement
-    // them.
+    // The minimum and maximum are decoded but not applied.
     NSString *positiveFormat = nil, *negativeFormat = nil;
     id positiveAttributes = nil, negativeAttributes = nil;
     NSAttributedString *zero = nil, *nilValue = nil, *notANumber = nil;
@@ -250,6 +260,15 @@ static NSNumberFormatterBehavior defaultBehavior = NSNumberFormatterBehaviorDefa
         }
         return NO;
     }
+    NSError *outOfRange = [self _limitErrorForNumber:number];
+    if (outOfRange != nil)
+    {
+        if (error != NULL)
+        {
+            *error = outOfRange;
+        }
+        return NO;
+    }
     if (rangep != NULL)
     {
         *rangep = NSMakeRange(cfRange.location, cfRange.length);
@@ -298,7 +317,64 @@ static NSNumberFormatterBehavior defaultBehavior = NSNumberFormatterBehaviorDefa
         return nil;
     }
     [self _regenerateFormatter];
-    return [(NSNumber *)CFNumberFormatterCreateNumberFromString(kCFAllocatorDefault, _formatter, (CFStringRef)string, NULL, [_attributes[@"parseIntegersOnly"] boolValue] ? kCFNumberFormatterParseIntegersOnly : 0) autorelease];
+    NSNumber *number = [(NSNumber *)CFNumberFormatterCreateNumberFromString(kCFAllocatorDefault, _formatter, (CFStringRef)string, NULL, [_attributes[@"parseIntegersOnly"] boolValue] ? kCFNumberFormatterParseIntegersOnly : 0) autorelease];
+    // Like on macOS, a number outside the minimum and maximum is not one the formatter accepts.
+    if (number != nil && [self _limitErrorForNumber:number] != nil)
+    {
+        return nil;
+    }
+    return number;
+}
+
+// The minimum is checked first, so with a maximum below the minimum a number below both is
+// reported as too small (macOS 26.7.3, black-box).
+- (NSError *)_limitErrorForNumber:(NSNumber *)number
+{
+    NSNumber *minimum = [self minimum];
+    if (minimum != nil && [number compare:minimum] == NSOrderedAscending)
+    {
+        return limitError(number, YES);
+    }
+    NSNumber *maximum = [self maximum];
+    if (maximum != nil && [number compare:maximum] == NSOrderedDescending)
+    {
+        return limitError(number, NO);
+    }
+    return nil;
+}
+
+- (NSNumber *)minimum
+{
+    return _attributes[@"minimum"];
+}
+
+- (void)setMinimum:(NSNumber *)number
+{
+    if (number != nil)
+    {
+        _attributes[@"minimum"] = number;
+    }
+    else
+    {
+        [_attributes removeObjectForKey:@"minimum"];
+    }
+}
+
+- (NSNumber *)maximum
+{
+    return _attributes[@"maximum"];
+}
+
+- (void)setMaximum:(NSNumber *)number
+{
+    if (number != nil)
+    {
+        _attributes[@"maximum"] = number;
+    }
+    else
+    {
+        [_attributes removeObjectForKey:@"maximum"];
+    }
 }
 
 - (NSNumberFormatterStyle)numberStyle
