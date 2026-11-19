@@ -781,7 +781,8 @@ OBJC_PROTOCOL_IMPL_POP
 
 + (id)dataWithBytesNoCopy:(void *)bytes length:(NSUInteger)length
 {
-    return [[[self alloc] initWithBytes:bytes length:length copy:NO freeWhenDone:NO bytesAreVM:NO] autorelease];
+    // The object owns the bytes and frees them, as -initWithBytesNoCopy:length: does.
+    return [[[self alloc] initWithBytes:bytes length:length copy:NO freeWhenDone:YES bytesAreVM:NO] autorelease];
 }
 
 + (id)dataWithBytesNoCopy:(void *)bytes length:(NSUInteger)length freeWhenDone:(BOOL)b
