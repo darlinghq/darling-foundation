@@ -954,7 +954,7 @@ const NSHashTableCallBacks NSOwnedObjectIdentityHashCallBacks =
   enumerator = [self objectEnumerator];
   while ((member = [enumerator nextObject]) != nil)
     {
-      [aCoder encodeObject: weak ? NSPointerFunctionsWeakMemberPlaceholder : member];
+      NSPointerFunctionsEncodeMember(aCoder, member, weak);
     }
   [aCoder encodeObject: nil];
   if ([aCoder allowsKeyedCoding])
@@ -982,11 +982,11 @@ const NSHashTableCallBacks NSOwnedObjectIdentityHashCallBacks =
 {
   int		options = -1;
   int		count = 0;
-  BOOL		weak;
+  BOOL		keyed = [aCoder allowsKeyedCoding];
   id		member;
 
   [aCoder decodeValueOfObjCType: "i" at: &options];
-  if ([aCoder allowsKeyedCoding])
+  if (keyed)
     {
       count = [aCoder decodeIntForKey: @"NS.count"];
     }
@@ -995,11 +995,36 @@ const NSHashTableCallBacks NSOwnedObjectIdentityHashCallBacks =
       [self release];
       return nil;
     }
-  weak = NSPointerFunctionsOptionsAreWeak((NSPointerFunctionsOptions)options);
   /* The count is only a hint and a small initial capacity makes lookups fail on i386, so it is not used. */
   self = [self initWithOptions: (NSPointerFunctionsOptions)options capacity: 0];
-  /* Weak members are archived as nil and cannot be restored. */
-  while (self != nil && !weak && (member = [aCoder decodeObject]) != nil)
+  if (self == nil)
+    {
+      return nil;
+    }
+  if (keyed)
+    {
+      /* A weak member that was not archived as an object is nil, so the
+       * members are counted rather than read up to a nil.
+       */
+      int	index;
+
+      /* The options are $0, the members follow. */
+      for (index = 0; index < count && NSPointerFunctionsArchiveHasValue(aCoder, 1 + index); index++)
+	{
+	  member = [aCoder decodeObject];
+	  if (member != nil)
+	    {
+	      [self addObject: member];
+	    }
+	}
+      return self;
+    }
+  /* Weak members of a table archived without keys could not have been restored. */
+  if (NSPointerFunctionsOptionsAreWeak((NSPointerFunctionsOptions)options))
+    {
+      return self;
+    }
+  while ((member = [aCoder decodeObject]) != nil)
     {
       [self addObject: member];
     }

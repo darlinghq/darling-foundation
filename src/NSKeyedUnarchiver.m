@@ -142,6 +142,22 @@ static NSString *freshGenericKey(NSKeyedUnarchiver *unarchiver)
     return [NSString stringWithFormat:@"$%d", key];
 }
 
+// The keys of values decoded without a key ($0, $1, ...) count from 0 in each object, as they
+// were encoded.
+static id initObjectWithCoder(id allocated, NSKeyedUnarchiver *unarchiver)
+{
+    int savedGenericKey = unarchiver->_genericKey;
+    unarchiver->_genericKey = 0;
+    @try
+    {
+        return [allocated initWithCoder:unarchiver];
+    }
+    @finally
+    {
+        unarchiver->_genericKey = savedGenericKey;
+    }
+}
+
 static BOOL raiseIfFinished(NSKeyedUnarchiver *unarchiver)
 {
     if ((unarchiver->_flags & NSArchiverFinished) != 0)
@@ -641,7 +657,7 @@ static id _decodeObjectBinary(NSKeyedUnarchiver *unarchiver, NSUInteger uid1) NS
         // save the allocated object into the temp map, because we don't want to retain it yet
         CFDictionarySetValue(unarchiver->_tmpRefObjMap, (const void *)uid1, allocated);
         CFDictionarySetValue(unarchiver->_objRefMap, (const void *)allocated, (const void *)uid1);
-        id instance = [allocated initWithCoder:unarchiver];
+        id instance = initObjectWithCoder(allocated, unarchiver);
         if (instance != nil)
         {
             instance = [instance awakeAfterUsingCoder:unarchiver];
@@ -784,7 +800,7 @@ static id _decodeObjectXML(NSKeyedUnarchiver *unarchiver, NSString *key)
     id allocated = [class allocWithZone:nil];
     CFDictionarySetValue(unarchiver->_tmpRefObjMap, (const void *)uid, allocated);
     CFDictionarySetValue(unarchiver->_objRefMap, (const void *)allocated, (const void *)uid);
-    id instance = [allocated initWithCoder:unarchiver];
+    id instance = initObjectWithCoder(allocated, unarchiver);
     if (instance != nil)
     {
         instance = [instance awakeAfterUsingCoder:unarchiver];

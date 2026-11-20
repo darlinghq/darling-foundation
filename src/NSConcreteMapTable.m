@@ -1241,8 +1241,8 @@ const NSMapTableValueCallBacks NSOwnedPointerMapValueCallBacks =
     {
       id	value = [self objectForKey: key];
 
-      [aCoder encodeObject: weakKeys ? NSPointerFunctionsWeakMemberPlaceholder : key];
-      [aCoder encodeObject: weakValues ? NSPointerFunctionsWeakMemberPlaceholder : value];
+      NSPointerFunctionsEncodeMember(aCoder, key, weakKeys);
+      NSPointerFunctionsEncodeMember(aCoder, value, weakValues);
     }
   [aCoder encodeObject: nil];
   if ([aCoder allowsKeyedCoding])
@@ -1273,12 +1273,12 @@ const NSMapTableValueCallBacks NSOwnedPointerMapValueCallBacks =
   int		keyOptions = -1;
   int		valueOptions = -1;
   int		count = 0;
-  BOOL		weak;
+  BOOL		keyed = [aCoder allowsKeyedCoding];
   id		key;
 
   [aCoder decodeValueOfObjCType: "i" at: &keyOptions];
   [aCoder decodeValueOfObjCType: "i" at: &valueOptions];
-  if ([aCoder allowsKeyedCoding])
+  if (keyed)
     {
       count = [aCoder decodeIntForKey: @"NS.count"];
     }
@@ -1289,13 +1289,41 @@ const NSMapTableValueCallBacks NSOwnedPointerMapValueCallBacks =
       [self release];
       return nil;
     }
-  /* Entries whose key or value is weak could not have been restored. */
-  weak = NSPointerFunctionsOptionsAreWeak((NSPointerFunctionsOptions)keyOptions)
-    || NSPointerFunctionsOptionsAreWeak((NSPointerFunctionsOptions)valueOptions);
   self = [self initWithKeyOptions: (NSPointerFunctionsOptions)keyOptions
 		     valueOptions: (NSPointerFunctionsOptions)valueOptions
 			 capacity: 0];
-  while (self != nil && !weak && (key = [aCoder decodeObject]) != nil)
+  if (self == nil)
+    {
+      return nil;
+    }
+  if (keyed)
+    {
+      /* A weak member that was not archived as an object is nil, so the
+       * entries are counted rather than read up to a nil.
+       */
+      int	index;
+
+      /* The options are $0 and $1, the entries follow as pairs. */
+      for (index = 0; index < count && NSPointerFunctionsArchiveHasValue(aCoder, 2 + 2 * index); index++)
+	{
+	  id	value;
+
+	  key = [aCoder decodeObject];
+	  value = [aCoder decodeObject];
+	  if (key != nil && value != nil)
+	    {
+	      [self setObject: value forKey: key];
+	    }
+	}
+      return self;
+    }
+  /* Entries whose key or value is weak could not have been restored. */
+  if (NSPointerFunctionsOptionsAreWeak((NSPointerFunctionsOptions)keyOptions)
+    || NSPointerFunctionsOptionsAreWeak((NSPointerFunctionsOptions)valueOptions))
+    {
+      return self;
+    }
+  while ((key = [aCoder decodeObject]) != nil)
     {
       id	value = [aCoder decodeObject];
 
