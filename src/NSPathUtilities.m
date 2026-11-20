@@ -458,11 +458,6 @@ extern NSSearchPathEnumerationState NSGetNextSearchPathEnumeration(NSSearchPathE
 
 NSArray *NSSearchPathForDirectoriesInDomains(NSSearchPathDirectory directory, NSSearchPathDomainMask domainMask, BOOL expandTilde)
 {
-    // Only NSUserDomain is supported on iOS
-    if (!(domainMask & NSUserDomainMask))
-    {
-        return @[];
-    }
     static dispatch_once_t once = 0L;
     static NSMutableDictionary *searchPaths = nil;
     dispatch_once(&once, ^{
