@@ -117,6 +117,7 @@ set(foundation_sources
 	src/NSLocale.m
 	src/NSLocalizableString.m
 	src/NSLock.m
+	src/NSLocalizedFormatString.m
 	src/NSLog.m
 	src/NSMapTable.m
 	src/NSMassFormatter.m
