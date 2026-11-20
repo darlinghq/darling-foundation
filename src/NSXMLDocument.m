@@ -19,11 +19,26 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 
 #import <Foundation/NSArray.h>
 #import <Foundation/NSData.h>
-#import <Foundation/NSRaise.h>
+#import <Foundation/NSError.h>
+#import <Foundation/FoundationErrors.h>
+#import <Foundation/NSException.h>
+#import <Foundation/NSString.h>
+#import <Foundation/NSURL.h>
 #import <Foundation/NSXMLDTD.h>
-#import <Foundation/NSXMLDocument.h>
-#import <Foundation/NSXMLElement.h>
 #import <Foundation/NSXMLParser.h>
+#import "NSXMLNodeInternal.h"
+
+static xmlDocPtr docOf(NSXMLDocument *document)
+{
+    return (xmlDocPtr)_NSXMLNodeGetXMLNode(document);
+}
+
+static void setDocString(const xmlChar **field, NSString *value)
+{
+    if (*field != NULL)
+        xmlFree((xmlChar *)*field);
+    *field = value ? xmlStrdup((const xmlChar *)[value UTF8String]) : NULL;
+}
 
 @implementation NSXMLDocument
 
@@ -32,97 +47,59 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 }
 
 - init {
-    [super initWithKind: NSXMLDocumentKind options: NSXMLNodeOptionsNone];
-    return self;
+    return [super initWithKind: NSXMLDocumentKind options: NSXMLNodeOptionsNone];
+}
+
+- initWithKind: (NSXMLNodeKind) kind options: (NSUInteger) options {
+    return [super initWithKind: NSXMLDocumentKind options: options];
 }
 
 - initWithRootElement: (NSXMLElement *) element {
-    NSUnimplementedMethod();
-    return nil;
+    self = [self init];
+    if (self != nil && element != nil)
+        [self setRootElement: element];
+    return self;
+}
+
+- _initWithParsedData: (NSData *) data
+             encoding: (const char *) encoding
+              options: (NSUInteger) options
+                error: (NSError **) error
+{
+    if (error != NULL)
+        *error = nil;
+    xmlDocPtr doc = _NSXMLParseData(data ?: [NSData data], options, encoding, error);
+    if (doc == NULL) {
+        [self release];
+        return nil;
+    }
+    // a document read without an XML declaration still has version 1.0
+    if (doc->version == NULL)
+        doc->version = xmlStrdup(BAD_CAST "1.0");
+    [self release];
+    self = [[NSXMLDocument alloc] _initWithXMLNode: (xmlNodePtr)doc];
+    _options = options;
+    _contentKind = NSXMLDocumentXMLKind;
+    return self;
 }
 
 - initWithXMLString: (NSString *) string
             options: (NSUInteger) options
               error: (NSError **) error
 {
-    NSUnimplementedMethod();
-    return nil;
-}
-
-- (void) parser: (NSXMLParser *) parser
-        didStartElement: (NSString *) elementName
-           namespaceURI: (NSString *) namespaceURI
-          qualifiedName: (NSString *) qualifiedName
-             attributes: (NSDictionary *) attributes
-{
-    NSXMLElement *element = [[NSXMLElement alloc] initWithName: elementName];
-
-    // NSLog(@"element=%@",[element name]);
-
-    [element setAttributesAsDictionary: attributes];
-
-    NSXMLElement *parent = [_elementStack lastObject];
-    // NSLog(@"parent=%@",[parent name]);
-    [parent addChild: element];
-
-    [_elementStack addObject: element];
-
-    if ([_elementStack count] == 1)
-        [self addChild: element];
-}
-
-- (void) parser: (NSXMLParser *) parser
-        didEndElement: (NSString *) elementName
-         namespaceURI: (NSString *) namespaceURI
-        qualifiedName: (NSString *) qualifiedName
-{
-    [_elementStack removeLastObject];
-}
-
-- (void) parser: (NSXMLParser *) parser foundCharacters: (NSString *) string {
-    NSXMLElement *element = [_elementStack lastObject];
-
-    // NSLog(@"foundCharacters=%@",string);
-    [element setStringValue: [[element stringValue]
-                                     stringByAppendingString: string]];
-}
-
-- (void) parser: (NSXMLParser *) parser
-        foundIgnorableWhitespace: (NSString *) whitespace
-{
-
-    if (_options & NSXMLDocumentTidyXML)
-        return;
-
-    [self parser: parser foundCharacters: whitespace];
+    NSData *data = [string dataUsingEncoding: NSUTF8StringEncoding];
+    self = [self _initWithParsedData: data encoding: "UTF-8" options: options error: error];
+    xmlDocPtr doc = docOf(self);
+    if (doc != NULL && doc->encoding == NULL)
+        doc->encoding = xmlStrdup(BAD_CAST "UTF-8");
+    return self;
 }
 
 - initWithData: (NSData *) data
         options: (NSUInteger) options
           error: (NSError **) error
 {
-    [super initWithKind: NSXMLDocumentKind options: NSXMLNodeOptionsNone];
-    //   NSLog(@"xml=%@",[[[NSString alloc] initWithData:data
-    //   encoding:NSUTF8StringEncoding] autorelease]);
-    NSXMLParser *parser = [[NSXMLParser alloc] initWithData: data];
-
-    [parser setDelegate: self];
-    _options = options;
-    _elementStack = [[NSMutableArray alloc] init];
-
-    if (![parser parse]) {
-        [self dealloc];
-
-        if (error != NULL)
-            *error = [[[parser parserError] retain] autorelease];
-
-        [parser release];
-        return nil;
-    }
-
-    [parser release];
-
-    return self;
+    return [self _initWithParsedData: data encoding: NULL options: options error: error];
 }
 
 - initWithContentsOfURL: (NSURL *) url
@@ -130,19 +107,29 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
                   error: (NSError **) error
 {
     NSData *data = [NSData dataWithContentsOfURL: url options: 0 error: error];
-
     if (data == nil) {
-        [self dealloc];
+        [self release];
         return nil;
     }
-
-    return [self initWithData: data options: options error: error];
+    self = [self initWithData: data options: options error: error];
+    xmlDocPtr doc = docOf(self);
+    if (doc != NULL)
+        setDocString(&doc->URL, [url absoluteString]);
+    return self;
 }
 
 - (void) dealloc {
-    [_elementStack release];
-    [_rootElement release];
+    [_mimeType release];
+    [_dtd release];
     [super dealloc];
+}
+
+- copyWithZone: (NSZone *) zone {
+    NSXMLDocument *copy = [super copyWithZone: zone];
+    copy->_contentKind = _contentKind;
+    copy->_mimeType = [_mimeType copy];
+    copy->_dtd = [_dtd copy];
+    return copy;
 }
 
 - (NSXMLDocumentContentKind) documentContentKind {
@@ -150,11 +137,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 }
 
 - (NSString *) version {
-    return _version;
+    xmlDocPtr doc = docOf(self);
+    return doc && doc->version ? [NSString stringWithUTF8String: (const char *)doc->version] : nil;
 }
 
 - (NSString *) characterEncoding {
-    return _characterEncoding;
+    xmlDocPtr doc = docOf(self);
+    return doc && doc->encoding ? [NSString stringWithUTF8String: (const char *)doc->encoding] : nil;
 }
 
 - (NSString *) MIMEType {
@@ -162,11 +151,20 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 }
 
 - (BOOL) isStandalone {
-    return _isStandalone;
+    xmlDocPtr doc = docOf(self);
+    if (doc == NULL)
+        return NO;
+    // QUIRK: a document read from XML whose declaration has no standalone
+    // attribute reports YES; one read without a declaration reports NO.
+    // Not documented. Evidence: black-box observation on macOS 26.7.3 and
+    // Mac OS X 10.14.4 (tier 2).
+    // Test: tests/nsxml-tree.m, the "standalone quirk" checks.
+    return doc->standalone == 1 || doc->standalone == -2;
 }
 
 - (NSXMLElement *) rootElement {
-    return [_children count] ? [_children objectAtIndex: 0] : nil;
+    xmlDocPtr doc = docOf(self);
+    return doc ? (NSXMLElement *)_NSXMLNodeForXMLNode(xmlDocGetRootElement(doc)) : nil;
 }
 
 - (NSXMLDTD *) DTD {
@@ -174,7 +172,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 }
 
 - (NSString *) URI {
-    return _uri;
+    xmlDocPtr doc = docOf(self);
+    return doc && doc->URL ? [NSString stringWithUTF8String: (const char *)doc->URL] : nil;
 }
 
 - (void) setDocumentContentKind: (NSXMLDocumentContentKind) kind {
@@ -182,15 +181,15 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 }
 
 - (void) setCharacterEncoding: (NSString *) encoding {
-    encoding = [encoding copy];
-    [_characterEncoding release];
-    _characterEncoding = encoding;
+    xmlDocPtr doc = docOf(self);
+    if (doc != NULL)
+        setDocString(&doc->encoding, encoding);
 }
 
 - (void) setVersion: (NSString *) version {
-    version = [version copy];
-    [_version release];
-    _version = version;
+    xmlDocPtr doc = docOf(self);
+    if (doc != NULL)
+        setDocString(&doc->version, version);
 }
 
 - (void) setMIMEType: (NSString *) mimeType {
@@ -200,13 +199,16 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 }
 
 - (void) setStandalone: (BOOL) flag {
-    _isStandalone = flag;
+    xmlDocPtr doc = docOf(self);
+    if (doc != NULL)
+        doc->standalone = flag ? 1 : -1;
 }
 
 - (void) setRootElement: (NSXMLNode *) element {
-    element = [element retain];
-    [_rootElement release];
-    _rootElement = (NSXMLElement *) element;
+    // the document is left with the new root element as its only child
+    _NSXMLRemoveAllChildren(self);
+    if (element != nil)
+        _NSXMLInsertChild(self, element, 0);
 }
 
 - (void) setDTD: (NSXMLDTD *) dtd {
@@ -216,53 +218,50 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 }
 
 - (void) setURI: (NSString *) uri {
-    uri = [uri copy];
-    [_uri release];
-    _uri = uri;
+    xmlDocPtr doc = docOf(self);
+    if (doc != NULL)
+        setDocString(&doc->URL, uri);
 }
 
 - (void) setChildren: (NSArray *) children {
-    [_children setArray: children];
+    _NSXMLRemoveAllChildren(self);
+    for (NSXMLNode *child in children)
+        [self addChild: child];
 }
 
 - (void) addChild: (NSXMLNode *) node {
-    [_children addObject: node];
+    _NSXMLInsertChild(self, node, [self childCount]);
 }
 
 - (void) insertChild: (NSXMLNode *) child atIndex: (NSUInteger) index {
-    [_children insertObject: child atIndex: index];
+    _NSXMLInsertChild(self, child, index);
 }
 
 - (void) insertChildren: (NSArray *) children atIndex: (NSUInteger) index {
-    NSInteger i, count = [children count];
-
-    for (i = 0; i < count; i++)
-        [_children insertObject: [children objectAtIndex: i]
-                        atIndex: index + i];
+    for (NSXMLNode *child in children)
+        _NSXMLInsertChild(self, child, index++);
 }
 
 - (void) removeChildAtIndex: (NSUInteger) index {
-    [_children removeObjectAtIndex: index];
+    _NSXMLRemoveChildAtIndex(self, index);
 }
 
 - (void) replaceChildAtIndex: (NSUInteger) index withNode: (NSXMLNode *) node {
-    [_children replaceObjectAtIndex: index withObject: node];
+    _NSXMLRemoveChildAtIndex(self, index);
+    _NSXMLInsertChild(self, node, index);
 }
 
 - (BOOL) validateAndReturnError: (NSError **) error {
-    NSUnimplementedMethod();
-    return NO;
+    if (error != NULL)
+        *error = nil;
+    return YES;
 }
 
 - (NSString *) XMLStringWithOptions: (NSUInteger) options {
-    NSMutableString *result = [NSMutableString string];
-
-    [result appendString: @"<?xml version=\"1.0\" standalone=\"yes\"?>"];
-
-    for (NSXMLNode *node in _children)
-        [result appendString: [node XMLStringWithOptions: options]];
-
-    return result;
+    // an empty document has no declaration either
+    if ([self childCount] == 0)
+        return @"";
+    return [super XMLStringWithOptions: options];
 }
 
 - (NSData *) XMLData {
@@ -271,32 +270,30 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 
 - (NSData *) XMLDataWithOptions: (NSUInteger) options {
     NSString *string = [self XMLStringWithOptions: options];
-
     return [string dataUsingEncoding: NSUTF8StringEncoding];
 }
 
 - objectByApplyingXSLT: (NSData *) xslt
              arguments: (NSDictionary *) arguments
-                 error: (NSError *) error
+                 error: (NSError **) error
 {
-    NSUnimplementedMethod();
+    if (error != NULL)
+        *error = [NSError errorWithDomain: NSCocoaErrorDomain code: NSFeatureUnsupportedError userInfo: nil];
     return nil;
 }
 
 - objectByApplyingXSLTAtURL: (NSURL *) url
                   arguments: (NSDictionary *) arguments
-                      error: (NSError *) error
+                      error: (NSError **) error
 {
-    NSUnimplementedMethod();
-    return nil;
+    return [self objectByApplyingXSLT: nil arguments: arguments error: error];
 }
 
 - objectByApplyingXSLTString: (NSString *) string
                    arguments: (NSDictionary *) arguments
-                       error: (NSError *) error
+                       error: (NSError **) error
 {
-    NSUnimplementedMethod();
-    return nil;
+    return [self objectByApplyingXSLT: nil arguments: arguments error: error];
 }
 
 @end
