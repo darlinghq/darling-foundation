@@ -71,6 +71,7 @@ set(foundation_sources
 	src/NSDistributedNotificationCenter.m
 	src/NSEnergyFormatter.m
 	src/NSEqualityPredicateOperator.m
+	src/NSErrorConstants.m
 	src/NSException.m
 	src/NSExpression.m
 	src/NSExternals.m
@@ -210,6 +211,7 @@ set(foundation_sources
 	src/NSURLComponents.m
 	src/NSURLError.m
 	# src/NSURLHandle.m # deprecated since 10.4, from GNUstep
+	src/NSStreamConstants.m
 	src/NSURL.m
 	src/NSUUID.m
 	src/NSValue.m

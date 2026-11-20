@@ -60,7 +60,6 @@ _NSURLFileResourceTypeRegular
 _NSURLFileResourceTypeSocket
 _NSURLFileResourceTypeSymbolicLink
 _NSURLFileResourceTypeUnknown
-_NSURLFileScheme
 _NSURLFileSecurityKey
 _NSURLFileSizeKey
 _NSURLGenerationIdentifierKey

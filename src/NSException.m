@@ -15,6 +15,17 @@
 #import <objc/runtime.h>
 #import <unistd.h>
 
+NSString *const NSObjectInaccessibleException = @"NSObjectInaccessibleException";
+NSString *const NSObjectNotAvailableException = @"NSObjectNotAvailableException";
+NSString *const NSDestinationInvalidException = @"NSDestinationInvalidException";
+NSString *const NSPortTimeoutException = @"NSPortTimeoutException";
+NSString *const NSInvalidSendPortException = @"NSInvalidSendPortException";
+NSString *const NSInvalidReceivePortException = @"NSInvalidReceivePortException";
+NSString *const NSPortSendException = @"NSPortSendException";
+NSString *const NSPortReceiveException = @"NSPortReceiveException";
+NSString *const NSCharacterConversionException = @"NSCharacterConversionException";
+NSString *const NSFileHandleOperationException = @"NSFileHandleOperationException";
+
 #define __is_being_debugged__ 0
 
 #if __OBJC2__

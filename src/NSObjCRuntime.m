@@ -10,6 +10,8 @@
 #import <objc/runtime.h>
 #import <objc/objc-internal.h>
 
+double NSFoundationVersionNumber = 1047.22;
+
 extern Class NSClassFromObject(id object);
 Class NSClassFromObject(id object)
 {
