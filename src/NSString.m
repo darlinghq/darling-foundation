@@ -2780,24 +2780,7 @@ static BOOL _NSScanStringValue(NSString *self, NSNumericValueType type, NSNumeri
 }
 @end
 
-// The transform identifiers are the same strings CoreFoundation's kCFStringTransform*
-// constants hold, which is what CFStringTransform() recognises.
-NSStringTransform const NSStringTransformLatinToKatakana = @")kCFStringTransformLatinKatakana";
-NSStringTransform const NSStringTransformLatinToHiragana = @")kCFStringTransformLatinHiragana";
-NSStringTransform const NSStringTransformLatinToHangul = @")kCFStringTransformLatinHangul";
-NSStringTransform const NSStringTransformLatinToArabic = @")kCFStringTransformLatinArabic";
-NSStringTransform const NSStringTransformLatinToHebrew = @")kCFStringTransformLatinHebrew";
-NSStringTransform const NSStringTransformLatinToThai = @")kCFStringTransformLatinThai";
-NSStringTransform const NSStringTransformLatinToCyrillic = @")kCFStringTransformLatinCyrillic";
-NSStringTransform const NSStringTransformLatinToGreek = @")kCFStringTransformLatinGreek";
-NSStringTransform const NSStringTransformToLatin = @")kCFStringTransformToLatin";
-NSStringTransform const NSStringTransformMandarinToLatin = @")kCFStringTransformMandarinLatin";
-NSStringTransform const NSStringTransformHiraganaToKatakana = @")kCFStringTransformHiraganaKatakana";
-NSStringTransform const NSStringTransformFullwidthToHalfwidth = @")kCFStringTransformFullwidthHalfwidth";
-NSStringTransform const NSStringTransformToXMLHex = @")kCFStringTransformToXMLHex";
-NSStringTransform const NSStringTransformToUnicodeName = @")kCFStringTransformToUnicodeName";
-NSStringTransform const NSStringTransformStripCombiningMarks = @")kCFStringTransformStripCombiningMarks";
-NSStringTransform const NSStringTransformStripDiacritics = @")kCFStringTransformStripDiacritics";
+// The NSStringTransform* identifiers are CoreFoundation symbols (aliases of kCFStringTransform*).
 
 @implementation NSString (NSStringTransform)
 

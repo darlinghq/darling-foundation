@@ -12,6 +12,9 @@
 #import <Foundation/NSNotification.h>
 #import <Foundation/NSString.h>
 
+NSString *const NSLocaleLanguageConfidenceHigh = @"NSLocaleLanguageConfidenceHigh";
+NSString *const NSLocaleLanguageConfidenceMedium = @"NSLocaleLanguageConfidenceMedium";
+
 CF_PRIVATE
 @interface NSAutoLocale : NSLocale
 {
