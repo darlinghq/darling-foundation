@@ -99,11 +99,14 @@ typedef GSIMapNode_t *GSIMapNode;
  (M->legacy ? 0 \
  : ((M->cb.pf.options & NSPointerFunctionsZeroingWeakMemory) ? YES : NO))
 
+/* Plain store: the acquire and relinquish functions register and
+ * unregister weak members.  Registering here as well would leave a second,
+ * stale registration of the node's slot behind. */
 #define GSI_MAP_WRITE_KEY(M, addr, x) \
 	if (M->legacy) \
 		*(addr) = x;\
 	else\
-	 pointerFunctionsAssign(&M->cb.pf, (void**)addr, (x).obj);
+	 *(id*)(addr) = (x).obj;
 #define GSI_MAP_READ_KEY(M,addr) \
 	(M->legacy ? *(addr) :\
 	 (typeof(*addr))pointerFunctionsRead(&M->cb.pf, (void**)addr))
