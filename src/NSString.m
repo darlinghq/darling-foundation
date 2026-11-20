@@ -655,16 +655,28 @@ SINGLETON_RR()
     return NSUTF8StringEncoding;
 }
 
+// The encodings CoreFoundation can convert, in its order, ending with 0.
 + (const NSStringEncoding *)availableStringEncodings
 {
-#warning TODO https://code.google.com/p/apportable/issues/detail?id=269
-    return nil;
+    static NSStringEncoding *encodings;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        const CFStringEncoding *list = CFStringGetListOfAvailableEncodings();
+        NSUInteger count = 0;
+        while (list && list[count] != kCFStringEncodingInvalidId)
+            count++;
+        encodings = calloc(count + 1, sizeof(NSStringEncoding));
+        for (NSUInteger i = 0; i < count; i++)
+            encodings[i] = CFStringConvertEncodingToNSStringEncoding(list[i]);
+    });
+    return encodings;
 }
 
+// CoreFoundation's name of the encoding, or an empty string for an encoding it does not know.
 + (NSString *)localizedNameOfStringEncoding:(NSStringEncoding)encoding
 {
-#warning TODO https://code.google.com/p/apportable/issues/detail?id=269
-    return nil;
+    CFStringRef name = CFStringGetNameOfEncoding(CFStringConvertNSStringEncodingToEncoding(encoding));
+    return name ? (NSString *)name : @"";
 }
 
 + (id)string
