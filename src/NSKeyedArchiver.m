@@ -305,7 +305,17 @@ static void _encodeObject(NSKeyedArchiver *archiver, id object, NSString *key)
             [archiver->_containers addObject:dict];
             [dict release];
             NSUInteger count = CFArrayGetCount((CFArrayRef)archiver->_containers);
-            [object encodeWithCoder:archiver];
+            // The keys of values encoded without a key ($0, $1, ...) count from 0 in each object
+            NSUInteger savedGenericKey = archiver->_genericKey;
+            archiver->_genericKey = 0;
+            @try
+            {
+                [object encodeWithCoder:archiver];
+            }
+            @finally
+            {
+                archiver->_genericKey = savedGenericKey;
+            }
 
             BOOL inContainer = NO;
             if (CFDictionaryGetValueIfPresent(archiver->_objRefMap, class, (const void **)&mapObject))
@@ -373,6 +383,8 @@ static void _encodeObject(NSKeyedArchiver *archiver, id object, NSString *key)
     }
 }
 
+static unsigned long long conditionalSequence;
+
 static void encodeConditionalObject(NSKeyedArchiver *archiver, id object, NSString *key)
 {
     id mapObject;
@@ -402,7 +414,9 @@ static void encodeConditionalObject(NSKeyedArchiver *archiver, id object, NSStri
         pending = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
         CFDictionarySetValue(archiver->_conditionals, object, pending); // takes the create reference
     }
-    NSArray *reference = [[NSArray alloc] initWithObjects:container, key, nil];
+    // The third element orders the references by when they were encoded.
+    NSNumber *sequence = [NSNumber numberWithUnsignedLongLong:__sync_add_and_fetch(&conditionalSequence, 1)];
+    NSArray *reference = [[NSArray alloc] initWithObjects:container, key, sequence, nil];
     CFArrayAppendValue(pending, reference);
     [reference release];
 }
@@ -410,6 +424,39 @@ static void encodeConditionalObject(NSKeyedArchiver *archiver, id object, NSStri
 static void releaseConditionalReferences(const void *key, const void *value, void *context)
 {
     CFRelease(value);
+}
+
+static void collectConditionalReferences(const void *key, const void *value, void *context)
+{
+    [(NSMutableArray *)context addObjectsFromArray:(NSArray *)value];
+}
+
+static NSComparisonResult compareConditionalReferences(NSArray *first, NSArray *second, void *context)
+{
+    return [[first objectAtIndex:2] compare:[second objectAtIndex:2]];
+}
+
+// QUIRK: a conditionally encoded object that is not encoded unconditionally anywhere in the archive
+// is written as a separate "$null" string object for each reference (not as the archive's nil entry).
+// Decoding reads such a reference as nil, so this is only visible in the archive. Not documented.
+// Evidence: black-box observation on macOS 26.7.3 and 10.14.4 (tier 2), probe
+// vd-upstream/mac-probes/maptable-conditional-null.m.
+// Test: test_quirk_weak_table_members_are_conditional in tests/maptable-archive-fixtures.m
+static void writeUnresolvedConditionals(NSKeyedArchiver *archiver)
+{
+    NSMutableArray *references = [NSMutableArray array];
+    CFDictionaryApplyFunction(archiver->_conditionals, collectConditionalReferences, references);
+    [references sortUsingFunction:compareConditionalReferences context:NULL];
+    for (NSArray *reference in references)
+    {
+        // A distinct instance, so that the property list writer cannot merge it with the nil entry
+        NSString *null = [[NSString alloc] initWithCharacters:(const unichar[]){'$', 'n', 'u', 'l', 'l'} length:5];
+        CFArrayAppendValue((CFMutableArrayRef)archiver->_objects, null);
+        CFKeyedArchiverUIDRef uid = _NSKeyedArchiverUIDCreateCached(archiver, (int)CFArrayGetCount((CFArrayRef)archiver->_objects) - 1);
+        [(NSMutableDictionary *)[reference objectAtIndex:0] setObject:(id)uid forKey:[reference objectAtIndex:1]];
+        CFRelease(uid);
+        [null release];
+    }
 }
 
 static void encodeBytes(NSKeyedArchiver *archiver, const uint8_t *buffer, NSUInteger len, NSString *key)
@@ -1242,6 +1289,8 @@ static size_t _encodeValueOfObjCType(NSKeyedArchiver *self, const char *type, co
     }
 
     _flags |= NSArchiverFinished;
+
+    writeUnresolvedConditionals(self);
 
     NSInteger value = NSKeyedArchiverPlistVersion;
     CFNumberRef version = CFNumberCreate(NULL, kCFNumberSInt32Type, &value);
