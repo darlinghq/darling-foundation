@@ -293,7 +293,8 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
 {
     NSMutableArray *files = [NSMutableArray array];
     NSError* localError = nil;
-    [self _directoryContentsAtPath:path 
+    [self _directoryContentsAtPath:path
+                relativePrefix:@""
                 matchingExtension:extension
                 options:options
                 keepExtension:keepExtension
@@ -322,7 +323,9 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
     return sorted;
 }
 
-- (void)_directoryContentsAtPath:(NSString *)path matchingExtension:(NSString *)extension options:(NSDirectoryEnumerationOptions)options keepExtension:(BOOL)keepExtension error:(NSError **)error toResult:(NSMutableArray *)files
+// relativePrefix is the path of path below the directory the caller asked about ("" at the top): a
+// nested entry is reported as relativePrefix/name, as subpathsOfDirectoryAtPath: documents.
+- (void)_directoryContentsAtPath:(NSString *)path relativePrefix:(NSString *)relativePrefix matchingExtension:(NSString *)extension options:(NSDirectoryEnumerationOptions)options keepExtension:(BOOL)keepExtension error:(NSError **)error toResult:(NSMutableArray *)files
 {
     DIR *dirp = opendir([path fileSystemRepresentation]);
     if (!dirp) {
@@ -359,21 +362,16 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
             }
             else
             {
-                if (!keepExtension)
-                {
-                    [files addObject:[item stringByDeletingPathExtension]];
-                }
-                else
-                {
-                    [files addObject:item];
-                }
+                NSString *name = keepExtension ? item : [item stringByDeletingPathExtension];
+                [files addObject:[relativePrefix length] ? [relativePrefix stringByAppendingPathComponent:name] : name];
             }
         }
 
         // Recursive path listings (subpathsOfDirectoryAtPath:) descend into packages too, as on macOS.
         if (dp->d_type == DT_DIR && (options & NSDirectoryEnumerationRecursive) != 0)
         {
-            [self _directoryContentsAtPath:[path stringByAppendingPathComponent:item] 
+            [self _directoryContentsAtPath:[path stringByAppendingPathComponent:item]
+                                            relativePrefix:[relativePrefix length] ? [relativePrefix stringByAppendingPathComponent:item] : item
                                             matchingExtension:extension
                                                       options:options
                                                 keepExtension:keepExtension
@@ -1086,6 +1084,10 @@ static NSError *_NSErrorWithFilePathAndErrno(id path, int code)
 
 - (NSArray *)subpathsAtPath:(NSString *)path
 {
+    if (![self fileExistsAtPath:path])
+    {
+        return nil;
+    }
     return [[self enumeratorAtPath:path] allObjects];
 }
 

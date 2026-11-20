@@ -7,6 +7,7 @@
 
 #import "NSDirectoryEnumerator.h"
 #import "NSObjectInternal.h"
+#include <sys/stat.h>
 #import <Foundation/NSError.h>
 #import <Foundation/FoundationErrors.h>
 #include <dirent.h>
@@ -73,7 +74,19 @@
 
 - (void)skipDescendants
 {
-    cross = NO;
+    // Skips the contents of the directory returned last, not of the ones after it.
+    if (under != nil)
+    {
+        if (lastLevel == depth)
+        {
+            [under release];
+            under = nil;
+        }
+        else
+        {
+            [under skipDescendants];
+        }
+    }
 }
 
 - (void)skipDescendents
@@ -88,7 +101,8 @@
 
 - (NSUInteger)level
 {
-    return depth;
+    // The depth of the item last returned: 1 for the top directory's entries.
+    return lastLevel ? lastLevel : depth;
 }
 
 - (id)currentSubdirectoryAttributes
@@ -112,7 +126,11 @@
     if (under != nil)
     {
         item = [under nextObject];
-        if (item == nil)
+        if (item != nil)
+        {
+            lastLevel = [under level];
+        }
+        else
         {
             [under release];
             under = nil;
@@ -123,12 +141,14 @@
     {
         item = contents[idx];
         pathToLastReportedItem = [[path stringByAppendingPathComponent:item] retain];
-        BOOL isDir = NO;
-        BOOL exists = [[NSFileManager defaultManager] fileExistsAtPath:pathToLastReportedItem isDirectory:&isDir];
-        if (exists && isDir && cross)
+        // A symbolic link to a directory is reported but not entered, as on macOS.
+        struct stat st;
+        BOOL isDir = lstat([pathToLastReportedItem fileSystemRepresentation], &st) == 0 && S_ISDIR(st.st_mode);
+        if (isDir && cross)
         {
             under = [NSAllDescendantPathsEnumerator newWithPath:pathToLastReportedItem prepend:item attributes:nil cross:cross depth:depth + 1];
         }
+        lastLevel = depth;
         idx++;
     }
     
