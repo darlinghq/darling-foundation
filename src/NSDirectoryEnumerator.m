@@ -7,6 +7,11 @@
 
 #import "NSDirectoryEnumerator.h"
 #import "NSObjectInternal.h"
+#import <Foundation/NSError.h>
+#import <Foundation/FoundationErrors.h>
+#include <dirent.h>
+#include <errno.h>
+#include <limits.h>
 
 @implementation NSDirectoryEnumerator
 
@@ -165,7 +170,55 @@ static CFURLEnumeratorOptions CFURLEnumeratorOptionsFromNSDirectoryEnumeration(N
     return options;
 }
 
+// The error passed to the error handler: a Cocoa file reading error for the
+// POSIX error the enumeration ran into, as with the path-based file calls.
+static NSError *NSURLDirectoryEnumeratorError(NSURL *url, int err)
+{
+    NSInteger code;
+    switch (err)
+    {
+        case ENOENT:
+        case ENOTDIR:
+            code = NSFileReadNoSuchFileError;
+            break;
+        case EACCES:
+        case EPERM:
+            code = NSFileReadNoPermissionError;
+            break;
+        default:
+            code = NSFileReadUnknownError;
+            break;
+    }
+    NSMutableDictionary *info = [NSMutableDictionary dictionary];
+    if (url != nil)
+    {
+        [info setObject:url forKey:NSURLErrorKey];
+        if ([url path] != nil)
+        {
+            [info setObject:[url path] forKey:NSFilePathErrorKey];
+        }
+    }
+    [info setObject:[NSError errorWithDomain:NSPOSIXErrorDomain code:err userInfo:nil] forKey:NSUnderlyingErrorKey];
+    return [NSError errorWithDomain:NSCocoaErrorDomain code:code userInfo:info];
+}
+
+static NSError *NSURLDirectoryEnumeratorErrorFromCFError(NSURL *url, CFErrorRef error)
+{
+    NSError *e = (NSError *)error;
+    if (e != nil && [[e domain] isEqualToString:NSPOSIXErrorDomain])
+    {
+        return NSURLDirectoryEnumeratorError(url, (int)[e code]);
+    }
+    if (e != nil)
+    {
+        return [[e retain] autorelease];
+    }
+    return NSURLDirectoryEnumeratorError(url, EIO);
+}
+
 @implementation NSURLDirectoryEnumerator
+
+@synthesize errorHandler = _errorHandler;
 
 - (id)initWithURL:(NSURL *)url includingPropertiesForKeys:(NSArray *)properties options:(NSDirectoryEnumerationOptions)options errorHandler:(BOOL (^)(NSURL *url, NSError *error))handler
 {
@@ -178,10 +231,28 @@ static CFURLEnumeratorOptions CFURLEnumeratorOptionsFromNSDirectoryEnumeration(N
         }
 
         _enumerator = CFURLEnumeratorCreateForDirectoryURL(kCFAllocatorDefault, (CFURLRef)[url standardizedURL], CFURLEnumeratorOptionsFromNSDirectoryEnumeration(options), (CFArrayRef)properties);
-        if (_enumerator) 
+        self.errorHandler = handler;
+        shouldContinue = YES;
+        if (_enumerator == NULL)
         {
-            self.errorHandler = handler;
-            shouldContinue = YES;
+            // The directory cannot be read: the enumerator is still returned and
+            // reports the error to the handler when it is first asked for an item.
+            int err = EIO;
+            char path[PATH_MAX];
+            if ([url getFileSystemRepresentation:path maxLength:sizeof(path)])
+            {
+                DIR *dir = opendir(path);
+                if (dir != NULL)
+                {
+                    closedir(dir);
+                }
+                else
+                {
+                    err = errno;
+                }
+            }
+            _pendingErrorURL = [url retain];
+            _pendingError = [NSURLDirectoryEnumeratorError(url, err) retain];
         }
     }
     return self;
@@ -194,6 +265,8 @@ static CFURLEnumeratorOptions CFURLEnumeratorOptionsFromNSDirectoryEnumeration(N
         CFRelease(_enumerator);
     }
     self.errorHandler = nil;
+    [_pendingErrorURL release];
+    [_pendingError release];
     [super dealloc];
 }
 
@@ -222,29 +295,71 @@ static CFURLEnumeratorOptions CFURLEnumeratorOptionsFromNSDirectoryEnumeration(N
     [self skipDescendants];
 }
 
+// Reports an error to the handler; enumeration goes on only if the handler says so.
+// Without a handler it goes on, as if the handler had returned YES.
+- (void)_reportError:(NSError *)error forURL:(NSURL *)url
+{
+    if (self.errorHandler != NULL)
+    {
+        shouldContinue = self.errorHandler(url, error);
+    }
+}
+
 - (id)nextObject
 {
-    CFURLRef url = NULL;
     while (shouldContinue)
     {
-        CFErrorRef error = NULL;
-        if (!CFURLEnumeratorGetNextURL(_enumerator, &url, &error))
+        if (_pendingError != nil)
         {
-            if (self.errorHandler != NULL)
-            {
-                shouldContinue = self.errorHandler((NSURL *)url, (NSError *)error);
-            }
+            NSURL *errorURL = [_pendingErrorURL autorelease];
+            NSError *error = [_pendingError autorelease];
+            _pendingErrorURL = nil;
+            _pendingError = nil;
+            [self _reportError:error forURL:errorURL];
+            continue;
         }
-        else
+        if (_enumerator == NULL)
         {
             break;
+        }
+
+        CFURLRef url = NULL;
+        CFErrorRef error = NULL;
+        CFURLEnumeratorResult result = CFURLEnumeratorGetNextURL(_enumerator, &url, &error);
+        if (result == kCFURLEnumeratorSuccess || result == kCFURLEnumeratorDirectoryPostOrderSuccess)
+        {
+            return [(NSURL *)url autorelease];
+        }
+        if (result == kCFURLEnumeratorError)
+        {
+            NSURL *errorURL = (NSURL *)url;
+            NSError *nsError = NSURLDirectoryEnumeratorErrorFromCFError(errorURL, error);
+            if (error != NULL)
+            {
+                CFRelease(error);
+            }
+            if (errorURL != nil)
+            {
+                // A directory that cannot be read is still returned itself; the
+                // error is reported on the next call, as macOS does.
+                _pendingErrorURL = errorURL;
+                _pendingError = [nsError retain];
+                return [[errorURL retain] autorelease];
+            }
+            [self _reportError:nsError forURL:nil];
+            continue;
+        }
+        if (url != NULL)
+        {
+            CFRelease(url);
         }
         if (error != NULL)
         {
             CFRelease(error);
         }
+        break;
     }
-    return [(NSURL *)url autorelease];
+    return nil;
 }
 
 @end
