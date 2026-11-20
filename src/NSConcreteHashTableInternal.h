@@ -198,23 +198,3 @@ pointerFunctionsRelinquish(PFInfo *PF, void **itemptr)
   else
     *itemptr = 0;
 }
-
-
-static inline void
-pointerFunctionsReplace(PFInfo *PF, void **dst, void *src)
-{
-  if (src != *dst)
-    {
-      if (PF->acquireFunction != 0)
-	src = (*PF->acquireFunction)(src, PF->sizeFunction,
-          PF->options & NSPointerFunctionsCopyIn ? YES : NO);
-      if (PF->relinquishFunction != 0)
-	(*PF->relinquishFunction)(*dst, PF->sizeFunction);
-      if (memoryType(PF->options, NSPointerFunctionsWeakMemory))
-        ARC_WEAK_WRITE(dst, 0);
-      else if (memoryType(PF->options, NSPointerFunctionsZeroingWeakMemory))
-        WEAK_WRITE(dst, (void*)0);
-      else
-	*dst = src;
-    }
-}
