@@ -35,6 +35,8 @@ CF_PRIVATE
     CFURLEnumeratorRef _enumerator;
     BOOL (^_errorHandler)(NSURL *url, NSError *error);
     BOOL shouldContinue;
+    NSURL *_pendingErrorURL;
+    NSError *_pendingError;
 }
 
 @property (copy) BOOL (^errorHandler)(NSURL *url, NSError *error);
