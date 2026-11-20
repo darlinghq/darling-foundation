@@ -86,32 +86,71 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
     _systemID = systemID;
 }
 
+- initWithKind: (NSXMLNodeKind) kind options: (NSUInteger) options {
+    self = [super initWithKind: NSXMLDTDKind options: options];
+    if (self != nil)
+        _dtdChildren = [[NSMutableArray alloc] init];
+    return self;
+}
+
+- init {
+    return [self initWithKind: NSXMLDTDKind options: NSXMLNodeOptionsNone];
+}
+
+- (void) dealloc {
+    [_publicID release];
+    [_systemID release];
+    [_dtdChildren release];
+    [super dealloc];
+}
+
+- copyWithZone: (NSZone *) zone {
+    NSXMLDTD *copy = [[NSXMLDTD allocWithZone: zone] init];
+    [copy setPublicID: _publicID];
+    [copy setSystemID: _systemID];
+    for (NSXMLNode *child in _dtdChildren)
+        [copy->_dtdChildren addObject: [[child copy] autorelease]];
+    return copy;
+}
+
+- (NSUInteger) childCount {
+    return [_dtdChildren count];
+}
+
+- (NSArray *) children {
+    return [[_dtdChildren copy] autorelease];
+}
+
+- (NSXMLNode *) childAtIndex: (NSUInteger) index {
+    return [_dtdChildren objectAtIndex: index];
+}
+
 - (void) setChildren: (NSArray *) children {
-    [_children setArray: children];
+    [_dtdChildren setArray: children ?: @[]];
 }
 
 - (void) addChild: (NSXMLNode *) node {
-    [_children addObject: node];
+    [_dtdChildren addObject: node];
 }
 
 - (void) insertChild: (NSXMLNode *) child atIndex: (NSUInteger) index {
-    [_children insertObject: child atIndex: index];
+    [_dtdChildren insertObject: child atIndex: index];
 }
 
 - (void) insertChildren: (NSArray *) children atIndex: (NSUInteger) index {
     NSInteger i, count = [children count];
 
     for (i = 0; i < count; i++)
-        [_children insertObject: [children objectAtIndex: i]
-                        atIndex: index + i];
+        [_dtdChildren insertObject: [children objectAtIndex: i]
+                           atIndex: index + i];
 }
 
 - (void) removeChildAtIndex: (NSUInteger) index {
-    [_children removeObjectAtIndex: index];
+    [_dtdChildren removeObjectAtIndex: index];
 }
 
 - (void) replaceChildAtIndex: (NSUInteger) index withNode: (NSXMLNode *) node {
-    [_children replaceObjectAtIndex: index withObject: node];
+    [_dtdChildren replaceObjectAtIndex: index withObject: node];
 }
 
 @end

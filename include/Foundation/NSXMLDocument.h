@@ -33,17 +33,8 @@ typedef NSUInteger NSXMLDocumentContentKind;
 
 @interface NSXMLDocument : NSXMLNode {
     NSXMLDocumentContentKind _contentKind;
-    NSString *_version;
-    NSString *_characterEncoding;
     NSString *_mimeType;
-    BOOL _isStandalone;
-
-    NSXMLElement *_rootElement;
     NSXMLDTD *_dtd;
-    NSString *_uri;
-
-    // parsing state, should be moved out
-    NSMutableArray *_elementStack;
 }
 
 + (Class) replacementClassForClass: (Class) aClass;
@@ -91,12 +82,12 @@ typedef NSUInteger NSXMLDocumentContentKind;
 
 - (id) objectByApplyingXSLT: (NSData *) xslt
                   arguments: (NSDictionary *) arguments
-                      error: (NSError *) error;
+                      error: (NSError **) error;
 - (id) objectByApplyingXSLTAtURL: (NSURL *) url
                        arguments: (NSDictionary *) arguments
-                           error: (NSError *) error;
+                           error: (NSError **) error;
 - (id) objectByApplyingXSLTString: (NSString *) string
                         arguments: (NSDictionary *) arguments
-                            error: (NSError *) error;
+                            error: (NSError **) error;
 
 @end

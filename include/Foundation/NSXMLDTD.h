@@ -24,6 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 @interface NSXMLDTD : NSXMLNode {
     NSString *_publicID;
     NSString *_systemID;
+    NSMutableArray *_dtdChildren;
 }
 
 + (NSXMLDTDNode *) predefinedEntityDeclarationForName: (NSString *) name;

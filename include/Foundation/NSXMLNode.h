@@ -38,35 +38,15 @@ typedef enum {
     NSXMLNotationDeclarationKind
 } NSXMLNodeKind;
 
-enum {
-    NSXMLNodeOptionsNone,
-    NSXMLNodeIsCDATA,
-    NSXMLNodeExpandEmptyElement,
-    NSXMLNodeCompactEmptyElement,
-    NSXMLNodeUseSingleQuotes,
-    NSXMLNodeUseDoubleQuotes,
-    NSXMLNodePrettyPrint,
-    NSXMLNodePreserveNamespaceOrder,
-    NSXMLNodePreserveAttributeOrder,
-    NSXMLNodePreserveEntities,
-    NSXMLNodePreserveCharacterReferences,
-    NSXMLNodePreservePrefixes,
-    NSXMLNodePreserveCDATA,
-    NSXMLNodePreserveWhitespace,
-    NSXMLNodePreserveEmptyElements,
-    NSXMLNodePreserveQuotes,
-    NSXMLNodePreserveDTD,
-    NSXMLNodePreserveAll,
-};
 
 @interface NSXMLNode : NSObject <NSCopying> {
-    NSXMLNode *_parent;
-    NSMutableArray *_children;
-    NSUInteger _index;
+    // the libxml2 node this object stands for
+    void *_xmlNode;
+    // the object of the topmost node of the tree this node is in, retained;
+    // nil when this node is the topmost one and owns the tree
+    NSXMLNode *_treeOwner;
     NSXMLNodeKind _kind;
     NSUInteger _options;
-    NSString *_name;
-    id _value;
 }
 
 + (id) document;
@@ -77,8 +57,12 @@ enum {
               children: (NSArray *) children
             attributes: (NSArray *) attributes;
 + (id) elementWithName: (NSString *) name stringValue: (NSString *) string;
++ (id) elementWithName: (NSString *) name URI: (NSString *) uri;
 
 + (id) attributeWithName: (NSString *) name stringValue: (NSString *) string;
++ (id) attributeWithName: (NSString *) name
+                     URI: (NSString *) uri
+             stringValue: (NSString *) string;
 
 + (id) commentWithStringValue: (NSString *) string;
 + (id) textWithStringValue: (NSString *) string;

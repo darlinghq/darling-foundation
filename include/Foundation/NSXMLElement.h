@@ -22,10 +22,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 @class NSXMLNode, NSArray, NSError, NSDictionary, NSMutableDictionary,
         NSMutableArray;
 
-@interface NSXMLElement : NSXMLNode <NSCopying> {
-    NSMutableDictionary *_attributes;
-    NSMutableDictionary *_namespaces;
-}
+@interface NSXMLElement : NSXMLNode <NSCopying>
 
 - (instancetype) initWithName: (NSString *) name;
 - (instancetype) initWithName: (NSString *) name
@@ -44,6 +41,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 
 - (void) setAttributes: (NSArray *) attributes;
 - (void) setAttributesAsDictionary: (NSDictionary *) attributes;
+- (void) setAttributesWithDictionary: (NSDictionary *) attributes;
 - (void) setChildren: (NSArray *) children;
 - (void) setNamespaces: (NSArray *) namespaces;
 
