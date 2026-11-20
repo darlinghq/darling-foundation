@@ -325,10 +325,12 @@ static NSError *NSURLDirectoryEnumeratorErrorFromCFError(NSURL *url, CFErrorRef 
 
         CFURLRef url = NULL;
         CFErrorRef error = NULL;
+        // The URL follows the Get rule: the enumerator keeps it only until
+        // the next call. The error is ours to release.
         CFURLEnumeratorResult result = CFURLEnumeratorGetNextURL(_enumerator, &url, &error);
         if (result == kCFURLEnumeratorSuccess || result == kCFURLEnumeratorDirectoryPostOrderSuccess)
         {
-            return [(NSURL *)url autorelease];
+            return [[(NSURL *)url retain] autorelease];
         }
         if (result == kCFURLEnumeratorError)
         {
@@ -342,16 +344,12 @@ static NSError *NSURLDirectoryEnumeratorErrorFromCFError(NSURL *url, CFErrorRef 
             {
                 // A directory that cannot be read is still returned itself; the
                 // error is reported on the next call, as macOS does.
-                _pendingErrorURL = errorURL;
+                _pendingErrorURL = [errorURL retain];
                 _pendingError = [nsError retain];
                 return [[errorURL retain] autorelease];
             }
             [self _reportError:nsError forURL:nil];
             continue;
-        }
-        if (url != NULL)
-        {
-            CFRelease(url);
         }
         if (error != NULL)
         {
