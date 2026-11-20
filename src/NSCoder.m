@@ -612,19 +612,19 @@ static inline const char *nextType(const char *type)
 
 - (CGRect)decodeRectForKey:(NSString *)key
 {
-    NSString *string = [self decodeObjectForKey:key];
+    NSString *string = [self decodeObjectOfClass:[NSString class] forKey:key];
     return string ? NSRectToCGRect(NSRectFromString(string)) : NSRectToCGRect(NSZeroRect);
 }
 
 - (CGSize)decodeSizeForKey:(NSString *)key
 {
-    NSString *string = [self decodeObjectForKey:key];
+    NSString *string = [self decodeObjectOfClass:[NSString class] forKey:key];
     return string ? NSSizeToCGSize(NSSizeFromString(string)) : NSSizeToCGSize(NSZeroSize);
 }
 
 - (CGPoint)decodePointForKey:(NSString *)key
 {
-    NSString *string = [self decodeObjectForKey:key];
+    NSString *string = [self decodeObjectOfClass:[NSString class] forKey:key];
     return string ? NSPointToCGPoint(NSPointFromString(string)) : NSPointToCGPoint(NSZeroPoint);
 }
 
