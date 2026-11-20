@@ -370,7 +370,7 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
             }
         }
 
-        // should NSDirectoryEnumerationSkipsPackageDescendants be checked somehow here?
+        // Recursive path listings (subpathsOfDirectoryAtPath:) descend into packages too, as on macOS.
         if (dp->d_type == DT_DIR && (options & NSDirectoryEnumerationRecursive) != 0)
         {
             [self _directoryContentsAtPath:[path stringByAppendingPathComponent:item] 
@@ -439,10 +439,6 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
             else if ([key isEqualToString:NSURLIsVolumeKey])
             {
                 value = [@NO retain]; // is this even possible?
-            }
-            else if ([key isEqualToString:NSURLIsPackageKey])
-            {
-                value = [((S_ISDIR(s.st_mode) && [[[url lastPathComponent] pathExtension] length] > 0) ? @YES : @NO) retain];
             }
             else if ([key isEqualToString:NSURLIsUserImmutableKey])
             {
