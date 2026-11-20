@@ -13,6 +13,7 @@ CF_PRIVATE
     NSFileAttributes *directoryAttributes;
     NSString *pathToLastReportedItem;
     NSUInteger depth;
+    NSUInteger lastLevel;
     BOOL cross;
     char _padding[3];
 }
