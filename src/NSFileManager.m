@@ -476,14 +476,9 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
             {
 
             }
-            else if ([key isEqualToString:NSURLIsHiddenKey])
-            {
-                value = [([[url lastPathComponent] hasPrefix:NSPathDot] ? @YES : @NO) retain];
-            }
-            else if ([key isEqualToString:NSURLHasHiddenExtensionKey])
-            {
-                value = [@NO retain];
-            }
+            // NSURLIsHiddenKey and NSURLHasHiddenExtensionKey are left to CoreFoundation, which reads them when
+            // asked: they depend on more than the stat (the Finder flags), and storing a value here would go through
+            // their setters and write it to the item.
             else if ([key isEqualToString:NSURLCreationDateKey])
             {
 #ifdef ANDROID
