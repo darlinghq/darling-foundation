@@ -41,6 +41,19 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 @end
 
+@interface NSFileWrapper (URLNodes)
+// Take the contents of, or compare them with, the node at url. attributes are those of that node, whose kind is the receiver's.
+- (BOOL) readContentsFromURL: (NSURL*) url attributes: (NSDictionary*) attributes options: (NSFileWrapperReadingOptions) options error: (NSError**) outError;
+- (BOOL) matchesNodeAtURL: (NSURL*) url attributes: (NSDictionary*) attributes;
+@end
+
+static BOOL fileWrapperHasKind(NSFileWrapper* wrapper, NSString* type)
+{
+	return ([wrapper isDirectory] && [type isEqualToString: NSFileTypeDirectory]) ||
+	       ([wrapper isRegularFile] && [type isEqualToString: NSFileTypeRegular]) ||
+	       ([wrapper isSymbolicLink] && [type isEqualToString: NSFileTypeSymbolicLink]);
+}
+
 static NSDataReadingOptions dataReadingOptions(NSFileWrapperReadingOptions options)
 {
 	return (options & NSFileWrapperReadingWithoutMapping) ? 0 : NSDataReadingMappedIfSafe;
@@ -168,6 +181,32 @@ static NSError* fileWrapperReadError(NSURL* url, NSString* path, NSError* cause)
     if (outError) *outError = fileWrapperReadError(url, path, error);
     // self is the shared +alloc placeholder, which must never be released.
     return nil;
+}
+
+- (BOOL) readFromURL: (NSURL*) url options: (NSFileWrapperReadingOptions) options error: (NSError**) outError
+{
+	NSString* path = [url isFileURL] ? [url path] : nil;
+	NSError* error = nil;
+	NSDictionary* attributes = path ? [[NSFileManager defaultManager] attributesOfItemAtPath: path error: &error] : nil;
+	// GUESS: the documentation does not say what a node of another kind than the receiver gives; it is
+	// reported as the unknown read error, since a wrapper cannot change its kind.
+	if (attributes && fileWrapperHasKind(self, [attributes objectForKey: NSFileType]) &&
+	    [self readContentsFromURL: url attributes: attributes options: options error: &error]) {
+		[_fileAttributes release];
+		_fileAttributes = nil;
+		[self setFileAttributes: attributes];
+		return YES;
+	}
+	if (outError) *outError = fileWrapperReadError(url, path, error);
+	return NO;
+}
+
+- (BOOL) matchesContentsOfURL: (NSURL*) url
+{
+	NSDictionary* attributes = [url isFileURL] ?
+		[[NSFileManager defaultManager] attributesOfItemAtPath: [url path] error: NULL] : nil;
+	return attributes && fileWrapperHasKind(self, [attributes objectForKey: NSFileType]) &&
+	       [self matchesNodeAtURL: url attributes: attributes];
 }
 
 - (NSData*) regularFileContents
@@ -358,6 +397,31 @@ static NSError* fileWrapperReadError(NSURL* url, NSString* path, NSError* cause)
 	return NO;
 }
 
+- (BOOL) readContentsFromURL: (NSURL*) url attributes: (NSDictionary*) attributes options: (NSFileWrapperReadingOptions) options error: (NSError**) outError
+{
+	NSData* data = nil;
+	if (options & NSFileWrapperReadingImmediate) {
+		data = [NSData dataWithContentsOfURL: url options: dataReadingOptions(options) error: outError];
+		if (!data) return NO;
+	}
+	[contentData release];
+	contentData = [data copy];
+	[self setReadingPath: [url path] options: options];
+	return YES;
+}
+
+// GUESS: a wrapper that records no modification date or permissions (one made from data) matches nothing, and the
+// dates must be equal: a file older than the recorded date does not match either.
+- (BOOL) matchesNodeAtURL: (NSURL*) url attributes: (NSDictionary*) attributes
+{
+	NSDictionary* own = [self fileAttributes];
+	NSDate* date = [own objectForKey: NSFileModificationDate];
+	NSNumber* permissions = [own objectForKey: NSFilePosixPermissions];
+	return date && permissions &&
+	       [date isEqualToDate: [attributes objectForKey: NSFileModificationDate]] &&
+	       [permissions isEqualToNumber: [attributes objectForKey: NSFilePosixPermissions]];
+}
+
 - (BOOL) isRegularFile
 {
 	return YES;
@@ -483,6 +547,37 @@ static NSError* fileWrapperReadError(NSURL* url, NSString* path, NSError* cause)
 }
 
 
+- (BOOL) readContentsFromURL: (NSURL*) url attributes: (NSDictionary*) attributes options: (NSFileWrapperReadingOptions) options error: (NSError**) outError
+{
+	NSArray* names = [[NSFileManager defaultManager] contentsOfDirectoryAtPath: [url path] error: outError];
+	if (!names) return NO;
+	// GUESS: if a later child fails, the children already reread stay reread; the receiver's own list is unchanged.
+	NSMutableDictionary* children = [NSMutableDictionary dictionaryWithCapacity: [names count]];
+	for (NSString* name in names) {
+		NSURL* childURL = [url URLByAppendingPathComponent: name];
+		NSFileWrapper* child = [contentDictionary objectForKey: name];
+		// GUESS: a child whose node was replaced by one of another kind (or cannot be re-read) is replaced too.
+		if (!child || ![child readFromURL: childURL options: options error: NULL]) {
+			child = [[[NSFileWrapper alloc] initWithURL: childURL options: options error: outError] autorelease];
+			if (!child) return NO;
+		}
+		[children setObject: child forKey: name];
+	}
+	[contentDictionary release];
+	contentDictionary = [children retain];
+	return YES;
+}
+
+- (BOOL) matchesNodeAtURL: (NSURL*) url attributes: (NSDictionary*) attributes
+{
+	NSArray* names = [[NSFileManager defaultManager] contentsOfDirectoryAtPath: [url path] error: NULL];
+	if (!names || [names count] != [contentDictionary count]) return NO;
+	for (NSString* name in names) {
+		if (![[contentDictionary objectForKey: name] matchesContentsOfURL: [url URLByAppendingPathComponent: name]]) return NO;
+	}
+	return YES;
+}
+
 - (void) removeFileWrapper: (NSFileWrapper*) wrapper
 {
 	NSArray* keys = [contentDictionary allKeysForObject: wrapper];
@@ -570,6 +665,21 @@ static NSError* fileWrapperReadError(NSURL* url, NSString* path, NSError* cause)
 		[self setFilename: [path lastPathComponent]];
 	}
 	return result;
+}
+
+- (BOOL) readContentsFromURL: (NSURL*) url attributes: (NSDictionary*) attributes options: (NSFileWrapperReadingOptions) options error: (NSError**) outError
+{
+	NSString* destination = [[NSFileManager defaultManager] destinationOfSymbolicLinkAtPath: [url path] error: outError];
+	if (!destination) return NO;
+	[linkDestination release];
+	linkDestination = [destination copy];
+	return YES;
+}
+
+- (BOOL) matchesNodeAtURL: (NSURL*) url attributes: (NSDictionary*) attributes
+{
+	NSString* destination = [[NSFileManager defaultManager] destinationOfSymbolicLinkAtPath: [url path] error: NULL];
+	return [destination isEqualToString: linkDestination];
 }
 
 - (BOOL) updateFromPath: (NSString*) path attributes: (NSDictionary*) attrs
