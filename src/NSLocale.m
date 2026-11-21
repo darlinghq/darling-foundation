@@ -56,6 +56,53 @@ CF_PRIVATE
 @end
 
 
+// Each of these is documented as equivalent to -displayNameForKey:value: with the matching key, so they
+// go through it and work for every NSLocale subclass.
+@implementation NSLocale (NSLocaleDisplayNames)
+
+- (NSString *)localizedStringForLocaleIdentifier:(NSString *)localeIdentifier
+{
+    return [self displayNameForKey:NSLocaleIdentifier value:localeIdentifier];
+}
+
+- (NSString *)localizedStringForLanguageCode:(NSString *)languageCode
+{
+    return [self displayNameForKey:NSLocaleLanguageCode value:languageCode];
+}
+
+- (NSString *)localizedStringForCountryCode:(NSString *)countryCode
+{
+    return [self displayNameForKey:NSLocaleCountryCode value:countryCode];
+}
+
+- (NSString *)localizedStringForScriptCode:(NSString *)scriptCode
+{
+    return [self displayNameForKey:NSLocaleScriptCode value:scriptCode];
+}
+
+- (NSString *)localizedStringForVariantCode:(NSString *)variantCode
+{
+    return [self displayNameForKey:NSLocaleVariantCode value:variantCode];
+}
+
+- (NSString *)localizedStringForCollationIdentifier:(NSString *)collationIdentifier
+{
+    return [self displayNameForKey:NSLocaleCollationIdentifier value:collationIdentifier];
+}
+
+- (NSString *)localizedStringForCurrencyCode:(NSString *)currencyCode
+{
+    return [self displayNameForKey:NSLocaleCurrencyCode value:currencyCode];
+}
+
+- (NSString *)localizedStringForCollatorIdentifier:(NSString *)collatorIdentifier
+{
+    return [self displayNameForKey:NSLocaleCollatorIdentifier value:collatorIdentifier];
+}
+
+@end
+
+
 @implementation NSAutoLocale
 
 + (BOOL)supportsSecureCoding
