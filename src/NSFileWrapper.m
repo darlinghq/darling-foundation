@@ -41,6 +41,27 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 @end
 
+static NSDataReadingOptions dataReadingOptions(NSFileWrapperReadingOptions options)
+{
+	return (options & NSFileWrapperReadingWithoutMapping) ? 0 : NSDataReadingMappedIfSafe;
+}
+
+// The error for a failed read of the node at url (path is nil for a URL that is not a file URL).
+static NSError* fileWrapperReadError(NSURL* url, NSString* path, NSError* cause)
+{
+	if (!path) {
+		return [NSError errorWithDomain: NSCocoaErrorDomain code: NSFileReadUnsupportedSchemeError
+		                       userInfo: url ? @{ NSURLErrorKey: url } : nil];
+	}
+	// Preserve the existing missing-file Cocoa error while retaining its cause.
+	if ([[cause domain] isEqualToString: NSPOSIXErrorDomain] && [cause code] == ENOENT) {
+		return [NSError errorWithDomain: NSCocoaErrorDomain code: NSFileReadNoSuchFileError
+		                       userInfo: @{ NSURLErrorKey: url, NSUnderlyingErrorKey: cause }];
+	}
+	return cause ?: [NSError errorWithDomain: NSCocoaErrorDomain code: NSFileReadUnknownError
+	                                userInfo: @{ NSURLErrorKey: url, NSFilePathErrorKey: path }];
+}
+
 @implementation NSFileWrapper
 
 + (id) alloc
@@ -107,10 +128,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
     NSError* error = nil;
     NSFileWrapper* result = nil;
     NSFileManager* manager = [NSFileManager defaultManager];
-    if (!path) {
-        error = [NSError errorWithDomain: NSCocoaErrorDomain code: NSFileReadUnsupportedSchemeError
-                               userInfo: url ? @{ NSURLErrorKey: url } : nil];
-    } else {
+    if (path) {
         NSDictionary* attributes = [manager attributesOfItemAtPath: path error: &error];
         NSString* type = [attributes objectForKey: NSFileType];
         if ([type isEqualToString: NSFileTypeDirectory]) {
@@ -130,9 +148,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
         } else if ([type isEqualToString: NSFileTypeRegular]) {
             NSData* data = nil;
             if (options & NSFileWrapperReadingImmediate) {
-                data = [NSData dataWithContentsOfURL: url
-                    options: (options & NSFileWrapperReadingWithoutMapping) ? 0 : NSDataReadingMappedIfSafe
-                    error: &error];
+                data = [NSData dataWithContentsOfURL: url options: dataReadingOptions(options) error: &error];
             }
             if (!(options & NSFileWrapperReadingImmediate) || data) {
                 result = [self initRegularFileWithContents: data];
@@ -148,15 +164,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
             [result setPreferredFilename: [result filename]];
             return result;
         }
-        // Preserve the existing missing-file Cocoa error while retaining its cause.
-        if ([[error domain] isEqualToString: NSPOSIXErrorDomain] && [error code] == ENOENT) {
-            error = [NSError errorWithDomain: NSCocoaErrorDomain code: NSFileReadNoSuchFileError
-                userInfo: @{ NSURLErrorKey: url, NSUnderlyingErrorKey: error }];
-        }
-        if (!error) error = [NSError errorWithDomain: NSCocoaErrorDomain code: NSFileReadUnknownError
-                                           userInfo: @{ NSURLErrorKey: url, NSFilePathErrorKey: path }];
     }
-    if (outError) *outError = error;
+    if (outError) *outError = fileWrapperReadError(url, path, error);
     // self is the shared +alloc placeholder, which must never be released.
     return nil;
 }
@@ -357,9 +366,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 - (NSData*) regularFileContents
 {
     if (contentData == nil) {
-        contentData = [[NSData alloc] initWithContentsOfFile: _path
-            options: (readingOptions & NSFileWrapperReadingWithoutMapping) ? 0 : NSDataReadingMappedIfSafe
-            error: NULL];
+        contentData = [[NSData alloc] initWithContentsOfFile: _path options: dataReadingOptions(readingOptions) error: NULL];
     }
 	return contentData;
 }
