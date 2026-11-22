@@ -54,7 +54,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 {
     [_path release];
     _path = [path copy];
-    _fileAttributes = [[attrs mutableCopy] retain];
+    NSMutableDictionary* attributesCopy = [attrs mutableCopy];
+    [_fileAttributes release];
+    _fileAttributes = attributesCopy;
     return attrs != nil;
 }
 
@@ -78,7 +80,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 	NSFileManager* fm = [NSFileManager defaultManager];
 	
 	if (NSDebugEnabled) NSLog(@"NSFileWrapper", @"initWithPath: %@", path);
-	NSDictionary* attrs = [[fm fileAttributesAtPath: path traverseLink: NO] retain];
+	NSDictionary* attrs = [fm fileAttributesAtPath: path traverseLink: NO];
 	
 	NSString* fileType = [attrs fileType];
 	if ([fileType isEqualToString: NSFileTypeDirectory]) {
