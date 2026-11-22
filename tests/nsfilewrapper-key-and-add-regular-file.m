@@ -76,7 +76,7 @@ int main(void)
     expect([raised(^{ [stranger keyForFileWrapper:nil]; }) isEqualToString:NSInternalInconsistencyException],
            "the key lookup of nil on a regular file wrapper raises NSInternalInconsistencyException");
     expect([dir keyForFileWrapper:nil] == nil, "the key of a nil child is nil");
-    expect([raised(^{ [dir addRegularFileWithContents:nil preferredFilename:@"nodata.txt"]; }) == nil,
+    expect(raised(^{ [dir addRegularFileWithContents:nil preferredFilename:@"nodata.txt"]; }) == nil,
            "nil contents with a valid name raise nothing");
 
     // Bad names, on a directory.
