@@ -1,0 +1,5 @@
+# NSBundle bundleWithIdentifier: finds a loaded framework
+
+Build nsbundle-bundlewithidentifier-loaded-framework.m against Foundation and run it under Darling. It reads the CFBundleIdentifier of the CoreServices framework from its Info.plist with `NSDictionary` (so no `NSBundle` is created for it), loads the framework with `dlopen`, and expects `+[NSBundle bundleWithIdentifier:]` to return a bundle whose identifier matches and whose path ends in `CoreServices.framework`, the same object on a second call and from `+bundleWithPath:`, and nil for an unknown, empty or nil identifier. If the main bundle has an identifier, that identifier must return the main bundle.
+
+Baseline: the framework is loaded but no `NSBundle` exists for it, so the first lookup returns nil and the checks on the returned bundle fail; candidate: zero failures. The test does not link CoreServices; if something in the process had already created a bundle for it, the baseline would pass the first lookup too. The main-bundle check only runs when the test executable has an identifier, which a plain command-line build does not give it, so that case is normally skipped and not covered.
