@@ -34,6 +34,24 @@ NSString *const NSUnionOfSetsKeyValueOperator = @"unionOfSets";
 static NSString *const NSTargetObjectUserInfoKey = @"NSTargetObjectUserInfoKey";
 static NSString *const NSUnknownUserInfoKey = @"NSUnknownUserInfoKey";
 
+@implementation NSOrderedSet (NSKeyValueCodingValueForKey)
+
+- (id)valueForKey:(id)key
+{
+    // A nil result leaves no entry and the result holds no duplicates, as documented.
+    // GUESS: the members' order is kept and a duplicate collapses into its first occurrence; the documentation says neither.
+    NSMutableOrderedSet *values = [NSMutableOrderedSet orderedSetWithCapacity:[self count]];
+    for (id member in self)
+    {
+        id value = [member valueForKey:key];
+        if (value)
+            [values addObject:value];
+    }
+    return [NSOrderedSet orderedSetWithOrderedSet:values];
+}
+
+@end
+
 @implementation NSObject (NSKeyValueCoding)
 
 + (BOOL)accessInstanceVariablesDirectly
