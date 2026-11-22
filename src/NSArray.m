@@ -219,6 +219,14 @@ OBJC_PROTOCOL_IMPL_POP
     return resultArray;
 }
 
+- (void)setValue:(id)value forKey:(id)key
+{
+    for (id member in self)
+    {
+        [member setValue:value forKey:key];
+    }
+}
+
 - (id)_unionOfObjectsForKeyPath:(id)keyPath
 {
     NSMutableArray *result = [NSMutableArray arrayWithCapacity:[self count]];

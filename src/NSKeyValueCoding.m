@@ -9,6 +9,7 @@
 #import "NSKeyValueCollectionProxies.h"
 #import <Foundation/NSException.h>
 #import "NSKeyValueAccessor.h"
+#import <Foundation/NSOrderedSet.h>
 #import <Foundation/NSSet.h>
 #import <Foundation/NSString.h>
 #import <Foundation/NSNull.h>
@@ -216,6 +217,18 @@ static NSString *const NSUnknownUserInfoKey = @"NSUnknownUserInfoKey";
     for (NSString *key in keyedValues)
     {
         [self setValue:keyedValues[key] forKey:key];
+    }
+}
+
+@end
+
+@implementation NSOrderedSet (NSKeyValueCodingSetValue)
+
+- (void)setValue:(id)value forKey:(id)key
+{
+    for (id member in self)
+    {
+        [member setValue:value forKey:key];
     }
 }
 
