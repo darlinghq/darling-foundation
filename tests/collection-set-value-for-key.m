@@ -101,7 +101,9 @@ int main(void)
     expect([a name] == nil && [c name] == nil, "NSOrderedSet: nil is passed to the members");
 
     // Members need not be of one class: dictionaries take the value as an entry.
-    NSMutableDictionary *d1 = [NSMutableDictionary dictionary], *d2 = [NSMutableDictionary dictionary];
+    // The two dictionaries differ (an NSSet holds one of two equal members, and they are equal once both got the same entry).
+    NSMutableDictionary *d1 = [NSMutableDictionary dictionaryWithObject:@1 forKey:@"id"];
+    NSMutableDictionary *d2 = [NSMutableDictionary dictionaryWithObject:@2 forKey:@"id"];
     [[NSArray arrayWithObjects:d1, d2, nil] setValue:@"v" forKey:@"k"];
     expect([[d1 objectForKey:@"k"] isEqual:@"v"] && [[d2 objectForKey:@"k"] isEqual:@"v"], "NSArray of dictionaries: each gets the entry");
     [[NSSet setWithObjects:d1, d2, nil] setValue:@"w" forKey:@"k"];
