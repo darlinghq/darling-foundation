@@ -1,15 +1,22 @@
 // -[NSFileWrapper readFromURL:options:error:] and -[NSFileWrapper matchesContentsOfURL:].
 // Documented in developer.apple.com/documentation/foundation/filewrapper/read(from:options:) and
 // .../matchescontents(of:): reading rereads the contents of the wrapper from the node, and for a directory
-// children are added and removed as necessary to match the file system; a match is decided by the modification
-// date and permissions for a regular file, by the children (recursively) for a directory and by the destination
-// for a symbolic link. Items marked GUESS in src/NSFileWrapper.m (the error for a node of another kind, a
-// child whose node changed kind) are checked only for not crashing and for leaving the wrapper intact.
+// children are added and removed as necessary to match the file system; a match is decided by modification dates
+// (and, for a directory, its children). What the documentation leaves open is pinned by black-box observation on
+// macOS 26.7.3 and 10.14.4 (identical on both): a regular file or link wrapper matches when the whole second of the
+// node's date is that of the recorded date or the one after it, whatever the contents, permissions or link
+// destination are; a directory wrapper matches when its own date does and every child it has matches the entry of
+// that name (entries it lacks are not looked at); a wrapper made from data records the moment it was made as its
+// date, except a link wrapper, which records none; a reread reads the contents only for a wrapper that no longer
+// matches, but always takes up the node's attributes; an existing child that cannot be reread does not fail the
+// read of its directory. The date rule is a QUIRK (see modificationDatesMatch in src/NSFileWrapper.m).
+// Not followed, as a wrapper here cannot change its kind: a node of another kind than the wrapper fails the read.
 // Built without ARC.
 #import <Foundation/Foundation.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 static int failures;
@@ -28,17 +35,27 @@ static void put(NSString *path, NSString *text)
     [text writeToFile:path atomically:NO encoding:NSUTF8StringEncoding error:NULL];
 }
 
-// Moves the modification date, which is what a regular file is matched on.
-static void touch(NSString *path, NSTimeInterval secondsFromNow)
+// Sets the modification date of the item itself (a link is not followed), to whole seconds since 1970 plus a fraction.
+static void setDate(NSString *path, double seconds)
 {
-    NSDictionary *attrs = @{ NSFileModificationDate: [NSDate dateWithTimeIntervalSinceNow:secondsFromNow] };
-    [fm setAttributes:attrs ofItemAtPath:path error:NULL];
+    struct timeval times[2];
+    times[0].tv_sec = times[1].tv_sec = (time_t)seconds;
+    times[0].tv_usec = times[1].tv_usec = (suseconds_t)((seconds - (double)(time_t)seconds) * 1000000.0);
+    lutimes([path fileSystemRepresentation], times);
 }
 
 static NSString *text(NSFileWrapper *wrapper)
 {
     return [[[NSString alloc] initWithData:[wrapper regularFileContents] encoding:NSUTF8StringEncoding] autorelease];
 }
+
+static NSDate *dateAt(double seconds)
+{
+    return [NSDate dateWithTimeIntervalSince1970:seconds];
+}
+
+// A date at which the files below are put, long ago, so that moving them by seconds never meets "now".
+#define T0 1500000000.0
 
 int main(void)
 {
@@ -57,62 +74,128 @@ int main(void)
     NSString *link = [dir stringByAppendingPathComponent:@"link"];
     NSURL *dirURL = [NSURL fileURLWithPath:dir];
     NSURL *aURL = [NSURL fileURLWithPath:a];
+    NSURL *linkURL = [NSURL fileURLWithPath:link];
     [fm createDirectoryAtPath:sub withIntermediateDirectories:YES attributes:nil error:NULL];
     put(a, @"one");
     put(b, @"inner");
     put(gone, @"bye");
     symlink([a fileSystemRepresentation], [link fileSystemRepresentation]);
+    for (NSString *path in [NSArray arrayWithObjects:a, b, gone, link, sub, dir, nil])
+        setDate(path, T0);
 
     NSError *error = nil;
     NSFileWrapper *wrapper = [[[NSFileWrapper alloc] initWithURL:dirURL options:0 error:&error] autorelease];
     expect(wrapper != nil, "the directory is read");
+    NSDictionary *wrapped = [wrapper fileWrappers];
+    NSFileWrapper *aWrapper = [wrapped objectForKey:@"a.txt"];
+    NSFileWrapper *subWrapper = [wrapped objectForKey:@"sub"];
+    NSFileWrapper *bWrapper = [[subWrapper fileWrappers] objectForKey:@"b.txt"];
+    NSFileWrapper *linkWrapper = [wrapped objectForKey:@"link"];
 
     // Matching.
     expect([wrapper matchesContentsOfURL:dirURL], "a directory wrapper read from the directory matches it");
-    expect([[[wrapper fileWrappers] objectForKey:@"a.txt"] matchesContentsOfURL:aURL], "a regular file wrapper matches its file");
-    expect([[[wrapper fileWrappers] objectForKey:@"link"] matchesContentsOfURL:[NSURL fileURLWithPath:link]], "a link wrapper matches its link");
+    expect([aWrapper matchesContentsOfURL:aURL], "a regular file wrapper matches its file");
+    expect([linkWrapper matchesContentsOfURL:linkURL], "a link wrapper matches its link");
     expect(![wrapper matchesContentsOfURL:aURL], "a directory wrapper does not match a file");
-    expect(![[[wrapper fileWrappers] objectForKey:@"a.txt"] matchesContentsOfURL:dirURL], "a file wrapper does not match a directory");
+    expect(![aWrapper matchesContentsOfURL:dirURL], "a file wrapper does not match a directory");
     expect(![wrapper matchesContentsOfURL:[NSURL fileURLWithPath:[dir stringByAppendingPathComponent:@"missing"]]], "a missing node matches nothing");
     expect(![wrapper matchesContentsOfURL:[NSURL URLWithString:@"http://example.com/"]], "a URL that is not a file URL matches nothing");
-    NSFileWrapper *fromData = [[[NSFileWrapper alloc] initRegularFileWithContents:[@"one" dataUsingEncoding:NSUTF8StringEncoding]] autorelease];
-    expect(![fromData matchesContentsOfURL:aURL], "a wrapper that was not read from a node records no date and does not match");
+    expect(![wrapper matchesContentsOfURL:nil], "a nil URL matches nothing");
 
-    // A node on disk that the wrapper lacks, and a child of the wrapper that is not on disk, are each a mismatch.
-    NSString *extra = [dir stringByAppendingPathComponent:@"extra.txt"];
-    put(extra, @"x");
-    expect(![wrapper matchesContentsOfURL:dirURL], "a directory with an entry the wrapper lacks does not match");
-    [fm removeItemAtPath:extra error:NULL];
-    expect([wrapper matchesContentsOfURL:dirURL], "and matches again once the entry is gone");
-    [fm removeItemAtPath:gone error:NULL];
-    expect(![wrapper matchesContentsOfURL:dirURL], "a directory lacking an entry the wrapper has does not match");
-
-    // Permissions count for a regular file, besides the modification date.
+    // Contents, permissions and a link's destination are not compared, the dates are.
+    put(a, @"ONE");
+    setDate(a, T0);
+    expect([aWrapper matchesContentsOfURL:aURL], "a regular file with other contents and the same date still matches");
     struct stat st;
     stat([a fileSystemRepresentation], &st);
     mode_t mode = st.st_mode & 07777;
     chmod([a fileSystemRepresentation], mode ^ 0100);
-    expect(![[[wrapper fileWrappers] objectForKey:@"a.txt"] matchesContentsOfURL:aURL], "a regular file with other permissions does not match");
+    expect([aWrapper matchesContentsOfURL:aURL], "so does one with other permissions");
     chmod([a fileSystemRepresentation], mode);
-    expect([[[wrapper fileWrappers] objectForKey:@"a.txt"] matchesContentsOfURL:aURL], "and matches again with its permissions back");
+    [fm removeItemAtPath:link error:NULL];
+    symlink("/somewhere/else", [link fileSystemRepresentation]);
+    setDate(link, T0);
+    expect([linkWrapper matchesContentsOfURL:linkURL], "a link wrapper matches a link with another destination and the same date");
+    put(a, @"one");
+    setDate(a, T0);
 
-    touch(b, 100);
-    NSFileWrapper *bWrapper = [[[[wrapper fileWrappers] objectForKey:@"sub"] fileWrappers] objectForKey:@"b.txt"];
-    expect(![bWrapper matchesContentsOfURL:[NSURL fileURLWithPath:b]], "a regular file with another modification date does not match");
-    expect(![[[wrapper fileWrappers] objectForKey:@"sub"] matchesContentsOfURL:[NSURL fileURLWithPath:sub]], "a directory with such a child does not match");
+    // The date rule (QUIRK): the whole second of the node's date is the recorded one or the one after it. Observed
+    // for recorded dates at three fractions of a second and these offsets of the node's date from the recorded date.
+    {
+        static const double offsets[] = { -1.5, -1.1, -1, -0.9, -0.5, 0, 0.5, 0.9, 1, 1.1, 1.5, 2 };
+        static const double fractions[] = { 0.05, 0.56, 0.95 };
+        // Y for a match; one row per fraction, one column per offset
+        static const char *expected[] = { "nnnnnYYYYYYn", "nnnnYYYYYYnn", "nnnYYYYYYnnn" };
+        NSString *probe = [dir stringByAppendingPathComponent:@"probe.txt"];
+        put(probe, @"x");
+        NSURL *probeURL = [NSURL fileURLWithPath:probe];
+        BOOL ok = YES;
+        for (int f = 0; f < 3; f++) {
+            double recorded = T0 + 100 + fractions[f];
+            NSFileWrapper *w = [[[NSFileWrapper alloc] initRegularFileWithContents:nil] autorelease];
+            [w setFileAttributes:[NSDictionary dictionaryWithObjectsAndKeys:NSFileTypeRegular, NSFileType,
+                [NSNumber numberWithInt:0644], NSFilePosixPermissions, dateAt(recorded), NSFileModificationDate, nil]];
+            for (int o = 0; o < 12; o++) {
+                setDate(probe, recorded + offsets[o]);
+                BOOL expectedMatch = expected[f][o] == 'Y';
+                if ([w matchesContentsOfURL:probeURL] != expectedMatch) {
+                    printf("  date rule: recorded fraction %.2f offset %+.1f gave %d\n", fractions[f], offsets[o], !expectedMatch);
+                    ok = NO;
+                }
+            }
+        }
+        expect(ok, "the date rule holds for every fraction of a second and offset observed");
+        [fm removeItemAtPath:probe error:NULL];
+    }
+
+    // A wrapper made from data records the moment it was made: it matches a file dated then and not an old one.
+    NSFileWrapper *fromData = [[[NSFileWrapper alloc] initRegularFileWithContents:[@"one" dataUsingEncoding:NSUTF8StringEncoding]] autorelease];
+    expect(![fromData matchesContentsOfURL:aURL], "a wrapper made from data does not match a file with an old date");
+    setDate(a, (double)time(NULL));
+    expect([fromData matchesContentsOfURL:aURL], "but matches a file dated when it was made, whatever the contents");
+    setDate(a, T0);
+    NSFileWrapper *linkFromDestination = [[[NSFileWrapper alloc] initSymbolicLinkWithDestinationURL:[NSURL fileURLWithPath:@"/somewhere/else"]] autorelease];
+    setDate(link, (double)time(NULL));
+    expect(![linkFromDestination matchesContentsOfURL:linkURL], "a link wrapper made from a destination records no date and matches nothing");
+    setDate(link, T0);
+
+    // Directories: the entries the wrapper has must match, extra entries on disk do not matter.
+    NSString *extra = [dir stringByAppendingPathComponent:@"extra.txt"];
+    put(extra, @"x");
+    setDate(dir, T0);
+    expect([wrapper matchesContentsOfURL:dirURL], "an entry the wrapper lacks does not break the match");
+    [fm removeItemAtPath:extra error:NULL];
+    setDate(dir, T0);
+    [fm removeItemAtPath:gone error:NULL];
+    setDate(dir, T0);
+    expect(![wrapper matchesContentsOfURL:dirURL], "a directory lacking an entry the wrapper has does not match");
+    put(gone, @"bye");
+    setDate(gone, T0);
+    setDate(dir, T0);
+    expect([wrapper matchesContentsOfURL:dirURL], "and matches again once the entry is back");
+    setDate(dir, T0 + 100);
+    expect(![wrapper matchesContentsOfURL:dirURL], "a directory with another date does not match");
+    setDate(dir, T0);
+    setDate(b, T0 + 100);
+    expect(![bWrapper matchesContentsOfURL:[NSURL fileURLWithPath:b]], "a regular file with another date does not match");
+    expect(![subWrapper matchesContentsOfURL:[NSURL fileURLWithPath:sub]], "a directory with such a child does not match");
     expect(![wrapper matchesContentsOfURL:dirURL], "so the directory above it does not match either");
-    expect([[[wrapper fileWrappers] objectForKey:@"a.txt"] matchesContentsOfURL:aURL], "a sibling that did not change still matches");
+    expect([aWrapper matchesContentsOfURL:aURL], "a sibling that did not change still matches");
+    setDate(b, T0);
 
-    // Rereading: contents, additions and removals, at any depth, and the kinds of node.
+    // Rereading: contents, additions and removals, at any depth.
+    NSFileWrapper *aBefore = aWrapper;
+    NSFileWrapper *subBefore = subWrapper;
     put(a, @"changed");
-    touch(a, 100);
+    setDate(a, T0 + 100);
     put([dir stringByAppendingPathComponent:@"new.txt"], @"fresh");
     [fm removeItemAtPath:b error:NULL];
     put([sub stringByAppendingPathComponent:@"deeper.txt"], @"deep");
     [fm removeItemAtPath:link error:NULL];
     symlink("/somewhere/else", [link fileSystemRepresentation]);
-    NSFileWrapper *aBefore = [[wrapper fileWrappers] objectForKey:@"a.txt"];
-    NSFileWrapper *subBefore = [[wrapper fileWrappers] objectForKey:@"sub"];
+    setDate(link, T0 + 100);
+    setDate(sub, T0 + 100);
+    setDate(dir, T0 + 100);
 
     expect(![wrapper matchesContentsOfURL:dirURL], "the directory no longer matches");
     error = nil;
@@ -121,7 +204,7 @@ int main(void)
     expect([wrapper matchesContentsOfURL:dirURL], "the directory matches after the reread");
     NSDictionary *children = [wrapper fileWrappers];
     NSSet *names = [NSSet setWithArray:[children allKeys]];
-    expect([names isEqualToSet:[NSSet setWithObjects:@"a.txt", @"sub", @"new.txt", @"link", nil]], "children were added and removed to match the directory");
+    expect([names isEqualToSet:[NSSet setWithObjects:@"a.txt", @"sub", @"new.txt", @"link", @"gone.txt", nil]], "children were added and removed to match the directory");
     expect([children objectForKey:@"a.txt"] == aBefore && [children objectForKey:@"sub"] == subBefore,
            "the wrappers of nodes that remain are kept");
     expect([text([children objectForKey:@"a.txt"]) isEqualToString:@"changed"], "the contents of a kept file were reread");
@@ -130,20 +213,54 @@ int main(void)
     NSDictionary *inner = [[children objectForKey:@"sub"] fileWrappers];
     expect([[NSSet setWithArray:[inner allKeys]] isEqualToSet:[NSSet setWithObject:@"deeper.txt"]], "the reread is recursive");
     expect([[[[children objectForKey:@"link"] symbolicLinkDestinationURL] path] isEqualToString:@"/somewhere/else"], "a link has its new destination");
+    expect([[[[wrapper fileAttributes] objectForKey:NSFileModificationDate] description] isEqualToString:[dateAt(T0 + 100) description]], "the recorded attributes are the node's");
 
     // Immediate reading took the contents now: they survive the file going away.
     [fm removeItemAtPath:a error:NULL];
     expect([text([children objectForKey:@"a.txt"]) isEqualToString:@"changed"], "NSFileWrapperReadingImmediate read the contents in advance");
 
-    // A file replaced by a directory of the same name (GUESS: the child is replaced).
+    // The contents of a wrapper that still matches are not read again, its attributes are (observed on macOS).
     put(a, @"again");
+    setDate(a, T0 + 100);
+    expect([[children objectForKey:@"a.txt"] matchesContentsOfURL:aURL], "(setup) the file has the recorded date");
+    expect([wrapper readFromURL:dirURL options:NSFileWrapperReadingImmediate error:NULL], "a reread of what matches succeeds");
+    expect([text([children objectForKey:@"a.txt"]) isEqualToString:@"changed"], "and does not read the contents of a file that still matches");
+    chmod([a fileSystemRepresentation], 0600);
+    NSFileWrapper *aFile = [children objectForKey:@"a.txt"];
+    expect([aFile readFromURL:aURL options:NSFileWrapperReadingImmediate error:NULL], "rereading one file");
+    expect([[[aFile fileAttributes] objectForKey:NSFilePosixPermissions] intValue] == 0600, "takes up the changed permissions");
+    expect([text(aFile) isEqualToString:@"changed"], "without reading the contents");
+    setDate(a, T0 + 200);
+    expect([aFile readFromURL:aURL options:NSFileWrapperReadingImmediate error:NULL] && [text(aFile) isEqualToString:@"again"], "and reads them once the date has moved");
+
+    // A child whose node changed kind (a file replaced by a directory of the same name) is replaced here.
     [fm removeItemAtPath:[dir stringByAppendingPathComponent:@"new.txt"] error:NULL];
     [fm createDirectoryAtPath:[dir stringByAppendingPathComponent:@"new.txt"] withIntermediateDirectories:NO attributes:nil error:NULL];
+    setDate([dir stringByAppendingPathComponent:@"new.txt"], T0 + 300);
     expect([wrapper readFromURL:dirURL options:0 error:NULL], "a directory with a child that changed kind is reread");
     expect([[[wrapper fileWrappers] objectForKey:@"new.txt"] isDirectory], "the child that changed kind is a directory wrapper now");
 
-    // Failures leave the receiver as it was.
-    NSFileWrapper *file = [[[NSFileWrapper alloc] initWithURL:[NSURL fileURLWithPath:a] options:0 error:NULL] autorelease];
+    // An existing child that cannot be reread does not fail the read of the directory (observed on macOS).
+    if (geteuid() != 0) {
+        NSString *z = [dir stringByAppendingPathComponent:@"z.txt"];
+        put(z, @"z1");
+        setDate(z, T0);
+        setDate(dir, T0 + 400);
+        expect([wrapper readFromURL:dirURL options:NSFileWrapperReadingImmediate error:NULL], "(setup) a new child is read");
+        NSFileWrapper *zWrapper = [[wrapper fileWrappers] objectForKey:@"z.txt"];
+        // written as a new file: the first contents may be mapped from the old one, which an in-place write would change
+        [@"z2" writeToFile:z atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+        setDate(z, T0 + 500);
+        chmod([z fileSystemRepresentation], 0);
+        setDate(dir, T0 + 500);
+        error = nil;
+        expect([wrapper readFromURL:dirURL options:NSFileWrapperReadingImmediate error:&error] && error == nil, "an unreadable child does not fail the read of the directory");
+        expect([[wrapper fileWrappers] objectForKey:@"z.txt"] == zWrapper && [text(zWrapper) isEqualToString:@"z1"], "and keeps what it had");
+        chmod([z fileSystemRepresentation], 0644);
+    }
+
+    // A node of another kind than the wrapper fails the read and leaves the wrapper as it was (not what macOS does).
+    NSFileWrapper *file = [[[NSFileWrapper alloc] initWithURL:aURL options:0 error:NULL] autorelease];
     error = nil;
     expect(![file readFromURL:dirURL options:0 error:&error], "a regular file wrapper does not take a directory");
     expect(error != nil && [[error domain] isEqualToString:NSCocoaErrorDomain], "that failure is a Cocoa error");
@@ -156,21 +273,22 @@ int main(void)
     expect([[error domain] isEqualToString:NSCocoaErrorDomain] && [error code] == NSFileReadUnsupportedSchemeError, "that is NSFileReadUnsupportedSchemeError");
     expect(![file readFromURL:dirURL options:0 error:NULL], "a NULL error pointer is accepted");
 
-    // A regular file wrapper rereads its own file.
+    // A regular file wrapper rereads its own file once its date has moved.
     put(a, @"third");
-    touch(a, 200);
+    setDate(a, T0 + 600);
     expect(![file matchesContentsOfURL:aURL], "the file wrapper no longer matches its changed file");
     expect([file readFromURL:aURL options:0 error:NULL] && [text(file) isEqualToString:@"third"], "the file wrapper rereads it");
     expect([file matchesContentsOfURL:aURL], "and matches it again");
 
-    // A link wrapper rereads the destination.
-    NSFileWrapper *linkWrapper = [[[NSFileWrapper alloc] initWithURL:[NSURL fileURLWithPath:link] options:0 error:NULL] autorelease];
+    // A link wrapper rereads the destination once its date has moved.
+    NSFileWrapper *reader = [[[NSFileWrapper alloc] initWithURL:linkURL options:0 error:NULL] autorelease];
     [fm removeItemAtPath:link error:NULL];
     symlink("/another/place", [link fileSystemRepresentation]);
-    expect(![linkWrapper matchesContentsOfURL:[NSURL fileURLWithPath:link]], "a link wrapper does not match a link with another destination");
-    expect([linkWrapper readFromURL:[NSURL fileURLWithPath:link] options:0 error:NULL] &&
-           [[[linkWrapper symbolicLinkDestinationURL] path] isEqualToString:@"/another/place"], "the link wrapper rereads the destination");
-    expect([linkWrapper matchesContentsOfURL:[NSURL fileURLWithPath:link]], "and matches it again");
+    setDate(link, T0 + 700);
+    expect(![reader matchesContentsOfURL:linkURL], "a link wrapper does not match a link with another date");
+    expect([reader readFromURL:linkURL options:0 error:NULL] &&
+           [[[reader symbolicLinkDestinationURL] path] isEqualToString:@"/another/place"], "the link wrapper rereads the destination");
+    expect([reader matchesContentsOfURL:linkURL], "and matches it again");
 
     [fm removeItemAtPath:dir error:NULL];
     [outer drain];
