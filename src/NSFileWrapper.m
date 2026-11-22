@@ -498,14 +498,15 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 			// Try to recycle an old wrapper (and data!)
 			NSFileWrapper* wrapper = [contentDictionary objectForKey: filename];
 			if (wrapper) {
-				// Update recycled wrapper:
+				// The old dictionary owns the recycled wrapper; the new one takes its own reference.
 				[wrapper updateFromPath: absolutePath];
+				[newContentDictionary setObject: wrapper forKey: filename];
 			} else {
-				// Create new one:
+				// Only a wrapper created here carries a reference of ours to give up.
 				wrapper = [[[NSFileWrapper class] alloc] initWithPath: absolutePath];
+				[newContentDictionary setObject: wrapper forKey: filename];
+				[wrapper release];
 			}
-			[newContentDictionary setObject: wrapper forKey: filename]; 
-			[wrapper release];
 		}	
 		
 		[contentDictionary release];
