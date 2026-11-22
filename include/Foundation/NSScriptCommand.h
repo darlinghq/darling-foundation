@@ -21,4 +21,7 @@
 
 @interface NSScriptCommand : NSObject <NSCoding>
 
+// Documented as returning nil when no command is being executed; not marked nullable because this header has no nullability annotations at all.
++ (NSScriptCommand *)currentCommand;
+
 @end
