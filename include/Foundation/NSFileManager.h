@@ -140,6 +140,7 @@ FOUNDATION_EXPORT NSString * const NSFileSystemFreeNodes;
 - (NSString *)pathContentOfSymbolicLinkAtPath:(NSString *)path;
 - (BOOL)createSymbolicLinkAtPath:(NSString *)path pathContent:(NSString *)otherpath;
 - (BOOL)createDirectoryAtPath:(NSString *)path attributes:(NSDictionary *)attributes;
+- (BOOL)copyPath:(NSString *)src toPath:(NSString *)dest handler:(id)handler;
 - (NSString *)currentDirectoryPath;
 - (BOOL)changeCurrentDirectoryPath:(NSString *)path;
 - (BOOL)fileExistsAtPath:(NSString *)path;

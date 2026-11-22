@@ -1026,6 +1026,42 @@ static NSError *_NSErrorWithFilePathAndErrno(id path, int code)
     return [self copyItemAtPath:srcURL.path toPath:dstURL.path error:error];
 }
 
+- (BOOL)copyPath:(NSString *)src toPath:(NSString *)dest handler:(id)handler
+{
+    // GUESS: the documentation does not cover a nil path, so it is refused without consulting the handler.
+    if (src == nil || dest == nil)
+    {
+        return NO;
+    }
+
+    // KNOWN LIMITATION: the handler is called once for the whole copy, not for each entry of a directory,
+    // and a YES from the error callback returns YES but does not resume the copy.
+    if ([handler respondsToSelector:@selector(fileManager:willProcessPath:)])
+    {
+        [handler fileManager:self willProcessPath:src];
+    }
+
+    NSError *error = nil;
+    if ([self copyItemAtPath:src toPath:dest error:&error])
+    {
+        return YES;
+    }
+
+    // A missing handler, or one without the error callback, makes the copy fail.
+    if (![handler respondsToSelector:@selector(fileManager:shouldProceedAfterError:)])
+    {
+        return NO;
+    }
+    // GUESS: the documentation gives no text for @"Error"; the localized description is used, and a fixed
+    // text when -copyItemAtPath:toPath:error: failed without an error (a destination parent that is a file).
+    NSString *description = error.localizedDescription ?: @"The item could not be copied.";
+    return [handler fileManager:self shouldProceedAfterError:@{
+        @"Path": src,
+        @"Error": description,
+        @"ToPath": dest,
+    }];
+}
+
 - (NSData *)contentsAtPath:(NSString *)path
 {
     return [[[NSData alloc] initWithContentsOfFile:path] autorelease];
