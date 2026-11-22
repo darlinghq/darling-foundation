@@ -1018,6 +1018,13 @@ static BOOL typesAreCompatible(const char *archived, const char *requested)
     return CGRectMake(v[0], v[1], v[2], v[3]);
 }
 
+// Old NeXT archives record data bytes as an "i" length followed by a "[<length>c]" array of raw bytes.
+- (BOOL)_decodeByteArrayTypeOfLength:(int)length
+{
+    NSString* type;
+    return [self decodeSharedString:&type] && [type isEqualToString:[NSString stringWithFormat:@"[%dc]", length]];
+}
+
 - (void*)decodeBytesWithReturnedLength:(NSUInteger*)outLength
 {
     NSParameterAssert(outLength);
@@ -1026,13 +1033,16 @@ static BOOL typesAreCompatible(const char *archived, const char *requested)
     NSString* string;
     if(![self decodeSharedString:&string])
         return NULL;
-    if(![string isEqualToString:@"+"])
+    BOOL legacy = [string isEqualToString:@"i"];
+    if(!legacy && ![string isEqualToString:@"+"])
         return NULL;
-    
+
     int length;
     if(![self decodeInt:&length])
         return NULL;
-    
+    if(legacy && ![self _decodeByteArrayTypeOfLength:length])
+        return NULL;
+
     NSData* data;
     if(![self readData:&data length:length])
         return NULL;
