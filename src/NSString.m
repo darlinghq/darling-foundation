@@ -215,6 +215,17 @@ static NSStringEncoding __NSDefaultCStringEncoding()
     return defaultEncoding;
 }
 
+// The format-taking initializers, class factories and appenders are reached through the
+// NSString and NSMutableString placeholders and end in their -initWithFormat:locale:arguments:,
+// so the documented nil-format check lives here once.
+static void __NSStringRequireFormat(NSString *format)
+{
+    if (format == nil)
+    {
+        [NSException raise:NSInvalidArgumentException format:@"format cannot be nil"];
+    }
+}
+
 @implementation NSString
 
 + (id)allocWithZone:(NSZone *)zone
@@ -450,6 +461,7 @@ static NSStringEncoding __NSDefaultCStringEncoding()
 
 - (id)initWithFormat:(NSString *)format locale:(id)locale arguments:(va_list)argList
 {
+    __NSStringRequireFormat(format);
     return (id)_CFStringCreateWithFormatAndArgumentsAux(kCFAllocatorDefault, &_NSCFCopyDescription2, (CFDictionaryRef)locale, (CFStringRef)format, argList);
 }
 
@@ -537,6 +549,7 @@ SINGLETON_RR()
 
 - (id)initWithFormat:(NSString *)format locale:(id)locale arguments:(va_list)argList
 {
+    __NSStringRequireFormat(format);
     CFMutableStringRef str = CFStringCreateMutable(kCFAllocatorDefault, 0);
     _CFStringAppendFormatAndArgumentsAux(str, &_NSCFCopyDescription2, (CFDictionaryRef)locale, (CFStringRef)format, argList);
     return (id)str;
