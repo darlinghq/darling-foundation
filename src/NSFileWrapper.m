@@ -280,13 +280,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 - (NSString*) addRegularFileWithContents: (NSData*) data preferredFilename: (NSString*) filename
 {
-	// GUESS: the documentation lists both exceptions but not which comes first when a non directory is also given no name.
-	if (![filename length]) {
-		[NSException raise: NSInvalidArgumentException format: @"-[NSFileWrapper %@] filename may not be nil or empty.", NSStringFromSelector(_cmd)];
-	}
-	NSFileWrapper* child = [[[NSFileWrapper alloc] initRegularFileWithContents: data] autorelease];
-	[child setPreferredFilename: filename];
-	return [self addFileWrapper: child];
+	// The receiver is checked before the arguments: a non directory raises this, whatever the name is.
+	[NSException raise: NSInternalInconsistencyException format: @"-[NSFileWrapper %@] sent to a non directory file wrapper.", NSStringFromSelector(_cmd)];
+	return nil;
 }
 
 - (NSString*) keyForFileWrapper: (NSFileWrapper*) child
@@ -450,8 +446,19 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 - (NSString*) keyForFileWrapper: (NSFileWrapper*) child
 {
-	// GUESS: a nil child is not found, and a child stored under two keys gives the first one; the documentation says neither.
+	// A nil or foreign child has no key. A child stored under two keys gives one of them; which one is unspecified.
+	// Observed by black-box test on macOS 26.7.3 and 10.14.4, pinned by tests/nsfilewrapper-key-and-add-regular-file.m.
 	return child ? [[contentDictionary allKeysForObject: child] firstObject] : nil;
+}
+
+- (NSString*) addRegularFileWithContents: (NSData*) data preferredFilename: (NSString*) filename
+{
+	if (![filename length]) {
+		[NSException raise: NSInvalidArgumentException format: @"-[NSFileWrapper %@] filename may not be nil or empty.", NSStringFromSelector(_cmd)];
+	}
+	NSFileWrapper* child = [[[NSFileWrapper alloc] initRegularFileWithContents: data] autorelease];
+	[child setPreferredFilename: filename];
+	return [self addFileWrapper: child];
 }
 
 - (NSString*) addFileWrapper: (NSFileWrapper*) wrapper

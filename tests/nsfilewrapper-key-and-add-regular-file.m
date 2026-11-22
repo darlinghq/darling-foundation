@@ -65,6 +65,20 @@ int main(void)
                isEqualToString:NSInternalInconsistencyException],
            "adding a regular file to a regular file wrapper raises NSInternalInconsistencyException");
 
+    // macOS 26.7.3 and 10.14.4 (black-box observation): the receiver is checked before the arguments, so a
+    // non directory raises NSInternalInconsistencyException even for a nil or empty name, and for a nil child.
+    expect([raised(^{ [stranger addRegularFileWithContents:two preferredFilename:nil]; })
+               isEqualToString:NSInternalInconsistencyException],
+           "a nil name on a regular file wrapper raises NSInternalInconsistencyException (receiver first)");
+    expect([raised(^{ [stranger addRegularFileWithContents:two preferredFilename:@""]; })
+               isEqualToString:NSInternalInconsistencyException],
+           "an empty name on a regular file wrapper raises NSInternalInconsistencyException (receiver first)");
+    expect([raised(^{ [stranger keyForFileWrapper:nil]; }) isEqualToString:NSInternalInconsistencyException],
+           "the key lookup of nil on a regular file wrapper raises NSInternalInconsistencyException");
+    expect([dir keyForFileWrapper:nil] == nil, "the key of a nil child is nil");
+    expect([raised(^{ [dir addRegularFileWithContents:nil preferredFilename:@"nodata.txt"]; }) == nil,
+           "nil contents with a valid name raise nothing");
+
     // Bad names, on a directory.
     expect([raised(^{ [dir addRegularFileWithContents:two preferredFilename:nil]; })
                isEqualToString:NSInvalidArgumentException],
@@ -72,7 +86,7 @@ int main(void)
     expect([raised(^{ [dir addRegularFileWithContents:two preferredFilename:@""]; })
                isEqualToString:NSInvalidArgumentException],
            "an empty name raises NSInvalidArgumentException");
-    expect([[dir fileWrappers] count] == 1, "a refused add leaves the directory as it was");
+    expect([[dir fileWrappers] count] == 2, "a refused add leaves the directory as it was (child2 and nodata.txt)");
 
     [stranger release];
     [dir release];
