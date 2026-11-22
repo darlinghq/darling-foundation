@@ -4,6 +4,8 @@
 // and it holds no duplicates. NSOrderedSet has no page of its own for -valueForKeyPath:; a key path is resolved
 // by NSObject's -valueForKeyPath:, key by key (the Key-Value Coding Programming Guide), so each step maps over
 // the ordered set the previous one gave.
+// The order, the first-occurrence collapse of duplicates (also non adjacent ones), the empty results and the
+// immutable result for a mutable receiver are pinned by black-box observation on macOS 26.7.3 and 10.14.4.
 // Built without ARC.
 #import <Foundation/Foundation.h>
 #include <stdio.h>
@@ -47,6 +49,12 @@ int main(void)
            "a mutable ordered set gives a new ordered set of its members' values, in order");
     [mutableSet addObject:none];
     expect([names count] == 3, "an earlier result is not changed by a later change of the receiver");
+
+    NSOrderedSet *spaced = [NSOrderedSet orderedSetWithObjects:@{ @"k": @1 }, @{ @"k": @2 }, @{ @"k": @3 }, nil];
+    expect([[spaced valueForKey:@"k"] isEqual:[NSOrderedSet orderedSetWithObjects:@1, @2, @3, nil]], "distinct values stay in order");
+    NSOrderedSet *repeated = [NSOrderedSet orderedSetWithObjects:@{ @"k": @1, @"n": @"p" }, @{ @"k": @2, @"n": @"q" }, @{ @"k": @1, @"n": @"r" }, nil];
+    expect([[repeated valueForKey:@"k"] isEqual:[NSOrderedSet orderedSetWithObjects:@1, @2, nil]],
+           "a value repeated by a non adjacent member collapses into its first occurrence");
 
     expect([[set valueForKeyPath:@"inner.v"] isEqual:[NSOrderedSet orderedSetWithObjects:@"x", @"y", nil]],
            "a key path maps over the ordered set at each step");
