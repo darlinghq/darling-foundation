@@ -241,6 +241,14 @@ OBJC_PROTOCOL_IMPL_POP
     return resultSet;
 }
 
+- (void)setValue:(id)value forKey:(id)key
+{
+    for (id member in self)
+    {
+        [member setValue:value forKey:key];
+    }
+}
+
 - (id)valueForKeyPath:(id)aKeyPath
 {
 #warning TODO https://code.google.com/p/apportable/issues/detail?id=265

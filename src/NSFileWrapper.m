@@ -278,6 +278,19 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 	return nil;
 }
 
+- (NSString*) addRegularFileWithContents: (NSData*) data preferredFilename: (NSString*) filename
+{
+	// The receiver is checked before the arguments: a non directory raises this, whatever the name is.
+	[NSException raise: NSInternalInconsistencyException format: @"-[NSFileWrapper %@] sent to a non directory file wrapper.", NSStringFromSelector(_cmd)];
+	return nil;
+}
+
+- (NSString*) keyForFileWrapper: (NSFileWrapper*) child
+{
+	[NSException raise: NSInternalInconsistencyException format: @"-[NSFileWrapper %@] sent to a non directory file wrapper.", NSStringFromSelector(_cmd)];
+	return nil;
+}
+
 - (NSDictionary*) fileWrappers
 {
 	[NSException raise: NSInternalInconsistencyException format: @"-[NSFileWrapper %@] sent to a non directory file wrapper.", NSStringFromSelector(_cmd)];
@@ -431,6 +444,23 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 		return contentDictionary;
 }
 
+- (NSString*) keyForFileWrapper: (NSFileWrapper*) child
+{
+	// A nil or foreign child has no key. A child stored under two keys gives one of them; which one is unspecified.
+	// Observed by black-box test on macOS 26.7.3 and 10.14.4, pinned by tests/nsfilewrapper-key-and-add-regular-file.m.
+	return child ? [[contentDictionary allKeysForObject: child] firstObject] : nil;
+}
+
+- (NSString*) addRegularFileWithContents: (NSData*) data preferredFilename: (NSString*) filename
+{
+	if (![filename length]) {
+		[NSException raise: NSInvalidArgumentException format: @"-[NSFileWrapper %@] filename may not be nil or empty.", NSStringFromSelector(_cmd)];
+	}
+	NSFileWrapper* child = [[[NSFileWrapper alloc] initRegularFileWithContents: data] autorelease];
+	[child setPreferredFilename: filename];
+	return [self addFileWrapper: child];
+}
+
 - (NSString*) addFileWrapper: (NSFileWrapper*) wrapper
 {
 	if (!contentDictionary) {
@@ -498,14 +528,15 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 			// Try to recycle an old wrapper (and data!)
 			NSFileWrapper* wrapper = [contentDictionary objectForKey: filename];
 			if (wrapper) {
-				// Update recycled wrapper:
+				// The old dictionary owns the recycled wrapper; the new one takes its own reference.
 				[wrapper updateFromPath: absolutePath];
+				[newContentDictionary setObject: wrapper forKey: filename];
 			} else {
-				// Create new one:
+				// Only a wrapper created here carries a reference of ours to give up.
 				wrapper = [[[NSFileWrapper class] alloc] initWithPath: absolutePath];
+				[newContentDictionary setObject: wrapper forKey: filename];
+				[wrapper release];
 			}
-			[newContentDictionary setObject: wrapper forKey: filename]; 
-			[wrapper release];
 		}	
 		
 		[contentDictionary release];

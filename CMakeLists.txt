@@ -264,6 +264,7 @@ set(foundation_sources
 	src/NSScriptExecutionContext.m
 	src/NSScriptStandardSuiteCommands.m
 	src/NSScriptSuiteRegistry.m
+	src/NSScriptWhoseTests.m
 	src/NSUserNotification.m
 	src/NSUserScriptTask.m
 	src/NSDateInterval.m
