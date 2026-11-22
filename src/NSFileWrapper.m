@@ -278,6 +278,23 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 	return nil;
 }
 
+- (NSString*) addRegularFileWithContents: (NSData*) data preferredFilename: (NSString*) filename
+{
+	// GUESS: the documentation lists both exceptions but not which comes first when a non directory is also given no name.
+	if (![filename length]) {
+		[NSException raise: NSInvalidArgumentException format: @"-[NSFileWrapper %@] filename may not be nil or empty.", NSStringFromSelector(_cmd)];
+	}
+	NSFileWrapper* child = [[[NSFileWrapper alloc] initRegularFileWithContents: data] autorelease];
+	[child setPreferredFilename: filename];
+	return [self addFileWrapper: child];
+}
+
+- (NSString*) keyForFileWrapper: (NSFileWrapper*) child
+{
+	[NSException raise: NSInternalInconsistencyException format: @"-[NSFileWrapper %@] sent to a non directory file wrapper.", NSStringFromSelector(_cmd)];
+	return nil;
+}
+
 - (NSDictionary*) fileWrappers
 {
 	[NSException raise: NSInternalInconsistencyException format: @"-[NSFileWrapper %@] sent to a non directory file wrapper.", NSStringFromSelector(_cmd)];
@@ -429,6 +446,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 - (NSDictionary*) fileWrappers
 {
 		return contentDictionary;
+}
+
+- (NSString*) keyForFileWrapper: (NSFileWrapper*) child
+{
+	// GUESS: a nil child is not found, and a child stored under two keys gives the first one; the documentation says neither.
+	return child ? [[contentDictionary allKeysForObject: child] firstObject] : nil;
 }
 
 - (NSString*) addFileWrapper: (NSFileWrapper*) wrapper
