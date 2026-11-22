@@ -1,0 +1,7 @@
+# NSFileManager copyPath:toPath:handler:
+
+Build `nsfilemanager-copypath-handler.m` against Foundation and run it under Darling. It copies a file and a directory tree (symbolic links stay links, a symbolic link source too, and permissions are copied), then checks the documented handler contract: `-fileManager:willProcessPath:` is sent with the source path before the destination exists, an existing destination, a destination under a regular file or a missing source fails, the error callback gets a dictionary with `@"Path"`, `@"Error"` and `@"ToPath"`, a handler answering YES turns the failure into YES, and a nil handler (or one without the error callback) gives NO.
+
+Baseline: `-copyPath:toPath:handler:` does not exist, so the first call raises `unrecognized selector` and the process aborts. Candidate: zero failures (not yet run on Darling or macOS). The temporary directory is removed on every path.
+
+The [documentation](https://developer.apple.com/documentation/foundation/nsfilemanager/copypath:topath:handler:) does not say what a nil path does, what text `@"Error"` holds, or whether the handler hears about the entries inside a directory; the test leaves those open. Counts of callbacks are checked as at least one and `@"Path"` only as a non-empty string, since the pages say "usually the source path" and "for each error". Not covered: a destination inside the source, ownership and modification date, and the `@"ToPath"` value.
