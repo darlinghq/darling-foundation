@@ -17,6 +17,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #import <Foundation/NSDate.h>
 #import <Foundation/NSException.h>
 #import <Foundation/NSError.h>
+#import <Foundation/NSProcessInfo.h>
 #import <Foundation/NSURL.h>
 #import <Foundation/FoundationErrors.h>
 #include <errno.h>
@@ -40,6 +41,80 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 }
 
 @end
+
+@interface NSFileWrapper (URLNodes)
+// Take the contents of, or compare them with, the node at url. attributes are those of that node, whose kind is the receiver's.
+- (BOOL) readContentsFromURL: (NSURL*) url attributes: (NSDictionary*) attributes options: (NSFileWrapperReadingOptions) options error: (NSError**) outError;
+- (BOOL) matchesNodeAtURL: (NSURL*) url attributes: (NSDictionary*) attributes;
+@end
+
+static BOOL fileWrapperHasKind(NSFileWrapper* wrapper, NSString* type)
+{
+	return ([wrapper isDirectory] && [type isEqualToString: NSFileTypeDirectory]) ||
+	       ([wrapper isRegularFile] && [type isEqualToString: NSFileTypeRegular]) ||
+	       ([wrapper isSymbolicLink] && [type isEqualToString: NSFileTypeSymbolicLink]);
+}
+
+// With NSFileWrapperWritingWithNameUpdating a written wrapper and its descendants record the names they were
+// written under.
+static void recordWrittenNames(NSFileWrapper* wrapper, NSString* name)
+{
+	[wrapper setFilename: name];
+	NSDictionary* children = [wrapper isDirectory] ? [wrapper fileWrappers] : nil;
+	for (NSString* key in children) recordWrittenNames([children objectForKey: key], key);
+}
+
+// Writes a directory or link wrapper by calling write with url. With NSFileWrapperWritingAtomic it is called
+// with a temporary name next to url, which is moved over url afterwards, so that url is replaced completely or
+// not at all.
+static BOOL writeNode(NSFileWrapper* wrapper, NSURL* url, NSFileWrapperWritingOptions options, NSError** outError,
+                      BOOL (^write)(NSURL* target, NSError** error))
+{
+	NSError* error = nil;
+	BOOL done = NO;
+	if (![url isFileURL]) {
+		error = [NSError errorWithDomain: NSCocoaErrorDomain code: NSFileWriteUnsupportedSchemeError
+		                        userInfo: url ? @{ NSURLErrorKey: url } : nil];
+	} else if (!(options & NSFileWrapperWritingAtomic)) {
+		done = write(url, &error);
+	} else {
+		NSString* temporaryName = [NSString stringWithFormat: @".%@.%@", [url lastPathComponent],
+		                           [[NSProcessInfo processInfo] globallyUniqueString]];
+		NSURL* temporary = [[url URLByDeletingLastPathComponent] URLByAppendingPathComponent: temporaryName];
+		done = write(temporary, &error) && [[NSFileManager defaultManager] replaceItemAtURL: url withItemAtURL: temporary
+		                                                                     backupItemName: nil options: 0
+		                                                                   resultingItemURL: NULL error: &error];
+		if (!done) [[NSFileManager defaultManager] removeItemAtURL: temporary error: NULL];
+	}
+	if (done && (options & NSFileWrapperWritingWithNameUpdating)) recordWrittenNames(wrapper, [url lastPathComponent]);
+	if (!done && outError) {
+		// GUESS: a failure that gave no error is NSFileWriteUnknownError; the reference names no error.
+		*outError = error ?: [NSError errorWithDomain: NSCocoaErrorDomain code: NSFileWriteUnknownError
+		                                     userInfo: @{ NSURLErrorKey: url }];
+	}
+	return done;
+}
+
+static NSDataReadingOptions dataReadingOptions(NSFileWrapperReadingOptions options)
+{
+	return (options & NSFileWrapperReadingWithoutMapping) ? 0 : NSDataReadingMappedIfSafe;
+}
+
+// The error for a failed read of the node at url (path is nil for a URL that is not a file URL).
+static NSError* fileWrapperReadError(NSURL* url, NSString* path, NSError* cause)
+{
+	if (!path) {
+		return [NSError errorWithDomain: NSCocoaErrorDomain code: NSFileReadUnsupportedSchemeError
+		                       userInfo: url ? @{ NSURLErrorKey: url } : nil];
+	}
+	// Preserve the existing missing-file Cocoa error while retaining its cause.
+	if ([[cause domain] isEqualToString: NSPOSIXErrorDomain] && [cause code] == ENOENT) {
+		return [NSError errorWithDomain: NSCocoaErrorDomain code: NSFileReadNoSuchFileError
+		                       userInfo: @{ NSURLErrorKey: url, NSUnderlyingErrorKey: cause }];
+	}
+	return cause ?: [NSError errorWithDomain: NSCocoaErrorDomain code: NSFileReadUnknownError
+	                                userInfo: @{ NSURLErrorKey: url, NSFilePathErrorKey: path }];
+}
 
 @implementation NSFileWrapper
 
@@ -107,10 +182,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
     NSError* error = nil;
     NSFileWrapper* result = nil;
     NSFileManager* manager = [NSFileManager defaultManager];
-    if (!path) {
-        error = [NSError errorWithDomain: NSCocoaErrorDomain code: NSFileReadUnsupportedSchemeError
-                               userInfo: url ? @{ NSURLErrorKey: url } : nil];
-    } else {
+    if (path) {
         NSDictionary* attributes = [manager attributesOfItemAtPath: path error: &error];
         NSString* type = [attributes objectForKey: NSFileType];
         if ([type isEqualToString: NSFileTypeDirectory]) {
@@ -130,9 +202,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
         } else if ([type isEqualToString: NSFileTypeRegular]) {
             NSData* data = nil;
             if (options & NSFileWrapperReadingImmediate) {
-                data = [NSData dataWithContentsOfURL: url
-                    options: (options & NSFileWrapperReadingWithoutMapping) ? 0 : NSDataReadingMappedIfSafe
-                    error: &error];
+                data = [NSData dataWithContentsOfURL: url options: dataReadingOptions(options) error: &error];
             }
             if (!(options & NSFileWrapperReadingImmediate) || data) {
                 result = [self initRegularFileWithContents: data];
@@ -148,17 +218,36 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
             [result setPreferredFilename: [result filename]];
             return result;
         }
-        // Preserve the existing missing-file Cocoa error while retaining its cause.
-        if ([[error domain] isEqualToString: NSPOSIXErrorDomain] && [error code] == ENOENT) {
-            error = [NSError errorWithDomain: NSCocoaErrorDomain code: NSFileReadNoSuchFileError
-                userInfo: @{ NSURLErrorKey: url, NSUnderlyingErrorKey: error }];
-        }
-        if (!error) error = [NSError errorWithDomain: NSCocoaErrorDomain code: NSFileReadUnknownError
-                                           userInfo: @{ NSURLErrorKey: url, NSFilePathErrorKey: path }];
     }
-    if (outError) *outError = error;
+    if (outError) *outError = fileWrapperReadError(url, path, error);
     // self is the shared +alloc placeholder, which must never be released.
     return nil;
+}
+
+- (BOOL) readFromURL: (NSURL*) url options: (NSFileWrapperReadingOptions) options error: (NSError**) outError
+{
+	NSString* path = [url isFileURL] ? [url path] : nil;
+	NSError* error = nil;
+	NSDictionary* attributes = path ? [[NSFileManager defaultManager] attributesOfItemAtPath: path error: &error] : nil;
+	// GUESS: the documentation does not say what a node of another kind than the receiver gives; it is
+	// reported as the unknown read error, since a wrapper cannot change its kind.
+	if (attributes && fileWrapperHasKind(self, [attributes objectForKey: NSFileType]) &&
+	    [self readContentsFromURL: url attributes: attributes options: options error: &error]) {
+		[_fileAttributes release];
+		_fileAttributes = nil;
+		[self setFileAttributes: attributes];
+		return YES;
+	}
+	if (outError) *outError = fileWrapperReadError(url, path, error);
+	return NO;
+}
+
+- (BOOL) matchesContentsOfURL: (NSURL*) url
+{
+	NSDictionary* attributes = [url isFileURL] ?
+		[[NSFileManager defaultManager] attributesOfItemAtPath: [url path] error: NULL] : nil;
+	return attributes && fileWrapperHasKind(self, [attributes objectForKey: NSFileType]) &&
+	       [self matchesNodeAtURL: url attributes: attributes];
 }
 
 - (NSData*) regularFileContents
@@ -362,6 +451,31 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 	return NO;
 }
 
+- (BOOL) readContentsFromURL: (NSURL*) url attributes: (NSDictionary*) attributes options: (NSFileWrapperReadingOptions) options error: (NSError**) outError
+{
+	NSData* data = nil;
+	if (options & NSFileWrapperReadingImmediate) {
+		data = [NSData dataWithContentsOfURL: url options: dataReadingOptions(options) error: outError];
+		if (!data) return NO;
+	}
+	[contentData release];
+	contentData = [data copy];
+	[self setReadingPath: [url path] options: options];
+	return YES;
+}
+
+// GUESS: a wrapper that records no modification date or permissions (one made from data) matches nothing, and the
+// dates must be equal: a file older than the recorded date does not match either.
+- (BOOL) matchesNodeAtURL: (NSURL*) url attributes: (NSDictionary*) attributes
+{
+	NSDictionary* own = [self fileAttributes];
+	NSDate* date = [own objectForKey: NSFileModificationDate];
+	NSNumber* permissions = [own objectForKey: NSFilePosixPermissions];
+	return date && permissions &&
+	       [date isEqualToDate: [attributes objectForKey: NSFileModificationDate]] &&
+	       [permissions isEqualToNumber: [attributes objectForKey: NSFilePosixPermissions]];
+}
+
 - (BOOL) isRegularFile
 {
 	return YES;
@@ -370,9 +484,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 - (NSData*) regularFileContents
 {
     if (contentData == nil) {
-        contentData = [[NSData alloc] initWithContentsOfFile: _path
-            options: (readingOptions & NSFileWrapperReadingWithoutMapping) ? 0 : NSDataReadingMappedIfSafe
-            error: NULL];
+        contentData = [[NSData alloc] initWithContentsOfFile: _path options: dataReadingOptions(readingOptions) error: NULL];
     }
 	return contentData;
 }
@@ -398,11 +510,18 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
   originalContentsURL: (NSURL *) originalContentsURL
                 error: (NSError **)error
 {
-	BOOL result = [[self regularFileContents] writeToURL: url
-	                                             options: (options & NSFileWrapperWritingAtomic) != 0 ? NSDataWritingAtomic : 0
-	                                               error: error];
+	// GUESS: the contents are unchanged when they match the node at originalContentsURL (date and permissions);
+	// that node is then linked instead of written, or already is the file when it is the destination itself.
+	BOOL unchanged = originalContentsURL && [url isFileURL] && [self matchesContentsOfURL: originalContentsURL];
+	BOOL result = unchanged && ([[originalContentsURL path] isEqualToString: [url path]] ||
+	                            [[NSFileManager defaultManager] linkItemAtURL: originalContentsURL toURL: url error: NULL]);
+	if (!result) {
+		result = [[self regularFileContents] writeToURL: url
+		                                        options: (options & NSFileWrapperWritingAtomic) != 0 ? NSDataWritingAtomic : 0
+		                                          error: error];
+	}
 	if (result && (options & NSFileWrapperWritingWithNameUpdating) != 0) {
-		[NSException raise: NSInvalidArgumentException format: @"TODO: NSFileWrapperWritingWithNameUpdating"];
+		recordWrittenNames(self, [url lastPathComponent]);
 	}
 	return result;
 }
@@ -506,6 +625,78 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 }
 
 
+- (BOOL) readContentsFromURL: (NSURL*) url attributes: (NSDictionary*) attributes options: (NSFileWrapperReadingOptions) options error: (NSError**) outError
+{
+	NSArray* names = [[NSFileManager defaultManager] contentsOfDirectoryAtPath: [url path] error: outError];
+	if (!names) return NO;
+	// GUESS: if a later child fails, the children already reread stay reread; the receiver's own list is unchanged.
+	NSMutableDictionary* children = [NSMutableDictionary dictionaryWithCapacity: [names count]];
+	for (NSString* name in names) {
+		NSURL* childURL = [url URLByAppendingPathComponent: name];
+		NSFileWrapper* child = [contentDictionary objectForKey: name];
+		// GUESS: a child whose node was replaced by one of another kind (or cannot be re-read) is replaced too.
+		if (!child || ![child readFromURL: childURL options: options error: NULL]) {
+			child = [[[NSFileWrapper alloc] initWithURL: childURL options: options error: outError] autorelease];
+			if (!child) return NO;
+		}
+		[children setObject: child forKey: name];
+	}
+	[contentDictionary release];
+	contentDictionary = [children retain];
+	return YES;
+}
+
+- (BOOL) matchesNodeAtURL: (NSURL*) url attributes: (NSDictionary*) attributes
+{
+	NSArray* names = [[NSFileManager defaultManager] contentsOfDirectoryAtPath: [url path] error: NULL];
+	if (!names || [names count] != [contentDictionary count]) return NO;
+	for (NSString* name in names) {
+		if (![[contentDictionary objectForKey: name] matchesContentsOfURL: [url URLByAppendingPathComponent: name]]) return NO;
+	}
+	return YES;
+}
+
+- (BOOL) writeToURL: (NSURL*) url options: (NSFileWrapperWritingOptions) options
+ originalContentsURL: (NSURL*) originalContentsURL error: (NSError**) outError
+{
+	NSDictionary* children = contentDictionary;
+	return writeNode(self, url, options, outError, ^BOOL(NSURL* target, NSError** error) {
+		NSFileManager* manager = [NSFileManager defaultManager];
+		// GUESS: an existing directory at the destination is written into, keeping what else is in it, and
+		// fileAttributes of the wrapper and its children are not applied to what is written.
+		// The type is taken without following links: a link to a directory is not one, so it is not entered
+		// (creating the directory then fails because the link is in the way). This is a check, not a lock: a
+		// directory replaced by a link between this check and the writes below is written through.
+		NSString* existingType = [[manager attributesOfItemAtPath: [target path] error: NULL] objectForKey: NSFileType];
+		if (![existingType isEqualToString: NSFileTypeDirectory] &&
+		    ![manager createDirectoryAtURL: target withIntermediateDirectories: NO attributes: nil error: error]) {
+			return NO;
+		}
+		for (NSString* name in children) {
+			// GUESS: a name that is not a single path component is refused rather than followed.
+			if (![name length] || [name isEqualToString: @"."] || [name isEqualToString: @".."] ||
+			    [name rangeOfString: @"/"].location != NSNotFound) {
+				*error = [NSError errorWithDomain: NSCocoaErrorDomain code: NSFileWriteInvalidFileNameError
+				                         userInfo: @{ NSURLErrorKey: target }];
+				return NO;
+			}
+			NSFileWrapper* child = [children objectForKey: name];
+			// The earlier revision of a child is where its filename says it was.
+			NSURL* original = ([child filename] && originalContentsURL) ?
+				[originalContentsURL URLByAppendingPathComponent: [child filename]] : nil;
+			// GUESS: a regular file is written atomically whatever the options, so that it replaces what is there
+			// instead of rewriting it: an existing entry may be a hard link to the earlier revision, or a link to a
+			// file elsewhere. (NSData's atomic write still creates its temporary file without O_EXCL or O_NOFOLLOW.)
+			NSFileWrapperWritingOptions childOptions = [child isRegularFile] ? NSFileWrapperWritingAtomic : 0;
+			if (![child writeToURL: [target URLByAppendingPathComponent: name] options: childOptions
+			   originalContentsURL: original error: error]) {
+				return NO;
+			}
+		}
+		return YES;
+	});
+}
+
 - (void) removeFileWrapper: (NSFileWrapper*) wrapper
 {
 	NSArray* keys = [contentDictionary allKeysForObject: wrapper];
@@ -594,6 +785,32 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 		[self setFilename: [path lastPathComponent]];
 	}
 	return result;
+}
+
+- (BOOL) writeToURL: (NSURL*) url options: (NSFileWrapperWritingOptions) options
+ originalContentsURL: (NSURL*) originalContentsURL error: (NSError**) outError
+{
+	NSString* destination = linkDestination;
+	// GUESS: a link is not written over an existing item of any kind (without atomic): that fails with the
+	// error of creating the link, while a regular file replaces what is there and a directory is written into.
+	return writeNode(self, url, options, outError, ^BOOL(NSURL* target, NSError** error) {
+		return [[NSFileManager defaultManager] createSymbolicLinkAtPath: [target path] withDestinationPath: destination error: error];
+	});
+}
+
+- (BOOL) readContentsFromURL: (NSURL*) url attributes: (NSDictionary*) attributes options: (NSFileWrapperReadingOptions) options error: (NSError**) outError
+{
+	NSString* destination = [[NSFileManager defaultManager] destinationOfSymbolicLinkAtPath: [url path] error: outError];
+	if (!destination) return NO;
+	[linkDestination release];
+	linkDestination = [destination copy];
+	return YES;
+}
+
+- (BOOL) matchesNodeAtURL: (NSURL*) url attributes: (NSDictionary*) attributes
+{
+	NSString* destination = [[NSFileManager defaultManager] destinationOfSymbolicLinkAtPath: [url path] error: NULL];
+	return [destination isEqualToString: linkDestination];
 }
 
 - (BOOL) updateFromPath: (NSString*) path attributes: (NSDictionary*) attrs
