@@ -134,7 +134,9 @@ typedef NS_ENUM(NSUInteger, DarlingLogicalTestOperation) {
     [super dealloc];
 }
 
-// GUESS: not implemented. The comparison is a placeholder, so the test never matches.
+// Not implemented: evaluating the object specifier needs the scripting object model, which Darling does not
+// have (NSScriptObjectSpecifier is a bare class here), so there is nothing to compare. The test reports NO and
+// logs that it is a stub, like the other unimplemented scripting methods; it does not claim a comparison was made.
 - (BOOL)isTrue
 {
     NSLog(@"Stub called: -isTrue in %@", [self class]);

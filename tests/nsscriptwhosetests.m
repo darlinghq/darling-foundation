@@ -3,7 +3,7 @@
 // Guest test: NSScriptWhoseTest, NSLogicalTest and NSSpecifierTest. The expected values come from the
 // public documentation for these classes (developer.apple.com, Foundation), not from observation of
 // macOS. The empty and nil list results (AND is true, OR is false), the exception for a nil NOT
-// subtest and the placeholder NSSpecifierTest result are the implementation's own choices, not
+// subtest and the unimplemented NSSpecifierTest result (always NO, it logs that it is a stub) are the implementation's own choices, not
 // documented behavior.
 #import <Foundation/Foundation.h>
 
