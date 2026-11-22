@@ -39,7 +39,12 @@ typedef NS_ENUM(NSUInteger, NSTestComparisonOperation) {
 
 @end
 
-@interface NSLogicalTest : NSScriptWhoseTest
+@interface NSLogicalTest : NSScriptWhoseTest {
+@private
+    // Instance variables are declared here because the i386 runtime does not support them in the implementation.
+    NSUInteger _operation;
+    NSArray *_subTests;
+}
 
 - (id)initAndTestWithTests:(NSArray<NSSpecifierTest *> *)subTests;
 - (id)initOrTestWithTests:(NSArray<NSSpecifierTest *> *)subTests;
@@ -47,7 +52,12 @@ typedef NS_ENUM(NSUInteger, NSTestComparisonOperation) {
 
 @end
 
-@interface NSSpecifierTest : NSScriptWhoseTest
+@interface NSSpecifierTest : NSScriptWhoseTest {
+@private
+    NSScriptObjectSpecifier *_object1;
+    NSTestComparisonOperation _comparisonOperator;
+    id _object2;
+}
 
 - (id)initWithObjectSpecifier:(NSScriptObjectSpecifier *)obj1
            comparisonOperator:(NSTestComparisonOperation)compOp

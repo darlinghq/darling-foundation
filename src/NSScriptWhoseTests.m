@@ -38,10 +38,7 @@ typedef NS_ENUM(NSUInteger, DarlingLogicalTestOperation) {
     DarlingLogicalTestNot
 };
 
-@implementation NSLogicalTest {
-    DarlingLogicalTestOperation _operation;
-    NSArray *_subTests;
-}
+@implementation NSLogicalTest
 
 - (id)_darlingInitWithOperation:(DarlingLogicalTestOperation)operation subTests:(NSArray *)subTests
 {
@@ -108,11 +105,7 @@ typedef NS_ENUM(NSUInteger, DarlingLogicalTestOperation) {
 
 @end
 
-@implementation NSSpecifierTest {
-    NSScriptObjectSpecifier *_object1;
-    NSTestComparisonOperation _comparisonOperator;
-    id _object2;
-}
+@implementation NSSpecifierTest
 
 - (id)initWithObjectSpecifier:(NSScriptObjectSpecifier *)obj1
            comparisonOperator:(NSTestComparisonOperation)compOp
