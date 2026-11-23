@@ -23,6 +23,14 @@
 
 @implementation NSScriptCommand
 
++ (NSScriptCommand *)currentCommand {
+    // The documented value is the command being executed on this thread by Apple event dispatch, nil otherwise.
+    // Nothing in this Foundation executes an NSScriptCommand (no -executeCommand, no event-to-command dispatch), so
+    // no command is ever being executed and nil is the correct answer. Track a per-thread command here when
+    // execution is implemented.
+    return nil;
+}
+
 - (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector {
     return [NSMethodSignature signatureWithObjCTypes: "v@:"];
 }
