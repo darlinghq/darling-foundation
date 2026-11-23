@@ -80,6 +80,9 @@ typedef NSArray<NSNumber *> *NSConnectionReleasedProxyRecord;
     // Used to pass the port coder (and the message data it decodes) from whoever
     // happens to receive the message to the interested thread.
     NSMutableDictionary<NSNumber *, NSConcretePortCoder *> *_sequenceNumberToCoder;
+
+    // Appended last; the only subclass in the overlay tree (DKConnection) declares no ivars here.
+    BOOL _independentConversationQueueing;
 }
 
 @property (readonly, getter=isValid) BOOL valid;
@@ -90,6 +93,10 @@ typedef NSArray<NSNumber *> *NSConnectionReleasedProxyRecord;
 @property (readonly, retain) NSPort *receivePort;
 @property NSTimeInterval requestTimeout;
 @property NSTimeInterval replyTimeout;
+// The documented switch for handling one incoming remote message at a time per thread. NO by default.
+// Stored, not acted on: there is no per-thread request queue here to apply it to, so incoming requests are never
+// held back while another one is being handled; requests can still be nested.
+@property BOOL independentConversationQueueing;
 @property (readonly, copy) NSArray<NSRunLoopMode> *requestModes;
 
 // Creation.

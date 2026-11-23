@@ -69,6 +69,7 @@ static NSData *keyedMagic;
 @synthesize receivePort = _recvPort;
 @synthesize requestTimeout = _requestTimeout;
 @synthesize replyTimeout = _replyTimeout;
+@synthesize independentConversationQueueing = _independentConversationQueueing;
 @synthesize requestModes = _requestModes;
 
 + (void) initialize {
@@ -138,6 +139,7 @@ static NSData *keyedMagic;
         // Copy settings from our parent.
         _requestTimeout = parent->_requestTimeout;
         _replyTimeout = parent->_replyTimeout;
+        _independentConversationQueueing = parent->_independentConversationQueueing;
         _rootObject = [parent->_rootObject retain];
 
         _runLoops = [parent->_runLoops mutableCopy];
