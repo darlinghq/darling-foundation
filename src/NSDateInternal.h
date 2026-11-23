@@ -27,6 +27,3 @@ __attribute__((visibility("hidden")))
 - (id)initWithTimeIntervalSinceReferenceDate:(NSTimeInterval)date;
 
 @end
-
-@interface NSCalendarDate : NSDate
-@end

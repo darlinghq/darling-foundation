@@ -48,6 +48,7 @@ set(foundation_sources
 	src/NSBundle.m
 	src/NSByteCountFormatter.m
 	src/NSCalendar.m
+	src/NSCalendarDate.m
 	src/NSCheapMutableString.m
 	src/NSClassDescription.m
 	src/NSCoder.m
@@ -318,6 +319,7 @@ add_separated_framework(Foundation
 		# the finished Foundation upward, so Foundation links its first pass
 		CoreAutoLayout_firstpass
 		xml2
+		compression
 	LINK_FLAGS " -Wl,-reexport_library,${CMAKE_BINARY_DIR}/src/external/corefoundation/CoreFoundation \
 				-Wl,-reexport_library,${CMAKE_BINARY_DIR}/src/external/objc4/runtime/libobjc.A.dylib"
 )
