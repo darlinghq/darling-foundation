@@ -239,6 +239,13 @@ static NSString *PaddedNumber(NSInteger value, NSInteger defaultWidth, NSString 
     return [NSCalendarDate class];
 }
 
+// NSCalendarDate overrides -initWithCoder:, so it has to state its own +supportsSecureCoding for a secure unarchiver
+// to accept it; macOS answers YES and decodes it with secure coding required (also when only NSDate is allowed).
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
+
 - (id)initWithCoder:(NSCoder *)coder
 {
     NSTimeInterval interval = 0;

@@ -216,6 +216,22 @@ int main(void)
         report("copy of a subclass instance is the subclass", [taggedCopy isKindOfClass:[TaggedCalendarDate class]] && [taggedCopy isEqualToDate:tagged]);
         [taggedCopy release];
     }
+    @autoreleasepool {
+        // Secure coding: macOS decodes a calendar date with requiresSecureCoding when NSCalendarDate or its superclass
+        // NSDate is allowed, and refuses it when only an unrelated class is.
+        NSCalendarDate *source = [NSCalendarDate dateWithYear:2020 month:5 day:6 hour:7 minute:8 second:9 timeZone:[NSTimeZone timeZoneForSecondsFromGMT:3600]];
+        NSError *error = nil;
+        NSData *data = [NSKeyedArchiver archivedDataWithRootObject:source requiringSecureCoding:YES error:&error];
+        report("a secure archive of a calendar date is written", data != nil);
+        report("the class answers YES to +supportsSecureCoding", [NSCalendarDate supportsSecureCoding]);
+        id back = [NSKeyedUnarchiver unarchivedObjectOfClass:[NSCalendarDate class] fromData:data error:&error];
+        report("secure decoding with NSCalendarDate allowed gives the date", [back isKindOfClass:[NSCalendarDate class]] && [back isEqualToDate:source] && [[back timeZone] isEqual:[source timeZone]]);
+        back = [NSKeyedUnarchiver unarchivedObjectOfClasses:[NSSet setWithObject:[NSDate class]] fromData:data error:&error];
+        report("secure decoding with NSDate allowed gives the date", [back isKindOfClass:[NSCalendarDate class]] && [back isEqualToDate:source]);
+        error = nil;
+        back = [NSKeyedUnarchiver unarchivedObjectOfClasses:[NSSet setWithObject:[NSString class]] fromData:data error:&error];
+        report("secure decoding with only NSString allowed is refused (4864)", back == nil && [error code] == 4864);
+    }
     printf("%s: %d failure(s)\n", failures ? "FAIL" : "PASS", failures);
     return failures ? 1 : 0;
 }
