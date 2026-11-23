@@ -116,7 +116,7 @@ OBJC_PROTOCOL_IMPL_POP
     return obj;
 }
 
-- (void)enumerateAttributesInRange:(NSRange)enumerationRange options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(NSDictionary<NSAttributedStringKey, id> * _Nonnull attrs, NSRange range, BOOL *stop))block
+- (void)enumerateAttributesInRange:(NSRange)enumerationRange options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (NS_NOESCAPE ^)(NSDictionary<NSAttributedStringKey, id> * _Nonnull attrs, NSRange range, BOOL *stop))block
 {
     if ((uint64_t)enumerationRange.location + enumerationRange.length > [self length])
     {
@@ -180,7 +180,7 @@ OBJC_PROTOCOL_IMPL_POP
     }
 }
 
-- (void)enumerateAttribute:(NSString *)attrName inRange:(NSRange)enumerationRange options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (^)(id value, NSRange range, BOOL *stop))block
+- (void)enumerateAttribute:(NSString *)attrName inRange:(NSRange)enumerationRange options:(NSAttributedStringEnumerationOptions)opts usingBlock:(void (NS_NOESCAPE ^)(id value, NSRange range, BOOL *stop))block
 {
     if ((uint64_t)enumerationRange.location + enumerationRange.length > [self length])
     {

@@ -84,6 +84,9 @@ static NSError *limitError(NSNumber *number, BOOL tooSmall)
 
 @implementation NSNumberFormatter
 
+// Declared by the header but not implemented yet; @dynamic keeps Clang from synthesizing inert storage.
+@dynamic partialStringValidationEnabled;
+
 + (NSString *)localizedStringFromNumber:(NSNumber *)num numberStyle:(NSNumberFormatterStyle)nstyle
 {
     NSNumberFormatter *formatter = [[NSNumberFormatter alloc] init];
