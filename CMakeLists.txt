@@ -317,6 +317,7 @@ add_separated_framework(Foundation
 		# the finished Foundation upward, so Foundation links its first pass
 		CoreAutoLayout_firstpass
 		xml2
+		compression
 	LINK_FLAGS " -Wl,-reexport_library,${CMAKE_BINARY_DIR}/src/external/corefoundation/CoreFoundation \
 				-Wl,-reexport_library,${CMAKE_BINARY_DIR}/src/external/objc4/runtime/libobjc.A.dylib"
 )
