@@ -932,6 +932,14 @@ static NSData *keyedMagic;
     }
 }
 
+- (BOOL) multipleThreadsEnabled {
+    return YES;
+}
+
+- (void) enableMultipleThreads {
+    // Nothing to do: requests from several threads are always supported.
+}
+
 - (void) runInNewThread {
     // We're getting our own thread, so make sure we detach ourselves from this
     // thread.
