@@ -27,3 +27,11 @@ NSError *_NSFileTransferErrorWithErrno(int err, NSString *source, NSString *dest
 
 // The error of removing path.
 NSError *_NSFileRemoveErrorWithErrno(int err, NSString *path);
+
+// The error of reading file system metadata (attributes of an item, the destination of a symbolic
+// link, the sub-paths of a directory): a Cocoa read error with the errno underneath.
+NSError *_NSFileItemReadError(int err, NSString *path);
+
+// The error of listing the directory path. url is the directory for the URL-taking call and nil for
+// the path-taking one, whose errors differ in their userInfo.
+NSError *_NSFileDirectoryListingError(int err, NSString *path, NSURL *url);
