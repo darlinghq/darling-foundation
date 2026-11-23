@@ -7,14 +7,15 @@
 // writing them out (the inode checks below pin Darling's choice to do so, which macOS makes too).
 // What the documentation leaves open is pinned by black-box observation on macOS 26.7.3 and 10.14.4 (identical on
 // both): without the atomic option nothing may exist where a directory or link wrapper is written (it fails with
-// NSFileWriteFileExistsError; macOS also removes a directory it found there, which Darling does not); the atomic
+// NSFileWriteFileExistsError, and what was found there is removed first, a directory, a file or a link, but not what a
+// link leads to; a link wrapper leaves the file it found); the atomic
 // option replaces whatever is there; a regular file wrapper overwrites a file and writes through a link;
 // the fileAttributes of a wrapper are applied to what is written, permissions with the umask; with name updating the
 // children record their names while the wrapper written keeps its own filename (a QUIRK, see recordChildNames in
 // src/NSFileWrapper.m); a wrapper saved over its own file with that file as the earlier revision leaves it alone
 // unless the write is atomic; the error for a parent that is missing is NSFileNoSuchFileError, for a parent that
-// is a file the unknown write error. A child name with a ".." component is refused with NSFileWriteInvalidFileNameError,
-// which is stricter than macOS. Built without ARC.
+// is a file the unknown write error; a child name with a ".." component is followed out of the destination. Built
+// without ARC.
 #import <Foundation/Foundation.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -151,7 +152,7 @@ int main(void)
     expect(![tree writeToURL:[NSURL fileURLWithPath:noParent] options:0 originalContentsURL:nil error:NULL], "a NULL error pointer is accepted");
 
     // Without the atomic option nothing may be where a directory or a link is written (observed on macOS, which also
-    // removes a directory it found there; here the item stays).
+    // removes what a directory wrapper found there).
     NSString *existingDir = [base stringByAppendingPathComponent:@"existing-dir"];
     [fm createDirectoryAtPath:existingDir withIntermediateDirectories:NO attributes:nil error:NULL];
     [@"stale" writeToFile:[existingDir stringByAppendingPathComponent:@"stale.txt"] atomically:NO encoding:NSUTF8StringEncoding error:NULL];
@@ -159,19 +160,21 @@ int main(void)
     expect(![tree writeToURL:[NSURL fileURLWithPath:existingDir] options:0 originalContentsURL:nil error:&error] &&
            [error code] == NSFileWriteFileExistsError && [underlyingCode(error) intValue] == EEXIST,
            "a directory wrapper is not written where a directory exists (NSFileWriteFileExistsError)");
-    expect([contents([existingDir stringByAppendingPathComponent:@"stale.txt"]) isEqualToString:@"stale"] &&
-           ![fm fileExistsAtPath:[existingDir stringByAppendingPathComponent:@"a.txt"]], "and what was there is not written into");
+    expect(![fm fileExistsAtPath:existingDir], "and the directory that was there is removed, not written into");
     NSString *existingFile = [base stringByAppendingPathComponent:@"existing-file"];
     [@"old" writeToFile:existingFile atomically:NO encoding:NSUTF8StringEncoding error:NULL];
     error = nil;
     expect(![tree writeToURL:[NSURL fileURLWithPath:existingFile] options:0 originalContentsURL:nil error:&error] && [error code] == NSFileWriteFileExistsError &&
-           [contents(existingFile) isEqualToString:@"old"], "nor where a file exists");
+           ![fm fileExistsAtPath:existingFile], "nor where a file exists, which is removed too");
+    [@"old" writeToFile:existingFile atomically:NO encoding:NSUTF8StringEncoding error:NULL];
+    [fm createDirectoryAtPath:existingDir withIntermediateDirectories:NO attributes:nil error:NULL];
     NSString *victim = [base stringByAppendingPathComponent:@"victim"];
     [fm createDirectoryAtPath:victim withIntermediateDirectories:NO attributes:nil error:NULL];
     NSString *dirLink = [base stringByAppendingPathComponent:@"dir-link"];
     symlink([victim fileSystemRepresentation], [dirLink fileSystemRepresentation]);
     expect(![tree writeToURL:[NSURL fileURLWithPath:dirLink] options:0 originalContentsURL:nil error:NULL] &&
-           [[fm contentsOfDirectoryAtPath:victim error:NULL] count] == 0 && isLink(dirLink), "a symlink to a directory is not written through, nor replaced");
+           [[fm contentsOfDirectoryAtPath:victim error:NULL] count] == 0 && !isLink(dirLink) && ![fm fileExistsAtPath:dirLink] &&
+           [fm fileExistsAtPath:victim], "a symlink to a directory is not written through; the link is removed, the directory it led to stays");
     NSFileWrapper *link = [[[tree fileWrappers] objectForKey:@"lnk"] retain];
     error = nil;
     expect(![link writeToURL:[NSURL fileURLWithPath:existingFile] options:0 originalContentsURL:nil error:&error] && [error code] == NSFileWriteFileExistsError &&
@@ -201,19 +204,20 @@ int main(void)
            [[error domain] isEqualToString:NSCocoaErrorDomain], "a regular file wrapper is not written over a directory");
 
     // A write that fails half way, after the directory and perhaps a child were written, leaves nothing either.
-    // A child name with a ".." component is refused (stricter than macOS, which follows it); "." and ".." name the
-    // directory itself and its parent and fail as the unknown write error with EISDIR (observed on macOS).
-    NSString *escape = [@"../" stringByAppendingString:[[NSProcessInfo processInfo] globallyUniqueString]];
-    NSDictionary *odd = [NSDictionary dictionaryWithObjectsAndKeys:file(@"ok.txt", @"x"), @"ok.txt", file(@"bad", @"x"), escape, nil];
+    // "." and ".." name the directory itself and its parent and fail as the unknown write error with EISDIR
+    // (observed on macOS). A name with a ".." component elsewhere is followed out of the destination, also on macOS.
+    NSString *escapeName = [[NSProcessInfo processInfo] globallyUniqueString];
+    NSString *escape = [@"../" stringByAppendingString:escapeName];
+    NSDictionary *odd = [NSDictionary dictionaryWithObjectsAndKeys:file(@"ok.txt", @"x"), @"ok.txt", file(@"outside", @"OUT"), escape, nil];
     NSFileWrapper *oddTree = [[[NSFileWrapper alloc] initDirectoryWithFileWrappers:odd] autorelease];
     NSString *oddOut = [base stringByAppendingPathComponent:@"odd"];
-    NSUInteger beforeCount = [[fm contentsOfDirectoryAtPath:base error:NULL] count];
     error = nil;
-    expect(![oddTree writeToURL:[NSURL fileURLWithPath:oddOut] options:NSFileWrapperWritingAtomic originalContentsURL:nil error:&error] &&
-           [[error domain] isEqualToString:NSCocoaErrorDomain] && [error code] == NSFileWriteInvalidFileNameError,
-           "an atomic write with a child name that leaves the destination fails as a whole, with NSFileWriteInvalidFileNameError");
-    expect(![fm fileExistsAtPath:oddOut] && [[fm contentsOfDirectoryAtPath:base error:NULL] count] == beforeCount, "and leaves neither the result nor a temporary item");
-    expect(![fm fileExistsAtPath:[base stringByAppendingPathComponent:[escape lastPathComponent]]], "and nothing outside the destination");
+    expect([oddTree writeToURL:[NSURL fileURLWithPath:oddOut] options:0 originalContentsURL:nil error:&error],
+           "a child name with a \"..\" component is written");
+    expect([contents([base stringByAppendingPathComponent:escapeName]) isEqualToString:@"OUT"] &&
+           ![fm fileExistsAtPath:[oddOut stringByAppendingPathComponent:escapeName]], "to where the name leads");
+    [fm removeItemAtPath:oddOut error:NULL];
+    [fm removeItemAtPath:[base stringByAppendingPathComponent:escapeName] error:NULL];
     for (NSString *dots in [NSArray arrayWithObjects:@".", @"..", nil]) {
         NSFileWrapper *dotTree = [[[NSFileWrapper alloc] initDirectoryWithFileWrappers:[NSDictionary dictionaryWithObject:file(@"x", @"x") forKey:dots]] autorelease];
         error = nil;

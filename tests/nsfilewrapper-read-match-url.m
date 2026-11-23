@@ -10,7 +10,9 @@
 // date, except a link wrapper, which records none; a reread reads the contents only for a wrapper that no longer
 // matches, but always takes up the node's attributes; an existing child that cannot be reread does not fail the
 // read of its directory. The date rule is a QUIRK (see modificationDatesMatch in src/NSFileWrapper.m).
-// Not followed, as a wrapper here cannot change its kind: a node of another kind than the wrapper fails the read.
+// A wrapper becomes a regular file or link wrapper (the same object) when it reads a regular file or link; reading a
+// directory into a wrapper that is not one raises on macOS (the process aborts); here that read fails and leaves the
+// wrapper as it was.
 // Built without ARC.
 #import <Foundation/Foundation.h>
 #include <stdio.h>
@@ -259,7 +261,40 @@ int main(void)
         chmod([z fileSystemRepresentation], 0644);
     }
 
-    // A node of another kind than the wrapper fails the read and leaves the wrapper as it was (not what macOS does).
+    // A child whose node became a link becomes a link wrapper (same object), as on macOS.
+    NSString *swap = [dir stringByAppendingPathComponent:@"z.txt"];
+    if (geteuid() != 0) {
+        NSFileWrapper *zKept = [[wrapper fileWrappers] objectForKey:@"z.txt"];
+        [fm removeItemAtPath:swap error:NULL];
+        symlink("/swap/destination", [swap fileSystemRepresentation]);
+        setDate(swap, T0 + 800);
+        setDate(dir, T0 + 800);
+        expect([wrapper readFromURL:dirURL options:0 error:NULL], "a directory with a child that became a link is reread");
+        NSFileWrapper *zNow = [[wrapper fileWrappers] objectForKey:@"z.txt"];
+        expect(zNow == zKept && [zNow isSymbolicLink] && ![zNow isRegularFile] &&
+               [[[zNow symbolicLinkDestinationURL] path] isEqualToString:@"/swap/destination"], "the child is the same wrapper, now a link wrapper");
+    }
+
+    // A wrapper becomes the kind of a regular file or link it reads (observed on macOS 26.7.3 and 10.14.4).
+    NSURL *swapURL = [NSURL fileURLWithPath:swap];
+    NSFileWrapper *becomesLink = [[[NSFileWrapper alloc] initWithURL:aURL options:0 error:NULL] autorelease];
+    NSFileWrapper *becomesLinkFromDir = [[[NSFileWrapper alloc] initWithURL:dirURL options:0 error:NULL] autorelease];
+    error = nil;
+    expect([becomesLink readFromURL:swapURL options:0 error:&error] && error == nil && [becomesLink isSymbolicLink] && ![becomesLink isRegularFile],
+           "a regular file wrapper that reads a link becomes a link wrapper");
+    expect([[[becomesLink symbolicLinkDestinationURL] path] isEqualToString:@"/swap/destination"] &&
+           [[[becomesLink fileAttributes] objectForKey:NSFileType] isEqualToString:NSFileTypeSymbolicLink], "with the link's destination and attributes");
+    expect([becomesLinkFromDir readFromURL:swapURL options:0 error:NULL] && [becomesLinkFromDir isSymbolicLink] && ![becomesLinkFromDir isDirectory] &&
+           [[[becomesLinkFromDir symbolicLinkDestinationURL] path] isEqualToString:@"/swap/destination"], "so does a directory wrapper");
+    expect([becomesLink readFromURL:aURL options:NSFileWrapperReadingImmediate error:NULL] && [becomesLink isRegularFile] && ![becomesLink isSymbolicLink] &&
+           [text(becomesLink) isEqualToString:@"again"], "a link wrapper that reads a regular file becomes a regular file wrapper with its contents");
+    expect([becomesLinkFromDir readFromURL:aURL options:0 error:NULL] && [becomesLinkFromDir isRegularFile] && ![becomesLinkFromDir isDirectory] &&
+           [text(becomesLinkFromDir) isEqualToString:@"again"], "and so does a directory wrapper");
+    expect([becomesLink matchesContentsOfURL:aURL] && ![becomesLink matchesContentsOfURL:swapURL], "the converted wrapper matches what it read");
+    expect([text(becomesLink) length] == 5, "and can be read as a regular file");
+    unlink([swap fileSystemRepresentation]);
+
+    // A directory read into a wrapper that is not one fails and leaves the wrapper as it was (macOS raises).
     NSFileWrapper *file = [[[NSFileWrapper alloc] initWithURL:aURL options:0 error:NULL] autorelease];
     error = nil;
     expect(![file readFromURL:dirURL options:0 error:&error], "a regular file wrapper does not take a directory");
