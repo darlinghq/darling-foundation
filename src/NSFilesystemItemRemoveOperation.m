@@ -5,6 +5,7 @@
 //  Copyright (c) 2014 Apportable. All rights reserved.
 //
 
+#import "_NSFileErrors.h"
 #import "NSFilesystemItemRemoveOperation.h"
 #import <ftw.h>
 #import <sys/stat.h>
@@ -24,21 +25,7 @@
 
 + (NSError *)_errorWithErrno:(int)err atPath:(NSString *)path
 {
-    NSDictionary *info = nil;
-    if (path != nil)
-    {
-        info = @{
-            NSFilePathErrorKey: path
-        };
-    }
-    if (err == ENOENT)
-    {
-        // A missing item is reported as a Cocoa error with the POSIX error underneath.
-        NSMutableDictionary *cocoaInfo = [NSMutableDictionary dictionaryWithDictionary:info];
-        cocoaInfo[NSUnderlyingErrorKey] = [NSError errorWithDomain:NSPOSIXErrorDomain code:err userInfo:nil];
-        return [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileNoSuchFileError userInfo:cocoaInfo];
-    }
-    return [NSError errorWithDomain:NSPOSIXErrorDomain code:err userInfo:info];
+    return _NSFileRemoveErrorWithErrno(err, path);
 }
 
 - (id)initWithPath:(NSString *)path
@@ -81,7 +68,17 @@ static int NSFilesystemItemRemoveOperationFunction(const char *path, const struc
         return 0;
     }
 
-    int err = remove(path);
+    // nftw reports a directory it cannot read (it has no entries to remove first) with this flag
+    int err;
+    if (flags == FTW_DNR)
+    {
+        errno = EACCES;
+        err = -1;
+    }
+    else
+    {
+        err = remove(path);
+    }
 
     if (err != 0)
     {
