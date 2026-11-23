@@ -1,7 +1,8 @@
 // +[NSCalendar calendarWithIdentifier:] is documented (developer.apple.com/documentation/foundation/nscalendar/init(identifier:),
 // shown as calendarWithIdentifier: in the Objective-C language variant) as creating a new calendar for an identifier from the
 // NSCalendarIdentifier constants, available since macOS 10.9: the result is nil if the identifier is unknown, and the new
-// calendar uses the current locale and the default time zone. The page does not say what -calendarIdentifier returns for the
+// calendar uses the current locale and the default time zone (macOS 10.14.4 and 26.7.3 actually give it the system locale, which the
+// test follows). The page does not say what -calendarIdentifier returns for the
 // new calendar or when two calendars are equal; those checks are marked GUESS.
 #import <Foundation/Foundation.h>
 #include <stdio.h>
@@ -41,10 +42,15 @@ int main(void)
         [gregorian setTimeZone:utc];
         report("each call returns an independent calendar", [[again timeZone] isEqual:original] && [[gregorian timeZone] isEqual:utc]);
 
-        // Documented: the new calendar defaults to the current locale and the default time zone.
+        // QUIRK test (see the QUIRK comment in src/NSCalendar.m). The documentation says the new calendar defaults to the current locale and the default time zone. Observed on macOS
+        // 10.14.4 and 26.7.3 (the locale differs from the documentation): the locale is the system locale, the same as
+        // -initWithCalendarIdentifier: gives, whatever the current locale is.
         NSCalendar *fresh = [NSCalendar calendarWithIdentifier:NSCalendarIdentifierGregorian];
-        report("default locale is the current locale",
-               [[[fresh locale] localeIdentifier] isEqual:[[NSLocale currentLocale] localeIdentifier]]);
+        NSCalendar *viaInitForLocale = [[[NSCalendar alloc] initWithCalendarIdentifier:NSCalendarIdentifierGregorian] autorelease];
+        report("default locale is the system locale",
+               [[[fresh locale] localeIdentifier] isEqual:[[NSLocale systemLocale] localeIdentifier]]);
+        report("default locale equals the one -initWithCalendarIdentifier: gives",
+               [[[fresh locale] localeIdentifier] isEqual:[[viaInitForLocale locale] localeIdentifier]]);
         report("default time zone is the default time zone", [[fresh timeZone] isEqual:[NSTimeZone defaultTimeZone]]);
 
         // The other calendars named by the NSCalendarIdentifier constants are available. GUESS: the identifier round trip,

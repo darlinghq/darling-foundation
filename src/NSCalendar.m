@@ -40,14 +40,14 @@ OBJC_PROTOCOL_IMPL_PUSH
     return [[[NSAutoCalendar alloc] init] autorelease];
 }
 
-// Documented: nil for an unknown identifier, and the new calendar uses the current locale and the default time zone.
-// -initWithCalendarIdentifier: already returns nil for an unknown identifier and starts with the default time zone, but
-// with the system locale, so the locale is set here.
+// QUIRK: the new calendar has the default time zone and the system (root) locale, not the current locale that the
+// documentation names. Not documented. Evidence: black-box observation on macOS 10.14.4 (x86_64 and i386) and 26.7.3
+// (tier 2), where the result matches -initWithCalendarIdentifier: and ignores the current locale. This is therefore
+// nothing more than that initializer; nil for an unknown identifier comes from it.
+// Test: tests/nscalendar-calendarwithidentifier.m ("default locale is the system locale")
 + (NSCalendar *)calendarWithIdentifier:(NSCalendarIdentifier)calendarIdentifierConstant
 {
-    NSCalendar *calendar = [[[self alloc] initWithCalendarIdentifier:calendarIdentifierConstant] autorelease];
-    [calendar setLocale:[NSLocale currentLocale]];
-    return calendar;
+    return [[[self alloc] initWithCalendarIdentifier:calendarIdentifierConstant] autorelease];
 }
 OBJC_PROTOCOL_IMPL_POP
 
