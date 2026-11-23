@@ -13,6 +13,8 @@
 #import <Foundation/NSData.h>
 #import "NSObjectInternal.h"
 #import <stdlib.h>
+#import <pwd.h>
+#import <unistd.h>
 
 @implementation NSString (NSStringPathExtensions)
 
@@ -413,9 +415,13 @@ NSString *NSHomeDirectory(void)
     static dispatch_once_t once = 0L;
     static NSString *path = nil;
     dispatch_once(&once, ^{
+        // HOME when it is set; without it (an application LaunchServices launches can run without one), the user's
+        // home directory from the user database, as on macOS
         const char* home = getenv("HOME");
-        if (!home)
-            home = "/";
+        if (!home) {
+            struct passwd* pw = getpwuid(getuid());
+            home = (pw != NULL && pw->pw_dir != NULL) ? pw->pw_dir : "/";
+        }
         path = [[NSString alloc] initWithUTF8String:home];
     });
     return path;
