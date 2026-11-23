@@ -6,7 +6,7 @@
 // calendarFormat/setCalendarFormat: and -dateByAddingYears:months:days:hours:minutes:seconds:. The NSDate page documents
 // what a subclass needs: -timeIntervalSinceReferenceDate and -initWithTimeIntervalSinceReferenceDate: relative to the
 // absolute reference date (00:00:00 UTC on 1 January 2001), and NSCopying. Behaviors that the pages do not state are
-// marked GUESS. The dates asserted are calendar arithmetic: 2001-01-01 is the reference date, 2000-01-01 was a Saturday
+// observed on macOS 10.14.4 and 26.7.3 (both give the same results for every line below; probes of batch11b). The dates asserted are calendar arithmetic: 2001-01-01 is the reference date, 2000-01-01 was a Saturday
 // and 2024-07-19 a Friday.
 #import <Foundation/Foundation.h>
 #include <math.h>
@@ -80,20 +80,20 @@ int main(void)
         report("2001-01-01 00:00:00 GMT is the reference date", [reference timeIntervalSinceReferenceDate] == 0.0);
         report("timeZone is the zone passed in", [[reference timeZone] isEqual:gmt]);
         report("2001-01-01 00:00:00 GMT elements", isDate(reference, 2001, 1, 1, 0, 0, 0));
-        // GUESS: the pages give no numbering for the weekday and day counts.
-        report("GUESS: 2001-01-01 (a Monday) has dayOfWeek 1 (Sunday is 0)", [reference dayOfWeek] == 1);
-        report("GUESS: 2001-01-01 has dayOfYear 1", [reference dayOfYear] == 1);
-        report("GUESS: 2001-01-01 has dayOfCommonEra 730486 (1 January 1 CE is day 1)", [reference dayOfCommonEra] == 730486);
+        // the pages give no numbering for the weekday and day counts.
+        report("2001-01-01 (a Monday) has dayOfWeek 1 (Sunday is 0)", [reference dayOfWeek] == 1);
+        report("2001-01-01 has dayOfYear 1", [reference dayOfYear] == 1);
+        report("2001-01-01 has dayOfCommonEra 730486 (1 January 1 CE is day 1)", [reference dayOfCommonEra] == 730486);
 
         // Every accessor on a date in the middle of a year.
         NSCalendarDate *friday = [NSCalendarDate dateWithYear:2024 month:7 day:19 hour:15 minute:42 second:9 timeZone:gmt];
         report("2024-07-19 15:42:09 GMT elements round trip", isDate(friday, 2024, 7, 19, 15, 42, 9));
         report("2024-07-19 15:42:09 GMT is 743096529 s after the reference date", [friday timeIntervalSinceReferenceDate] == 743096529.0);
-        report("GUESS: 2024-07-19 (a Friday) has dayOfWeek 5", [friday dayOfWeek] == 5);
-        report("GUESS: 2024-07-19 (leap year) has dayOfYear 201", [friday dayOfYear] == 201);
+        report("2024-07-19 (a Friday) has dayOfWeek 5", [friday dayOfWeek] == 5);
+        report("2024-07-19 (leap year) has dayOfYear 201", [friday dayOfYear] == 201);
         NSCalendarDate *saturday = [NSCalendarDate dateWithYear:2000 month:1 day:1 hour:12 minute:0 second:0 timeZone:gmt];
-        report("GUESS: 2000-01-01 (a Saturday) has dayOfWeek 6", [saturday dayOfWeek] == 6);
-        report("GUESS: 2000-01-01 has dayOfCommonEra 730120", [saturday dayOfCommonEra] == 730120);
+        report("2000-01-01 (a Saturday) has dayOfWeek 6", [saturday dayOfWeek] == 6);
+        report("2000-01-01 has dayOfCommonEra 730120", [saturday dayOfCommonEra] == 730120);
         NSCalendarDate *nextDay = [NSCalendarDate dateWithYear:2000 month:1 day:2 hour:12 minute:0 second:0 timeZone:gmt];
         report("dayOfCommonEra grows by one from one day to the next", [nextDay dayOfCommonEra] - [saturday dayOfCommonEra] == 1);
         NSCalendarDate *newYear = [NSCalendarDate dateWithYear:2001 month:1 day:1 hour:12 minute:0 second:0 timeZone:gmt];
@@ -104,14 +104,14 @@ int main(void)
         report("the same wall-clock time in a +05:30 zone is 19800 s earlier", [india timeIntervalSinceReferenceDate] == -19800.0);
         report("+05:30 zone elements", isDate(india, 2001, 1, 1, 0, 0, 0) && [[india timeZone] isEqual:plus530]);
 
-        // nil time zone: GUESS that it means the default time zone.
+        // a nil time zone means the default time zone (observed).
         NSTimeZone *savedDefault = [NSTimeZone defaultTimeZone];
         [NSTimeZone setDefaultTimeZone:[NSTimeZone timeZoneForSecondsFromGMT:3600]];
         NSCalendarDate *defaulted = [NSCalendarDate dateWithYear:2001 month:1 day:1 hour:0 minute:0 second:0 timeZone:nil];
-        report("GUESS: a nil time zone gives the default time zone", [[defaulted timeZone] isEqual:[NSTimeZone defaultTimeZone]]);
-        report("GUESS: a nil time zone reads the wall-clock time in the default zone", [defaulted timeIntervalSinceReferenceDate] == -3600.0);
+        report("a nil time zone gives the default time zone", [[defaulted timeZone] isEqual:[NSTimeZone defaultTimeZone]]);
+        report("a nil time zone reads the wall-clock time in the default zone", [defaulted timeIntervalSinceReferenceDate] == -3600.0);
         NSCalendarDate *fromInterval = [[NSCalendarDate alloc] initWithTimeIntervalSinceReferenceDate:0.0];
-        report("GUESS: initWithTimeIntervalSinceReferenceDate: starts in the default time zone",
+        report("initWithTimeIntervalSinceReferenceDate: starts in the default time zone",
                [[fromInterval timeZone] isEqual:[NSTimeZone defaultTimeZone]] && isDate(fromInterval, 2001, 1, 1, 1, 0, 0));
         [NSTimeZone setDefaultTimeZone:savedDefault];
 
@@ -140,17 +140,17 @@ int main(void)
         report("setTimeZone: -05:00 moves back to the previous year", isDate(moving, 2000, 12, 31, 19, 0, 0));
         report("setTimeZone: -05:00 changes dayOfYear to 366 (2000 was a leap year)", [moving dayOfYear] == 366);
         [moving setTimeZone:nil];
-        report("GUESS: setTimeZone:nil gives the default time zone", [[moving timeZone] isEqual:[NSTimeZone defaultTimeZone]]);
+        report("setTimeZone:nil gives the default time zone", [[moving timeZone] isEqual:[NSTimeZone defaultTimeZone]]);
 
         // calendarFormat.
         NSCalendarDate *formatted = [NSCalendarDate dateWithYear:2001 month:1 day:1 hour:0 minute:0 second:0 timeZone:gmt];
-        report("GUESS: the default calendar format is %Y-%m-%d %H:%M:%S %z", [[formatted calendarFormat] isEqualToString:@"%Y-%m-%d %H:%M:%S %z"]);
+        report("the default calendar format is %Y-%m-%d %H:%M:%S %z", [[formatted calendarFormat] isEqualToString:@"%Y-%m-%d %H:%M:%S %z"]);
         [formatted setCalendarFormat:@"%Y/%m/%d"];
         report("setCalendarFormat: is read back", [[formatted calendarFormat] isEqualToString:@"%Y/%m/%d"]);
         NSMutableString *mutableFormat = [NSMutableString stringWithString:@"%H"];
         [formatted setCalendarFormat:mutableFormat];
         [mutableFormat appendString:@":%M"];
-        report("GUESS: the format is copied", [[formatted calendarFormat] isEqualToString:@"%H"]);
+        report("the format is copied", [[formatted calendarFormat] isEqualToString:@"%H"]);
         [formatted setCalendarFormat:@"%Y/%m/%d"];
 
         // dateByAddingYears:months:days:hours:minutes:seconds:.
@@ -159,7 +159,7 @@ int main(void)
         NSCalendarDate *added = [base dateByAddingYears:1 months:2 days:3 hours:4 minutes:5 seconds:6];
         report("adding 1y 2m 3d 4h 5m 6s", added != nil && isDate(added, 2002, 3, 18, 14, 25, 36));
         report("the result is an NSCalendarDate", [added isKindOfClass:[NSCalendarDate class]]);
-        report("GUESS: the result keeps the time zone and calendar format", [[added timeZone] isEqual:plus530] && [[added calendarFormat] isEqualToString:@"%Y"]);
+        report("the result keeps the time zone and calendar format", [[added timeZone] isEqual:plus530] && [[added calendarFormat] isEqualToString:@"%Y"]);
         report("the receiver is not changed", isDate(base, 2001, 1, 15, 10, 20, 30));
         report("adding zero gives the same instant", [[base dateByAddingYears:0 months:0 days:0 hours:0 minutes:0 seconds:0] isEqualToDate:base]);
         NSCalendarDate *back = [added dateByAddingYears:-1 months:-2 days:-3 hours:-4 minutes:-5 seconds:-6];
@@ -175,9 +175,9 @@ int main(void)
         report("hours carry into the day: 23:00 plus 2 hours", isDate([[NSCalendarDate dateWithYear:2001 month:1 day:1 hour:23 minute:0 second:0 timeZone:gmt] dateByAddingYears:0 months:0 days:0 hours:2 minutes:0 seconds:0], 2001, 1, 2, 1, 0, 0));
         report("seconds carry into the minute: 90 seconds", isDate([reference dateByAddingYears:0 months:0 days:0 hours:0 minutes:0 seconds:90], 2001, 1, 1, 0, 1, 30));
         report("months carry into the year: 13 months", isDate([reference dateByAddingYears:0 months:13 days:0 hours:0 minutes:0 seconds:0], 2002, 2, 1, 0, 0, 0));
-        // GUESS: the pages do not say what 31 January plus one month is (the last day of February or a day of March); it must be a valid date.
+        // the pages do not say what 31 January plus one month is (the last day of February or a day of March); it must be a valid date.
         NSCalendarDate *jan31PlusMonth = [monthEnd dateByAddingYears:0 months:1 days:0 hours:0 minutes:0 seconds:0];
-        report("GUESS: 2001-01-31 plus one month is in February or March", [jan31PlusMonth monthOfYear] == 2 || [jan31PlusMonth monthOfYear] == 3);
+        report("2001-01-31 plus one month is in February or March", [jan31PlusMonth monthOfYear] == 2 || [jan31PlusMonth monthOfYear] == 3);
 
         // Comparison with plain NSDate objects (the reference date and a day later).
         NSDate *plainReference = [NSDate dateWithTimeIntervalSinceReferenceDate:0.0];
@@ -205,15 +205,15 @@ int main(void)
 
         // An application subclass with an instance variable of its own.
         TaggedCalendarDate *tagged = [TaggedCalendarDate dateWithYear:2024 month:7 day:19 hour:15 minute:42 second:9 timeZone:gmt];
-        report("GUESS: the factory on a subclass gives an instance of the subclass", [tagged isKindOfClass:[TaggedCalendarDate class]]);
+        report("the factory on a subclass gives an instance of the subclass", [tagged isKindOfClass:[TaggedCalendarDate class]]);
         [tagged setTag:0x5a5a];
         [tagged setTimeZone:plus530];
         [tagged setCalendarFormat:@"%Y"];
         report("the subclass instance variable is not overwritten by the superclass state", [tagged tag] == 0x5a5a);
         report("the subclass instance still has its elements", isDate(tagged, 2024, 7, 19, 21, 12, 9) && [[tagged timeZone] isEqual:plus530]);
-        report("GUESS: dateByAddingYears: on a subclass gives the subclass", [[tagged dateByAddingYears:0 months:0 days:1 hours:0 minutes:0 seconds:0] isKindOfClass:[TaggedCalendarDate class]]);
+        report("dateByAddingYears: on a subclass gives the subclass", [[tagged dateByAddingYears:0 months:0 days:1 hours:0 minutes:0 seconds:0] isKindOfClass:[TaggedCalendarDate class]]);
         NSCalendarDate *taggedCopy = [tagged copy];
-        report("GUESS: copy of a subclass instance is the subclass", [taggedCopy isKindOfClass:[TaggedCalendarDate class]] && [taggedCopy isEqualToDate:tagged]);
+        report("copy of a subclass instance is the subclass", [taggedCopy isKindOfClass:[TaggedCalendarDate class]] && [taggedCopy isEqualToDate:tagged]);
         [taggedCopy release];
     }
     printf("%s: %d failure(s)\n", failures ? "FAIL" : "PASS", failures);
