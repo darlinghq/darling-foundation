@@ -80,6 +80,7 @@ set(foundation_sources
 	src/NSFileCoordinator.m
 	src/NSFileHandle.m
 	src/_NSFileIO.m
+	src/_NSFileErrors.m
 	src/NSFileManager.m
 	src/NSFilesystemItemRemoveOperation.m
 	src/NSFormatter.m
@@ -264,6 +265,7 @@ set(foundation_sources
 	src/NSScriptExecutionContext.m
 	src/NSScriptStandardSuiteCommands.m
 	src/NSScriptSuiteRegistry.m
+	src/NSScriptWhoseTests.m
 	src/NSUserNotification.m
 	src/NSUserScriptTask.m
 	src/NSDateInterval.m
@@ -366,8 +368,11 @@ if (SWIFT_TOOLCHAIN_FOUND AND BUILD_TARGET_64BIT)
 	set_target_properties(swiftFoundation_placeholder PROPERTIES
 		LINKER_LANGUAGE C
 		OUTPUT_NAME "swiftFoundation_placeholder")
-	reexport(Foundation_${APPLE_ARCH_64BIT} swiftFoundation_placeholder
-		"${CMAKE_CURRENT_BINARY_DIR}/libswiftFoundation_placeholder.dylib")
+	# The overlay has every 64-bit slice
+	foreach (arch IN LISTS DARLING_ARCHS_64BIT)
+		reexport(Foundation_${arch} swiftFoundation_placeholder
+			"${CMAKE_CURRENT_BINARY_DIR}/libswiftFoundation_placeholder.dylib")
+	endforeach ()
 elseif (NOT SWIFT_TOOLCHAIN_FOUND)
 	message(STATUS "Foundation: no Swift toolchain, so no Swift overlay to re-export")
 endif ()

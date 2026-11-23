@@ -4,11 +4,12 @@
  * NSFileManager destinationOfSymbolicLinkAtPath:error: returns the stored link
  * text (not a resolved path); a relative or dangling target is reported as is,
  * the legacy pathContentOfSymbolicLinkAtPath: agrees, and a non-link fails with
- * a POSIX error.
+ * a Cocoa read error with the POSIX error underneath.
  */
 #import <Foundation/Foundation.h>
 #undef NDEBUG
 #include <assert.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -35,7 +36,8 @@ int main(void)
 
         error = nil;
         assert([fm destinationOfSymbolicLinkAtPath:plain error:&error] == nil);
-        assert(error != nil && [[error domain] isEqualToString:NSPOSIXErrorDomain]);
+        assert(error != nil && [[error domain] isEqualToString:NSCocoaErrorDomain] && [error code] == NSFileReadUnknownError);
+        assert([[[error userInfo] objectForKey:NSUnderlyingErrorKey] code] == EINVAL);
         assert([fm pathContentOfSymbolicLinkAtPath:plain] == nil);
         assert([fm destinationOfSymbolicLinkAtPath:[dir stringByAppendingPathComponent:@"missing"] error:NULL] == nil);
 
