@@ -182,6 +182,11 @@ static CFHashCode NSTypeInfoHash(NSValueTypeInfo *type)
 
 @implementation NSPlaceholderValue
 
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
+
 - (id)initWithBytes:(const void *)value objCType:(const char *)type
 {
     return (id)_NSNewValue((uint8_t *)value, type);

@@ -12,6 +12,11 @@
 
 @implementation NSSpellCheckingResult
 
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
+
 - (id)initWithRange:(NSRange)range
 {
     self = [super init];

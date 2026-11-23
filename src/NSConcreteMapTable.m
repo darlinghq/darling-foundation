@@ -1180,6 +1180,11 @@ const NSMapTableValueCallBacks NSOwnedPointerMapValueCallBacks =
 
 @implementation	NSConcreteMapTable
 
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
+
 + (void) initialize
 {
   if (concreteClass == Nil)

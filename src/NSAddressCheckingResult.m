@@ -15,6 +15,11 @@
 
 @implementation NSAddressCheckingResult
 
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
+
 @synthesize underlyingResult=_underlyingResult;
 
 - (id)initWithRange:(NSRange)range components:(NSDictionary *)components

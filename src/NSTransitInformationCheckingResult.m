@@ -15,6 +15,11 @@
 
 @implementation NSTransitInformationCheckingResult
 
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
+
 - (id)initWithRange:(NSRange)range components:(NSDictionary *)components
 {
     return [self initWithRange:range components:components underlyingResult:NULL];

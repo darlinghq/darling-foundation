@@ -117,6 +117,14 @@ enum {
     NSString *key = [aDecoder decodeObjectOfClass:[NSString class] forKey:@"NSKey"];
     NSString *selectorName = [aDecoder decodeObjectOfClass:[NSString class] forKey:@"NSSelector"];
     BOOL ascending = [aDecoder decodeBoolForKey:@"NSAscending"];
+    // Archived property-list values (strings, numbers, data) are not checked against the classes
+    // passed to -decodeObjectOfClass:forKey:, so their types are checked here.
+    if ((key != nil && ![key isKindOfClass:[NSString class]]) ||
+        (selectorName != nil && ![selectorName isKindOfClass:[NSString class]]))
+    {
+        [self release];
+        return nil;
+    }
     // No selector name decodes as NULL, which initWithKey:ascending:selector: turns into compare:.
     SEL selector = selectorName != nil ? NSSelectorFromString(selectorName) : NULL;
     return [self initWithKey:key ascending:ascending selector:selector];

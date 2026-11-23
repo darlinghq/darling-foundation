@@ -211,6 +211,11 @@ typedef NS_OPTIONS(NSUInteger, NSOrthographyFlags) {
 
 @implementation NSComplexOrthography
 
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
+
 - (id)initWithDominantScript:(NSString *)script languageMap:(NSDictionary *)map
 {
     self = [super init];
@@ -264,7 +269,9 @@ typedef NS_OPTIONS(NSUInteger, NSOrthographyFlags) {
         script = [coder decodeObjectOfClass:[NSString class] forKey:@"NSDominantScript"];
         map = [coder decodeObjectOfClasses:[NSSet setWithObjects:[NSDictionary class], [NSArray class], [NSString class], nil] forKey:@"NSLanguageMap"];
     }
-    BOOL valid = script != nil && [map isKindOfClass:[NSDictionary class]];
+    // Archived property-list values are not checked against the classes passed to
+    // -decodeObjectOfClass(es):forKey:, so their types are checked here.
+    BOOL valid = [script isKindOfClass:[NSString class]] && [map isKindOfClass:[NSDictionary class]];
     if (valid)
     {
         for (id key in map)

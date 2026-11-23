@@ -157,7 +157,11 @@ OBJC_PROTOCOL_IMPL_PUSH
         _name = [[coder decodeObjectOfClass: [NSString class] forKey: @"NS.name"] retain];
         _reason = [[coder decodeObjectOfClass: [NSString class] forKey: @"NS.reason"] retain];
         _userInfo = [[coder decodeObjectOfClasses: infoClasses forKey: @"NS.userinfo"] retain];
-        if (_userInfo != nil && ![_userInfo isKindOfClass: [NSDictionary class]]) {
+        // Archived property-list values (strings, numbers, data) are not checked against the
+        // classes passed to -decodeObjectOfClass:forKey:, so their types are checked here.
+        if ((_name != nil && ![_name isKindOfClass: [NSString class]]) ||
+            (_reason != nil && ![_reason isKindOfClass: [NSString class]]) ||
+            (_userInfo != nil && ![_userInfo isKindOfClass: [NSDictionary class]])) {
             [self release];
             return nil;
         }
