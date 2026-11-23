@@ -328,13 +328,36 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
 // nested entry is reported as relativePrefix/name, as subpathsOfDirectoryAtPath: documents.
 - (void)_directoryContentsAtPath:(NSString *)path relativePrefix:(NSString *)relativePrefix matchingExtension:(NSString *)extension options:(NSDirectoryEnumerationOptions)options keepExtension:(BOOL)keepExtension error:(NSError **)error toResult:(NSMutableArray *)files
 {
-    DIR *dirp = opendir([path fileSystemRepresentation]);
+    DIR *dirp = NULL;
+    if ([path length] > 0)
+    {
+        dirp = opendir([path fileSystemRepresentation]);
+    }
+    else
+    {
+        errno = ENOENT; // the empty path names nothing, and has no file system representation
+    }
     if (!dirp) {
         if (error)
         {
-            *error = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:@{
-                NSLocalizedDescriptionKey: [NSString stringWithUTF8String:strerror(errno)]
-            }];
+            // A recursive listing (subpathsOfDirectoryAtPath:) reports like an attribute query; the
+            // URL and path forms of the shallow listing differ from each other.
+            int err = errno;
+            struct stat st;
+            if (options & NSDirectoryEnumerationRecursive)
+            {
+                // An existing item that is not a directory (a file, a link to one, a dangling link)
+                // has no sub-paths, which is not an error.
+                if ((err == ENOTDIR || err == ENOENT) && lstat([path fileSystemRepresentation], &st) == 0)
+                {
+                    return;
+                }
+                *error = _NSFileItemReadError(err, path);
+            }
+            else
+            {
+                *error = _NSFileDirectoryListingError(err, path, (options & NSDirectoryEnumerationGenerateURLs) ? [NSURL fileURLWithPath:path isDirectory:NO] : nil);
+            }
         }
         return;
     }
@@ -656,11 +679,12 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
 
 - (NSDictionary *)attributesOfItemAtPath:(NSString *)path error:(NSError **)error
 {
-    if (path == nil) {
+    if (path == nil || [path length] == 0) {
+        // No path to stat: a read error that names the (empty) path, without an errno.
         if (error) {
             *error = [NSError errorWithDomain: NSCocoaErrorDomain
                                          code: NSFileReadUnknownError
-                                     userInfo: @{ NSFilePathErrorKey: path }];
+                                     userInfo: path != nil ? @{ NSFilePathErrorKey: path } : nil];
         }
         return nil;
     }
@@ -670,9 +694,7 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
     {
         if (error)
         {
-            *error = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:@{
-                NSLocalizedDescriptionKey: [NSString stringWithUTF8String:strerror(errno)]
-            }];
+            *error = _NSFileItemReadError(errno, path);
         }
         return nil;
     }
@@ -955,9 +977,7 @@ static NSError *_NSErrorWithFilePathAndErrno(id path, int code)
         int savedError = length < 0 ? errno : ENAMETOOLONG;
         if (error)
         {
-            *error = [NSError errorWithDomain:NSPOSIXErrorDomain code:savedError userInfo:@{
-                NSLocalizedDescriptionKey: [NSString stringWithUTF8String:strerror(savedError)]
-            }];
+            *error = _NSFileItemReadError(savedError, path);
         }
         return nil;
     }

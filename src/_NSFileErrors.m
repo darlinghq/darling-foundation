@@ -8,8 +8,13 @@
 #import "_NSFileErrors.h"
 #import <Foundation/FoundationErrors.h>
 #import <Foundation/NSDictionary.h>
+#import <Foundation/NSFileManager.h>
 #import <Foundation/NSPathUtilities.h>
+#import <Foundation/NSURL.h>
 #import <errno.h>
+#import <limits.h>
+#import <stdlib.h>
+#import <sys/stat.h>
 
 NSInteger _NSFileErrorCodeForErrno(int err, BOOL reading)
 {
@@ -69,4 +74,60 @@ NSError *_NSFileTransferErrorWithErrno(int err, NSString *source, NSString *dest
 NSError *_NSFileRemoveErrorWithErrno(int err, NSString *path)
 {
     return _NSFileErrorWithErrno(err, path, NO, @{ @"NSUserStringVariant": @[ @"Remove" ] });
+}
+
+NSError *_NSFileItemReadError(int err, NSString *path)
+{
+    return _NSFileErrorWithErrno(err, path, YES, nil);
+}
+
+// The path with symbolic links resolved, or path when it cannot be resolved.
+static NSString *_NSFileResolvedPath(NSString *path)
+{
+    char resolved[PATH_MAX];
+    if (realpath([path fileSystemRepresentation], resolved) == NULL)
+    {
+        return path;
+    }
+    return [[NSFileManager defaultManager] stringWithFileSystemRepresentation:resolved length:strlen(resolved)];
+}
+
+NSError *_NSFileDirectoryListingError(int err, NSString *path, NSURL *url)
+{
+    BOOL permission = err == EACCES || err == EPERM;
+    NSDictionary *folder = @{ @"NSUserStringVariant": @[ @"Folder" ] };
+    if (permission)
+    {
+        // The path and the URL name the directory with its symbolic links resolved.
+        NSString *resolved = _NSFileResolvedPath(path);
+        NSMutableDictionary *extra = [NSMutableDictionary dictionaryWithObject:[NSURL fileURLWithPath:resolved isDirectory:NO]
+                                                                         forKey:NSURLErrorKey];
+        if (url == nil)
+        {
+            [extra addEntriesFromDictionary:folder];
+        }
+        return _NSFileErrorWithErrno(err, resolved, YES, extra);
+    }
+    if (url != nil)
+    {
+        return _NSFileErrorWithErrno(err, path, YES, @{ NSURLErrorKey: url });
+    }
+    struct stat st;
+    if (err == ENOTDIR && lstat([path fileSystemRepresentation], &st) == 0 && !S_ISLNK(st.st_mode))
+    {
+        // The path itself names a file.
+        NSMutableDictionary *extra = [NSMutableDictionary dictionaryWithDictionary:folder];
+        [extra setObject:[NSURL fileURLWithPath:path isDirectory:YES] forKey:NSURLErrorKey];
+        return _NSFileErrorWithErrno(err, path, YES, extra);
+    }
+    if (err == ENOENT || err == ENOTDIR)
+    {
+        // A missing directory, a path below a file and a link that does not lead to a directory: the
+        // underlying error is an OSStatus (fnfErr), not an errno.
+        NSMutableDictionary *info = [NSMutableDictionary dictionaryWithDictionary:folder];
+        [info setObject:path forKey:NSFilePathErrorKey];
+        [info setObject:[NSError errorWithDomain:NSOSStatusErrorDomain code:-43 userInfo:nil] forKey:NSUnderlyingErrorKey];
+        return [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileReadNoSuchFileError userInfo:info];
+    }
+    return _NSFileErrorWithErrno(err, path, YES, folder);
 }
