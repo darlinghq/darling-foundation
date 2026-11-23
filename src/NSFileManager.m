@@ -34,6 +34,7 @@
 #import "NSFileManagerInternal.h"
 #import "NSPathStore.h"
 #import "NSFilesystemItemRemoveOperation.h"
+#import "_NSFileErrors.h"
 
 CF_EXPORT CFStringEncoding CFStringFileSystemEncoding(void);
 
@@ -581,69 +582,66 @@ static inline BOOL _NSFileAccessibleForMode(NSString *path, int mode)
 
 - (BOOL)createDirectoryAtURL:(NSURL *)url withIntermediateDirectories:(BOOL)createIntermediates attributes:(NSDictionary *)attributes error:(NSError **)error
 {
-    if (createIntermediates)
+    mode_t mode = 0777;
+    if (attributes[NSFilePosixPermissions])
     {
-        NSArray *comps = [url pathComponents];
-        NSURL *recomposed = nil;
-        for (NSString *comp in comps)
-        {
-            if (recomposed == nil)
-            {
-                recomposed = [NSURL fileURLWithPath:comp];
-            }
-            else
-            {
-                recomposed = [recomposed URLByAppendingPathComponent:comp];
-            }
-            BOOL isDir = NO;
-            BOOL exists = [self fileExistsAtPath:[recomposed path] isDirectory:&isDir];
-            if (!exists)
-            {
-                isDir = YES;
-                if (![self createDirectoryAtURL:recomposed withIntermediateDirectories:NO attributes:attributes error:error])
-                {
-                    return NO;
-                }
-            }
-            else if (!isDir)
-            {
-                if (error)
-                {
-                    *error = [NSError errorWithDomain:NSFilePathErrorKey code:-1 userInfo:@{
-                        NSLocalizedDescriptionKey: @"Found a file where a directory was expected"
-                    }];
-                }
-                return NO;
-            }
-        }
-        return YES;
+        mode = [attributes[NSFilePosixPermissions] intValue];
     }
-    else
+
+    // NSFileOwnerAccountName
+    // NSFileGroupOwnerAccountName
+    // are possible, but not reasonable atm
+
+    NSString *fullPath = [url path];
+    if (!createIntermediates)
     {
-        mode_t mode = 0777;
-        if (attributes[NSFilePosixPermissions])
-        {
-            mode = [attributes[NSFilePosixPermissions] intValue];
-        }
-
-        // NSFileOwnerAccountName
-        // NSFileGroupOwnerAccountName
-        // are possible, but not reasonable atm
-
-        int err = mkdir([[url path] fileSystemRepresentation], mode);
-        if (err == -1)
+        if (mkdir([fullPath fileSystemRepresentation], mode) == -1)
         {
             if (error)
             {
-                *error = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:@{
-                    NSLocalizedDescriptionKey: [NSString stringWithUTF8String:strerror(errno)]
-                }];
+                *error = _NSFileErrorWithErrno(errno, fullPath, NO, nil);
             }
             return NO;
         }
-
         return YES;
     }
+
+    NSArray *comps = [fullPath pathComponents];
+    NSString *current = nil;
+    for (NSUInteger i = 0; i < [comps count]; i++)
+    {
+        BOOL last = (i + 1 == [comps count]);
+        BOOL isDir = NO;
+        current = (current == nil) ? [comps objectAtIndex:i] : [current stringByAppendingPathComponent:[comps objectAtIndex:i]];
+        // A component that exists must be a directory: a file there is EEXIST for the directory asked
+        // for and ENOTDIR for one below it. Failing to create a missing one is reported for the whole path.
+        if ([self fileExistsAtPath:current isDirectory:&isDir])
+        {
+            if (!isDir)
+            {
+                if (error)
+                {
+                    *error = _NSFileErrorWithErrno(last ? EEXIST : ENOTDIR, current, NO, nil);
+                }
+                return NO;
+            }
+            continue;
+        }
+        if (mkdir([current fileSystemRepresentation], mode) == -1)
+        {
+            int err = errno;
+            if (err == EEXIST && [self fileExistsAtPath:current isDirectory:&isDir] && isDir)
+            {
+                continue; // created by somebody else in the meantime
+            }
+            if (error)
+            {
+                *error = _NSFileErrorWithErrno(err, err == EEXIST ? current : fullPath, NO, nil);
+            }
+            return NO;
+        }
+    }
+    return YES;
 }
 
 - (BOOL)createDirectoryAtPath:(NSString *)path withIntermediateDirectories:(BOOL)createIntermediates attributes:(NSDictionary *)attributes error:(NSError **)error
@@ -941,9 +939,7 @@ static NSError *_NSErrorWithFilePathAndErrno(id path, int code)
     {
         if (error)
         {
-            *error = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:@{
-                NSLocalizedDescriptionKey: [NSString stringWithUTF8String:strerror(errno)]
-            }];
+            *error = _NSFileErrorWithErrno(errno, path, NO, nil);
         }
         return NO;
     }
@@ -976,45 +972,39 @@ static NSError *_NSErrorWithFilePathAndErrno(id path, int code)
 
 - (BOOL)copyItemAtPath:(NSString *)srcPath toPath:(NSString *)dstPath error:(NSError **)error
 {
-    NSString *dstDir = [dstPath stringByDeletingLastPathComponent];
-    BOOL isDir = NO;
-    BOOL exists = [self fileExistsAtPath:dstDir isDirectory:&isDir];
-    if (exists && !isDir)
-    {
-#warning TODO: Error should be populated here
-        return NO;
-    }
-    else if (!exists)
-    {
-        if (![self createDirectoryAtPath:dstDir withIntermediateDirectories:YES attributes:nil error:error])
-        {
-            return NO;
-        }
-    }
-    if ([self attributesOfItemAtPath:dstPath error:NULL] != nil)
-    {
-        if (error)
-        {
-            *error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileWriteFileExistsError
-                                     userInfo:@{NSFilePathErrorKey: dstPath,
-                                                NSUnderlyingErrorKey: [NSError errorWithDomain:NSPOSIXErrorDomain code:EEXIST userInfo:nil]}];
-        }
-        return NO;
-    }
-    copyfile_flags_t flags = COPYFILE_ALL | COPYFILE_RECURSIVE | COPYFILE_NOFOLLOW_SRC | COPYFILE_EXCL;
     if (error != NULL)
     {
         *error = nil;
     }
+    // A missing source is a read error that names only the source; the destination's parent is not
+    // created, so a missing one fails the copy with its errno.
+    struct stat st;
+    if (_NSFileManagerStat(srcPath, &st, NO) != 0)
+    {
+        int err = errno;
+        if (error)
+        {
+            *error = err == ENOENT ? _NSFileErrorWithErrno(err, srcPath, YES, nil)
+                                   : _NSFileTransferErrorWithErrno(err, srcPath, dstPath, @"Copy", NO);
+        }
+        return NO;
+    }
+    if (_NSFileManagerStat(dstPath, &st, NO) == 0)
+    {
+        if (error)
+        {
+            *error = _NSFileTransferErrorWithErrno(EEXIST, srcPath, dstPath, @"Copy", NO);
+        }
+        return NO;
+    }
+    copyfile_flags_t flags = COPYFILE_ALL | COPYFILE_RECURSIVE | COPYFILE_NOFOLLOW_SRC | COPYFILE_EXCL;
     int err = copyfile([srcPath fileSystemRepresentation], [dstPath fileSystemRepresentation], NULL, flags);
 
     if (err != 0)
     {
         if (error)
         {
-            *error = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:@{
-                NSLocalizedDescriptionKey: [NSString stringWithUTF8String:strerror(errno)]
-            }];
+            *error = _NSFileTransferErrorWithErrno(errno, srcPath, dstPath, @"Copy", NO);
         }
         return NO;
     }
@@ -1042,10 +1032,7 @@ static NSError *_NSErrorWithFilePathAndErrno(id path, int code)
     {
         if (error != NULL)
         {
-            *error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileWriteFileExistsError userInfo:@{
-                NSLocalizedDescriptionKey: @"Item couldn't be moved because an item with the same name already exists.",
-                NSFilePathErrorKey: dstPath,
-            }];
+            *error = _NSFileTransferErrorWithErrno(EEXIST, srcPath, dstPath, @"Move", NO);
         }
         return NO;
     }
@@ -1055,9 +1042,7 @@ static NSError *_NSErrorWithFilePathAndErrno(id path, int code)
     }
 
     if (error != NULL) {
-        *error = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:@{
-            NSLocalizedDescriptionKey: [NSString stringWithUTF8String:strerror(errno)]
-            }];
+        *error = _NSFileTransferErrorWithErrno(errno, srcPath, dstPath, @"Move", NO);
     }
     return NO;
 }
@@ -1147,36 +1132,7 @@ static inline NSStringEncoding defaultEncoding()
 // calls of the same family.
 static NSError *_NSCocoaErrorForErrno(int err, NSString *path, BOOL reading)
 {
-    NSInteger code;
-    switch (err)
-    {
-        case ENOENT:
-            code = reading ? NSFileReadNoSuchFileError : NSFileNoSuchFileError;
-            break;
-        case EEXIST:
-            code = NSFileWriteFileExistsError;
-            break;
-        case EACCES:
-        case EPERM:
-            code = reading ? NSFileReadNoPermissionError : NSFileWriteNoPermissionError;
-            break;
-        case ENOSPC:
-            code = NSFileWriteOutOfSpaceError;
-            break;
-        case EROFS:
-            code = NSFileWriteVolumeReadOnlyError;
-            break;
-        default:
-            code = reading ? NSFileReadUnknownError : NSFileWriteUnknownError;
-            break;
-    }
-    NSMutableDictionary *info = [NSMutableDictionary dictionary];
-    if (path)
-    {
-        [info setObject:path forKey:NSFilePathErrorKey];
-    }
-    [info setObject:[NSError errorWithDomain:NSPOSIXErrorDomain code:err userInfo:nil] forKey:NSUnderlyingErrorKey];
-    return [NSError errorWithDomain:NSCocoaErrorDomain code:code userInfo:info];
+    return _NSFileErrorWithErrno(err, path, reading, nil);
 }
 
 - (BOOL)_linkItemAtFileSystemPath:(const char *)src toFileSystemPath:(const char *)dst failedPath:(NSString **)failed
@@ -1274,7 +1230,7 @@ static NSError *_NSCocoaErrorForErrno(int err, NSString *path, BOOL reading)
     {
         if (error)
         {
-            *error = _NSCocoaErrorForErrno(errno, failedPath ?: dstPath, NO);
+            *error = _NSFileTransferErrorWithErrno(errno, srcPath, dstPath, @"Link", NO);
         }
         return NO;
     }

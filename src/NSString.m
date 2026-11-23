@@ -2055,13 +2055,22 @@ static const char* bytesInEncoding(NSString *string, BOOL externalRep, NSStringE
     {
         if (error)
         {
-            *error = [NSError errorWithDomain:NSCocoaErrorDomain code:-1 userInfo:@{
-                NSLocalizedDescriptionKey: @"does this even make sense? what would it even do? POST?"
-            }];
+            *error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileWriteUnsupportedSchemeError
+                                     userInfo:@{ NSURLErrorKey: url }];
         }
         return NO;
     }
     NSData *data = [self dataUsingEncoding:enc];
+    if (data == nil)
+    {
+        if (error)
+        {
+            *error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileWriteInapplicableStringEncodingError
+                                     userInfo:@{ NSFilePathErrorKey: [url path],
+                                                 NSStringEncodingErrorKey: [NSNumber numberWithUnsignedInteger:enc] }];
+        }
+        return NO;
+    }
     return [data writeToURL:url options:useAuxiliaryFile ? NSDataWritingAtomic : 0 error:error];
 }
 
