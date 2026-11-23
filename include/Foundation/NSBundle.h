@@ -1,3 +1,4 @@
+#import <Foundation/NSDictionary.h>
 #import <Foundation/NSObject.h>
 #import <Foundation/NSArray.h>
 
@@ -69,8 +70,8 @@ typedef struct __CFBundle *CFBundleRef;
 - (NSArray *)pathsForResourcesOfType:(NSString *)ext inDirectory:(NSString *)subpath forLocalization:(NSString *)localizationName;
 - (NSString *)localizedStringForKey:(NSString *)key value:(NSString *)value table:(NSString *)tableName NS_FORMAT_ARGUMENT(1);
 @property (readonly, retain) NSString *bundleIdentifier;
-- (NSDictionary *)infoDictionary;
-- (NSDictionary *)localizedInfoDictionary;
+@property (nullable, readonly, copy) NSDictionary<NSString *, id> *infoDictionary;
+@property (nullable, readonly, copy) NSDictionary<NSString *, id> *localizedInfoDictionary;
 - (id)objectForInfoDictionaryKey:(NSString *)key;
 - (Class)classNamed:(NSString *)className;
 - (Class)principalClass;
