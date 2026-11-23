@@ -39,6 +39,16 @@ OBJC_PROTOCOL_IMPL_PUSH
 {
     return [[[NSAutoCalendar alloc] init] autorelease];
 }
+
+// Documented: nil for an unknown identifier, and the new calendar uses the current locale and the default time zone.
+// -initWithCalendarIdentifier: already returns nil for an unknown identifier and starts with the default time zone, but
+// with the system locale, so the locale is set here.
++ (NSCalendar *)calendarWithIdentifier:(NSCalendarIdentifier)calendarIdentifierConstant
+{
+    NSCalendar *calendar = [[[self alloc] initWithCalendarIdentifier:calendarIdentifierConstant] autorelease];
+    [calendar setLocale:[NSLocale currentLocale]];
+    return calendar;
+}
 OBJC_PROTOCOL_IMPL_POP
 
 - (NSDate *)dateByAddingUnit:(NSCalendarUnit)unit value:(NSInteger)value toDate:(NSDate *)date options:(NSCalendarOptions)options
