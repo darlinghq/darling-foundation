@@ -60,9 +60,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 }
 
 - (void) removeInvocationsWithTarget: (id) target {
-    int i;
+    NSInteger i;
 
-    for (i = 0; i < [_invocations count]; ++i)
+    // From the end: removing an item must not skip the one that moves into its place.
+    for (i = [_invocations count] - 1; i >= 0; --i)
         if ([[_invocations objectAtIndex: i] target] == target)
             [_invocations removeObjectAtIndex: i];
 }
