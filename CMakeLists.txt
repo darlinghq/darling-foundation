@@ -80,6 +80,7 @@ set(foundation_sources
 	src/NSFileCoordinator.m
 	src/NSFileHandle.m
 	src/_NSFileIO.m
+	src/_NSFileErrors.m
 	src/NSFileManager.m
 	src/NSFilesystemItemRemoveOperation.m
 	src/NSFormatter.m

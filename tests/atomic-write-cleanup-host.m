@@ -93,6 +93,12 @@ __attribute__((objc_root_class))
 NSString *const NSPOSIXErrorDomain = nil;
 NSString *const NSCocoaErrorDomain = nil;
 NSString *const NSLocalizedDescriptionKey = nil;
+NSString *const NSURLErrorKey = nil;
+#define NSFileWriteUnsupportedSchemeError 518
+/* The error constructor of src/_NSFileErrors.m: the mock only keeps the code. */
+static NSError *_NSFileErrorWithErrno(int err, NSString *path, BOOL reading, NSDictionary *extra) {
+    return [NSError errorWithDomain:nil code:err userInfo:nil];
+}
 
 #include METHODS_INC
 
