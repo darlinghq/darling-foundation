@@ -32,6 +32,7 @@
 #include <string.h>
 #import "common.h"
 #include <math.h>
+#include <libkern/OSByteOrder.h>
 
 #define	EXPOSE_NSAffineTransform_IVARS	1
 
@@ -98,6 +99,15 @@ matrix_multiply (NSAffineTransformStruct MA, NSAffineTransformStruct MB)
 static NSAffineTransformStruct identityTransform = {
    1.0, 0.0, 0.0, 1.0, 0.0, 0.0
 };
+
++ (void) initialize
+{
+  if (self == [NSAffineTransform class])
+    {
+      // The version macOS records for this class in sequential archives.
+      [self setVersion: 1];
+    }
+}
 
 /**
  * Return an autoreleased instance of this class.
@@ -589,17 +599,73 @@ static NSAffineTransformStruct identityTransform = {
     {
       NSAffineTransformStruct	o = [anObject transformStruct];
 
-      if (0 == memcmp((void*)&o, (void*)&_matrix, sizeof(o)))
-	{
-	  return YES;
-	}
+      // Field-wise comparison, so that 0 and -0 are equal and NaN is not.
+      return (o.m11 == A && o.m12 == B && o.m21 == C && o.m22 == D
+        && o.tX == TX && o.tY == TY);
     }
   return NO;
+}
+
+- (NSUInteger) hash
+{
+  // Equal transforms must hash equally, so hash the values at float
+  // precision and map -0 to 0 (adding 0 does that).
+  float f[6] = { A + 0.0, B + 0.0, C + 0.0, D + 0.0, TX + 0.0, TY + 0.0 };
+  NSUInteger h = 0;
+  int i;
+
+  for (i = 0; i < 6; i++)
+    {
+      uint32_t bits;
+
+      memcpy(&bits, &f[i], sizeof(bits));
+      h = h * 31 + bits;
+    }
+  return h;
 }
 
 + (BOOL) supportsSecureCoding
 {
   return YES;
+}
+
+/* The keyed archive stores the matrix in one NSTransformStruct data value
+ * made of big-endian IEEE floats, in the shortest of these forms (the same
+ * ones macOS writes, and decodes):
+ *   - no value at all for the identity matrix,
+ *   - 9 bytes: kind byte 1 and tX tY for a pure translation,
+ *   - 9 bytes: kind byte 2 and m11 m22 for a pure scale (no translation),
+ *   - 16 bytes: m11 m22 tX tY when there is no shear,
+ *   - 24 bytes: m11 m12 m21 m22 tX tY.
+ * The form is chosen from the matrix values themselves. The _isIdentity
+ * and _isFlipY flags only describe the 2x2 part and say nothing about
+ * the translation, so they must not be used for this. */
+enum
+{
+  KindTranslation = 1,
+  KindScale = 2
+};
+
+static float
+decodeBigFloat(const uint8_t *bytes)
+{
+  uint32_t bits;
+  float f;
+
+  memcpy(&bits, bytes, sizeof(bits));
+  bits = OSSwapBigToHostInt32(bits);
+  memcpy(&f, &bits, sizeof(f));
+  return f;
+}
+
+static void
+encodeBigFloat(uint8_t *bytes, float f)
+{
+  uint32_t bits;
+
+  memcpy(&bits, &f, sizeof(bits));
+  bits = OSSwapHostToBigInt32(bits);
+  memcpy(bytes, &bits, sizeof(bits));
 }
 
 - (id) initWithCoder: (NSCoder*)aCoder
@@ -620,20 +686,17 @@ static NSAffineTransformStruct identityTransform = {
               return nil;
             }
 
-          // The bytes are plain native-endian floats: a type byte (1 translation,
-          // 2 scale) and two floats, or 4 floats (m11 m22 tX tY), or 6 floats.
           if (length == 9)
             {
-              float f, g;
+              float f = decodeBigFloat(data + 1);
+              float g = decodeBigFloat(data + 5);
 
-              memcpy(&f, data + 1, sizeof(f));
-              memcpy(&g, data + 1 + sizeof(f), sizeof(g));
-              if (data[0] == 1)
+              if (data[0] == KindTranslation)
                 {
                   replace.tX = f;
                   replace.tY = g;
                 }
-              else if (data[0] == 2)
+              else if (data[0] == KindScale)
                 {
                   replace.m11 = f;
                   replace.m22 = g;
@@ -645,25 +708,19 @@ static NSAffineTransformStruct identityTransform = {
             }
           else if (16 == length)
             {
-              float s[4];
-
-              memcpy(s, data, sizeof(s));
-              replace.m11 = s[0];
-              replace.m22 = s[1];
-              replace.tX = s[2];
-              replace.tY = s[3];
+              replace.m11 = decodeBigFloat(data);
+              replace.m22 = decodeBigFloat(data + 4);
+              replace.tX = decodeBigFloat(data + 8);
+              replace.tY = decodeBigFloat(data + 12);
             }
           else if (24 == length)
             {
-              float s[6];
-
-              memcpy(s, data, sizeof(s));
-              replace.m11 = s[0];
-              replace.m12 = s[1];
-              replace.m21 = s[2];
-              replace.m22 = s[3];
-              replace.tX = s[4];
-              replace.tY = s[5];
+              replace.m11 = decodeBigFloat(data);
+              replace.m12 = decodeBigFloat(data + 4);
+              replace.m21 = decodeBigFloat(data + 8);
+              replace.m22 = decodeBigFloat(data + 12);
+              replace.tX = decodeBigFloat(data + 16);
+              replace.tY = decodeBigFloat(data + 20);
             }
           else
             {
@@ -677,9 +734,16 @@ static NSAffineTransformStruct identityTransform = {
     }
   else
     {
-      [aCoder decodeArrayOfObjCType: @encode(CGFloat)
-                              count: 6
-                                 at: (CGFloat*)&replace];
+      // Sequential archives hold six floats: m11 m12 m21 m22 tX tY.
+      float s[6];
+
+      [aCoder decodeArrayOfObjCType: @encode(float) count: 6 at: s];
+      replace.m11 = s[0];
+      replace.m12 = s[1];
+      replace.m21 = s[2];
+      replace.m22 = s[3];
+      replace.tX = s[4];
+      replace.tY = s[5];
     }
   [self setTransformStruct: replace];
   return self;
@@ -687,46 +751,57 @@ static NSAffineTransformStruct identityTransform = {
 
 - (void) encodeWithCoder: (NSCoder*)aCoder
 {
-  NSAffineTransformStruct replace;
-    
-  replace = [self transformStruct];
+  NSAffineTransformStruct m = [self transformStruct];
+
   if ([aCoder allowsKeyedCoding])
     {
-      if (!_isIdentity)
-        {
-          // Without shear macOS writes m11 m22 tX tY, otherwise all six values,
-          // as native-endian floats.
-          float s[6];
-          NSUInteger length;
+      uint8_t bytes[24];
+      NSUInteger length;
+      BOOL noShear = (m.m12 == 0 && m.m21 == 0);
 
-          if (replace.m12 == 0 && replace.m21 == 0)
-            {
-              s[0] = replace.m11;
-              s[1] = replace.m22;
-              s[2] = replace.tX;
-              s[3] = replace.tY;
-              length = 4 * sizeof(float);
-            }
-          else
-            {
-              s[0] = replace.m11;
-              s[1] = replace.m12;
-              s[2] = replace.m21;
-              s[3] = replace.m22;
-              s[4] = replace.tX;
-              s[5] = replace.tY;
-              length = 6 * sizeof(float);
-            }
-          [aCoder encodeBytes: (const uint8_t *)s
-                       length: length
-                       forKey: @"NSTransformStruct"];
+      if (noShear && m.m11 == 1 && m.m22 == 1 && m.tX == 0 && m.tY == 0)
+        {
+          return;
         }
+      if (noShear && m.m11 == 1 && m.m22 == 1)
+        {
+          bytes[0] = KindTranslation;
+          encodeBigFloat(bytes + 1, m.tX);
+          encodeBigFloat(bytes + 5, m.tY);
+          length = 9;
+        }
+      else if (noShear && m.tX == 0 && m.tY == 0)
+        {
+          bytes[0] = KindScale;
+          encodeBigFloat(bytes + 1, m.m11);
+          encodeBigFloat(bytes + 5, m.m22);
+          length = 9;
+        }
+      else if (noShear)
+        {
+          encodeBigFloat(bytes, m.m11);
+          encodeBigFloat(bytes + 4, m.m22);
+          encodeBigFloat(bytes + 8, m.tX);
+          encodeBigFloat(bytes + 12, m.tY);
+          length = 16;
+        }
+      else
+        {
+          encodeBigFloat(bytes, m.m11);
+          encodeBigFloat(bytes + 4, m.m12);
+          encodeBigFloat(bytes + 8, m.m21);
+          encodeBigFloat(bytes + 12, m.m22);
+          encodeBigFloat(bytes + 16, m.tX);
+          encodeBigFloat(bytes + 20, m.tY);
+          length = 24;
+        }
+      [aCoder encodeBytes: bytes length: length forKey: @"NSTransformStruct"];
     }
   else
     {
-      [aCoder encodeArrayOfObjCType: @encode(CGFloat)
-                              count: 6
-                                 at: (CGFloat*)&replace];
+      float s[6] = { m.m11, m.m12, m.m21, m.m22, m.tX, m.tY };
+
+      [aCoder encodeArrayOfObjCType: @encode(float) count: 6 at: s];
     }
 }
 
