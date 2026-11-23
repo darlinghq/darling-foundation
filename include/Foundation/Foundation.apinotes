@@ -145,6 +145,11 @@ Classes:
     SwiftName: "localizedString(from:dateStyle:timeStyle:)"
 - Name: NSDateComponentsFormatter
   SwiftName: DateComponentsFormatter
+  Methods:
+  # macOS's string(from:); NSTimeInterval does not import as TimeInterval, so the importer keeps fromTimeInterval.
+  - Selector: "stringFromTimeInterval:"
+    MethodKind: Instance
+    SwiftName: "string(from:)"
 - Name: NSISO8601DateFormatter
   SwiftName: ISO8601DateFormatter
 - Name: NSMeasurementFormatter
@@ -216,6 +221,12 @@ Classes:
   - Selector: "propertyList:isValidForFormat:"
     MethodKind: Class
     SwiftName: "propertyList(_:isValidFor:)"
+- Name: NSProgress
+  SwiftName: Progress
+  Methods:
+  - Selector: 'discreteProgressWithTotalUnitCount:'
+    MethodKind: Class
+    SwiftName: 'discreteProgress(totalUnitCount:)'
 Typedefs:
 # Like the macOS SDK (NS_TYPED_EXTENSIBLE_ENUM): NSURLResourceKey imports as the struct URLResourceKey, which Swift
 # mangles as `So16NSURLResourceKeya`.
@@ -251,6 +262,12 @@ Typedefs:
   SwiftName: PropertyListSerialization.ReadOptions
 - Name: NSPropertyListWriteOptions
   SwiftName: PropertyListSerialization.WriteOptions
+- Name: NSProgressKind
+  SwiftName: ProgressKind
+- Name: NSProgressUserInfoKey
+  SwiftName: ProgressUserInfoKey
+- Name: NSProgressFileOperationKind
+  SwiftName: Progress.FileOperationKind
 Tags:
 - Name: NSRoundingMode
   SwiftName: NSDecimalNumber.RoundingMode
@@ -260,6 +277,10 @@ Tags:
   SwiftName: NSCalendar.Unit
 - Name: NSNumberFormatterStyle
   SwiftName: NumberFormatter.Style
+- Name: NSDateComponentsFormatterUnitsStyle
+  SwiftName: DateComponentsFormatter.UnitsStyle
+- Name: NSDateComponentsFormatterZeroFormattingBehavior
+  SwiftName: DateComponentsFormatter.ZeroFormattingBehavior
 - Name: NSPropertyListFormat
   SwiftName: PropertyListSerialization.PropertyListFormat
 - Name: NSPropertyListMutabilityOptions
