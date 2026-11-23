@@ -12,6 +12,11 @@
 
 @implementation _NSKeyedCoderOldStyleArray
 
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
+
 - (id)initWithCoder:(NSCoder *)decoder
 {
     self = [super init];
@@ -35,8 +40,7 @@
 
         _decoded = YES;
 
-        NSUInteger count = 0;
-        while (count < _count)
+        for (NSUInteger count = 0; count < _count; count++)
         {
             [decoder decodeValueOfObjCType:&_type at:(char *)_addr + count * _size];
         }
@@ -50,8 +54,7 @@
     [coder encodeInt32:_size forKey:@"NS.size"];
     [coder encodeInt32:(int32_t)_type forKey:@"NS.type"];
 
-    NSUInteger count = 0;
-    while (count < _count)
+    for (NSUInteger count = 0; count < _count; count++)
     {
         [coder encodeValueOfObjCType:&_type at:(char *)_addr + count * _size];
     }
@@ -79,7 +82,7 @@
         return;
     }
 
-    memmove(addr, _addr, _size);
+    memmove(addr, _addr, _size * _count);
 }
 
 - (void)dealloc
