@@ -105,6 +105,24 @@ typedef NS_OPTIONS(NSUInteger, NSDataBase64DecodingOptions) {
 - (NSData *)base64EncodedDataWithOptions:(NSDataBase64EncodingOptions)options NS_AVAILABLE(10_9, 7_0);
 @end
 
+// The documentation names the four algorithms and the NSInteger type but gives no values. An application built against the
+// real SDK passes the raw integers. Values observed on macOS: LZFSE 0, LZ4 1, LZMA 2, Zlib 3 (a small program printing
+// the public constants, run on a real Mac; evidence tier 2 black-box observation).
+typedef NS_ENUM(NSInteger, NSDataCompressionAlgorithm) {
+    NSDataCompressionAlgorithmLZFSE = 0,
+    NSDataCompressionAlgorithmLZ4   = 1,
+    NSDataCompressionAlgorithmLZMA  = 2,
+    NSDataCompressionAlgorithmZlib  = 3
+} API_AVAILABLE(macos(10.15), ios(13.0), watchos(6.0), tvos(13.0));
+
+@interface NSData (NSDataCompression)
+
+// Documented as optional (nil on failure); not marked nullable because this header has no nullability annotations at all.
+- (instancetype)compressedDataUsingAlgorithm:(NSDataCompressionAlgorithm)algorithm error:(NSError **)error API_AVAILABLE(macos(10.15), ios(13.0), watchos(6.0), tvos(13.0));
+- (instancetype)decompressedDataUsingAlgorithm:(NSDataCompressionAlgorithm)algorithm error:(NSError **)error API_AVAILABLE(macos(10.15), ios(13.0), watchos(6.0), tvos(13.0));
+
+@end
+
 @interface NSData (NSDeprecated)
 
 + (id)dataWithContentsOfMappedFile:(NSString *)path;
