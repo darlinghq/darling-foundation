@@ -106,7 +106,7 @@ FOUNDATION_EXPORT NSString * const NSFileSystemFreeNodes;
     } _flags;
 }
 
-@property (class, readonly, retain) NSFileManager *defaultManager;
+@property (class, readonly, retain) NSFileManager * _Nonnull defaultManager;
 @property (readonly) NSURL *temporaryDirectory;
 - (NSArray *)mountedVolumeURLsIncludingResourceValuesForKeys:(NSArray *)propertyKeys options:(NSVolumeEnumerationOptions)options;
 - (NSArray *)contentsOfDirectoryAtURL:(NSURL *)url includingPropertiesForKeys:(NSArray *)keys options:(NSDirectoryEnumerationOptions)mask error:(NSError **)error;
