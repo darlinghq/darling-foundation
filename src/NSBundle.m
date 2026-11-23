@@ -259,13 +259,36 @@ static NSString* frameworkPathForPath(NSString *filePath) {
 
 + (NSBundle *)bundleWithIdentifier:(NSString *)identifier
 {
+    // The main bundle is never put in the tables by -initWithURL:, and a second NSBundle for the
+    // same location can be, so it is checked before them.
+    NSBundle *main = [self mainBundle];
+    if (main != nil && [[main bundleIdentifier] isEqual:identifier]) {
+        return main;
+    }
+
     NSBundle *bundle = nil;
     @synchronized(bundlesByIdentifier)
     {
         bundle = [bundlesByIdentifier[identifier] retain];
-        // TODO: we should be doing some searching if the bundle is nil
     }
-    return [bundle autorelease];
+    if (bundle != nil) {
+        return [bundle autorelease];
+    }
+
+    // No NSBundle exists for it yet, but CoreFoundation also finds the bundles of frameworks that
+    // dyld has loaded. Creating the NSBundle for the one it found registers its identifier. No
+    // NSBundle lock is held here: creating a bundle takes the path table lock and then the
+    // identifier table lock.
+    CFBundleRef cfBundle = CFBundleGetBundleWithIdentifier((CFStringRef)identifier);
+    if (cfBundle == NULL) {
+        return nil;
+    }
+    CFRetain(cfBundle);
+    NSURL *url = (NSURL *)CFBundleCopyBundleURL(cfBundle);
+    bundle = url != nil ? [self bundleWithURL:url] : nil;
+    [url release];
+    CFRelease(cfBundle);
+    return bundle;
 }
 
 + (NSArray *)allBundles

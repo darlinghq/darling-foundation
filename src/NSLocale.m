@@ -44,6 +44,10 @@ CF_PRIVATE
     return [self objectForKey: NSLocaleLanguageCode];
 }
 
+- (NSString *)countryCode {
+    return [self objectForKey: NSLocaleCountryCode];
+}
+
 - (NSString *)languageIdentifier {
     NSString *identifier = [self localeIdentifier];
     NSRange keywordStart = [identifier rangeOfString:@"@"];

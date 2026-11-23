@@ -1,0 +1,9 @@
+# NSFileManager copyPath:toPath:handler:
+
+Build `nsfilemanager-copypath-handler.m` against Foundation and run it under Darling. It copies a file and a directory tree (symbolic links stay links, a symbolic link source too, and permissions are copied) and checks the handler contract as observed on macOS 10.14.4 (x86_64 and i386) and 26.7.3, which agree: `-fileManager:willProcessPath:` is sent for every item with its destination path (a directory before its entries) before that destination exists, and not for a missing source or a destination whose parent is not a directory; the error callback gets a dictionary of exactly `@"Path"` and `@"Error"` (source, destination or parent, with "Couldn't open", "Couldn't create" or "Couldn't create directory"); the destination's parent must exist and the destination must not; a YES answer continues with the next item and the call returns YES, a NO answer stops the copy; a nil handler or one without the error callback gives NO; a nil path gives NO, or raises `NSInvalidArgumentException` when the handler has the error callback.
+
+The checks on an unreadable entry in the middle of a tree are skipped when the test runs with enough privilege to read it.
+
+Baseline: `-copyPath:toPath:handler:` does not exist, so the first call raises `unrecognized selector` and the process aborts. Candidate: zero failures. The temporary directory is removed on every path. The test also runs on a Mac (build with the system compiler).
+
+The [documentation](https://developer.apple.com/documentation/foundation/nsfilemanager/copypath:topath:handler:) is silent on most of this; the evidence is the black-box probe in vd-upstream/mac-probes/cristim/batch8a. The order of the entries inside a directory is the directory order and is not tested beyond "a directory before its entries". Not covered: a destination inside the source, ownership and modification date.

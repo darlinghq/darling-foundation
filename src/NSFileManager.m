@@ -1036,6 +1036,102 @@ static NSError *_NSErrorWithFilePathAndErrno(id path, int code)
     return [self copyItemAtPath:srcURL.path toPath:dstURL.path error:error];
 }
 
+// QUIRK: the legacy -copyPath:toPath:handler: reports to its handler per item, with its own error texts, instead of
+// once per call. Documented only loosely (the pages say willProcessPath: is sent "when it begins a copy" and that the
+// error dictionary has a path and an error text). Evidence: black-box observation on macOS 10.14.4 (x86_64 and i386)
+// and 26.7.3 (tier 2), identical on all three:
+//  - -fileManager:willProcessPath: is sent for every item with its destination path (a directory first, then its
+//    entries in directory order), before that destination exists; it is not sent for a missing source or a
+//    destination whose parent is not a directory.
+//  - -fileManager:shouldProceedAfterError: gets a dictionary with exactly @"Path" and @"Error". The path is the
+//    source for a missing source, the destination for an existing destination or a destination that cannot be
+//    created, and the parent for a parent that is not a directory. The text is "Couldn't open", "Couldn't create"
+//    (a file) or "Couldn't create directory" (a directory).
+//  - The destination's parent must exist (nothing is created for it). A destination that exists is an error.
+//  - A YES from the callback continues with the next item (the failed directory's contents are skipped) and the call
+//    returns YES; NO stops the copy and returns NO. Without a handler or the callback every error returns NO.
+//  - A nil source or destination is an error without a path: with a handler that has the error callback it raises
+//    NSInvalidArgumentException (the error dictionary cannot hold a nil path), otherwise the call returns NO.
+// Test: tests/nsfilemanager-copypath-handler.m
+static BOOL __NSLegacyCopyFailed(NSFileManager *fm, id handler, NSString *path, NSString *text)
+{
+    if (![handler respondsToSelector:@selector(fileManager:shouldProceedAfterError:)])
+    {
+        return NO;
+    }
+    return [handler fileManager:fm shouldProceedAfterError:@{ @"Path": path, @"Error": text }];
+}
+
+// Returns whether the copy should go on (YES also when the handler approved an error).
+static BOOL __NSLegacyCopyItem(NSFileManager *fm, NSString *src, NSString *dest, id handler, BOOL isRoot)
+{
+    struct stat sourceStat;
+    if (lstat([src fileSystemRepresentation], &sourceStat) != 0)
+    {
+        return __NSLegacyCopyFailed(fm, handler, src, @"Couldn't open");
+    }
+    BOOL isDirectory = S_ISDIR(sourceStat.st_mode);
+
+    if (isRoot)
+    {
+        NSString *parent = [dest stringByDeletingLastPathComponent];
+        struct stat parentStat;
+        if (stat([(parent.length > 0 ? parent : @".") fileSystemRepresentation], &parentStat) != 0 || !S_ISDIR(parentStat.st_mode))
+        {
+            return __NSLegacyCopyFailed(fm, handler, parent, @"Couldn't open");
+        }
+    }
+
+    if ([handler respondsToSelector:@selector(fileManager:willProcessPath:)])
+    {
+        [handler fileManager:fm willProcessPath:dest];
+    }
+
+    struct stat destStat;
+    NSString *failure = isDirectory ? @"Couldn't create directory" : @"Couldn't create";
+    if (lstat([dest fileSystemRepresentation], &destStat) == 0)
+    {
+        return __NSLegacyCopyFailed(fm, handler, dest, failure);
+    }
+
+    if (!isDirectory)
+    {
+        if (![fm copyItemAtPath:src toPath:dest error:NULL])
+        {
+            return __NSLegacyCopyFailed(fm, handler, dest, failure);
+        }
+        return YES;
+    }
+
+    if (![fm createDirectoryAtPath:dest withIntermediateDirectories:NO attributes:nil error:NULL])
+    {
+        return __NSLegacyCopyFailed(fm, handler, dest, failure);
+    }
+    NSArray *entries = [fm contentsOfDirectoryAtPath:src error:NULL];
+    for (NSString *entry in entries)
+    {
+        if (!__NSLegacyCopyItem(fm, [src stringByAppendingPathComponent:entry], [dest stringByAppendingPathComponent:entry], handler, NO))
+        {
+            return NO;
+        }
+    }
+    chmod([dest fileSystemRepresentation], sourceStat.st_mode & 07777);
+    return YES;
+}
+
+- (BOOL)copyPath:(NSString *)src toPath:(NSString *)dest handler:(id)handler
+{
+    if (src == nil || dest == nil)
+    {
+        if ([handler respondsToSelector:@selector(fileManager:shouldProceedAfterError:)])
+        {
+            [NSException raise:NSInvalidArgumentException format:@"*** -[NSFileManager copyPath:toPath:handler:]: nil path"];
+        }
+        return NO;
+    }
+    return __NSLegacyCopyItem(self, src, dest, handler, YES);
+}
+
 - (NSData *)contentsAtPath:(NSString *)path
 {
     return [[[NSData alloc] initWithContentsOfFile:path] autorelease];
