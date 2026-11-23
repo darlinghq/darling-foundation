@@ -832,6 +832,11 @@ const NSHashTableCallBacks NSOwnedObjectIdentityHashCallBacks =
 
 @implementation	NSConcreteHashTable
 
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
+
 + (void) initialize
 {
   if (concreteClass == Nil)

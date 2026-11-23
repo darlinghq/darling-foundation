@@ -52,6 +52,11 @@ CF_PRIVATE
 
 @implementation NSDecimalNumber
 
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
+
 static NSString *NSDecimalNumberBehaviors = @"NSDecimalNumberBehaviors";
 
 + (id<NSDecimalNumberBehaviors>)defaultBehavior
@@ -600,6 +605,11 @@ static NSString *NSDecimalNumberBehaviors = @"NSDecimalNumberBehaviors";
 
 
 @implementation NSDecimalNumberPlaceholder
+
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
 
 + (id)allocWithZone:(NSZone *)zone
 {

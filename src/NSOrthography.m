@@ -211,6 +211,11 @@ typedef NS_OPTIONS(NSUInteger, NSOrthographyFlags) {
 
 @implementation NSComplexOrthography
 
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
+
 - (id)initWithDominantScript:(NSString *)script languageMap:(NSDictionary *)map
 {
     self = [super init];

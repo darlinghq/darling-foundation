@@ -14,6 +14,11 @@
 
 @implementation NSDateCheckingResult
 
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
+
 - (id)initWithRange:(NSRange)range date:(NSDate *)date
 {
     return [self initWithRange:range date:date timeZone:nil duration:0.0 referenceDate:nil underlyingResult:NULL timeIsSignificant:YES timeIsApproximate:NO];
