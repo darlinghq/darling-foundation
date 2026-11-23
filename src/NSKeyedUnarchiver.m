@@ -1486,6 +1486,12 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
             break;
         }
 
+        case _C_BOOL:
+        {
+            *(bool *)addr = _decodeBool(self, freshGenericKey(self)) != NO;
+            break;
+        }
+
         case _C_FLT:
         {
             *(float *)addr = (float)_decodeDouble(self, freshGenericKey(self));
