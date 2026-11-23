@@ -41,7 +41,7 @@
     {
       if ([self isKindOfClass: [NSArray class]])
 	{
-	  [(NSArray *)self containsObject: object];
+	  return [(NSArray *)self indexOfObjectIdenticalTo: object] != NSNotFound;
 	}
     }
   return NO;
