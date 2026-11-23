@@ -25,6 +25,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 #import <Foundation/NSString.h>
 #import <Foundation/NSUndoGroup.h>
 #import <Foundation/NSUndoManager.h>
+#import <objc/runtime.h>
+
+static char UndoObjectKey;
 
 enum _NSUndoManagerState {
     NSUndoManagerNormal,
@@ -355,10 +358,13 @@ NSString *const NSUndoManagerDidRedoChangeNotification =
         signature = [NSMethodSignature signatureWithObjCTypes: "v@:@"];
     invocation = [NSInvocation invocationWithMethodSignature: signature];
 
+    // The target is an unowned reference, the object a strong one (the documented contract), so
+    // the invocation is not told to retain its arguments: the object is kept alive by the
+    // invocation through an association instead.
     [invocation setTarget: target];
     [invocation setSelector: selector];
     [invocation setArgument: &object atIndex: 2];
-    [invocation retainArguments];
+    objc_setAssociatedObject(invocation, &UndoObjectKey, object, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
     [_currentGroup addInvocation: invocation];
 
@@ -516,14 +522,15 @@ NSString *const NSUndoManagerDidRedoChangeNotification =
 - (instancetype) initWithTarget: (id) target handler: (void (^)(id target)) handler {
     self = [super init];
     if (self != nil) {
-        _target = [target retain];
+        // Unowned, like the target of registerUndoWithTarget:selector:object: (the documented
+        // contract of the handler variant is the same).
+        _target = target;
         _handler = [handler copy];
     }
     return self;
 }
 
 - (void) dealloc {
-    [_target release];
     [_handler release];
     [super dealloc];
 }
