@@ -70,7 +70,9 @@ described.setUserInfoObject(3, forKey: .fileTotalCountKey)
 expect(described.userInfo[.fileTotalCountKey] as? Int == 3, "userInfo stores values")
 described.kind = .file
 expect(described.kind == .file, "kind round-trips")
-described.estimatedTimeRemaining = 12
+// Progress.estimatedTimeRemaining (TimeInterval?) is a Swift overlay property; the refined Objective-C accessor
+// exists on macOS and here.
+described.__estimatedTimeRemaining = 12
 expect(described.userInfo[.estimatedTimeRemainingKey] as? Int == 12, "estimatedTimeRemaining lives in userInfo")
 expect(Progress.FileOperationKind.copying.rawValue == "NSProgressFileOperationKindCopying", "file operation kinds")
 

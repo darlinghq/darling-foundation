@@ -24,8 +24,10 @@ formatter.unitsStyle = .positional
 formatter.allowedUnits = [.hour, .minute, .second]
 formatter.zeroFormattingBehavior = .pad
 let positional = formatter.string(from: 3903)
-expect(positional == "01:05:03", "positional style gave \(positional ?? "nil")")
+// Zero padding of the hours: 26.7.3 gives 01:05:03, 10.14.4 gives 1:05:03 (both accepted, here and below).
+expect(positional == "01:05:03" || positional == "1:05:03", "positional style gave \(positional ?? "nil")")
 
 let start = Date(timeIntervalSinceReferenceDate: 0)
-expect(formatter.string(from: start, to: start.addingTimeInterval(70)) == "00:01:10", "string(from:to:)")
+let interval = formatter.string(from: start, to: start.addingTimeInterval(70))
+expect(interval == "00:01:10" || interval == "0:01:10", "string(from:to:) gave \(interval ?? "nil")")
 print("PASS: DateComponentsFormatter")
