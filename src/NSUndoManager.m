@@ -346,6 +346,13 @@ NSString *const NSUndoManagerDidRedoChangeNotification =
         return;
 
     signature = [target methodSignatureForSelector: selector];
+    // QUIRK: the action is recorded whatever the selector looks like. A selector that takes no
+    // argument, an unknown selector and a nil target are all accepted (an unknown selector raises
+    // when the action runs, a nil target does nothing, a selector without argument is sent as is).
+    // Evidence: black-box observation on macOS 10.14.4 and 26.7.3 (tier 2), probe um1.m of
+    // batch11b. Test: tests/nsundomanager-registration.m.
+    if (signature == nil || [signature numberOfArguments] < 3)
+        signature = [NSMethodSignature signatureWithObjCTypes: "v@:@"];
     invocation = [NSInvocation invocationWithMethodSignature: signature];
 
     [invocation setTarget: target];
@@ -396,8 +403,13 @@ NSString *const NSUndoManagerDidRedoChangeNotification =
     return self;
 }
 
+// The manager's own methods have signatures as for any object; the methods of the prepared target
+// (the recipient of an invocation recorded by prepareWithInvocationTarget:) are answered for the
+// forwarding of the recorded call.
 - (NSMethodSignature *) methodSignatureForSelector: (SEL) selector {
-    return [_preparedTarget methodSignatureForSelector: selector];
+    NSMethodSignature *own = [super methodSignatureForSelector: selector];
+
+    return own != nil ? own : [_preparedTarget methodSignatureForSelector: selector];
 }
 
 - (void) forwardInvocation: (NSInvocation *) invocation {
