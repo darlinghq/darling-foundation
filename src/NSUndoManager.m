@@ -367,23 +367,26 @@ NSString *const NSUndoManagerDidRedoChangeNotification =
 
 - (void) removeAllActionsWithTarget: (id) target {
     NSUndoGroup *undoGroup;
-    int i;
+    NSInteger i;
 
-    [_currentGroup removeInvocationsWithTarget: target];
+    // Open groups nest: the actions registered before an inner group began stay in its parents.
+    for (undoGroup = _currentGroup; undoGroup != nil; undoGroup = [undoGroup parentGroup])
+        [undoGroup removeInvocationsWithTarget: target];
 
-    for (i = 0; i < [_undoStack count]; ++i) {
+    // From the end: removing a group must not skip the one that moves into its place.
+    for (i = [_undoStack count] - 1; i >= 0; --i) {
         undoGroup = [_undoStack objectAtIndex: i];
 
         [undoGroup removeInvocationsWithTarget: target];
         if ([[undoGroup invocations] count] == 0)
-            [_undoStack removeObject: undoGroup];
+            [_undoStack removeObjectAtIndex: i];
     }
-    for (i = 0; i < [_redoStack count]; ++i) {
+    for (i = [_redoStack count] - 1; i >= 0; --i) {
         undoGroup = [_redoStack objectAtIndex: i];
 
         [undoGroup removeInvocationsWithTarget: target];
         if ([[undoGroup invocations] count] == 0)
-            [_redoStack removeObject: undoGroup];
+            [_redoStack removeObjectAtIndex: i];
     }
 }
 
