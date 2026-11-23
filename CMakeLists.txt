@@ -48,6 +48,7 @@ set(foundation_sources
 	src/NSBundle.m
 	src/NSByteCountFormatter.m
 	src/NSCalendar.m
+	src/NSCalendarDate.m
 	src/NSCheapMutableString.m
 	src/NSClassDescription.m
 	src/NSCoder.m
