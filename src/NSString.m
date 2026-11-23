@@ -217,12 +217,16 @@ static NSStringEncoding __NSDefaultCStringEncoding()
 
 // The format-taking initializers, class factories and appenders are reached through the
 // NSString and NSMutableString placeholders and end in their -initWithFormat:locale:arguments:,
-// so the documented nil-format check lives here once.
-static void __NSStringRequireFormat(NSString *format)
+// so the documented nil-format check lives here once. The reason text is the one macOS gives
+// (observed on 10.14.4 and 26.7.3 for every one of these entry points). -[NSMutableString appendFormat:]
+// on a CoreFoundation-backed string does not pass through them: it goes straight to CoreFoundation and, as
+// on those macOS versions, crashes for a nil format.
+static void __NSStringRequireFormat(id placeholder, NSString *format)
 {
     if (format == nil)
     {
-        [NSException raise:NSInvalidArgumentException format:@"format cannot be nil"];
+        [NSException raise:NSInvalidArgumentException
+                    format:@"*** -[%@ initWithFormat:locale:arguments:]: nil argument", NSStringFromClass([placeholder class])];
     }
 }
 
@@ -461,7 +465,7 @@ static void __NSStringRequireFormat(NSString *format)
 
 - (id)initWithFormat:(NSString *)format locale:(id)locale arguments:(va_list)argList
 {
-    __NSStringRequireFormat(format);
+    __NSStringRequireFormat(self, format);
     return (id)_CFStringCreateWithFormatAndArgumentsAux(kCFAllocatorDefault, &_NSCFCopyDescription2, (CFDictionaryRef)locale, (CFStringRef)format, argList);
 }
 
@@ -549,7 +553,7 @@ SINGLETON_RR()
 
 - (id)initWithFormat:(NSString *)format locale:(id)locale arguments:(va_list)argList
 {
-    __NSStringRequireFormat(format);
+    __NSStringRequireFormat(self, format);
     CFMutableStringRef str = CFStringCreateMutable(kCFAllocatorDefault, 0);
     _CFStringAppendFormatAndArgumentsAux(str, &_NSCFCopyDescription2, (CFDictionaryRef)locale, (CFStringRef)format, argList);
     return (id)str;
