@@ -315,9 +315,13 @@ static NSError* fileWrapperReadError(NSURL* url, NSString* path, NSError* cause)
 		return YES;
 	}
 	if (attributes && fileWrapperHasKind(self, type)) {
-		// The contents are read only when the wrapper no longer matches the node (see modificationDatesMatch); the
-		// recorded attributes are brought up to date either way (a permissions-only change is picked up).
-		BOOL read = [self matchesNodeAtURL: url attributes: attributes] ||
+		// The contents of a file or link are read only when the wrapper no longer matches the node (see
+		// modificationDatesMatch); the recorded attributes are brought up to date either way (a permissions-only change
+		// is picked up). A directory is listed on every read, because a read of one is meant to leave its entries as
+		// the file system has them; its children then decide by their own dates. Observed on macOS 26.1 (probe
+		// 147.R3.later-child-fails): an entry created right before a reread was found, while a child changed in the
+		// same second kept its contents and stayed the same object.
+		BOOL read = (![self isDirectory] && [self matchesNodeAtURL: url attributes: attributes]) ||
 		            [self readContentsFromURL: url attributes: attributes options: options error: &error];
 		if (read) {
 			[_fileAttributes release];
