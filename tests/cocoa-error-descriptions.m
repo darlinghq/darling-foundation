@@ -9,7 +9,8 @@
 // mac-probes/cocoa-error-descriptions/cocoa-errors.m (results.10.14.4-*.txt there); macOS 26.7.3 gives the same
 // strings except for a recovery suggestion of code 4354 (spelled "iCloud settings"), and has one more code, 4102.
 // Following the older system, Mojave's strings are the contract here. A variant that is not listed for a code gives
-// what the code gives without userInfo. {VOLUME} stands for the name of the volume that holds /tmp, which the
+// what the code gives without userInfo (for the NSUserStringVariant ones: with the same path or none; uv-* are
+// mac-probes/cocoa-error-descriptions/uv.*.txt). {VOLUME} stands for the name of the volume that holds /tmp, which the
 // text of a few codes names. Runs in the guest without a window server.
 #import <Foundation/Foundation.h>
 #include <stdio.h>
@@ -601,6 +602,22 @@ static const Row rows[] = {
     {@"UnknownDomainForTest", 7, @"none", @"The operation couldn\u2019t be completed. (UnknownDomainForTest error 7.)", NULL, NULL},
     {@"UnknownDomainForTest", 7, @"description-key", @"Given description", NULL, NULL},
     {@"UnknownDomainForTest", 7, @"reason-key", @"The operation couldn\u2019t be completed. Given reason.", @"Given reason.", NULL},
+    {@"NSCocoaErrorDomain", 4, @"uv-Folder-arr", @"The folder doesn\u2019t exist.", @"The folder doesn\u2019t exist.", NULL},
+    {@"NSCocoaErrorDomain", 4, @"uv-Folder-arr-path", @"The folder \u201cexample.txt\u201d doesn\u2019t exist.", @"The folder doesn\u2019t exist.", NULL},
+    {@"NSCocoaErrorDomain", 4, @"uv-Folder-str-path", @"The folder \u201cexample.txt\u201d doesn\u2019t exist.", @"The folder doesn\u2019t exist.", NULL},
+    {@"NSCocoaErrorDomain", 4, @"uv-Remove-arr-path", @"\u201cexample.txt\u201d couldn\u2019t be removed.", @"The file doesn\u2019t exist.", NULL},
+    {@"NSCocoaErrorDomain", 4, @"uv-Remove-str-path", @"\u201cexample.txt\u201d couldn\u2019t be removed.", @"The file doesn\u2019t exist.", NULL},
+    {@"NSCocoaErrorDomain", 4, @"uv-Move-Folder-arr-path", @"The folder \u201cexample.txt\u201d doesn\u2019t exist.", @"The folder doesn\u2019t exist.", NULL},
+    {@"NSCocoaErrorDomain", 260, @"uv-Folder-arr", @"The file couldn\u2019t be opened because it doesn\u2019t exist.", @"The folder doesn\u2019t exist.", NULL},
+    {@"NSCocoaErrorDomain", 260, @"uv-Folder-arr-path", @"The folder \u201cexample.txt\u201d doesn\u2019t exist.", @"The folder doesn\u2019t exist.", NULL},
+    {@"NSCocoaErrorDomain", 260, @"uv-Folder-str-path", @"The folder \u201cexample.txt\u201d doesn\u2019t exist.", @"The folder doesn\u2019t exist.", NULL},
+    {@"NSCocoaErrorDomain", 260, @"uv-Move-Folder-arr-path", @"The folder \u201cexample.txt\u201d doesn\u2019t exist.", @"The folder doesn\u2019t exist.", NULL},
+    {@"NSCocoaErrorDomain", 512, @"uv-Remove-arr-path", @"\u201cexample.txt\u201d couldn\u2019t be removed.", NULL, NULL},
+    {@"NSCocoaErrorDomain", 512, @"uv-Remove-str-path", @"\u201cexample.txt\u201d couldn\u2019t be removed.", NULL, NULL},
+    {@"NSCocoaErrorDomain", 513, @"uv-Remove-arr-path", @"\u201cexample.txt\u201d couldn\u2019t be removed because you don\u2019t have permission to access it.", @"You don\u2019t have permission.", @"To view or change permissions, select the item in the Finder and choose File > Get Info."},
+    {@"NSCocoaErrorDomain", 513, @"uv-Remove-str-path", @"\u201cexample.txt\u201d couldn\u2019t be removed because you don\u2019t have permission to access it.", @"You don\u2019t have permission.", @"To view or change permissions, select the item in the Finder and choose File > Get Info."},
+    {@"NSCocoaErrorDomain", 514, @"uv-Remove-arr-path", @"The item couldn\u2019t be removed because the file name \u201cexample.txt\u201d is invalid.", @"The file name is invalid.", NULL},
+    {@"NSCocoaErrorDomain", 514, @"uv-Remove-str-path", @"The item couldn\u2019t be removed because the file name \u201cexample.txt\u201d is invalid.", @"The file name is invalid.", NULL},
 };
 
 static NSDictionary *userInfoFor(NSString *variant) {
@@ -623,9 +640,23 @@ static NSDictionary *userInfoFor(NSString *variant) {
     if ([variant isEqual:@"url-dir"]) return @{NSURLErrorKey: [NSURL fileURLWithPath:@"/tmp/some folder" isDirectory:YES]};
     if ([variant isEqual:@"path-ext-hidden"]) return @{NSFilePathErrorKey: @"/tmp/archive.tar.gz"};
     if ([variant isEqual:@"validation-key"]) return @{@"NSValidationKey": @"name", @"NSValidationValue": @"v"};
+    // uv-<variant>-<arr|str>[-path]: NSUserStringVariant as an array or a string, with or without the path
+    if ([variant hasPrefix:@"uv-"]) {
+        BOOL withPath = [variant hasSuffix:@"-path"];
+        NSString *rest = [variant substringFromIndex:3];
+        id value;
+        if ([rest hasPrefix:@"Move-Folder-arr"]) value = @[@"Move", @"Folder"];
+        else if ([rest hasPrefix:@"empty-arr"]) value = @[];
+        else {
+            NSArray *parts = [rest componentsSeparatedByString:@"-"];
+            value = [parts[1] isEqual:@"arr"] ? @[parts[0]] : parts[0];
+        }
+        NSMutableDictionary *ui = [NSMutableDictionary dictionaryWithObject:value forKey:@"NSUserStringVariant"];
+        if (withPath) ui[NSFilePathErrorKey] = path;
+        return ui;
+    }
     return nil;
 }
-
 
 int main(void) {
     int failures = 0, checks = 0;
@@ -634,7 +665,9 @@ int main(void) {
         [[NSURL fileURLWithPath:@"/tmp" isDirectory:YES] getResourceValue:&volumeName forKey:NSURLVolumeNameKey error:NULL];
         NSString *volume = [volumeName isKindOfClass:[NSString class]] ? volumeName : @"";
         NSArray *variants = @[@"none", @"path", @"url", @"path+url", @"path-rel", @"path-dir", @"url-dir", @"path-ext-hidden", @"url-http",
-                              @"encoding", @"underlying", @"path+underlying", @"description-key", @"reason-key", @"path-empty", @"validation-key"];
+                              @"encoding", @"underlying", @"path+underlying", @"description-key", @"reason-key", @"path-empty", @"validation-key",
+                              @"uv-Folder-arr", @"uv-Folder-arr-path", @"uv-Folder-str-path", @"uv-Copy-arr-path", @"uv-Move-arr-path", @"uv-Link-arr-path",
+                              @"uv-Remove-arr", @"uv-Remove-arr-path", @"uv-Remove-str-path", @"uv-Other-arr-path", @"uv-Move-Folder-arr-path", @"uv-empty-arr-path"];
         NSMutableOrderedSet *keys = [NSMutableOrderedSet orderedSet];
         for (size_t i = 0; i < sizeof rows / sizeof rows[0]; i++)
             [keys addObject:[NSString stringWithFormat:@"%@ %ld", rows[i].domain, rows[i].code]];
@@ -646,7 +679,12 @@ int main(void) {
             for (size_t i = 0; i < sizeof rows / sizeof rows[0]; i++)
                 if ([rows[i].domain isEqual:domain] && rows[i].code == code && [rows[i].variant isEqual:@"none"]) none = &rows[i];
             for (NSString *variant in variants) {
+                // a variant that is not listed gives what the code gives without it (for the NSUserStringVariant ones, with
+                // the same path or none)
                 const Row *expected = none;
+                if ([variant hasPrefix:@"uv-"] && [variant hasSuffix:@"-path"])
+                    for (size_t i = 0; i < sizeof rows / sizeof rows[0]; i++)
+                        if ([rows[i].domain isEqual:domain] && rows[i].code == code && [rows[i].variant isEqual:@"path"]) expected = &rows[i];
                 for (size_t i = 0; i < sizeof rows / sizeof rows[0]; i++)
                     if ([rows[i].domain isEqual:domain] && rows[i].code == code && [rows[i].variant isEqual:variant]) expected = &rows[i];
                 NSError *e = [NSError errorWithDomain:domain code:code userInfo:userInfoFor(variant)];

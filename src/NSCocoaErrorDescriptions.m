@@ -624,6 +624,35 @@ static NSString *fill(const char *text, NSDictionary<NSString *, NSString *> *va
     return result;
 }
 
+// The wording a variant in the userInfo's NSUserStringVariant (a string, or an array of strings) gives some codes:
+// "Folder" for the errors of listing or reading a directory, "Remove" for the errors of removing an item. desc is the
+// description without a file name (NULL: unchanged), descName the one with it (NULL: unchanged), reason the failure
+// reason (NULL: unchanged). Observed like the rest of the table.
+typedef struct {
+    NSInteger code;
+    const char *variant;
+    const char *desc, *descName, *reason;
+} CocoaErrorVariant;
+
+static const CocoaErrorVariant cocoaErrorVariants[] = {
+    { 4, "Folder", "The folder doesn\u2019t exist.", "The folder {NAME} doesn\u2019t exist.", "The folder doesn\u2019t exist." },
+    { 260, "Folder", NULL, "The folder {NAME} doesn\u2019t exist.", "The folder doesn\u2019t exist." },
+    { 4, "Remove", NULL, "{NAME} couldn\u2019t be removed.", NULL },
+    { 512, "Remove", NULL, "{NAME} couldn\u2019t be removed.", NULL },
+    { 513, "Remove", NULL, "{NAME} couldn\u2019t be removed because you don\u2019t have permission to access it.", NULL },
+    { 514, "Remove", NULL, "The item couldn\u2019t be removed because the file name {NAME} is invalid.", NULL },
+};
+
+static BOOL hasVariant(NSDictionary *userInfo, const char *variant) {
+    id value = userInfo[@"NSUserStringVariant"];
+    NSString *wanted = [NSString stringWithUTF8String: variant];
+    if ([value isKindOfClass: [NSString class]])
+        return [value isEqualToString: wanted];
+    if ([value isKindOfClass: [NSArray class]])
+        return [value containsObject: wanted];
+    return NO;
+}
+
 // The text that applies to the information the userInfo gives about the file, falling back through the forms
 // from the most to the least specific one.
 static NSString *textFor(NSInteger which, const CocoaErrorEntry *e, NSDictionary *userInfo) {
@@ -672,6 +701,19 @@ static NSString *textFor(NSInteger which, const CocoaErrorEntry *e, NSDictionary
         }
     }
 #undef FORM
+    if (which != 2) {
+        for (size_t i = 0; i < sizeof cocoaErrorVariants / sizeof cocoaErrorVariants[0]; i++) {
+            const CocoaErrorVariant *v = &cocoaErrorVariants[i];
+            if (v->code != e->code || !hasVariant(userInfo, v->variant))
+                continue;
+            if (which == 1 && v->reason != NULL)
+                chosen = v->reason;
+            else if (which == 0 && values[@"{NAME}"] != nil && v->descName != NULL)
+                chosen = v->descName;
+            else if (which == 0 && values[@"{NAME}"] == nil && v->desc != NULL)
+                chosen = v->desc;
+        }
+    }
     return fill(chosen, values);
 }
 
