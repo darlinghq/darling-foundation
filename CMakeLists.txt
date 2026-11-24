@@ -52,6 +52,7 @@ set(foundation_sources
 	src/NSCheapMutableString.m
 	src/NSClassDescription.m
 	src/NSCoder.m
+	src/NSCocoaErrorDescriptions.m
 	src/NSComparisonPredicate.m
 	src/NSComparisonPredicateOperator.m
 	src/NSCompoundPredicate.m
