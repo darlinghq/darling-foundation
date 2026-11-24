@@ -24,31 +24,26 @@
 #import "NSErrorInternal.h"
 #import "_NSFileErrors.h"
 
+// The error of a failed read of path: an NSCocoaErrorDomain error with the path and the errno underneath, and no
+// description of its own (the description comes from the code).
 static NSError *NSFileReadError(int errorCode, NSString *path)
 {
-    NSInteger code = NSFileReadUnknownError;
-    switch (errorCode) {
-        case ENOENT:
-            code = NSFileReadNoSuchFileError;
-            break;
-        case EACCES:
-        case EPERM:
-            code = NSFileReadNoPermissionError;
-            break;
-    }
-    NSError *underlying = [NSError errorWithDomain:NSPOSIXErrorDomain
-        code:errorCode userInfo:nil];
-    NSMutableDictionary *info = [NSMutableDictionary dictionaryWithObjectsAndKeys:
-        underlying, NSUnderlyingErrorKey,
-        [NSString stringWithUTF8String:strerror(errorCode)], NSLocalizedDescriptionKey,
-        nil];
-    if (path != nil) [info setObject:path forKey:NSFilePathErrorKey];
-    return [NSError errorWithDomain:NSCocoaErrorDomain code:code userInfo:info];
+    return _NSFileErrorWithErrno(errorCode, path, YES, nil);
 }
 
 void *_NSReadBytesFromFile(NSString *path, NSDataReadingOptions readOptionsMask, NSUInteger *length, BOOL *vm, NSError **err)
 {
     *length = 0;
+
+    if ([path length] == 0)
+    {
+        if (err != NULL)
+        {
+            *err = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileReadInvalidFileNameError
+                                   userInfo:@{NSFilePathErrorKey: path ?: @""}];
+        }
+        return NULL;
+    }
 
     // Paths are used in the file system representation, which is how files are created; a file that
     // exists only under the spelling of the caller is found as a fallback (see NSFileManager.m).
@@ -82,7 +77,8 @@ void *_NSReadBytesFromFile(NSString *path, NSDataReadingOptions readOptionsMask,
         close(fd);
         if (err != NULL)
         {
-            *err = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileReadNoPermissionError userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"the path %@ is a directory", path]}];
+            // Reading a directory fails with the permission error, as on the original.
+            *err = NSFileReadError(EACCES, path);
         }
         return NULL;
     }
