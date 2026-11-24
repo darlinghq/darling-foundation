@@ -356,7 +356,9 @@ NSString *const NSUndoManagerDidRedoChangeNotification =
     // batch11b. Test: tests/nsundomanager-registration.m.
     if (signature == nil || [signature numberOfArguments] < 3)
         signature = [NSMethodSignature signatureWithObjCTypes: "v@:@"];
-    invocation = [NSInvocation invocationWithMethodSignature: signature];
+    // Not autoreleased: the group owns the invocation, and the object it keeps alive has to go
+    // with the action, not with the autorelease pool the action was registered in.
+    invocation = [[NSInvocation alloc] initWithMethodSignature: signature];
 
     // The target is an unowned reference, the object a strong one (the documented contract), so
     // the invocation is not told to retain its arguments: the object is kept alive by the
@@ -367,6 +369,7 @@ NSString *const NSUndoManagerDidRedoChangeNotification =
     objc_setAssociatedObject(invocation, &UndoObjectKey, object, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
     [_currentGroup addInvocation: invocation];
+    [invocation release];
 
     if (_state == NSUndoManagerNormal)
         [_redoStack removeAllObjects];
