@@ -2127,7 +2127,6 @@ static NSCharacterSet *invertedWhitespaceSet = nil;
 #define STACK_BUFFER_SIZE 256
 #define ALLOC_CHUNK_SIZE 256
 typedef enum {
-    NSNumericBOOLValue,
     NSNumericLongValue,
     NSNumericLongLongValue,
     NSNumericFloatValue,
@@ -2135,7 +2134,6 @@ typedef enum {
 } NSNumericValueType;
 
 typedef union {
-    BOOL b;
     long l;
     long long ll;
     float f;
@@ -2184,31 +2182,7 @@ static BOOL _NSScanStringValue(NSString *self, NSNumericValueType type, NSNumeri
         ch = [self characterAtIndex:index];
     }
     charPtr[numChars++] = 0;
-    if (type == NSNumericBOOLValue)
-    {
-        long l = strtol(charPtr, &endCharPtr, 10);
-        if (l == 0)
-        {
-            NSString *substr = [self substringFromIndex:found.location];
-            if ([substr compare:@"YES" options:NSCaseInsensitiveSearch range:NSMakeRange(0, 3)] == NSOrderedSame)
-            {
-                resultValue->b = YES;
-            }
-            else if ([substr compare:@"TRUE" options:NSCaseInsensitiveSearch range:NSMakeRange(0, 4)] == NSOrderedSame)
-            {
-                resultValue->b = YES;
-            }
-            else
-            {
-                resultValue->b = NO;
-            }
-        }
-        else
-        {
-            resultValue->b = YES;
-        }
-    }
-    else if (type == NSNumericLongValue)
+    if (type == NSNumericLongValue)
     {
         resultValue->l = strtol(charPtr, &endCharPtr, 10);
     }
@@ -2293,17 +2267,37 @@ static BOOL _NSScanStringValue(NSString *self, NSNumericValueType type, NSNumeri
     return [trimmed longLongValue];
 }
 
-/*!
- @note Apple truncates the numeric value to SInt32 it seems... (which means that LLONG_MIN returns NO)
-*/
+// Reads the receiver as the reference describes (https://developer.apple.com/documentation/foundation/nsstring/boolvalue):
+// whitespace at the start is skipped, then an optional sign and any zeroes, and the result is YES when the next
+// character is one of Y, y, T, t or a digit 1 to 9, whatever follows it; NO otherwise, including for a string that
+// ends there. The characters are read by index, so a short string cannot be read past its end.
+// The public Foundation/NSString.h of the macOS 10.15 SDK says the initial characters skipped are those of the
+// whitespace character set (not newlines), which is the set used here.
+// GUESS: a sign is skipped even when a digit other than zero follows it ("-5" is YES), and Y, y, T, t count after
+// skipped zeroes ("0Y" is YES). The page says "an optional sign followed by zeroes"; the rejected reading skips a
+// sign only before a zero.
+// Test: tests/nsstring-bool-value.m
 - (BOOL)boolValue
 {
-    NSNumericValue val;
-    if (_NSScanStringValue(self, NSNumericBOOLValue, &val))
+    NSUInteger length = [self length];
+    NSUInteger index = 0;
+    NSCharacterSet *whitespace = [NSCharacterSet whitespaceCharacterSet];
+    while (index < length && [whitespace characterIsMember:[self characterAtIndex:index]])
+        index++;
+    if (index < length && ([self characterAtIndex:index] == '-' || [self characterAtIndex:index] == '+'))
+        index++;
+    while (index < length && [self characterAtIndex:index] == '0')
+        index++;
+    if (index == length)
+        return NO;
+    switch ([self characterAtIndex:index])
     {
-        return val.b;
+        case 'Y': case 'y': case 'T': case 't':
+        case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
+            return YES;
+        default:
+            return NO;
     }
-    return NO;
 }
 
 - (BOOL)containsString:(NSString *)string
