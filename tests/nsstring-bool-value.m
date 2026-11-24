@@ -5,8 +5,8 @@
 // is one of Y, y, T, t or a digit 1 to 9, whatever follows it; it is NO for a string that does not begin with a
 // number in decimal text. The initial characters skipped are those of the whitespace character set (the public
 // macOS 10.15 SDK header Foundation/NSString.h), so a newline is not skipped. The cases that neither the page nor
-// the header settle are marked GUESS in src/NSString.m and here: a sign before a non-zero digit, and a letter
-// after skipped zeroes.
+// the header settle were observed on macOS 26.7.3 and 10.14.4 (x86_64 and i386, identical; see src/NSString.m): a sign
+// before a non-zero digit is skipped, and a letter after a sign or after zeroes gives NO.
 // The old code answered NO for "Y", "T" and "Tuesday", and compared the receiver with "YES" and "TRUE" over a fixed
 // range of 3 and 4 characters, which runs past the end of "NO", "0" and "no"; the short strings guard against that.
 // Not yet run in a Darling guest. Built without ARC.
@@ -77,9 +77,22 @@ int main(void)
         // A newline is not whitespace here (the header names the whitespace set).
         expectBool(@"\n1", NO);
 
-        // GUESS (neither the page nor the header settle these).
+        // Observed on macOS 26.7.3 and 10.14.4 (the page does not settle these).
         expectBool(@"-5", YES);    // a sign is skipped before a non-zero digit as well
-        expectBool(@"0Y", YES);    // a letter counts after skipped zeroes
+        expectBool(@"+5", YES);
+        expectBool(@"01", YES);
+        expectBool(@"0Y", NO);     // a letter does not count after zeroes ...
+        expectBool(@"00t", NO);
+        expectBool(@"-Y", NO);     // ... nor after a sign
+        expectBool(@"+T", NO);
+        expectBool(@"--1", NO);    // only one sign is skipped
+        expectBool(@"0 1", NO);
+        expectBool(@"0.5", NO);
+        expectBool(@"\u00A01", YES);  // the whitespace character set includes the Unicode space separators
+        expectBool(@"\u30001", YES);
+        expectBool(@"\r1", NO);       // and does not include carriage return, vertical tab or form feed
+        expectBool(@"\v1", NO);
+        expectBool(@"\f1", NO);
     }
     printf("%s\n", failures ? "FAILED" : "ALL PASSED");
     return failures ? 1 : 0;

@@ -2268,14 +2268,16 @@ static BOOL _NSScanStringValue(NSString *self, NSNumericValueType type, NSNumeri
 }
 
 // Reads the receiver as the reference describes (https://developer.apple.com/documentation/foundation/nsstring/boolvalue):
-// whitespace at the start is skipped, then an optional sign and any zeroes, and the result is YES when the next
-// character is one of Y, y, T, t or a digit 1 to 9, whatever follows it; NO otherwise, including for a string that
-// ends there. The characters are read by index, so a short string cannot be read past its end.
+// whitespace at the start is skipped, and the result is YES when the next character is one of Y, y, T, t or a digit 1
+// to 9, whatever follows it; NO otherwise, including for a string that ends there. A sign and zeroes in front of a
+// digit are skipped (the page says an optional sign followed by zeroes); once either was skipped only a digit 1 to 9
+// can still give YES, a letter after them gives NO. The characters are read by index, so a short string cannot be read
+// past its end.
 // The public Foundation/NSString.h of the macOS 10.15 SDK says the initial characters skipped are those of the
 // whitespace character set (not newlines), which is the set used here.
-// GUESS: a sign is skipped even when a digit other than zero follows it ("-5" is YES), and Y, y, T, t count after
-// skipped zeroes ("0Y" is YES). The page says "an optional sign followed by zeroes"; the rejected reading skips a
-// sign only before a zero.
+// Observed on macOS 26.7.3 and 10.14.4 (x86_64 and i386, identical): "-5" and "+5" are YES, "0Y", "00t", "-Y" and "+T"
+// are NO, "01" is YES, and the whitespace character set is skipped (space, tab, no-break and other Unicode space
+// separators) while a newline, carriage return, vertical tab and form feed are not.
 // Test: tests/nsstring-bool-value.m
 - (BOOL)boolValue
 {
@@ -2284,6 +2286,7 @@ static BOOL _NSScanStringValue(NSString *self, NSNumericValueType type, NSNumeri
     NSCharacterSet *whitespace = [NSCharacterSet whitespaceCharacterSet];
     while (index < length && [whitespace characterIsMember:[self characterAtIndex:index]])
         index++;
+    NSUInteger start = index;
     if (index < length && ([self characterAtIndex:index] == '-' || [self characterAtIndex:index] == '+'))
         index++;
     while (index < length && [self characterAtIndex:index] == '0')
@@ -2293,6 +2296,7 @@ static BOOL _NSScanStringValue(NSString *self, NSNumericValueType type, NSNumeri
     switch ([self characterAtIndex:index])
     {
         case 'Y': case 'y': case 'T': case 't':
+            return index == start;
         case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
             return YES;
         default:
