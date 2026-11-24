@@ -807,8 +807,17 @@ static NSError* fileWrapperReadError(NSURL* url, NSString* path, NSError* cause)
 			}
 		}
 		if (!child) {
-			child = [[[NSFileWrapper alloc] initWithURL: childURL options: options error: outError] autorelease];
-			if (!child) return NO;
+			NSError* childError = nil;
+			child = [[[NSFileWrapper alloc] initWithURL: childURL options: options error: &childError] autorelease];
+			if (!child && (options & NSFileWrapperReadingImmediate)) {
+				// Observed on macOS 26.7.3 and 10.14.4: an entry whose contents cannot be read (an unreadable file) is
+				// still added, as a regular file wrapper without contents, and does not fail the read of the directory.
+				child = [[[NSFileWrapper alloc] initWithURL: childURL options: options & ~NSFileWrapperReadingImmediate error: NULL] autorelease];
+			}
+			if (!child) {
+				if (outError) *outError = childError;
+				return NO;
+			}
 		}
 		[children setObject: child forKey: name];
 	}
