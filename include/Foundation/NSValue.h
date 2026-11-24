@@ -32,22 +32,22 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface NSNumber : NSValue
 
-- (char)charValue;
-- (unsigned char)unsignedCharValue;
-- (short)shortValue;
-- (unsigned short)unsignedShortValue;
-- (int)intValue;
-- (unsigned int)unsignedIntValue;
-- (long)longValue;
-- (unsigned long)unsignedLongValue;
-- (long long)longLongValue;
-- (unsigned long long)unsignedLongLongValue;
-- (float)floatValue;
-- (double)doubleValue;
-- (BOOL)boolValue;
-- (NSInteger)integerValue;
-- (NSUInteger)unsignedIntegerValue;
-- (NSString *)stringValue;
+@property (readonly) char charValue;
+@property (readonly) unsigned char unsignedCharValue;
+@property (readonly) short shortValue;
+@property (readonly) unsigned short unsignedShortValue;
+@property (readonly) int intValue;
+@property (readonly) unsigned int unsignedIntValue;
+@property (readonly) long longValue;
+@property (readonly) unsigned long unsignedLongValue;
+@property (readonly) long long longLongValue;
+@property (readonly) unsigned long long unsignedLongLongValue;
+@property (readonly) float floatValue;
+@property (readonly) double doubleValue;
+@property (readonly) BOOL boolValue;
+@property (readonly) NSInteger integerValue;
+@property (readonly) NSUInteger unsignedIntegerValue;
+@property (readonly, copy) NSString *stringValue;
 - (NSComparisonResult)compare:(NSNumber *)other;
 - (BOOL)isEqualToNumber:(NSNumber *)other;
 - (NSString *)descriptionWithLocale:(nullable id)locale;

@@ -141,6 +141,11 @@ static inline id newDecodedNumber(NSCoder *coder)
 
 @implementation NSNumber
 
+// The concrete subclasses implement these; @dynamic stops Clang from synthesizing ivars for the
+// header's properties, which would change the layout of the toll-free bridged class.
+@dynamic charValue, unsignedCharValue, shortValue, unsignedShortValue, intValue, unsignedIntValue,
+    longValue, unsignedLongValue, longLongValue, unsignedLongLongValue, floatValue, doubleValue, boolValue;
+
 + (BOOL)supportsSecureCoding
 {
     return YES;
