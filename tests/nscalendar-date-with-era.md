@@ -1,0 +1,7 @@
+# NSCalendar dateWithEra:year:month:day:hour:minute:second:nanosecond:
+
+Build nscalendar-date-with-era.m against Foundation/CoreFoundation and run it under Darling (no window server). It checks `-[NSCalendar dateWithEra:year:month:day:hour:minute:second:nanosecond:]` against the public documentation and the open-source reference implementation in the tree: the result is a date made from the eight values in the calendar's time zone (the reference date 2001-01-01 00:00:00 UTC, an offset within the day, a fraction of a second, midnight in New York five hours later), a leap day is a date and the next day follows it, and a calendar made by `+autoupdatingCurrentCalendar` (a private subclass) answers like the current calendar and reads its own result back as given. It also checks that the components of the result read back as given.
+
+Baseline: against the base commit the method is not declared or implemented, so the two `respondsToSelector` checks fail and every check that needs a date fails (the calls go through a protocol, so the test builds and reports FAIL lines instead of raising); candidate: zero failures.
+
+Not tested: where the documented nil result begins. The page gives no boundary and the reference implementation passes the values on to the calendar, which is also what this change does, so month 13, April 31, hour 24 and the like have no expectation here. Era 0 as the era before the common era is marked GUESS in the source. Only whole milliseconds of the nanosecond are checked, because the calendar layer below takes milliseconds.
