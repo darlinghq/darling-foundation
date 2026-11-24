@@ -871,7 +871,14 @@ SINGLETON_RR()
         [self release];
         return nil;
     }
-    return [self initWithBytesNoCopy:bytes length:length encoding:enc freeWhenDone:YES];
+    NSString *result = [self initWithBytesNoCopy:bytes length:length encoding:enc freeWhenDone:YES];
+    if (result == nil && error != NULL)
+    {
+        // The contents are not valid in that encoding.
+        *error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileReadInapplicableStringEncodingError
+                                 userInfo:@{NSFilePathErrorKey: path, NSStringEncodingErrorKey: @(enc)}];
+    }
+    return result;
 }
 
 - (id)_initWithBytesOfUnknownEncoding:(void *)bytes length:(NSUInteger)length copy:(BOOL)shouldCopy usedEncoding:(NSStringEncoding *)usedEncoding

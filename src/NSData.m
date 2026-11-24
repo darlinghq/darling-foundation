@@ -5,6 +5,7 @@
 //  Copyright (c) 2014 Apportable. All rights reserved.
 //
 
+#import <Foundation/FoundationErrors.h>
 #import <Foundation/NSData.h>
 #import <Foundation/NSData_Private.h>
 
@@ -855,6 +856,17 @@ OBJC_PROTOCOL_IMPL_POP
 
 - (id)initWithContentsOfFile:(NSString *)path options:(NSDataReadingOptions)readOptionsMask error:(NSError **)errorPtr
 {
+    if (path != nil && [path length] == 0)
+    {
+        // An empty path is an invalid file name, not an exception.
+        if (errorPtr != NULL)
+        {
+            *errorPtr = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileReadInvalidFileNameError
+                                        userInfo:@{NSFilePathErrorKey: path}];
+        }
+        [self release];
+        return nil;
+    }
     return [self initWithContentsOfURL:[NSURL fileURLWithPath:path] options:readOptionsMask error:errorPtr];
 }
 
