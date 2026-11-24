@@ -235,6 +235,40 @@ int main(void)
     setDate(a, T0 + 200);
     expect([aFile readFromURL:aURL options:NSFileWrapperReadingImmediate error:NULL] && [text(aFile) isEqualToString:@"again"], "and reads them once the date has moved");
 
+    // A directory is always enumerated: an entry added while the directory still matches is found by a reread.
+    // Observed on macOS 26.1 (probe 147.R3), and on 26.7.3 and 10.14.4 (x86_64 and i386): the new entry appeared, a
+    // child whose date still matched kept its contents.
+    NSString *added = [dir stringByAppendingPathComponent:@"extra-entry.txt"];
+    put(added, @"extra");
+    setDate(added, T0 + 100);
+    NSDate *recorded = [[wrapper fileAttributes] objectForKey:NSFileModificationDate];
+    setDate(dir, [recorded timeIntervalSince1970]);
+    NSFileWrapper *keptA = [[wrapper fileWrappers] objectForKey:@"a.txt"];
+    expect([wrapper matchesContentsOfURL:dirURL], "(setup) the directory still matches with an entry it lacks");
+    expect([wrapper readFromURL:dirURL options:NSFileWrapperReadingImmediate error:NULL], "a directory that matches is reread");
+    expect([text([[wrapper fileWrappers] objectForKey:@"extra-entry.txt"]) isEqualToString:@"extra"], "and its new entry is found");
+    expect([[wrapper fileWrappers] objectForKey:@"a.txt"] == keptA, "while the existing child stays the same wrapper");
+    [fm removeItemAtPath:added error:NULL];
+    setDate(dir, [recorded timeIntervalSince1970]);
+    expect([wrapper readFromURL:dirURL options:0 error:NULL] && [[wrapper fileWrappers] objectForKey:@"extra-entry.txt"] == nil, "and a removed entry is dropped (a guard: this holds without the change too)");
+
+    // An entry whose contents cannot be read does not fail the read of its directory: it is added as a regular file
+    // wrapper without contents. Observed on macOS 26.7.3 and 10.14.4 (x86_64 and i386), with and without the
+    // directory matching. (The permission check does not apply to the super user.)
+    if (geteuid() != 0) {
+        NSString *locked = [dir stringByAppendingPathComponent:@"locked.txt"];
+        put(locked, @"secret");
+        chmod([locked fileSystemRepresentation], 0);
+        NSError *lockedError = nil;
+        expect([wrapper readFromURL:dirURL options:NSFileWrapperReadingImmediate error:&lockedError], "a directory with an unreadable new entry is read");
+        NSFileWrapper *lockedWrapper = [[wrapper fileWrappers] objectForKey:@"locked.txt"];
+        expect(lockedWrapper != nil && [lockedWrapper isRegularFile] && [lockedWrapper regularFileContents] == nil,
+               "and the entry is a regular file wrapper without contents");
+        chmod([locked fileSystemRepresentation], 0600);
+        [fm removeItemAtPath:locked error:NULL];
+        expect([wrapper readFromURL:dirURL options:0 error:NULL] && [[wrapper fileWrappers] objectForKey:@"locked.txt"] == nil, "(cleanup) the entry is dropped again");
+    }
+
     // A child whose node changed kind (a file replaced by a directory of the same name) is replaced here.
     [fm removeItemAtPath:[dir stringByAppendingPathComponent:@"new.txt"] error:NULL];
     [fm createDirectoryAtPath:[dir stringByAppendingPathComponent:@"new.txt"] withIntermediateDirectories:NO attributes:nil error:NULL];
