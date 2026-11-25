@@ -360,6 +360,12 @@ SINGLETON_RR()
 	return NSProcessInfoThermalStateNominal;
 }
 
+- (BOOL)isLowPowerModeEnabled
+{
+	/* Match thermalState: no battery/low-power telemetry wired up here. */
+	return NO;
+}
+
 @end
 
 // Darling has no sudden-termination mechanism, so there is no state to track.
