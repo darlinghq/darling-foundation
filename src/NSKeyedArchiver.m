@@ -278,7 +278,13 @@ static void _encodeObject(NSKeyedArchiver *archiver, id object, NSString *key)
             return;
         }
 
-        if ([object isNSString__])
+        // A string or data object is written as a plain property list value only when it archives
+        // as NSString or NSData itself; a mutable one (classForKeyedArchiver NSMutableString or
+        // NSMutableData) is written as an object of that class, so that it decodes mutable and is
+        // checked as that class. Observed on macOS 26.7.3: a mutable string archives as
+        // {$class: NSMutableString, NS.string: ...}. Test: tests/nskeyedarchiver-mutable-values.m
+        // in Darling's main repository.
+        if ([object isNSString__] && class == [NSString class])
         {
             if ([object length] == 5)
             {
@@ -291,7 +297,7 @@ static void _encodeObject(NSKeyedArchiver *archiver, id object, NSString *key)
             }
 
         }
-        else if ([object isNSNumber__] || [object isNSData__])
+        else if ([object isNSNumber__] || ([object isNSData__] && class == [NSData class]))
         {
             CFArraySetValueAtIndex((CFMutableArrayRef)archiver->_objects, end, object);
             if (archiver->_delegate)

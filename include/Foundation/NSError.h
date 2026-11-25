@@ -1,6 +1,6 @@
 #import <Foundation/NSObject.h>
 
-@class NSDictionary, NSArray;
+@class NSDictionary, NSArray<ObjectType>;
 
 typedef NSString *NSErrorDomain;
 
@@ -20,6 +20,8 @@ FOUNDATION_EXPORT NSString *const NSURLErrorKey;
 FOUNDATION_EXPORT NSString *const NSFilePathErrorKey;
 FOUNDATION_EXPORT NSString *const NSDebugDescriptionErrorKey;
 FOUNDATION_EXPORT NSString *const NSLocalizedFailureErrorKey;
+// Value: an NSArray of NSError, the errors behind this one (macOS 11.3).
+FOUNDATION_EXPORT NSString *const NSMultipleUnderlyingErrorsKey;
 
 typedef NSString *NSErrorUserInfoKey;
 
@@ -31,8 +33,8 @@ typedef NSString *NSErrorUserInfoKey;
     NSDictionary *_userInfo;
 }
 
-+ (id)errorWithDomain:(NSString *)domain code:(NSInteger)code userInfo:(NSDictionary *)dict;
-- (id)initWithDomain:(NSString *)domain code:(NSInteger)code userInfo:(NSDictionary *)dict;
++ (instancetype)errorWithDomain:(NSString *)domain code:(NSInteger)code userInfo:(NSDictionary *)dict;
+- (instancetype)initWithDomain:(NSString *)domain code:(NSInteger)code userInfo:(NSDictionary *)dict;
 - (NSString *)domain;
 - (NSInteger)code;
 - (NSDictionary *)userInfo;
@@ -42,6 +44,16 @@ typedef NSString *NSErrorUserInfoKey;
 - (NSArray *)localizedRecoveryOptions;
 - (id)recoveryAttempter;
 - (NSString *)helpAnchor;
+
+// A block that gives the value of a user info key that an error of the domain
+// lacks; the accessors above, and the descriptions, ask it
+// (https://developer.apple.com/documentation/foundation/nserror/setuserinfovalueproviderfordomain(_:provider:)).
++ (void)setUserInfoValueProviderForDomain:(NSString *)errorDomain provider:(id (^)(NSError *err, NSString *userInfoKey))provider;
++ (id (^)(NSError *err, NSString *userInfoKey))userInfoValueProviderForDomain:(NSString *)errorDomain;
+
+// The error under NSUnderlyingErrorKey, then those under
+// NSMultipleUnderlyingErrorsKey (macOS 11.3); an empty array if there are none.
+@property (readonly, copy) NSArray<NSError *> *underlyingErrors;
 
 @end
 

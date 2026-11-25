@@ -265,6 +265,22 @@ OBJC_PROTOCOL_IMPL_POP
     return [desc autorelease];
 }
 
+// Subclasses, such as the class of dictionary literals, are archived as
+// NSDictionary (observed on macOS 26.7.3), as NSArray's are archived as NSArray.
+- (Class)classForCoder
+{
+    return [NSDictionary self];
+}
+
+@end
+
+@implementation NSMutableDictionary (NSDictionary)
+
+- (Class)classForCoder
+{
+    return [NSMutableDictionary self];
+}
+
 @end
 
 @implementation NSDictionary (NSKeyValueCoding)

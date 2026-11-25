@@ -83,7 +83,14 @@ typedef struct {
 @property (nullable, copy) NSNumber *throughput NS_REFINED_FOR_SWIFT;
 @property (nullable, copy) NSNumber *fileTotalCount NS_REFINED_FOR_SWIFT;
 @property (nullable, copy) NSNumber *fileCompletedCount NS_REFINED_FOR_SWIFT;
+@property (nullable, copy) NSProgressFileOperationKind fileOperationKind;
+@property (nullable, copy) NSURL *fileURL;
 
+@end
+
+// An object that reports its progress with an NSProgress.
+@protocol NSProgressReporting <NSObject>
+@property (readonly) NSProgress *progress;
 @end
 
 FOUNDATION_EXPORT NSProgressUserInfoKey const NSProgressEstimatedTimeRemainingKey;

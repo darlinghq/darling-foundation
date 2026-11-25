@@ -8,12 +8,20 @@ typedef NS_ENUM(NSUInteger, NSURLCacheStoragePolicy) {
 
 @class NSData, NSDictionary, NSURLRequest, NSURLResponse;
 
+// DARLING: CFCachedURLResponseRef is CFNetwork's private type; SDK consumers,
+// which may declare it themselves, see the ivar as a plain pointer
+#ifdef DARLING
 typedef struct _CFCachedURLResponse* CFCachedURLResponseRef;
+#endif
 
 @interface NSCachedURLResponse : NSObject <NSCoding, NSCopying>
 {
     NSURLResponse* _response;
+#ifdef DARLING
     CFCachedURLResponseRef _cachedResponseRef;
+#else
+    void *_cachedResponseRef; // a CFCachedURLResponseRef
+#endif
 }
 
 - (id)initWithResponse:(NSURLResponse *)response data:(NSData *)data;
@@ -25,11 +33,19 @@ typedef struct _CFCachedURLResponse* CFCachedURLResponseRef;
 
 @end
 
+// DARLING: CFURLCacheRef is CFNetwork's private type; SDK consumers, which may
+// declare it themselves, see the ivar as a plain pointer
+#ifdef DARLING
 typedef struct _CFURLCache* CFURLCacheRef;
+#endif
 
 @interface NSURLCache : NSObject
 {
+#ifdef DARLING
     CFURLCacheRef _cacheRef;
+#else
+    void *_cacheRef; // a CFURLCacheRef
+#endif
 }
 
 + (NSURLCache *)sharedURLCache;

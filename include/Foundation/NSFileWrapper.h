@@ -26,25 +26,22 @@ typedef NS_OPTIONS(NSUInteger, NSFileWrapperWritingOptions) {
 - (id)initRegularFileWithContents:(NSData *)contents;
 - (id)initSymbolicLinkWithDestinationURL:(NSURL *)url;
 - (id)initWithSerializedRepresentation:(NSData *)serializeRepresentation;
-- (BOOL)isDirectory;
-- (BOOL)isRegularFile;
-- (BOOL)isSymbolicLink;
-- (void)setPreferredFilename:(NSString *)fileName;
-- (NSString *)preferredFilename;
-- (void)setFilename:(NSString *)fileName;
-- (NSString *)filename;
-- (void)setFileAttributes:(NSDictionary *)fileAttributes;
-- (NSDictionary *)fileAttributes;
+@property (readonly, getter=isDirectory) BOOL directory;
+@property (readonly, getter=isRegularFile) BOOL regularFile;
+@property (readonly, getter=isSymbolicLink) BOOL symbolicLink;
+@property (copy) NSString *preferredFilename;
+@property (copy) NSString *filename;
+@property (copy) NSDictionary *fileAttributes;
 - (BOOL)matchesContentsOfURL:(NSURL *)url;
 - (BOOL)readFromURL:(NSURL *)url options:(NSFileWrapperReadingOptions)options error:(NSError **)outError;
 - (BOOL)writeToURL:(NSURL *)url options:(NSFileWrapperWritingOptions)options originalContentsURL:(NSURL *)originalContentsURL error:(NSError **)outError;
-- (NSData *)serializedRepresentation;
+@property (readonly, copy) NSData *serializedRepresentation;
 - (NSString *)addFileWrapper:(NSFileWrapper *)child;
 - (NSString *)addRegularFileWithContents:(NSData *)data preferredFilename:(NSString *)fileName;
 - (void)removeFileWrapper:(NSFileWrapper *)child;
-- (NSDictionary *)fileWrappers;
+@property (readonly, copy) NSDictionary *fileWrappers;
 - (NSString *)keyForFileWrapper:(NSFileWrapper *)child;
-- (NSData *)regularFileContents;
-- (NSURL *)symbolicLinkDestinationURL;
+@property (readonly, copy) NSData *regularFileContents;
+@property (readonly, copy) NSURL *symbolicLinkDestinationURL;
 
 @end

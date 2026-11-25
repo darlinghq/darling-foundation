@@ -10,9 +10,9 @@ _NSHTTPCookieName
 _NSHTTPCookieOriginURL
 _NSHTTPCookiePath
 _NSHTTPCookiePort
-#_NSHTTPCookieSameSiteLax
-#_NSHTTPCookieSameSitePolicy
-#_NSHTTPCookieSameSiteStrict
+_NSHTTPCookieSameSiteLax
+_NSHTTPCookieSameSitePolicy
+_NSHTTPCookieSameSiteStrict
 _NSHTTPCookieSecure
 _NSHTTPCookieValue
 _NSHTTPCookieVersion
@@ -26,7 +26,7 @@ _NSURLAuthenticationMethodHTTPBasic
 _NSURLAuthenticationMethodHTTPDigest
 _NSURLAuthenticationMethodNTLM
 _NSURLAuthenticationMethodNegotiate
-#_NSURLAuthenticationMethodOAuth
+_NSURLAuthenticationMethodOAuth
 _NSURLAuthenticationMethodServerTrust
 #_NSURLAuthenticationMethodXMobileMeAuthToken
 #_NSURLConnectionBackgroundDownloadCompletedInvocation

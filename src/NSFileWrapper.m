@@ -43,6 +43,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 @implementation NSFileWrapper
 
+// Not implemented yet; the property must not be synthesized.
+@dynamic serializedRepresentation;
+
 + (id) alloc
 {
 	static NSFileWrapper* sharedInstance = nil;

@@ -263,7 +263,18 @@ static NSString* frameworkPathForPath(NSString *filePath) {
     @synchronized(bundlesByIdentifier)
     {
         bundle = [bundlesByIdentifier[identifier] retain];
-        // TODO: we should be doing some searching if the bundle is nil
+    }
+    if (bundle == nil && identifier != nil) {
+        // A bundle that no NSBundle was made for yet, such as a loaded
+        // framework: CFBundle knows those.
+        CFBundleRef cfBundle = CFBundleGetBundleWithIdentifier((CFStringRef)identifier);
+        if (cfBundle != NULL) {
+            NSURL *url = (NSURL *)CFBundleCopyBundleURL(cfBundle);
+            if (url != nil) {
+                bundle = [[NSBundle alloc] initWithURL: url];
+                [url release];
+            }
+        }
     }
     return [bundle autorelease];
 }

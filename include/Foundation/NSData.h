@@ -78,14 +78,14 @@ typedef NS_OPTIONS(NSUInteger, NSDataBase64DecodingOptions) {
 @interface NSData (NSDataCreation)
 
 + (id)_newZeroingDataWithBytes:(void const*)bytes length:(size_t)len;
-+ (id)data;
-+ (id)dataWithBytes:(const void *)bytes length:(NSUInteger)length;
-+ (id)dataWithBytesNoCopy:(void *)bytes length:(NSUInteger)length;
-+ (id)dataWithBytesNoCopy:(void *)bytes length:(NSUInteger)length freeWhenDone:(BOOL)b;
-+ (id)dataWithContentsOfFile:(NSString *)path options:(NSDataReadingOptions)readOptionsMask error:(NSError **)errorPtr;
-+ (id)dataWithContentsOfURL:(NSURL *)url options:(NSDataReadingOptions)readOptionsMask error:(NSError **)errorPtr;
-+ (id)dataWithContentsOfFile:(NSString *)path;
-+ (id)dataWithContentsOfURL:(NSURL *)url;
++ (instancetype)data;
++ (instancetype)dataWithBytes:(const void *)bytes length:(NSUInteger)length;
++ (instancetype)dataWithBytesNoCopy:(void *)bytes length:(NSUInteger)length;
++ (instancetype)dataWithBytesNoCopy:(void *)bytes length:(NSUInteger)length freeWhenDone:(BOOL)b;
++ (instancetype)dataWithContentsOfFile:(NSString *)path options:(NSDataReadingOptions)readOptionsMask error:(NSError **)errorPtr;
++ (instancetype)dataWithContentsOfURL:(NSURL *)url options:(NSDataReadingOptions)readOptionsMask error:(NSError **)errorPtr;
++ (instancetype)dataWithContentsOfFile:(NSString *)path;
++ (instancetype)dataWithContentsOfURL:(NSURL *)url;
 - (id)initWithBytes:(const void *)bytes length:(NSUInteger)length;
 - (id)initWithBytesNoCopy:(void *)bytes length:(NSUInteger)length;
 - (id)initWithBytesNoCopy:(void *)bytes length:(NSUInteger)length freeWhenDone:(BOOL)b;
@@ -94,7 +94,7 @@ typedef NS_OPTIONS(NSUInteger, NSDataBase64DecodingOptions) {
 - (id)initWithContentsOfFile:(NSString *)path;
 - (id)initWithContentsOfURL:(NSURL *)url;
 - (id)initWithData:(NSData *)data;
-+ (id)dataWithData:(NSData *)data;
++ (instancetype)dataWithData:(NSData *)data;
 
 @end
 
@@ -134,8 +134,8 @@ typedef NS_OPTIONS(NSUInteger, NSDataBase64DecodingOptions) {
 
 @interface NSMutableData (NSMutableDataCreation)
 
-+ (id)dataWithCapacity:(NSUInteger)aNumItems;
-+ (id)dataWithLength:(NSUInteger)length;
++ (instancetype)dataWithCapacity:(NSUInteger)aNumItems;
++ (instancetype)dataWithLength:(NSUInteger)length;
 - (id)initWithCapacity:(NSUInteger)capacity;
 - (id)initWithLength:(NSUInteger)length;
 

@@ -72,6 +72,7 @@ set(foundation_sources
 	src/NSEnergyFormatter.m
 	src/NSEqualityPredicateOperator.m
 	src/NSErrorConstants.m
+	src/NSErrorUnderlyingErrors.m
 	src/NSException.m
 	src/NSExpression.m
 	src/NSExternals.m
@@ -171,6 +172,7 @@ set(foundation_sources
 	src/NSPredicateLexer.m
 	src/NSPredicate.m
 	src/NSPredicateOperator.m
+	src/NSPresentationIntent.m
 	src/NSPredicateParser.tab.c
 	src/_NSPredicateOperatorUtilities.m
 	src/_NSPredicateUtilities.m
@@ -219,6 +221,7 @@ set(foundation_sources
 	src/NSValueTransformer.m
 	src/NSVariableAssignmentExpression.m
 	src/NSVariableExpression.m
+	src/NSWebKitSupport.m
 	src/NSXMLDocument.m
 	src/NSXMLDTD.m
 	src/NSXMLDTDNode.m
@@ -255,6 +258,7 @@ set(foundation_sources
 	src/NSAppleScript.m
 	src/NSMetadata.m
 	src/NSExtensionContext.m
+	src/NSExtensionItem.m
 	src/NSISO8601DateFormatter.m
 	src/NSScriptObjectSpecifiers.m
 	src/NSScriptCoercionHandler.m
@@ -330,18 +334,24 @@ set_property(
 	TARGET Foundation_i386 APPEND_STRING PROPERTY
 	LINK_FLAGS " -Wl,-reexported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/reexport_coreautolayout_i386.exp"
 )
+# A change to the list relinks Foundation.
+set_property(TARGET Foundation_i386 APPEND PROPERTY LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/reexport_coreautolayout_i386.exp)
 endif (TARGET_i386)
 if (TARGET_x86_64)
 set_property(
 	TARGET Foundation_x86_64 APPEND_STRING PROPERTY
 	LINK_FLAGS " -Wl,-reexported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/reexport_x86_64.exp"
 )
+# A change to the list relinks Foundation.
+set_property(TARGET Foundation_x86_64 APPEND PROPERTY LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/reexport_x86_64.exp)
 endif (TARGET_x86_64)
 if (TARGET_ARM64)
 set_property(
 	TARGET Foundation_arm64 APPEND_STRING PROPERTY
 	LINK_FLAGS " -Wl,-reexported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/reexport_arm64.exp"
 )
+# A change to the list relinks Foundation.
+set_property(TARGET Foundation_arm64 APPEND PROPERTY LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/reexport_arm64.exp)
 endif (TARGET_ARM64)
 
 # Since macOS 14 the Swift Foundation overlay lives in Foundation.framework itself, so applications bind symbols

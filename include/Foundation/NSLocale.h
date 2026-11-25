@@ -54,9 +54,26 @@ FOUNDATION_EXPORT NSString * const NSISO8601Calendar;
 
 @interface NSLocale (NSExtendedLocale)
 
-- (NSString *)localeIdentifier;
-- (NSString *)languageCode;
-- (NSString *)languageIdentifier;
+@property (readonly, copy) NSString *localeIdentifier;
+@property (readonly, copy) NSString *languageCode;
+@property (readonly, copy) NSString *languageIdentifier;
+@property (readonly, copy) NSString *countryCode;
+@property (readonly, copy) NSString *regionCode;
+@property (readonly, copy) NSString *scriptCode;
+@property (readonly, copy) NSString *variantCode;
+@property (readonly, copy) NSCharacterSet *exemplarCharacterSet;
+@property (readonly, copy) NSString *calendarIdentifier;
+@property (readonly, copy) NSString *collationIdentifier;
+@property (readonly) BOOL usesMetricSystem;
+@property (readonly, copy) NSString *decimalSeparator;
+@property (readonly, copy) NSString *groupingSeparator;
+@property (readonly, copy) NSString *currencySymbol;
+@property (readonly, copy) NSString *currencyCode;
+@property (readonly, copy) NSString *collatorIdentifier;
+@property (readonly, copy) NSString *quotationBeginDelimiter;
+@property (readonly, copy) NSString *quotationEndDelimiter;
+@property (readonly, copy) NSString *alternateQuotationBeginDelimiter;
+@property (readonly, copy) NSString *alternateQuotationEndDelimiter;
 
 @end
 
