@@ -498,46 +498,111 @@ static BOOL _classIsAllowed(NSKeyedUnarchiver *unarchiver, Class class, NSSet *a
     return NO;
 }
 
-// Values archived as plain property-list scalars (strings, numbers, booleans,
-// data) carry no class name, so they are checked as the instance of their
-// class that they decode to. `owned` says the caller holds a +1 reference that
-// has to be dropped when the value is refused.
-static id _scalarAllowed(NSKeyedUnarchiver *unarchiver, id value, BOOL owned)
+static NSException *_secureDecodingException(NSString *reason)
 {
-    if (value == nil || ![unarchiver requiresSecureCoding])
+    return [NSException exceptionWithName:NSInvalidUnarchiveOperationException
+                                   reason:reason
+                                 userInfo:@{@"__NSCoderInternalErrorCode" : @4864}];
+}
+
+// The class in the superclass chain of `class` whose own implementation of `sel` is the one
+// `class` uses, or Nil when there is none.
+static Class _classProvidingMethod(Class class, SEL sel, BOOL classMethod)
+{
+    Method method = classMethod ? class_getClassMethod(class, sel) : class_getInstanceMethod(class, sel);
+    if (method == NULL)
+    {
+        return Nil;
+    }
+    IMP imp = method_getImplementation(method);
+    for (Class super = class_getSuperclass(class); super != Nil; super = class_getSuperclass(super))
+    {
+        Method inherited = classMethod ? class_getClassMethod(super, sel) : class_getInstanceMethod(super, sel);
+        if (inherited == NULL || method_getImplementation(inherited) != imp)
+        {
+            break;
+        }
+        class = super;
+    }
+    return class;
+}
+
+// With secure coding, only classes that adopt NSSecureCoding and answer YES to
+// +supportsSecureCoding are instantiated. A class whose -initWithCoder: comes from below the
+// class that implements +supportsSecureCoding has not declared that this initializer is
+// secure, and is refused too, as on macOS (where all three are documented requirements of
+// NSSecureCoding). Returns nil when the class may be decoded.
+static NSException *_secureCodingRefusal(Class class)
+{
+    NSString *name = NSStringFromClass(class);
+    if (![class conformsToProtocol:@protocol(NSSecureCoding)])
+    {
+        return _secureDecodingException([NSString stringWithFormat:@"This decoder will only decode classes that adopt NSSecureCoding. Class '%@' does not adopt it.", name]);
+    }
+    if (![class respondsToSelector:@selector(supportsSecureCoding)] || ![class supportsSecureCoding])
+    {
+        return _secureDecodingException([NSString stringWithFormat:@"Class '%@' disallows secure coding. It must return YES from supportsSecureCoding.", name]);
+    }
+    Class declaresSecure = _classProvidingMethod(class, @selector(supportsSecureCoding), YES);
+    Class initializes = _classProvidingMethod(class, @selector(initWithCoder:), NO);
+    if (declaresSecure != Nil && initializes != Nil && initializes != declaresSecure && [initializes isSubclassOfClass:declaresSecure])
+    {
+        return _secureDecodingException([NSString stringWithFormat:@"Class '%@' has a superclass that supports secure coding, but '%@' overrides -initWithCoder: and does not override +supportsSecureCoding. The class must implement +supportsSecureCoding and return YES to verify that its implementation of -initWithCoder: is secure coding compliant.", name, name]);
+    }
+    return nil;
+}
+
+// The class an archived object decodes to (after setClass:forClassName: and
+// +classForKeyedUnarchiver) has to be one of the classes allowed for the current decode, or a
+// subclass of one, and has to support secure coding. `key` is the key the object was found
+// under: the collection's key for its elements in binary archives and the empty string for
+// them in XML archives, as on macOS.
+static NSException *_secureDecodingRefusal(NSKeyedUnarchiver *unarchiver, Class class, NSString *key)
+{
+    if (![unarchiver requiresSecureCoding])
+    {
+        return nil;
+    }
+    NSSet *allowedClassSet = [unarchiver allowedClasses];
+    if (!_classIsAllowed(unarchiver, class, allowedClassSet))
+    {
+        return _secureDecodingException([NSString stringWithFormat:@"value for key '%@' was of unexpected class '%@'. Allowed classes are '%@'.", key ?: @"", NSStringFromClass(class), allowedClassSet]);
+    }
+    return _secureCodingRefusal(class);
+}
+
+
+// In strict secure decoding mode, values archived as plain property-list scalars (strings,
+// numbers, booleans, data), which carry no class name, are checked too: as the public class
+// they were archived as, whatever their concrete class. Observed on macOS 26.7.3: strictly, a
+// plain string decodes with {NSString} but not with {NSObject}. Test:
+// tests/nskeyedunarchiver-strict-decoding.m in Darling's main repository. Outside strict mode
+// they are not checked (see the QUIRK in _decodeObjectBinary). `value` is a +1 reference, which
+// is dropped when the value is refused.
+static id _strictScalarAllowed(NSKeyedUnarchiver *unarchiver, id value, NSString *key)
+{
+    if (value == nil || !unarchiver->_helper->_strictSecureDecoding)
     {
         return value;
     }
-    NSSet *allowedClassSet = [unarchiver allowedClasses];
     Class class = [value class];
-    if (unarchiver->_helper->_strictSecureDecoding)
-    {
-        // A scalar counts as the public class it was archived as, whatever its concrete class.
-        // Observed on macOS 26.7.3: strictly, a plain string decodes with {NSString} but not
-        // with {NSObject}.
-        if ([value isKindOfClass:[NSString class]])
-            class = [NSString class];
-        else if ([value isKindOfClass:[NSNumber class]])
-            class = [NSNumber class];
-        else if ([value isKindOfClass:[NSData class]])
-            class = [NSData class];
-    }
+    if ([value isKindOfClass:[NSString class]])
+        class = [NSString class];
+    else if ([value isKindOfClass:[NSNumber class]])
+        class = [NSNumber class];
+    else if ([value isKindOfClass:[NSData class]])
+        class = [NSData class];
+    NSSet *allowedClassSet = [unarchiver allowedClasses];
     if (_classIsAllowed(unarchiver, class, allowedClassSet))
     {
         return value;
     }
-    NSString *className = NSStringFromClass([value class]);
-    if (owned)
-    {
-        CFRelease(value);
-    }
-    [[NSException exceptionWithName:NSInvalidUnarchiveOperationException
-                            reason:[NSString stringWithFormat:@"%@ was unexpected. The expected classes are %@", className, allowedClassSet]
-                          userInfo: @{@"__NSCoderInternalErrorCode" : @4864}] raise];
+    CFRelease(value);
+    [_secureDecodingException([NSString stringWithFormat:@"value for key '%@' was of unexpected class '%@'. Allowed classes are '%@'.", key ?: @"", NSStringFromClass(class), allowedClassSet]) raise];
     return nil;
 }
 
-static id _decodeObjectBinary(NSKeyedUnarchiver *unarchiver, NSUInteger uid1) NS_RETURNS_RETAINED
+static id _decodeObjectBinary(NSKeyedUnarchiver *unarchiver, NSUInteger uid1, NSString *key) NS_RETURNS_RETAINED
 {
     uint64_t voffset = unarchiver->_offsetData->valueOffset;
     @autoreleasepool {
@@ -559,17 +624,25 @@ static id _decodeObjectBinary(NSKeyedUnarchiver *unarchiver, NSUInteger uid1) NS
         uint8_t marker = *ptr++;
         uint8_t markerTag = (marker & 0xf0);
 
+        // QUIRK: with secure coding, values archived as plain property-list scalars
+        // (strings, numbers, booleans and data are stored inline, without a class name) are
+        // returned without checking them against the allowed classes: an NSNumber comes back
+        // where only NSString is allowed, and an array of strings and numbers decodes with
+        // only NSArray allowed. Objects archived with a class name (NSDate, NSURL, NSValue,
+        // collections, ...) are always checked. Not documented. Evidence: black-box
+        // observation on macOS 10.14.4 (x86_64, i386) and 26.7.3 (x86_64) (tier 2).
+        // Test: test_quirk_plist_scalars_unchecked in tests/secure-unarchiver-allowed-classes.m
         if (marker == kCFBinaryPlistMarkerNull)
         {
             return nil;
         }
         else if (marker == kCFBinaryPlistMarkerTrue)
         {
-            return _scalarAllowed(unarchiver, (id)kCFBooleanTrue, NO);
+            return _strictScalarAllowed(unarchiver, (id)kCFBooleanTrue, key);
         }
         else if (marker == kCFBinaryPlistMarkerFalse)
         {
-            return _scalarAllowed(unarchiver, (id)kCFBooleanFalse, NO);
+            return _strictScalarAllowed(unarchiver, (id)kCFBooleanFalse, key);
         }
         else if (markerTag == kCFBinaryPlistMarkerASCIIString)
         {
@@ -583,7 +656,7 @@ static id _decodeObjectBinary(NSKeyedUnarchiver *unarchiver, NSUInteger uid1) NS
             {
                 return nil; // This is a success. nil is the correctly decoded value here.
             }
-            return _scalarAllowed(unarchiver, (id)string, YES);
+            return _strictScalarAllowed(unarchiver, (id)string, key);
         }
         else if (markerTag == kCFBinaryPlistMarkerInt || markerTag == kCFBinaryPlistMarkerReal || markerTag == kCFBinaryPlistMarkerData || markerTag == kCFBinaryPlistMarkerUnicode16String)
         {
@@ -592,7 +665,7 @@ static id _decodeObjectBinary(NSKeyedUnarchiver *unarchiver, NSUInteger uid1) NS
             {
                 return nil;
             }
-            return _scalarAllowed(unarchiver, (id)obj, YES);
+            return _strictScalarAllowed(unarchiver, (id)obj, key);
         }
         else if (markerTag != kCFBinaryPlistMarkerDict)
         {
@@ -659,16 +732,7 @@ static id _decodeObjectBinary(NSKeyedUnarchiver *unarchiver, NSUInteger uid1) NS
             @throw [NSException exceptionWithName:NSInvalidUnarchiveOperationException reason:[NSString stringWithFormat:@"No classForKeyedUnarchiver class:%@", className] userInfo:nil];
             return nil;
         }
-        NSException *exception = nil;
-        if ([unarchiver requiresSecureCoding])
-        {
-            NSSet *allowedClassSet = [unarchiver allowedClasses];
-            if (!_classIsAllowed(unarchiver, class, allowedClassSet)) {
-                exception = [NSException exceptionWithName:NSInvalidUnarchiveOperationException
-                                        reason:[NSString stringWithFormat:@"%@ was unexpected. The expected classes are %@", className, allowedClassSet]
-                                      userInfo: @{@"__NSCoderInternalErrorCode" : @4864}];
-            }
-        }
+        NSException *exception = _secureDecodingRefusal(unarchiver, class, key);
         if (className != nil)
         {
             CFRelease(className); 
@@ -684,7 +748,19 @@ static id _decodeObjectBinary(NSKeyedUnarchiver *unarchiver, NSUInteger uid1) NS
         // save the allocated object into the temp map, because we don't want to retain it yet
         CFDictionarySetValue(unarchiver->_tmpRefObjMap, (const void *)uid1, allocated);
         CFDictionarySetValue(unarchiver->_objRefMap, (const void *)allocated, (const void *)uid1);
-        id instance = initObjectWithCoder(allocated, unarchiver);
+        id instance;
+        @try
+        {
+            instance = initObjectWithCoder(allocated, unarchiver);
+        }
+        @catch (id exception)
+        {
+            // a refused member (or any other failure) leaves the unarchiver's position as it was
+            unarchiver->_offsetData->offset = pushOldOffset;
+            CFDictionaryRemoveValue(unarchiver->_tmpRefObjMap, (const void *)uid1);
+            CFDictionaryRemoveValue(unarchiver->_objRefMap, (const void *)allocated);
+            @throw;
+        }
         if (instance != nil)
         {
             instance = [instance awakeAfterUsingCoder:unarchiver];
@@ -757,7 +833,9 @@ static id _decodeObjectXML(NSKeyedUnarchiver *unarchiver, NSString *key)
     }
     if (typeID == CFStringGetTypeID() || typeID == CFNumberGetTypeID() || typeID == CFBooleanGetTypeID() || typeID == CFDataGetTypeID())
     {
-        return _scalarAllowed(unarchiver, [obj retain], YES);
+        // Not checked against the allowed classes except in strict mode, as in
+        // _decodeObjectBinary (QUIRK there).
+        return _strictScalarAllowed(unarchiver, [obj retain], key);
     }
 
     CFKeyedArchiverUIDRef keyedArchiverUID;
@@ -811,24 +889,37 @@ static id _decodeObjectXML(NSKeyedUnarchiver *unarchiver, NSString *key)
         @throw [NSException exceptionWithName:NSInvalidUnarchiveOperationException reason:[NSString stringWithFormat:@"No classForKeyedUnarchiver class:%@ key:%@", className, key] userInfo:nil];
         return nil;
     }
+    // checked before the object becomes the current container, so a refusal leaves the
+    // container stack as it was
+    NSException *refusal = _secureDecodingRefusal(unarchiver, class, key);
+    if (refusal != nil)
+    {
+        [refusal raise];
+    }
     CFRetain(obj);
     CFArrayAppendValue(unarchiver->_containers, obj);
-
-    if ([unarchiver requiresSecureCoding])
-    {
-        NSSet *allowedClassSet = [unarchiver allowedClasses];
-        if (!_classIsAllowed(unarchiver, class, allowedClassSet)) {
-            [[NSException exceptionWithName:NSInvalidUnarchiveOperationException
-                                    reason:[NSString stringWithFormat:@"%@ was unexpected. The expected classes are %@", className, allowedClassSet]
-                                    userInfo: @{@"__NSCoderInternalErrorCode" : @4864} ] raise];
-        }
-    }
 
     id allocated = [class allocWithZone:nil];
     CFDictionarySetValue(unarchiver->_tmpRefObjMap, (const void *)uid, allocated);
     CFDictionarySetValue(unarchiver->_objRefMap, (const void *)allocated, (const void *)uid);
-    id instance = initObjectWithCoder(allocated, unarchiver);
-    if (instance != nil)
+    id instance;
+    @try
+    {
+        instance = initObjectWithCoder(allocated, unarchiver);
+    }
+    @catch (id exception)
+    {
+        // a refused member (or any other failure) leaves the unarchiver's position as it was
+        deleteLastContainer(unarchiver->_containers);
+        CFDictionaryRemoveValue(unarchiver->_tmpRefObjMap, (const void *)uid);
+        CFDictionaryRemoveValue(unarchiver->_objRefMap, (const void *)allocated);
+        @throw;
+    }
+    if (instance == nil)
+    {
+        deleteLastContainer(unarchiver->_containers);
+    }
+    else
     {
         instance = [instance awakeAfterUsingCoder:unarchiver];
         NSCAssert(instance != nil, @"object was replaced as nil from awakeAfterUsingCoder:");
@@ -887,7 +978,7 @@ static id _decodeObject(NSKeyedUnarchiver *unarchiver, NSString *key)
 
     @autoreleasepool
     {
-        binaryReturn = _decodeObjectBinary(unarchiver, uid1);
+        binaryReturn = _decodeObjectBinary(unarchiver, uid1, key);
     }
 
     return [binaryReturn autorelease];
@@ -1189,7 +1280,9 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
         }
         return nil;
     }
-    // This initializer reports decoding failures through -error, not by raising.
+    // This initializer requires secure coding and reports decoding failures through -error,
+    // not by raising (both documented for it).
+    [(NSKeyedUnarchiver *)unarchiver setRequiresSecureCoding:YES];
     [(NSKeyedUnarchiver *)unarchiver setDecodingFailurePolicy:NSDecodingFailurePolicySetErrorAndReturn];
     return unarchiver;
 }
@@ -1330,7 +1423,18 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 
         default:
         {
-            id objects = [self decodeObject];
+            // The values are archived as an object of their own, which a secure unarchiver
+            // decodes whatever classes the caller allows.
+            id objects;
+            [_helper->_allowedClasses addObject:[NSSet setWithObject:[_NSKeyedCoderOldStyleArray class]]];
+            @try
+            {
+                objects = [self decodeObject];
+            }
+            @finally
+            {
+                [_helper->_allowedClasses removeLastObject];
+            }
             if (![objects isKindOfClass:[_NSKeyedCoderOldStyleArray class]])
             {
                 [NSException raise:NSInvalidUnarchiveOperationException format:@"Decoded object was not an array of objects"];
@@ -1424,6 +1528,12 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
         case _C_ULNG_LNG:
         {
             *(long long *)addr = (long long)_decodeInt(self, freshGenericKey(self));
+            break;
+        }
+
+        case _C_BOOL:
+        {
+            *(bool *)addr = _decodeBool(self, freshGenericKey(self)) != NO;
             break;
         }
 
@@ -1873,7 +1983,7 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
         }
         if (!error)
         {
-            elements[i] = _decodeObjectBinary(self, uid1);
+            elements[i] = _decodeObjectBinary(self, uid1, key);
             if (elements[i] == nil)
             {
                 error = YES;
@@ -1961,10 +2071,17 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
         }
         else
         {
+            // The classes apply to this object and, unless they ask for other classes, to the
+            // objects its -initWithCoder: decodes; they stop applying however the decode ends.
             [_helper->_allowedClasses addObject:classes];
-            id object= [self decodeObjectForKey:key];
-            [_helper->_allowedClasses removeLastObject];
-            return object;
+            @try
+            {
+                return [self decodeObjectForKey:key];
+            }
+            @finally
+            {
+                [_helper->_allowedClasses removeLastObject];
+            }
         }
     }
     else
@@ -2134,10 +2251,13 @@ static CFDictionaryValueCallBacks sNSCFDictionaryValueCallBacks = {
 
 @end
 
-// Decodes the root object with secure coding, as on macOS: every decoded object, the root
-// included, must be of one of the given classes or a property list class. Observed on macOS
-// 26.7.3: an archived string decodes with {NSNumber}, and with an empty set of classes. Test:
-// tests/nskeyedunarchiver-strict-decoding.m in Darling's main repository.
+// Decodes the root object with secure coding, as on macOS: every object decoded, the root
+// included, must be of one of the given classes (no property list classes are added), except
+// values archived as plain property-list scalars, which are not checked (see the QUIRK in
+// _decodeObjectBinary). Observed on macOS 10.14.4 and 26.7.3: an archived string decodes with
+// {NSNumber}, {NSDate} or an empty set of classes, and an array of dates with {NSArray} fails
+// with NSCoderReadCorruptError. Tests: tests/nskeyedunarchiver-strict-decoding.m in Darling's
+// main repository, tests/keyed-archive-decode.m.
 @implementation NSKeyedUnarchiver (NSUnarchivingOfClasses)
 
 static NSError *unarchivingError(NSInteger code, NSString *description)
@@ -2157,12 +2277,6 @@ static id unarchiveRootObject(NSSet *classes, NSData *data, BOOL strict, NSError
         return nil;
     }
 
-    // Strictly, only the given classes; otherwise the property list classes as well.
-    NSMutableSet *decodableClasses = [NSMutableSet setWithSet: classes];
-    if (!strict)
-        [decodableClasses addObjectsFromArray: @[ [NSArray class], [NSDictionary class], [NSString class],
-                                                  [NSNumber class], [NSData class], [NSDate class] ]];
-
     id object = nil;
     NSKeyedUnarchiver *unarchiver = nil;
     @try {
@@ -2177,13 +2291,16 @@ static id unarchiveRootObject(NSSet *classes, NSData *data, BOOL strict, NSError
             [unarchiver _enableStrictSecureDecodingMode];
         else
             [unarchiver setRequiresSecureCoding: YES];
-        object = [[unarchiver decodeObjectOfClasses: decodableClasses forKey: NSKeyedArchiveRootObjectKey] retain];
+        object = [[unarchiver decodeObjectOfClasses: classes forKey: NSKeyedArchiveRootObjectKey] retain];
         [unarchiver finishDecoding];
     } @catch (NSException *exception) {
         [object release];
         object = nil;
         if (error)
-            *error = unarchivingError(NSCoderReadCorruptError, [exception reason] ?: @"The data couldn't be read because it isn't in the correct format.");
+            *error = [NSError errorWithDomain: NSCocoaErrorDomain
+                                         code: NSCoderReadCorruptError
+                                     userInfo: @{ NSLocalizedDescriptionKey : @"The data couldn't be read because it isn't in the correct format.",
+                                                  NSDebugDescriptionErrorKey : [exception reason] ?: @"" }];
     }
     [unarchiver release];
 

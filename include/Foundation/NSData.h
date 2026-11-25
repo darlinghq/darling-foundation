@@ -57,7 +57,7 @@ typedef NS_OPTIONS(NSUInteger, NSDataBase64DecodingOptions) {
 // __NSCFData subclass and this accessor is implemented in a category (src/NSData.m), so declaring
 // the property in a category too keeps Clang from auto-synthesizing a shadowing ivar/getter on the
 // empty primary @implementation NSData in CoreFoundation's NSData.m.
-@property (readonly) const void *bytes NS_RETURNS_INNER_POINTER;
+@property (readonly) const void * _Nonnull bytes NS_RETURNS_INNER_POINTER;
 - (NSString *)description;
 - (void)getBytes:(void *)buffer length:(NSUInteger)length;
 - (void)getBytes:(void *)buffer range:(NSRange)range;
@@ -103,6 +103,24 @@ typedef NS_OPTIONS(NSUInteger, NSDataBase64DecodingOptions) {
 - (NSString *)base64EncodedStringWithOptions:(NSDataBase64EncodingOptions)options NS_AVAILABLE(10_9, 7_0);
 - (id)initWithBase64EncodedData:(NSData *)base64Data options:(NSDataBase64DecodingOptions)options NS_AVAILABLE(10_9, 7_0);
 - (NSData *)base64EncodedDataWithOptions:(NSDataBase64EncodingOptions)options NS_AVAILABLE(10_9, 7_0);
+@end
+
+// The documentation names the four algorithms and the NSInteger type but gives no values. An application built against the
+// real SDK passes the raw integers. Values observed on macOS: LZFSE 0, LZ4 1, LZMA 2, Zlib 3 (a small program printing
+// the public constants, run on a real Mac; evidence tier 2 black-box observation).
+typedef NS_ENUM(NSInteger, NSDataCompressionAlgorithm) {
+    NSDataCompressionAlgorithmLZFSE = 0,
+    NSDataCompressionAlgorithmLZ4   = 1,
+    NSDataCompressionAlgorithmLZMA  = 2,
+    NSDataCompressionAlgorithmZlib  = 3
+} API_AVAILABLE(macos(10.15), ios(13.0), watchos(6.0), tvos(13.0));
+
+@interface NSData (NSDataCompression)
+
+// Documented as optional (nil on failure); not marked nullable because this header has no nullability annotations at all.
+- (instancetype)compressedDataUsingAlgorithm:(NSDataCompressionAlgorithm)algorithm error:(NSError **)error API_AVAILABLE(macos(10.15), ios(13.0), watchos(6.0), tvos(13.0));
+- (instancetype)decompressedDataUsingAlgorithm:(NSDataCompressionAlgorithm)algorithm error:(NSError **)error API_AVAILABLE(macos(10.15), ios(13.0), watchos(6.0), tvos(13.0));
+
 @end
 
 @interface NSData (NSDeprecated)

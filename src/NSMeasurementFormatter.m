@@ -12,6 +12,11 @@ static NSNumberFormatter *newDefaultNumberFormatter(void)
 
 @implementation NSMeasurementFormatter
 
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
+
 - (instancetype)init
 {
     self = [super init];

@@ -13,6 +13,11 @@
 
 @implementation NSReplacementCheckingResult
 
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
+
 - (id)initWithRange:(NSRange)range replacementString:(NSString *)replacementString
 {
     self = [super init];

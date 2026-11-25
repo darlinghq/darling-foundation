@@ -13,6 +13,11 @@
 
 @implementation NSLinkCheckingResult
 
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
+
 - (id)initWithRange:(NSRange)range URL:(NSURL *)url
 {
     self = [super init];

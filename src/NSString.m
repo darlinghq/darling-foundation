@@ -215,6 +215,21 @@ static NSStringEncoding __NSDefaultCStringEncoding()
     return defaultEncoding;
 }
 
+// The format-taking initializers, class factories and appenders are reached through the
+// NSString and NSMutableString placeholders and end in their -initWithFormat:locale:arguments:,
+// so the documented nil-format check lives here once. The reason text is the one macOS gives
+// (observed on 10.14.4 and 26.7.3 for every one of these entry points). -[NSMutableString appendFormat:]
+// on a CoreFoundation-backed string does not pass through them: it goes straight to CoreFoundation and, as
+// on those macOS versions, crashes for a nil format.
+static void __NSStringRequireFormat(id placeholder, NSString *format)
+{
+    if (format == nil)
+    {
+        [NSException raise:NSInvalidArgumentException
+                    format:@"*** -[%@ initWithFormat:locale:arguments:]: nil argument", NSStringFromClass([placeholder class])];
+    }
+}
+
 @implementation NSString
 
 + (id)allocWithZone:(NSZone *)zone
@@ -450,6 +465,7 @@ static NSStringEncoding __NSDefaultCStringEncoding()
 
 - (id)initWithFormat:(NSString *)format locale:(id)locale arguments:(va_list)argList
 {
+    __NSStringRequireFormat(self, format);
     return (id)_CFStringCreateWithFormatAndArgumentsAux(kCFAllocatorDefault, &_NSCFCopyDescription2, (CFDictionaryRef)locale, (CFStringRef)format, argList);
 }
 
@@ -537,6 +553,7 @@ SINGLETON_RR()
 
 - (id)initWithFormat:(NSString *)format locale:(id)locale arguments:(va_list)argList
 {
+    __NSStringRequireFormat(self, format);
     CFMutableStringRef str = CFStringCreateMutable(kCFAllocatorDefault, 0);
     _CFStringAppendFormatAndArgumentsAux(str, &_NSCFCopyDescription2, (CFDictionaryRef)locale, (CFStringRef)format, argList);
     return (id)str;
@@ -854,7 +871,14 @@ SINGLETON_RR()
         [self release];
         return nil;
     }
-    return [self initWithBytesNoCopy:bytes length:length encoding:enc freeWhenDone:YES];
+    NSString *result = [self initWithBytesNoCopy:bytes length:length encoding:enc freeWhenDone:YES];
+    if (result == nil && error != NULL)
+    {
+        // The contents are not valid in that encoding.
+        *error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileReadInapplicableStringEncodingError
+                                 userInfo:@{NSFilePathErrorKey: path, NSStringEncodingErrorKey: @(enc)}];
+    }
+    return result;
 }
 
 - (id)_initWithBytesOfUnknownEncoding:(void *)bytes length:(NSUInteger)length copy:(BOOL)shouldCopy usedEncoding:(NSStringEncoding *)usedEncoding
@@ -2055,13 +2079,22 @@ static const char* bytesInEncoding(NSString *string, BOOL externalRep, NSStringE
     {
         if (error)
         {
-            *error = [NSError errorWithDomain:NSCocoaErrorDomain code:-1 userInfo:@{
-                NSLocalizedDescriptionKey: @"does this even make sense? what would it even do? POST?"
-            }];
+            *error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileWriteUnsupportedSchemeError
+                                     userInfo:@{ NSURLErrorKey: url }];
         }
         return NO;
     }
     NSData *data = [self dataUsingEncoding:enc];
+    if (data == nil)
+    {
+        if (error)
+        {
+            *error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileWriteInapplicableStringEncodingError
+                                     userInfo:@{ NSFilePathErrorKey: [url path],
+                                                 NSStringEncodingErrorKey: [NSNumber numberWithUnsignedInteger:enc] }];
+        }
+        return NO;
+    }
     return [data writeToURL:url options:useAuxiliaryFile ? NSDataWritingAtomic : 0 error:error];
 }
 
@@ -2094,7 +2127,6 @@ static NSCharacterSet *invertedWhitespaceSet = nil;
 #define STACK_BUFFER_SIZE 256
 #define ALLOC_CHUNK_SIZE 256
 typedef enum {
-    NSNumericBOOLValue,
     NSNumericLongValue,
     NSNumericLongLongValue,
     NSNumericFloatValue,
@@ -2102,7 +2134,6 @@ typedef enum {
 } NSNumericValueType;
 
 typedef union {
-    BOOL b;
     long l;
     long long ll;
     float f;
@@ -2151,31 +2182,7 @@ static BOOL _NSScanStringValue(NSString *self, NSNumericValueType type, NSNumeri
         ch = [self characterAtIndex:index];
     }
     charPtr[numChars++] = 0;
-    if (type == NSNumericBOOLValue)
-    {
-        long l = strtol(charPtr, &endCharPtr, 10);
-        if (l == 0)
-        {
-            NSString *substr = [self substringFromIndex:found.location];
-            if ([substr compare:@"YES" options:NSCaseInsensitiveSearch range:NSMakeRange(0, 3)] == NSOrderedSame)
-            {
-                resultValue->b = YES;
-            }
-            else if ([substr compare:@"TRUE" options:NSCaseInsensitiveSearch range:NSMakeRange(0, 4)] == NSOrderedSame)
-            {
-                resultValue->b = YES;
-            }
-            else
-            {
-                resultValue->b = NO;
-            }
-        }
-        else
-        {
-            resultValue->b = YES;
-        }
-    }
-    else if (type == NSNumericLongValue)
+    if (type == NSNumericLongValue)
     {
         resultValue->l = strtol(charPtr, &endCharPtr, 10);
     }
@@ -2260,17 +2267,41 @@ static BOOL _NSScanStringValue(NSString *self, NSNumericValueType type, NSNumeri
     return [trimmed longLongValue];
 }
 
-/*!
- @note Apple truncates the numeric value to SInt32 it seems... (which means that LLONG_MIN returns NO)
-*/
+// Reads the receiver as the reference describes (https://developer.apple.com/documentation/foundation/nsstring/boolvalue):
+// whitespace at the start is skipped, and the result is YES when the next character is one of Y, y, T, t or a digit 1
+// to 9, whatever follows it; NO otherwise, including for a string that ends there. A sign and zeroes in front of a
+// digit are skipped (the page says an optional sign followed by zeroes); once either was skipped only a digit 1 to 9
+// can still give YES, a letter after them gives NO. The characters are read by index, so a short string cannot be read
+// past its end.
+// The public Foundation/NSString.h of the macOS 10.15 SDK says the initial characters skipped are those of the
+// whitespace character set (not newlines), which is the set used here.
+// Observed on macOS 26.7.3 and 10.14.4 (x86_64 and i386, identical): "-5" and "+5" are YES, "0Y", "00t", "-Y" and "+T"
+// are NO, "01" is YES, and the whitespace character set is skipped (space, tab, no-break and other Unicode space
+// separators) while a newline, carriage return, vertical tab and form feed are not.
+// Test: tests/nsstring-bool-value.m
 - (BOOL)boolValue
 {
-    NSNumericValue val;
-    if (_NSScanStringValue(self, NSNumericBOOLValue, &val))
+    NSUInteger length = [self length];
+    NSUInteger index = 0;
+    NSCharacterSet *whitespace = [NSCharacterSet whitespaceCharacterSet];
+    while (index < length && [whitespace characterIsMember:[self characterAtIndex:index]])
+        index++;
+    NSUInteger start = index;
+    if (index < length && ([self characterAtIndex:index] == '-' || [self characterAtIndex:index] == '+'))
+        index++;
+    while (index < length && [self characterAtIndex:index] == '0')
+        index++;
+    if (index == length)
+        return NO;
+    switch ([self characterAtIndex:index])
     {
-        return val.b;
+        case 'Y': case 'y': case 'T': case 't':
+            return index == start;
+        case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
+            return YES;
+        default:
+            return NO;
     }
-    return NO;
 }
 
 - (BOOL)containsString:(NSString *)string

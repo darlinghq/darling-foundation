@@ -106,7 +106,7 @@ FOUNDATION_EXPORT NSString * const NSFileSystemFreeNodes;
     } _flags;
 }
 
-@property (class, readonly, retain) NSFileManager *defaultManager;
+@property (class, readonly, retain) NSFileManager * _Nonnull defaultManager;
 @property (readonly) NSURL *temporaryDirectory;
 - (NSArray *)mountedVolumeURLsIncludingResourceValuesForKeys:(NSArray *)propertyKeys options:(NSVolumeEnumerationOptions)options;
 - (NSArray *)contentsOfDirectoryAtURL:(NSURL *)url includingPropertiesForKeys:(NSArray *)keys options:(NSDirectoryEnumerationOptions)mask error:(NSError **)error;
@@ -140,6 +140,7 @@ FOUNDATION_EXPORT NSString * const NSFileSystemFreeNodes;
 - (NSString *)pathContentOfSymbolicLinkAtPath:(NSString *)path;
 - (BOOL)createSymbolicLinkAtPath:(NSString *)path pathContent:(NSString *)otherpath;
 - (BOOL)createDirectoryAtPath:(NSString *)path attributes:(NSDictionary *)attributes;
+- (BOOL)copyPath:(NSString *)src toPath:(NSString *)dest handler:(id)handler;
 - (NSString *)currentDirectoryPath;
 - (BOOL)changeCurrentDirectoryPath:(NSString *)path;
 - (BOOL)fileExistsAtPath:(NSString *)path;

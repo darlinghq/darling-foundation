@@ -83,6 +83,8 @@ FOUNDATION_EXPORT const NSCalendarIdentifier NSCalendarIdentifierRepublicOfChina
 
 + (id)currentCalendar;
 + (id)autoupdatingCurrentCalendar;
+// Documented as optional (nil for an unknown identifier); not marked nullable because this header has no nullability annotations at all.
++ (NSCalendar *)calendarWithIdentifier:(NSCalendarIdentifier)calendarIdentifierConstant API_AVAILABLE(macos(10.9), ios(8.0), watchos(2.0), tvos(9.0));
 
 - (id)initWithCalendarIdentifier:(NSCalendarIdentifier)ident;
 - (NSCalendarIdentifier)calendarIdentifier;

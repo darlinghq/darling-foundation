@@ -22,32 +22,28 @@
 #import <sys/mman.h>
 #import <sys/stat.h>
 #import "NSErrorInternal.h"
+#import "_NSFileErrors.h"
 
+// The error of a failed read of path: an NSCocoaErrorDomain error with the path and the errno underneath, and no
+// description of its own (the description comes from the code).
 static NSError *NSFileReadError(int errorCode, NSString *path)
 {
-    NSInteger code = NSFileReadUnknownError;
-    switch (errorCode) {
-        case ENOENT:
-            code = NSFileReadNoSuchFileError;
-            break;
-        case EACCES:
-        case EPERM:
-            code = NSFileReadNoPermissionError;
-            break;
-    }
-    NSError *underlying = [NSError errorWithDomain:NSPOSIXErrorDomain
-        code:errorCode userInfo:nil];
-    NSMutableDictionary *info = [NSMutableDictionary dictionaryWithObjectsAndKeys:
-        underlying, NSUnderlyingErrorKey,
-        [NSString stringWithUTF8String:strerror(errorCode)], NSLocalizedDescriptionKey,
-        nil];
-    if (path != nil) [info setObject:path forKey:NSFilePathErrorKey];
-    return [NSError errorWithDomain:NSCocoaErrorDomain code:code userInfo:info];
+    return _NSFileErrorWithErrno(errorCode, path, YES, nil);
 }
 
 void *_NSReadBytesFromFile(NSString *path, NSDataReadingOptions readOptionsMask, NSUInteger *length, BOOL *vm, NSError **err)
 {
     *length = 0;
+
+    if ([path length] == 0)
+    {
+        if (err != NULL)
+        {
+            *err = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileReadInvalidFileNameError
+                                   userInfo:@{NSFilePathErrorKey: path ?: @""}];
+        }
+        return NULL;
+    }
 
     // Paths are used in the file system representation, which is how files are created; a file that
     // exists only under the spelling of the caller is found as a fallback (see NSFileManager.m).
@@ -81,7 +77,8 @@ void *_NSReadBytesFromFile(NSString *path, NSDataReadingOptions readOptionsMask,
         close(fd);
         if (err != NULL)
         {
-            *err = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileReadNoPermissionError userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"the path %@ is a directory", path]}];
+            // Reading a directory fails with the permission error, as on the original.
+            *err = NSFileReadError(EACCES, path);
         }
         return NULL;
     }
@@ -186,10 +183,20 @@ BOOL _NSWriteBytesToFile(NSData *data, id pathOrURL, NSDataWritingOptions option
 {
     if (![pathOrURL isNSString__])
     {
+        if (![pathOrURL isFileURL])
+        {
+            if (errorPtr != NULL)
+            {
+                *errorPtr = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileWriteUnsupportedSchemeError
+                    userInfo:@{ NSURLErrorKey: pathOrURL }];
+            }
+            return NO;
+        }
         pathOrURL = [pathOrURL path];
     }
     NSString *dest = pathOrURL;
-    if ((options & NSDataWritingAtomic) != 0)
+    BOOL atomic = (options & NSDataWritingAtomic) != 0;
+    if (atomic)
     {
         static int atomicId = 0;
         atomicId = OSAtomicIncrement32(&atomicId);
@@ -197,33 +204,38 @@ BOOL _NSWriteBytesToFile(NSData *data, id pathOrURL, NSDataWritingOptions option
     }
     int fd = -1;
     const char *path = [pathOrURL fileSystemRepresentation];
-    if ((options & NSDataWritingWithoutOverwriting) != 0)
+    BOOL withoutOverwriting = (options & NSDataWritingWithoutOverwriting) != 0;
+    if (withoutOverwriting)
     {
+        // Anything at the destination, a dangling link included, makes the write fail with EEXIST. (The
+        // temporary file of an atomic write never exists, so the destination is what must not.)
         struct stat info;
-        int err = lstat(path, &info);
-        if (err != 0)
+        if (lstat([dest fileSystemRepresentation], &info) == 0)
         {
-            fd = open(path, O_WRONLY|O_TRUNC|O_CREAT, 0644);
-        }
-        else if (errorPtr != NULL)
-        {
-            *errorPtr = [NSError errorWithDomain:NSCocoaErrorDomain code:-1 userInfo:@{
-                NSLocalizedDescriptionKey: @"file already exists"
-            }];
+            if (errorPtr != NULL)
+            {
+                *errorPtr = _NSFileErrorWithErrno(EEXIST, dest, NO, nil);
+            }
+            return NO;
         }
     }
-    else
-    {
-        fd = open(path, O_WRONLY|O_TRUNC|O_CREAT, 0644);
-        if (fd == -1 && errorPtr != NULL)
-        {
-            *errorPtr = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:@{
-                NSLocalizedDescriptionKey: [NSString stringWithFormat:@"%s", strerror(errno)]
-            }];
-        }
-    }
+    // A file is created exclusively when it must not overwrite anything (also when the destination is
+    // a dangling link).
+    fd = open(path, O_WRONLY | O_CREAT | (withoutOverwriting ? O_EXCL : O_TRUNC), 0644);
     if (fd == -1)
     {
+        if (errorPtr != NULL)
+        {
+            int openErrno = errno;
+            // QUIRK: creating the temporary file of an atomic write in a missing or unwritable
+            // directory carries the user string variant "Folder" (a string, not an array, unlike
+            // copy, move, link and remove). Not documented. Evidence: black-box observation on
+            // macOS 10.14.4 and 26.7.3 (tier 2). Test: tests/nsfilemanager-cocoa-errors.m,
+            // "atomic write into an unwritable folder carries the Folder variant".
+            NSDictionary *extra = (atomic && (openErrno == ENOENT || openErrno == EACCES))
+                ? @{ @"NSUserStringVariant": @"Folder" } : nil;
+            *errorPtr = _NSFileErrorWithErrno(openErrno, dest, NO, extra);
+        }
         return NO;
     }
     uint8_t *buffer = (uint8_t *)[data bytes];
@@ -241,13 +253,11 @@ BOOL _NSWriteBytesToFile(NSData *data, id pathOrURL, NSDataWritingOptions option
             {
                 if (errorPtr != NULL)
                 {
-                    *errorPtr = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:@{
-                        NSLocalizedDescriptionKey: [NSString stringWithFormat:@"%s", strerror(errno)]
-                    }];
+                    *errorPtr = _NSFileErrorWithErrno(errno, dest, NO, nil);
                 }
             }
             close(fd);
-            if (dest != pathOrURL)
+            if (atomic)
             {
                 unlink(path);
             }
@@ -264,7 +274,7 @@ BOOL _NSWriteBytesToFile(NSData *data, id pathOrURL, NSDataWritingOptions option
         }
     }
     close(fd);
-    if (remaining == 0 && dest != pathOrURL)
+    if (remaining == 0 && atomic)
     {
         if (rename([pathOrURL fileSystemRepresentation], [dest fileSystemRepresentation]) != -1)
         {
@@ -276,16 +286,14 @@ BOOL _NSWriteBytesToFile(NSData *data, id pathOrURL, NSDataWritingOptions option
             unlink(path);
             if (errorPtr != NULL)
             {
-                *errorPtr = [NSError errorWithDomain:NSPOSIXErrorDomain code:renameErrno userInfo:@{
-                    NSLocalizedDescriptionKey: [NSString stringWithFormat:@"%s", strerror(renameErrno)]
-                }];
+                *errorPtr = _NSFileErrorWithErrno(renameErrno, dest, NO, nil);
             }
             return NO;
         }
     }
     else
     {
-        if (dest != pathOrURL)
+        if (atomic)
         {
             unlink(path);
         }

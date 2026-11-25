@@ -141,6 +141,11 @@ static inline id newDecodedNumber(NSCoder *coder)
 
 @implementation NSNumber
 
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
+
 - (Class)classForCoder
 {
     return [NSNumber self];

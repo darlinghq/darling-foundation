@@ -13,7 +13,7 @@ typedef NS_OPTIONS(NSUInteger, NSMeasurementFormatterUnitOptions) {
 // Formatting (stringFromMeasurement:, stringFromUnit:) is not implemented: it needs the localised
 // unit names and the locale's preferred unit scale, which Foundation does not have yet. NSMeasurement
 // and NSUnit exist.
-@interface NSMeasurementFormatter : NSFormatter
+@interface NSMeasurementFormatter : NSFormatter <NSSecureCoding>
 {
     NSMeasurementFormatterUnitOptions _unitOptions;
     NSFormattingUnitStyle _unitStyle;

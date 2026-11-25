@@ -48,9 +48,11 @@ set(foundation_sources
 	src/NSBundle.m
 	src/NSByteCountFormatter.m
 	src/NSCalendar.m
+	src/NSCalendarDate.m
 	src/NSCheapMutableString.m
 	src/NSClassDescription.m
 	src/NSCoder.m
+	src/NSCocoaErrorDescriptions.m
 	src/NSComparisonPredicate.m
 	src/NSComparisonPredicateOperator.m
 	src/NSCompoundPredicate.m
@@ -81,6 +83,7 @@ set(foundation_sources
 	src/NSFileCoordinator.m
 	src/NSFileHandle.m
 	src/_NSFileIO.m
+	src/_NSFileErrors.m
 	src/NSFileManager.m
 	src/NSFilesystemItemRemoveOperation.m
 	src/NSFormatter.m
@@ -268,6 +271,7 @@ set(foundation_sources
 	src/NSScriptExecutionContext.m
 	src/NSScriptStandardSuiteCommands.m
 	src/NSScriptSuiteRegistry.m
+	src/NSScriptWhoseTests.m
 	src/NSUserNotification.m
 	src/NSUserScriptTask.m
 	src/NSDateInterval.m
@@ -320,6 +324,7 @@ add_separated_framework(Foundation
 		# the finished Foundation upward, so Foundation links its first pass
 		CoreAutoLayout_firstpass
 		xml2
+		compression
 	LINK_FLAGS " -Wl,-reexport_library,${CMAKE_BINARY_DIR}/src/external/corefoundation/CoreFoundation \
 				-Wl,-reexport_library,${CMAKE_BINARY_DIR}/src/external/objc4/runtime/libobjc.A.dylib"
 )

@@ -57,7 +57,8 @@ FOUNDATION_EXPORT NSString * const NSISO8601Calendar;
 @property (readonly, copy) NSString *localeIdentifier;
 @property (readonly, copy) NSString *languageCode;
 @property (readonly, copy) NSString *languageIdentifier;
-@property (readonly, copy) NSString *countryCode;
+// Documented as optional (nil without a region); not marked nullable because this header has no nullability annotations at all.
+@property (readonly, copy) NSString *countryCode API_AVAILABLE(macos(10.12), ios(10.0), watchos(3.0), tvos(10.0));
 @property (readonly, copy) NSString *regionCode;
 @property (readonly, copy) NSString *scriptCode;
 @property (readonly, copy) NSString *variantCode;

@@ -230,6 +230,7 @@ typedef NSUInteger NSURLBookmarkFileCreationOptions;
 - (BOOL)getFileSystemRepresentation:(char *)buffer maxLength:(NSUInteger)maxBufferLength;
 - (const char *)fileSystemRepresentation NS_RETURNS_INNER_POINTER;
 @property (readonly, getter=isFileURL) BOOL fileURL;
+@property (readonly) BOOL hasDirectoryPath;
 - (NSURL *)standardizedURL;
 - (BOOL)checkResourceIsReachableAndReturnError:(NSError **)error;
 - (BOOL)isFileReferenceURL;

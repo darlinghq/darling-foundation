@@ -160,6 +160,11 @@ CF_PRIVATE
 
 @implementation NSConcretePointerArray
 
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
+
 static inline BOOL NSPointerArrayRangeCheck(NSUInteger index, NSUInteger count, NSString * const exceptionName)
 {
     if (index >= count)

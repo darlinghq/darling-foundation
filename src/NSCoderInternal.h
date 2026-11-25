@@ -51,7 +51,7 @@ enum {
 @end
 
 CF_PRIVATE
-@interface _NSKeyedCoderOldStyleArray : NSObject
+@interface _NSKeyedCoderOldStyleArray : NSObject <NSSecureCoding>
 {
     void *_addr;
     NSUInteger _count;

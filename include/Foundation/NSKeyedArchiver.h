@@ -115,6 +115,7 @@ typedef struct offsetDataStruct offsetDataStruct;
 + (id)unarchiveObjectWithFile:(NSString *)path;
 - (id)initForReadingWithData:(NSData *)data;
 - (id)initForReadingFromData:(NSData *)data error:(NSError **)error;
+@property (readwrite) BOOL requiresSecureCoding;
 @property NSDecodingFailurePolicy decodingFailurePolicy;
 @property (readonly, copy) NSError *error;
 - (void)failWithError:(NSError *)error;

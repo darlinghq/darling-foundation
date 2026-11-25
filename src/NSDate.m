@@ -64,14 +64,3 @@ OBJC_PROTOCOL_IMPL_POP
 }
 
 @end
-
-@implementation NSCalendarDate
-
-- (id)allocWithZone:(NSZone *)zone
-{
-#warning TODO implement NSCalendarDate
-    DEBUG_BREAK();
-    return nil;
-}
-
-@end

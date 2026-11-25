@@ -13,6 +13,11 @@
 
 @implementation NSPhoneNumberCheckingResult
 
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
+
 - (id)initWithRange:(NSRange)range phoneNumber:(NSString *)phoneNumber
 {
     return [self initWithRange:range phoneNumber:phoneNumber underlyingResult:nil];

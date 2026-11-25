@@ -195,6 +195,13 @@ static NSMutableSet *notificationPool = nil;
 
 - (void)recycle
 {
+    // An observer may have kept the notification it was sent: then it is no longer ours to reuse, and it
+    // keeps its name, object and userInfo until the last holder releases it.
+    if ([self retainCount] > 1)
+    {
+        [self release];
+        return;
+    }
     OSSpinLockLock(&notificationPoolLock);
     [notificationPool addObject:self];
     [name release];

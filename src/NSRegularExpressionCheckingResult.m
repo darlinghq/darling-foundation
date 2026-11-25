@@ -16,6 +16,11 @@
 
 @implementation NSRegularExpressionCheckingResult
 
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
+
 - (id)initWithRangeArray:(NSArray *)ranges regularExpression:(NSRegularExpression *)expression
 {
     NSRequestConcreteImplementation();

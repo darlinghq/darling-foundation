@@ -902,6 +902,14 @@ static size_t _encodeValueOfObjCType(NSKeyedArchiver *self, const char *type, co
             return sizeof(char);
         }
 
+        case _C_BOOL:
+        {
+            // A C99 bool is archived as a boolean value, not as an integer (macOS 26.7.3 does the same).
+            // Test: tests/keyed-archiver-objc-bool.m
+            encodeBool(self, *(bool *)addr, freshGenericKey(self));
+            return sizeof(bool);
+        }
+
         case _C_SHT:
         case _C_USHT:
         {

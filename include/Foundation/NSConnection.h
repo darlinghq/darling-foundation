@@ -80,6 +80,9 @@ typedef NSArray<NSNumber *> *NSConnectionReleasedProxyRecord;
     // Used to pass the port coder (and the message data it decodes) from whoever
     // happens to receive the message to the interested thread.
     NSMutableDictionary<NSNumber *, NSConcretePortCoder *> *_sequenceNumberToCoder;
+
+    // Appended last; the only subclass in the overlay tree (DKConnection) declares no ivars here.
+    BOOL _independentConversationQueueing;
 }
 
 @property (readonly, getter=isValid) BOOL valid;
@@ -90,6 +93,15 @@ typedef NSArray<NSNumber *> *NSConnectionReleasedProxyRecord;
 @property (readonly, retain) NSPort *receivePort;
 @property NSTimeInterval requestTimeout;
 @property NSTimeInterval replyTimeout;
+// The documented switch for handling one incoming remote message at a time per thread. NO by default.
+// Stored, not acted on: there is no per-thread request queue here to apply it to, so incoming requests are never
+// held back while another one is being handled; requests can still be nested.
+@property BOOL independentConversationQueueing;
+// Always YES: the documentation gives YES as the default and lists no setter. Several threads can share one
+// connection (a request waits for its reply on the sending thread's run loop, keyed by sequence number), with a
+// known pre-existing race: the waiting run loop is registered after the request is sent, so a reply taken in
+// between by another thread's run loop wakes nobody. Not stored, so there is no setter.
+@property (readonly) BOOL multipleThreadsEnabled;
 @property (readonly, copy) NSArray<NSRunLoopMode> *requestModes;
 
 // Creation.
@@ -133,5 +145,8 @@ typedef NSArray<NSNumber *> *NSConnectionReleasedProxyRecord;
 
 - (void) invalidate;
 - (void) runInNewThread;
+
+// Documented to do nothing, because multiple-thread support is already on (see multipleThreadsEnabled).
+- (void) enableMultipleThreads;
 
 @end

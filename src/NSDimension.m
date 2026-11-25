@@ -25,6 +25,11 @@
 
 @implementation NSDimension
 
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
+
 - (instancetype)initWithSymbol:(NSString *)symbol converter:(NSUnitConverter *)converter
 {
     self = [super initWithSymbol:symbol];

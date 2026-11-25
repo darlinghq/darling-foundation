@@ -13,6 +13,11 @@
 
 @implementation NSOrthographyCheckingResult
 
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
+
 - (id)initWithRange:(NSRange)range orthography:(NSOrthography *)orthography
 {
     self = [super init];

@@ -39,9 +39,9 @@ typedef NS_OPTIONS(NSUInteger, NSFileWrapperWritingOptions) {
 - (NSString *)addFileWrapper:(NSFileWrapper *)child;
 - (NSString *)addRegularFileWithContents:(NSData *)data preferredFilename:(NSString *)fileName;
 - (void)removeFileWrapper:(NSFileWrapper *)child;
-@property (readonly, copy) NSDictionary *fileWrappers;
-- (NSString *)keyForFileWrapper:(NSFileWrapper *)child;
-@property (readonly, copy) NSData *regularFileContents;
-@property (readonly, copy) NSURL *symbolicLinkDestinationURL;
+- (NSDictionary *)fileWrappers;
+- (NSString *)keyForFileWrapper:(NSFileWrapper *)child NS_SWIFT_NAME(keyForChildFileWrapper(_:));
+- (NSData *)regularFileContents;
+- (NSURL *)symbolicLinkDestinationURL;
 
 @end

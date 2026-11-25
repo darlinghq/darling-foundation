@@ -5,6 +5,7 @@
 //  Copyright (c) 2014 Apportable. All rights reserved.
 //
 
+#import <Foundation/FoundationErrors.h>
 #import <Foundation/NSData.h>
 #import <Foundation/NSData_Private.h>
 
@@ -24,7 +25,11 @@
 #import "NSRangeCheck.h"
 #import "_NSFileIO.h"
 #import <objc/runtime.h>
+#import <compression.h>
+#import <limits.h>
+#import <stdint.h>
 #import <stdlib.h>
+#import <string.h>
 #import <sys/mman.h>
 
 FOUNDATION_EXPORT const NSDataDeallocator NSDataDeallocatorVM = ^(void *bytes, NSUInteger length) {
@@ -851,6 +856,17 @@ OBJC_PROTOCOL_IMPL_POP
 
 - (id)initWithContentsOfFile:(NSString *)path options:(NSDataReadingOptions)readOptionsMask error:(NSError **)errorPtr
 {
+    if (path != nil && [path length] == 0)
+    {
+        // An empty path is an invalid file name, not an exception.
+        if (errorPtr != NULL)
+        {
+            *errorPtr = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileReadInvalidFileNameError
+                                        userInfo:@{NSFilePathErrorKey: path}];
+        }
+        [self release];
+        return nil;
+    }
     return [self initWithContentsOfURL:[NSURL fileURLWithPath:path] options:readOptionsMask error:errorPtr];
 }
 
@@ -1884,6 +1900,214 @@ SINGLETON_RR()
     // we'll implement more robust implementations with security in mind later on
     // for now, we just need it to work
     return [[NSData alloc] initWithBytes: bytes length: length copy: FALSE deallocator: deallocator];
+}
+
+@end
+
+// The documentation says only that the error describes why the operation failed. NSCocoaErrorDomain with code 5377
+// (NSCompressionFailedError in the Foundation headers is 5376, NSDecompressionFailedError 5377) is what macOS 26.7.3 gives
+// for every kind of failed decompression (garbage, truncated and empty input; the user info is empty). Compression
+// failures cannot be provoked on macOS: 5376 is the matching code of the header and the only guess left.
+static const NSInteger NSDataCompressionFailedCode = 5376;
+static const NSInteger NSDataDecompressionFailedCode = 5377;
+
+// An algorithm value outside the four cases raises NSInvalidArgumentException in both methods (observed on macOS
+// 26.7.3, probe data1.m of batch11b); the methods exist on macOS 10.15 and later only.
+static compression_algorithm NSDataBackendAlgorithm(NSDataCompressionAlgorithm algorithm)
+{
+    switch (algorithm)
+    {
+        case NSDataCompressionAlgorithmLZFSE: return COMPRESSION_LZFSE;
+        case NSDataCompressionAlgorithmLZ4:   return COMPRESSION_LZ4;
+        case NSDataCompressionAlgorithmLZMA:  return COMPRESSION_LZMA;
+        case NSDataCompressionAlgorithmZlib:  return COMPRESSION_ZLIB;
+    }
+    [NSException raise:NSInvalidArgumentException format:@"Unrecognized compression algorithm value: %ld", (long)algorithm];
+    return COMPRESSION_ZLIB;
+}
+
+// The largest buffer, in bytes, the backend can take: libcompression's Zlib functions pass their lengths to zlib as 32-bit
+// values, which wraps for larger buffers and yields truncated data that still looks successful.
+static size_t NSDataBackendLimit(compression_algorithm backend)
+{
+    return backend == COMPRESSION_ZLIB ? UINT_MAX : SIZE_MAX;
+}
+
+// On success *output is a malloc'ed buffer of *outputLength bytes that the caller owns.
+static BOOL NSDataEncode(const void *source, size_t sourceLength, compression_algorithm backend, uint8_t **output, size_t *outputLength)
+{
+    static const uint8_t none = 0;
+    size_t limit = NSDataBackendLimit(backend);
+    if (sourceLength > limit || sourceLength > SIZE_MAX / 2)
+    {
+        return NO;
+    }
+    // The codecs grow incompressible input by a few bytes per block; an eighth plus a constant is far more.
+    size_t capacity = sourceLength + sourceLength / 8 + 1024;
+    if (capacity > limit)
+    {
+        capacity = limit;
+    }
+    uint8_t *buffer = malloc(capacity);
+    if (buffer == NULL)
+    {
+        return NO;
+    }
+    size_t written = compression_encode_buffer(buffer, capacity, source != NULL ? source : &none, sourceLength, NULL, backend);
+    if (written == 0)
+    {
+        free(buffer);
+        return NO;
+    }
+    *output = buffer;
+    *outputLength = written;
+    return YES;
+}
+
+// QUIRK: compressing no bytes with LZ4 gives an empty stored block and the end tag (12 bytes), not the end tag alone that
+// compression_encode_buffer gives (observed on macOS 26.7.3, tier 2: probe data1.m of batch11b; both decode to nothing).
+// Test: tests/nsdata-compression.m, "empty LZ4".
+static const uint8_t NSDataEmptyLZ4Stream[12] = {'b', 'v', '4', '-', 0, 0, 0, 0, 'b', 'v', '4', '$'};
+
+// The buffer decoder returns 0 both for a corrupt stream and for a valid stream that holds no bytes. The encoder's
+// output for no bytes is a fixed stream per algorithm, so an input equal to it (or to the LZ4 form above) is the empty
+// case.
+static BOOL NSDataIsEncodedEmpty(const void *source, size_t sourceLength, compression_algorithm backend)
+{
+    if (backend == COMPRESSION_LZ4 && sourceLength == sizeof NSDataEmptyLZ4Stream && memcmp(NSDataEmptyLZ4Stream, source, sourceLength) == 0)
+    {
+        return YES;
+    }
+    uint8_t *empty = NULL;
+    size_t emptyLength = 0;
+    if (!NSDataEncode(NULL, 0, backend, &empty, &emptyLength))
+    {
+        return NO;
+    }
+    BOOL same = emptyLength == sourceLength && memcmp(empty, source, sourceLength) == 0;
+    free(empty);
+    return same;
+}
+
+// On success *output is NULL with *outputLength 0, or a malloc'ed buffer that the caller owns.
+static BOOL NSDataDecode(const void *source, size_t sourceLength, compression_algorithm backend, uint8_t **output, size_t *outputLength)
+{
+    *output = NULL;
+    *outputLength = 0;
+    // No input is not a stream: decompression fails, whatever the algorithm (observed on macOS 26.7.3).
+    if (sourceLength == 0)
+    {
+        return NO;
+    }
+    size_t limit = NSDataBackendLimit(backend);
+    if (sourceLength > limit || sourceLength > SIZE_MAX / 8)
+    {
+        return NO;
+    }
+    // A decoder says how much it wrote, not how much the stream holds. A result equal to the buffer size may be a cut-off
+    // output, so retry with twice the room. The growth stops at the backend's limit or when malloc fails.
+    size_t capacity = sourceLength * 4 + 1024;
+    if (capacity > limit)
+    {
+        capacity = limit;
+    }
+    for (;;)
+    {
+        uint8_t *buffer = malloc(capacity);
+        if (buffer == NULL)
+        {
+            return NO;
+        }
+        size_t written = compression_decode_buffer(buffer, capacity, source, sourceLength, NULL, backend);
+        if (written == 0)
+        {
+            free(buffer);
+            if (NSDataIsEncodedEmpty(source, sourceLength, backend))
+            {
+                return YES;
+            }
+            // LZMA gives 0 also when the output does not fit (see libcompression), so the room grows until the stream
+            // decodes, malloc fails or the buffer would take a quarter of the address space.
+            if (backend == COMPRESSION_LZMA && capacity < ((size_t)1 << (sizeof(size_t) * 8 - 2)) && capacity < limit)
+            {
+                capacity = capacity > limit / 2 ? limit : capacity * 2;
+                continue;
+            }
+            return NO;
+        }
+        if (written < capacity)
+        {
+            *output = buffer;
+            *outputLength = written;
+            return YES;
+        }
+        free(buffer);
+        if (capacity >= limit)
+        {
+            return NO;
+        }
+        capacity = capacity > limit / 2 ? limit : capacity * 2;
+    }
+}
+
+// Takes ownership of bytes. The result is an immutable NSData whatever the receiver is (observed on macOS 26.7.3: an
+// NSMutableData receiver gives a plain NSData).
+static id NSDataResult(NSData *receiver, uint8_t *bytes, size_t length)
+{
+    if (length == 0)
+    {
+        free(bytes);
+        return [NSData data];
+    }
+    void *fitted = realloc(bytes, length);
+    return [NSData dataWithBytesNoCopy:fitted != NULL ? fitted : bytes length:length freeWhenDone:YES];
+}
+
+static void NSDataReportFailure(NSError **error, NSInteger code)
+{
+    if (error != NULL)
+    {
+        *error = [NSError errorWithDomain:NSCocoaErrorDomain code:code userInfo:nil];
+    }
+}
+
+@implementation NSData (NSDataCompression)
+
+- (instancetype)compressedDataUsingAlgorithm:(NSDataCompressionAlgorithm)algorithm error:(NSError **)error
+{
+    compression_algorithm backend = NSDataBackendAlgorithm(algorithm);
+    uint8_t *output;
+    size_t outputLength;
+    if (backend == COMPRESSION_LZ4 && [self length] == 0)
+    {
+        output = malloc(sizeof NSDataEmptyLZ4Stream);
+        if (output == NULL)
+        {
+            NSDataReportFailure(error, NSDataCompressionFailedCode);
+            return nil;
+        }
+        memcpy(output, NSDataEmptyLZ4Stream, sizeof NSDataEmptyLZ4Stream);
+        return NSDataResult(self, output, sizeof NSDataEmptyLZ4Stream);
+    }
+    if (!NSDataEncode([self bytes], [self length], backend, &output, &outputLength))
+    {
+        NSDataReportFailure(error, NSDataCompressionFailedCode);
+        return nil;
+    }
+    return NSDataResult(self, output, outputLength);
+}
+
+- (instancetype)decompressedDataUsingAlgorithm:(NSDataCompressionAlgorithm)algorithm error:(NSError **)error
+{
+    compression_algorithm backend = NSDataBackendAlgorithm(algorithm);
+    uint8_t *output;
+    size_t outputLength;
+    if (!NSDataDecode([self bytes], [self length], backend, &output, &outputLength))
+    {
+        NSDataReportFailure(error, NSDataDecompressionFailedCode);
+        return nil;
+    }
+    return NSDataResult(self, output, outputLength);
 }
 
 @end

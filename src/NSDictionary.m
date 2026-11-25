@@ -50,6 +50,16 @@
         CFDictionaryRef plist = (CFDictionaryRef)CFPropertyListCreateWithData(kCFAllocatorDefault, data, immutable ? kCFPropertyListImmutable : kCFPropertyListMutableContainers, NULL, NULL);
         CFRelease(data);
         id dict = nil;
+        // A file whose root is not a dictionary is not a representation of one: nil, as for an unreadable file
+        if (plist != NULL && CFGetTypeID(plist) != CFDictionaryGetTypeID())
+        {
+            CFRelease(plist);
+            return nil;
+        }
+        if (plist == NULL)
+        {
+            return nil;
+        }
         if (immutable)
         {
             dict = [[NSDictionary alloc] initWithDictionary:(NSDictionary *)plist];
