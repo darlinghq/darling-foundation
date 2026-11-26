@@ -57,6 +57,7 @@ typedef NS_ENUM(NSInteger, NSProcessInfoThermalState) {
 - (NSOperatingSystemVersion)operatingSystemVersion;
 - (BOOL)isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion)version;
 @property (readonly) NSProcessInfoThermalState thermalState;
+@property (readonly, getter=isLowPowerModeEnabled) BOOL lowPowerModeEnabled;
 
 @end
 

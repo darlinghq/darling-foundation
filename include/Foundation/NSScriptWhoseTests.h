@@ -19,7 +19,7 @@
 
 #import <Foundation/NSObject.h>
 
-@class NSArray<ObjectType>, NSScriptObjectSpecifier, NSSpecifierTest;
+@class NSArray<ObjectType>, NSString, NSScriptObjectSpecifier, NSSpecifierTest;
 
 // GUESS: the numeric values are not stated in the public documentation; they follow the documented order.
 typedef NS_ENUM(NSUInteger, NSTestComparisonOperation) {
@@ -64,3 +64,21 @@ typedef NS_ENUM(NSUInteger, NSTestComparisonOperation) {
                    testObject:(id)obj2;
 
 @end
+
+NS_ASSUME_NONNULL_BEGIN
+
+// Comparisons of any two objects, through -isEqual: and -compare:
+// (https://developer.apple.com/documentation/objectivec/nsobject/nscomparisonmethods).
+@interface NSObject (NSComparisonMethods)
+- (BOOL)isEqualTo:(nullable id)object;
+- (BOOL)isLessThanOrEqualTo:(nullable id)object;
+- (BOOL)isLessThan:(nullable id)object;
+- (BOOL)isGreaterThanOrEqualTo:(nullable id)object;
+- (BOOL)isGreaterThan:(nullable id)object;
+- (BOOL)isNotEqualTo:(nullable id)object;
+- (BOOL)doesContain:(id)object;
+- (BOOL)isLike:(NSString *)object;
+- (BOOL)isCaseInsensitiveLike:(NSString *)object;
+@end
+
+NS_ASSUME_NONNULL_END

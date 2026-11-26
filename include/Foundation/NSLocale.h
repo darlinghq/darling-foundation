@@ -54,11 +54,27 @@ FOUNDATION_EXPORT NSString * const NSISO8601Calendar;
 
 @interface NSLocale (NSExtendedLocale)
 
-- (NSString *)localeIdentifier;
-- (NSString *)languageCode;
+@property (readonly, copy) NSString *localeIdentifier;
+@property (readonly, copy) NSString *languageCode;
+@property (readonly, copy) NSString *languageIdentifier;
 // Documented as optional (nil without a region); not marked nullable because this header has no nullability annotations at all.
 @property (readonly, copy) NSString *countryCode API_AVAILABLE(macos(10.12), ios(10.0), watchos(3.0), tvos(10.0));
-- (NSString *)languageIdentifier;
+@property (readonly, copy) NSString *regionCode;
+@property (readonly, copy) NSString *scriptCode;
+@property (readonly, copy) NSString *variantCode;
+@property (readonly, copy) NSCharacterSet *exemplarCharacterSet;
+@property (readonly, copy) NSString *calendarIdentifier;
+@property (readonly, copy) NSString *collationIdentifier;
+@property (readonly) BOOL usesMetricSystem;
+@property (readonly, copy) NSString *decimalSeparator;
+@property (readonly, copy) NSString *groupingSeparator;
+@property (readonly, copy) NSString *currencySymbol;
+@property (readonly, copy) NSString *currencyCode;
+@property (readonly, copy) NSString *collatorIdentifier;
+@property (readonly, copy) NSString *quotationBeginDelimiter;
+@property (readonly, copy) NSString *quotationEndDelimiter;
+@property (readonly, copy) NSString *alternateQuotationBeginDelimiter;
+@property (readonly, copy) NSString *alternateQuotationEndDelimiter;
 
 @end
 

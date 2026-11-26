@@ -109,8 +109,14 @@ static void test_unarchivedObjectOfClass(void)
     id o = [NSKeyedUnarchiver unarchivedObjectOfClass:[NSString class] fromData:good error:&err];
     CHECK([o isEqual:@"hello"] && err == nil, "matching class decodes");
 
+    // QUIRK (see NSKeyedUnarchiver.m): a root archived as a plain property-list scalar is not
+    // checked against the classes. Observed on macOS 10.14.4 and 26.7.3.
     err = nil;
     o = [NSKeyedUnarchiver unarchivedObjectOfClass:[NSNumber class] fromData:good error:&err];
+    CHECK([o isEqual:@"hello"] && err == nil, "a string root decodes whatever the class");
+
+    err = nil;
+    o = [NSKeyedUnarchiver unarchivedObjectOfClass:[NSNumber class] fromData:archiveRoot(@[ @"x" ]) error:&err];
     CHECK(o == nil && err != nil, "wrong root class fails");
     CHECK([err.domain isEqual:NSCocoaErrorDomain] && err.code == kCoderReadCorrupt,
           "wrong class: kCoderReadCorrupt, got %ld", (long)err.code);

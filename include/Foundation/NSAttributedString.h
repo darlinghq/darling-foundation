@@ -100,6 +100,80 @@ FOUNDATION_EXPORT const NSAttributedStringKey NSInlinePresentationIntentAttribut
 // Value: an NSString holding a BCP-47 language identifier.
 FOUNDATION_EXPORT const NSAttributedStringKey NSLanguageIdentifierAttributeName NS_SWIFT_NAME(languageIdentifier);
 
+NS_ASSUME_NONNULL_BEGIN
+
+@class NSArray<ObjectType>, NSNumber;
+
+typedef NS_ENUM(NSInteger, NSPresentationIntentKind) {
+    NSPresentationIntentKindParagraph,
+    NSPresentationIntentKindHeader,
+    NSPresentationIntentKindOrderedList,
+    NSPresentationIntentKindUnorderedList,
+    NSPresentationIntentKindListItem,
+    NSPresentationIntentKindCodeBlock,
+    NSPresentationIntentKindBlockQuote,
+    NSPresentationIntentKindThematicBreak,
+    NSPresentationIntentKindTable,
+    NSPresentationIntentKindTableHeaderRow,
+    NSPresentationIntentKindTableRow,
+    NSPresentationIntentKindTableCell
+};
+
+typedef NS_ENUM(NSInteger, NSPresentationIntentTableColumnAlignment) {
+    NSPresentationIntentTableColumnAlignmentLeft,
+    NSPresentationIntentTableColumnAlignmentCenter,
+    NSPresentationIntentTableColumnAlignmentRight
+};
+
+// The block-level role of a run of text (a paragraph, a list item, ...) and
+// the blocks that enclose it.
+@interface NSPresentationIntent : NSObject <NSCopying, NSSecureCoding> {
+    // here, not in the implementation, as i386 has no non-fragile ivars
+    NSPresentationIntentKind _kind;
+    NSPresentationIntent *_parent;
+    NSInteger _identity;
+    // the kind's own value: a header's level, a list item's ordinal, a table
+    // row's row, a table cell's column or a table's column count
+    NSInteger _value;
+    NSString *_languageHint;
+    NSArray<NSNumber *> *_columnAlignments;
+}
+
+@property (readonly) NSPresentationIntentKind intentKind;
+@property (readonly, nullable, strong) NSPresentationIntent *parentIntent;
+
++ (NSPresentationIntent *)paragraphIntentWithIdentity:(NSInteger)identity nestedInsideIntent:(nullable NSPresentationIntent *)parent;
++ (NSPresentationIntent *)headerIntentWithIdentity:(NSInteger)identity level:(NSInteger)level nestedInsideIntent:(nullable NSPresentationIntent *)parent;
++ (NSPresentationIntent *)codeBlockIntentWithIdentity:(NSInteger)identity languageHint:(nullable NSString *)languageHint nestedInsideIntent:(nullable NSPresentationIntent *)parent;
++ (NSPresentationIntent *)thematicBreakIntentWithIdentity:(NSInteger)identity nestedInsideIntent:(nullable NSPresentationIntent *)parent;
++ (NSPresentationIntent *)orderedListIntentWithIdentity:(NSInteger)identity nestedInsideIntent:(nullable NSPresentationIntent *)parent;
++ (NSPresentationIntent *)unorderedListIntentWithIdentity:(NSInteger)identity nestedInsideIntent:(nullable NSPresentationIntent *)parent;
++ (NSPresentationIntent *)listItemIntentWithIdentity:(NSInteger)identity ordinal:(NSInteger)ordinal nestedInsideIntent:(nullable NSPresentationIntent *)parent;
++ (NSPresentationIntent *)blockQuoteIntentWithIdentity:(NSInteger)identity nestedInsideIntent:(nullable NSPresentationIntent *)parent;
++ (NSPresentationIntent *)tableIntentWithIdentity:(NSInteger)identity columnCount:(NSInteger)columnCount alignments:(NSArray<NSNumber *> *)alignments nestedInsideIntent:(nullable NSPresentationIntent *)parent;
++ (NSPresentationIntent *)tableHeaderRowIntentWithIdentity:(NSInteger)identity nestedInsideIntent:(nullable NSPresentationIntent *)parent;
++ (NSPresentationIntent *)tableRowIntentWithIdentity:(NSInteger)identity row:(NSInteger)row nestedInsideIntent:(nullable NSPresentationIntent *)parent;
++ (NSPresentationIntent *)tableCellIntentWithIdentity:(NSInteger)identity column:(NSInteger)column nestedInsideIntent:(nullable NSPresentationIntent *)parent;
+
+@property (readonly) NSInteger identity;
+@property (readonly) NSInteger ordinal;
+@property (readonly, nullable) NSArray<NSNumber *> *columnAlignments;
+@property (readonly) NSInteger columnCount;
+@property (readonly) NSInteger headerLevel;
+@property (readonly, nullable, copy) NSString *languageHint;
+@property (readonly) NSInteger column;
+@property (readonly) NSInteger row;
+@property (readonly) NSInteger indentationLevel;
+
+- (BOOL)isEquivalentToPresentationIntent:(NSPresentationIntent *)other;
+
+@end
+
+// Value: an NSPresentationIntent.
+FOUNDATION_EXPORT const NSAttributedStringKey NSPresentationIntentAttributeName NS_SWIFT_NAME(presentationIntent);
+
+NS_ASSUME_NONNULL_END
+
 @interface NSMutableAttributedString (NSMutableAttributedStringFormatting)
 
 - (void)appendLocalizedFormat:(NSAttributedString *)format, ...;

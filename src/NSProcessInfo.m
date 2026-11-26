@@ -353,6 +353,13 @@ SINGLETON_RR()
 	}
 }
 
+- (BOOL)isLowPowerModeEnabled
+{
+	/* Linux has no low power mode for Darling to follow, so it is never on and
+	 * NSProcessInfoPowerStateDidChangeNotification is never posted. */
+	return NO;
+}
+
 - (NSProcessInfoThermalState)thermalState
 {
 	/* There is no thermal-pressure source on Linux; report Nominal, so

@@ -5,7 +5,7 @@
 
 @class NSArray, NSIndexSet, NSLocale, NSSet, NSString;
 
-@interface NSOrderedSet : NSObject <NSCopying, NSMutableCopying, NSSecureCoding, NSFastEnumeration>
+@interface NSOrderedSet<__covariant ObjectType> : NSObject <NSCopying, NSMutableCopying, NSSecureCoding, NSFastEnumeration>
 
 + (instancetype)orderedSet;
 + (instancetype)orderedSetWithObject:(id)object;
@@ -69,7 +69,7 @@
 
 @end
 
-@interface NSMutableOrderedSet : NSOrderedSet
+@interface NSMutableOrderedSet<ObjectType> : NSOrderedSet<ObjectType>
 
 - (void)insertObject:(id)object atIndex:(NSUInteger)idx;
 - (void)removeObjectAtIndex:(NSUInteger)idx;

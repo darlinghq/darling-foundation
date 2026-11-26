@@ -89,6 +89,7 @@
 #import <Foundation/NSXMLParser.h>
 #import <Foundation/NSZone.h>
 #import <Foundation/NSExtensionContext.h>
+#import <Foundation/NSExtensionItem.h>
 #import <Foundation/NSItemProvider.h>
 #import <Foundation/NSISO8601DateFormatter.h>
 #import <Foundation/NSScriptObjectSpecifiers.h>

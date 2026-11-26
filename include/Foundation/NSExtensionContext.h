@@ -31,9 +31,3 @@ FOUNDATION_EXPORT NSString * const NSExtensionPointName;
 @interface NSExtensionContext : NSObject
 
 @end
-
-/* Undocumented */
-@interface NSExtension : NSObject
-
-@end
-/* End undocumented */

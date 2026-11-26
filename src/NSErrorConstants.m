@@ -28,3 +28,4 @@ NSString *const NSURLErrorKey = @"NSURL";
 NSString *const NSFilePathErrorKey = @"NSFilePath";
 NSString *const NSDebugDescriptionErrorKey = @"NSDebugDescription";
 NSString *const NSLocalizedFailureErrorKey = @"NSLocalizedFailure";
+NSString *const NSMultipleUnderlyingErrorsKey = @"NSMultipleUnderlyingErrorsKey";
