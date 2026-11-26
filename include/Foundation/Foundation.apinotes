@@ -19,38 +19,6 @@ Classes:
 # As on macOS, the -initWith<Type>: initializers are all NSNumber(value:). -initWithLong: and
 # -initWithUnsignedLong: are hidden: they would duplicate init(value: Int) and init(value: UInt).
 - Name: NSNumber
-  # The SDK's Swift names: intValue is the NSInteger one, the C-int one is int32Value.
-  Properties:
-  - Name: charValue
-    PropertyKind: Instance
-    SwiftName: int8Value
-  - Name: unsignedCharValue
-    PropertyKind: Instance
-    SwiftName: uint8Value
-  - Name: shortValue
-    PropertyKind: Instance
-    SwiftName: int16Value
-  - Name: unsignedShortValue
-    PropertyKind: Instance
-    SwiftName: uint16Value
-  - Name: intValue
-    PropertyKind: Instance
-    SwiftName: int32Value
-  - Name: unsignedIntValue
-    PropertyKind: Instance
-    SwiftName: uint32Value
-  - Name: longLongValue
-    PropertyKind: Instance
-    SwiftName: int64Value
-  - Name: unsignedLongLongValue
-    PropertyKind: Instance
-    SwiftName: uint64Value
-  - Name: integerValue
-    PropertyKind: Instance
-    SwiftName: intValue
-  - Name: unsignedIntegerValue
-    PropertyKind: Instance
-    SwiftName: uintValue
   Methods:
   - Selector: 'initWithChar:'
     MethodKind: Instance
