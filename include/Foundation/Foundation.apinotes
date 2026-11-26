@@ -14,9 +14,43 @@ Classes:
   SwiftBridge: Swift.Set
 - Name: NSNotification
   SwiftBridge: Foundation.Notification
+- Name: NSIndexPath
+  SwiftBridge: Foundation.IndexPath
 # As on macOS, the -initWith<Type>: initializers are all NSNumber(value:). -initWithLong: and
 # -initWithUnsignedLong: are hidden: they would duplicate init(value: Int) and init(value: UInt).
 - Name: NSNumber
+  # The SDK's Swift names: intValue is the NSInteger one, the C-int one is int32Value.
+  Properties:
+  - Name: charValue
+    PropertyKind: Instance
+    SwiftName: int8Value
+  - Name: unsignedCharValue
+    PropertyKind: Instance
+    SwiftName: uint8Value
+  - Name: shortValue
+    PropertyKind: Instance
+    SwiftName: int16Value
+  - Name: unsignedShortValue
+    PropertyKind: Instance
+    SwiftName: uint16Value
+  - Name: intValue
+    PropertyKind: Instance
+    SwiftName: int32Value
+  - Name: unsignedIntValue
+    PropertyKind: Instance
+    SwiftName: uint32Value
+  - Name: longLongValue
+    PropertyKind: Instance
+    SwiftName: int64Value
+  - Name: unsignedLongLongValue
+    PropertyKind: Instance
+    SwiftName: uint64Value
+  - Name: integerValue
+    PropertyKind: Instance
+    SwiftName: intValue
+  - Name: unsignedIntegerValue
+    PropertyKind: Instance
+    SwiftName: uintValue
   Methods:
   - Selector: 'initWithChar:'
     MethodKind: Instance
@@ -98,6 +132,34 @@ Classes:
   SwiftName: Bundle
 - Name: NSUserDefaults
   SwiftName: UserDefaults
+  Methods:
+  - Selector: 'setObject:forKey:'
+    MethodKind: Instance
+    SwiftName: 'set(_:forKey:)'
+  - Selector: 'setInteger:forKey:'
+    MethodKind: Instance
+    SwiftName: 'set(_:forKey:)'
+  - Selector: 'setFloat:forKey:'
+    MethodKind: Instance
+    SwiftName: 'set(_:forKey:)'
+  - Selector: 'setDouble:forKey:'
+    MethodKind: Instance
+    SwiftName: 'set(_:forKey:)'
+  - Selector: 'setBool:forKey:'
+    MethodKind: Instance
+    SwiftName: 'set(_:forKey:)'
+  - Selector: 'setURL:forKey:'
+    MethodKind: Instance
+    SwiftName: 'set(_:forKey:)'
+# C int keeps a name of its own, as in the SDK, so encode(Int32(x), forKey:) means encodeInt32.
+- Name: NSCoder
+  Methods:
+  - Selector: 'encodeInt:forKey:'
+    MethodKind: Instance
+    SwiftName: 'encodeCInt(_:forKey:)'
+  - Selector: 'decodeIntForKey:'
+    MethodKind: Instance
+    SwiftName: 'decodeCInt(forKey:)'
 - Name: NSThread
   SwiftName: Thread
 - Name: NSScanner
