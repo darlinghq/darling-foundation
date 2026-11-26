@@ -56,7 +56,7 @@ typedef NS_ENUM(NSInteger, NSDecodingFailurePolicy) {
 - (const uint8_t *)decodeBytesForKey:(NSString *)key returnedLength:(NSUInteger *)len NS_RETURNS_INNER_POINTER;
 - (void)encodeInteger:(NSInteger)value forKey:(NSString *)key;
 - (NSInteger)decodeIntegerForKey:(NSString *)key;
-- (BOOL)requiresSecureCoding;
+@property (readonly) BOOL requiresSecureCoding;
 - (id)decodeObjectOfClass:(Class)aClass forKey:(NSString *)key;
 - (nullable id)decodeObjectOfClasses:(nullable NSSet<Class> *)classes forKey:(NSString *)key;
 - (id)decodePropertyListForKey:(NSString *)key;
