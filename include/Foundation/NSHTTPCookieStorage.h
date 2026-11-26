@@ -1,6 +1,6 @@
 #import <Foundation/NSObject.h>
 
-@class NSArray, NSDate, NSHTTPCookie, NSURL;
+@class NSArray, NSDate, NSHTTPCookie, NSURL, NSURLSessionTask;
 
 typedef NS_ENUM(NSUInteger, NSHTTPCookieAcceptPolicy) {
     NSHTTPCookieAcceptPolicyAlways,
@@ -11,12 +11,14 @@ typedef NS_ENUM(NSUInteger, NSHTTPCookieAcceptPolicy) {
 FOUNDATION_EXPORT NSString * const NSHTTPCookieManagerAcceptPolicyChangedNotification;
 FOUNDATION_EXPORT NSString * const NSHTTPCookieManagerCookiesChangedNotification;
 
-typedef struct __CFHTTPCookieStorage *CFHTTPCookieStorageRef;
+@class NSHTTPCookieStorageInternal;
 
+// The one ivar of Apple's public header: the storage's state lives in an
+// object of CFNetwork's private class.
 @interface NSHTTPCookieStorage : NSObject
 {
-    CFHTTPCookieStorageRef _storage;
-    NSHTTPCookieAcceptPolicy _acceptPolicy;
+@private
+    NSHTTPCookieStorageInternal *_internal;
 }
 
 + (NSHTTPCookieStorage *)sharedHTTPCookieStorage;
@@ -31,4 +33,11 @@ typedef struct __CFHTTPCookieStorage *CFHTTPCookieStorageRef;
 - (void)removeCookiesSinceDate:(NSDate *)date;
 - (NSArray*)sortedCookiesUsingDescriptors:(NSArray*) sortOrder;
 
+@end
+
+// The cookies of a task's requests and responses; NSURLSession goes through
+// these, so a subclass can see and change them.
+@interface NSHTTPCookieStorage (NSURLSessionTaskAdditions)
+- (void)storeCookies:(NSArray *)cookies forTask:(NSURLSessionTask *)task;
+- (void)getCookiesForTask:(NSURLSessionTask *)task completionHandler:(void (^)(NSArray *cookies))completionHandler;
 @end

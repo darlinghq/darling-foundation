@@ -228,3 +228,14 @@ static NSArray *_NSByteCountFormatterUnits;
 }
 
 @end
+
+// Private (Darling): the localized description of a file size, such as
+// "12 KB", as NSByteCountFormatterCountStyleFile gives it. Only the defaults
+// of the other parameters are known (a maximum displayed value of 0 and no
+// options, which is how WebKit calls it); other values are treated like them.
+NSString *NSLocalizedFileSizeDescription(uint64_t size, uint64_t maximumDisplayedValue, uint64_t options)
+{
+    long long byteCount = size > (uint64_t)LLONG_MAX ? LLONG_MAX : (long long)size;
+
+    return [NSByteCountFormatter stringFromByteCount:byteCount countStyle:NSByteCountFormatterCountStyleFile];
+}

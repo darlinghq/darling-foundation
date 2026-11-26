@@ -103,8 +103,8 @@ FOUNDATION_EXPORT NSString * const NSInvocationOperationCancelledException;
 
 @property NSQualityOfService qualityOfService;
 
-+ (id)currentQueue;
-+ (id)mainQueue;
+@property (class, readonly, strong) NSOperationQueue *currentQueue;
+@property (class, readonly, strong) NSOperationQueue *mainQueue;
 - (void)addOperation:(NSOperation *)op;
 - (void)addOperations:(NSArray *)ops waitUntilFinished:(BOOL)wait;
 #if NS_BLOCKS_AVAILABLE
@@ -115,6 +115,9 @@ FOUNDATION_EXPORT NSString * const NSInvocationOperationCancelledException;
 @property NSInteger maxConcurrentOperationCount;
 @property (getter=isSuspended) BOOL suspended;
 @property (copy) NSString *name;
+// The dispatch queue the operations run on (the main queue's for the main
+// operation queue); it can be set only while the queue has no operations.
+@property (assign) dispatch_queue_t underlyingQueue;
 - (void)cancelAllOperations;
 - (void)waitUntilAllOperationsAreFinished;
 

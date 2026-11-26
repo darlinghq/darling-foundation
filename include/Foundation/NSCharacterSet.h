@@ -11,29 +11,29 @@ enum {
 
 @interface NSCharacterSet : NSObject <NSCopying, NSMutableCopying, NSSecureCoding>
 
-+ (id)controlCharacterSet;
-+ (id)whitespaceCharacterSet;
-+ (id)whitespaceAndNewlineCharacterSet;
-+ (id)decimalDigitCharacterSet;
-+ (id)letterCharacterSet;
-+ (id)lowercaseLetterCharacterSet;
-+ (id)uppercaseLetterCharacterSet;
-+ (id)nonBaseCharacterSet;
-+ (id)alphanumericCharacterSet;
-+ (id)decomposableCharacterSet;
-+ (id)illegalCharacterSet;
-+ (id)punctuationCharacterSet;
-+ (id)capitalizedLetterCharacterSet;
-+ (id)symbolCharacterSet;
-+ (id)newlineCharacterSet;
-+ (id)characterSetWithRange:(NSRange)range;
-+ (id)characterSetWithCharactersInString:(NSString *)string;
-+ (id)characterSetWithBitmapRepresentation:(NSData *)data;
-+ (id)characterSetWithContentsOfFile:(NSString *)path;
+@property (class, readonly, copy) NSCharacterSet *controlCharacterSet;
+@property (class, readonly, copy) NSCharacterSet *whitespaceCharacterSet;
+@property (class, readonly, copy) NSCharacterSet *whitespaceAndNewlineCharacterSet;
+@property (class, readonly, copy) NSCharacterSet *decimalDigitCharacterSet;
+@property (class, readonly, copy) NSCharacterSet *letterCharacterSet;
+@property (class, readonly, copy) NSCharacterSet *lowercaseLetterCharacterSet;
+@property (class, readonly, copy) NSCharacterSet *uppercaseLetterCharacterSet;
+@property (class, readonly, copy) NSCharacterSet *nonBaseCharacterSet;
+@property (class, readonly, copy) NSCharacterSet *alphanumericCharacterSet;
+@property (class, readonly, copy) NSCharacterSet *decomposableCharacterSet;
+@property (class, readonly, copy) NSCharacterSet *illegalCharacterSet;
+@property (class, readonly, copy) NSCharacterSet *punctuationCharacterSet;
+@property (class, readonly, copy) NSCharacterSet *capitalizedLetterCharacterSet;
+@property (class, readonly, copy) NSCharacterSet *symbolCharacterSet;
+@property (class, readonly, copy) NSCharacterSet *newlineCharacterSet;
++ (NSCharacterSet *)characterSetWithRange:(NSRange)range;
++ (NSCharacterSet *)characterSetWithCharactersInString:(NSString *)string;
++ (NSCharacterSet *)characterSetWithBitmapRepresentation:(NSData *)data;
++ (NSCharacterSet *)characterSetWithContentsOfFile:(NSString *)path;
 
 - (BOOL)characterIsMember:(unichar)character;
-- (NSData *)bitmapRepresentation;
-- (NSCharacterSet *)invertedSet;
+@property (readonly, copy) NSData *bitmapRepresentation;
+@property (readonly, copy) NSCharacterSet *invertedSet;
 - (BOOL)longCharacterIsMember:(UTF32Char)character;
 - (BOOL)isSupersetOfSet:(NSCharacterSet *)other;
 - (BOOL)hasMemberInPlane:(uint8_t)plane;
@@ -49,5 +49,26 @@ enum {
 - (void)formUnionWithCharacterSet:(NSCharacterSet *)other;
 - (void)formIntersectionWithCharacterSet:(NSCharacterSet *)other;
 - (void)invert;
+
+// The same sets as NSCharacterSet's, mutable.
++ (NSMutableCharacterSet *)controlCharacterSet;
++ (NSMutableCharacterSet *)whitespaceCharacterSet;
++ (NSMutableCharacterSet *)whitespaceAndNewlineCharacterSet;
++ (NSMutableCharacterSet *)decimalDigitCharacterSet;
++ (NSMutableCharacterSet *)letterCharacterSet;
++ (NSMutableCharacterSet *)lowercaseLetterCharacterSet;
++ (NSMutableCharacterSet *)uppercaseLetterCharacterSet;
++ (NSMutableCharacterSet *)nonBaseCharacterSet;
++ (NSMutableCharacterSet *)alphanumericCharacterSet;
++ (NSMutableCharacterSet *)decomposableCharacterSet;
++ (NSMutableCharacterSet *)illegalCharacterSet;
++ (NSMutableCharacterSet *)punctuationCharacterSet;
++ (NSMutableCharacterSet *)capitalizedLetterCharacterSet;
++ (NSMutableCharacterSet *)symbolCharacterSet;
++ (NSMutableCharacterSet *)newlineCharacterSet;
++ (NSMutableCharacterSet *)characterSetWithRange:(NSRange)range;
++ (NSMutableCharacterSet *)characterSetWithCharactersInString:(NSString *)string;
++ (NSMutableCharacterSet *)characterSetWithBitmapRepresentation:(NSData *)data;
++ (NSMutableCharacterSet *)characterSetWithContentsOfFile:(NSString *)path;
 
 @end

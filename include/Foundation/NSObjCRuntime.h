@@ -188,42 +188,41 @@
 #import <AvailabilityMacros.h>
 #import <Availability.h>
 
-#define NS_AVAILABLE(_mac, _ios) __OSX_AVAILABLE_STARTING(__MAC_##_mac, __IPHONE_##_ios)
-#define NS_AVAILABLE_MAC(_mac) __OSX_AVAILABLE_STARTING(__MAC_##_mac, __IPHONE_NA)
-#define NS_AVAILABLE_IOS(_ios) __OSX_AVAILABLE_STARTING(__MAC_NA, __IPHONE_##_ios)
-#define NS_DEPRECATED(_macIntro, _macDep, _iosIntro, _iosDep) __OSX_AVAILABLE_BUT_DEPRECATED(__MAC_##_macIntro, __MAC_##_macDep, __IPHONE_##_iosIntro, __IPHONE_##_iosDep)
-#define NS_DEPRECATED_IOS(_iosIntro, _iosDep) __OSX_AVAILABLE_BUT_DEPRECATED(__MAC_NA, __MAC_NA, __IPHONE_##_iosIntro, __IPHONE_##_iosDep)
+#include <CoreFoundation/CFAvailability.h>
+
+// The availability macros take the same arguments as macOS's: the deprecation
+// ones end with an optional message. They are CoreFoundation's under these names.
+#define NS_AVAILABLE(_mac, _ios) CF_AVAILABLE(_mac, _ios)
+#define NS_AVAILABLE_MAC(_mac) CF_AVAILABLE_MAC(_mac)
+#define NS_AVAILABLE_IOS(_ios) CF_AVAILABLE_IOS(_ios)
+#define NS_DEPRECATED(_macIntro, _macDep, _iosIntro, _iosDep, ...) CF_DEPRECATED(_macIntro, _macDep, _iosIntro, _iosDep, __VA_ARGS__)
+#define NS_DEPRECATED_IOS(_iosIntro, _iosDep, ...) CF_DEPRECATED_IOS(_iosIntro, _iosDep, __VA_ARGS__)
 
 #define NS_AVAILABLE_IPHONE(_ios) NS_AVAILABLE_IOS(_ios)
 #define NS_DEPRECATED_IPHONE(_iosIntro, _iosDep) NS_DEPRECATED_IOS(_iosIntro, _iosDep)
+
+#define NS_ENUM_AVAILABLE(_mac, _ios) CF_ENUM_AVAILABLE(_mac, _ios)
+#define NS_ENUM_AVAILABLE_MAC(_mac) CF_ENUM_AVAILABLE_MAC(_mac)
+#define NS_ENUM_AVAILABLE_IOS(_ios) CF_ENUM_AVAILABLE_IOS(_ios)
+#define NS_ENUM_DEPRECATED(_macIntro, _macDep, _iosIntro, _iosDep, ...) CF_ENUM_DEPRECATED(_macIntro, _macDep, _iosIntro, _iosDep, __VA_ARGS__)
+#define NS_ENUM_DEPRECATED_MAC(_macIntro, _macDep, ...) CF_ENUM_DEPRECATED_MAC(_macIntro, _macDep, __VA_ARGS__)
+#define NS_ENUM_DEPRECATED_IOS(_iosIntro, _iosDep, ...) CF_ENUM_DEPRECATED_IOS(_iosIntro, _iosDep, __VA_ARGS__)
 
 #if (__MAC_OS_X_VERSION_MIN_REQUIRED >= __MAC_10_6 || __IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_3_1) && \
     ((__has_feature(objc_weak_class) || \
      (defined(__llvm__) && defined(__APPLE_CC__) && (__APPLE_CC__ >= 5658)) || \
      (defined(__APPLE_CC__) && (__APPLE_CC__ >= 5666))))
-#define NS_CLASS_AVAILABLE(_mac, _ios) __attribute__((visibility("default"))) __OSX_AVAILABLE_STARTING(__MAC_##_mac, __IPHONE_##_ios)
+#define NS_CLASS_AVAILABLE(_mac, _ios) __attribute__((visibility("default"))) NS_AVAILABLE(_mac, _ios)
+#define NS_CLASS_DEPRECATED(_mac, _macDep, _ios, _iosDep, ...) __attribute__((visibility("default"))) NS_DEPRECATED(_mac, _macDep, _ios, _iosDep, __VA_ARGS__)
 #else
 #define NS_CLASS_AVAILABLE(_mac, _ios)
+#define NS_CLASS_DEPRECATED(_mac, _macDep, _ios, _iosDep, ...)
 #endif
 
 #define NS_CLASS_AVAILABLE_IOS(_ios) NS_CLASS_AVAILABLE(NA, _ios)
 #define NS_CLASS_AVAILABLE_MAC(_mac) NS_CLASS_AVAILABLE(_mac, NA)
-
-#if __has_feature(enumerator_attributes) && __has_attribute(availability)
-#define NS_ENUM_AVAILABLE(_mac, _ios) __OSX_AVAILABLE_STARTING(__MAC_##_mac, __IPHONE_##_ios)
-#define NS_ENUM_AVAILABLE_MAC(_mac) __OSX_AVAILABLE_STARTING(__MAC_##_mac, __IPHONE_NA)
-#define NS_ENUM_AVAILABLE_IOS(_ios) __OSX_AVAILABLE_STARTING(__MAC_NA, __IPHONE_##_ios)
-#define NS_ENUM_DEPRECATED(_macIntro, _macDep, _iosIntro, _iosDep) __OSX_AVAILABLE_BUT_DEPRECATED(__MAC_##_macIntro, __MAC_##_macDep, __IPHONE_##_iosIntro, __IPHONE_##_iosDep)
-#define NS_ENUM_DEPRECATED_MAC(_macIntro, _macDep) __OSX_AVAILABLE_BUT_DEPRECATED(__MAC_##_macIntro, __MAC_##_macDep, __IPHONE_NA, __IPHONE_NA)
-#define NS_ENUM_DEPRECATED_IOS(_iosIntro, _iosDep) __OSX_AVAILABLE_BUT_DEPRECATED(__MAC_NA, __MAC_NA, __IPHONE_##_iosIntro, __IPHONE_##_iosDep)
-#else
-#define NS_ENUM_AVAILABLE(_mac, _ios)
-#define NS_ENUM_AVAILABLE_MAC(_mac)
-#define NS_ENUM_AVAILABLE_IOS(_ios)
-#define NS_ENUM_DEPRECATED(_macIntro, _macDep, _iosIntro, _iosDep)
-#define NS_ENUM_DEPRECATED_MAC(_macIntro, _macDep)
-#define NS_ENUM_DEPRECATED_IOS(_iosIntro, _iosDep)
-#endif
+#define NS_CLASS_DEPRECATED_MAC(_macIntro, _macDep, ...) NS_CLASS_DEPRECATED(_macIntro, _macDep, NA, NA, __VA_ARGS__)
+#define NS_CLASS_DEPRECATED_IOS(_iosIntro, _iosDep, ...) NS_CLASS_DEPRECATED(NA, NA, _iosIntro, _iosDep, __VA_ARGS__)
 
 #define NS_NOESCAPE CF_NOESCAPE
 
@@ -235,6 +234,46 @@
 #define NS_SWIFT_SENDABLE __attribute__((swift_attr("@Sendable")))
 #else
 #define NS_SWIFT_SENDABLE
+#endif
+#endif
+
+// Swift concurrency annotations: they matter only to Swift's importer, and
+// expand to nothing for a compiler without the attributes (see Clang's
+// documentation of swift_attr, swift_async, swift_async_name and
+// swift_async_error).
+#ifndef NS_SWIFT_UI_ACTOR
+#if __has_attribute(swift_attr)
+#define NS_SWIFT_UI_ACTOR __attribute__((swift_attr("@UIActor")))
+#define NS_SWIFT_NONISOLATED __attribute__((swift_attr("nonisolated")))
+#else
+#define NS_SWIFT_UI_ACTOR
+#define NS_SWIFT_NONISOLATED
+#endif
+#endif
+
+#ifndef NS_SWIFT_ASYNC
+#if __has_attribute(swift_async)
+#define NS_SWIFT_ASYNC(_completionHandlerIndex) __attribute__((swift_async(not_swift_private, _completionHandlerIndex)))
+#define NS_SWIFT_DISABLE_ASYNC __attribute__((swift_async(none)))
+#else
+#define NS_SWIFT_ASYNC(_completionHandlerIndex)
+#define NS_SWIFT_DISABLE_ASYNC
+#endif
+#endif
+
+#ifndef NS_SWIFT_ASYNC_NAME
+#if __has_attribute(swift_async_name)
+#define NS_SWIFT_ASYNC_NAME(_name) __attribute__((swift_async_name(#_name)))
+#else
+#define NS_SWIFT_ASYNC_NAME(_name)
+#endif
+#endif
+
+#ifndef NS_SWIFT_ASYNC_THROWS_ON_FALSE
+#if __has_attribute(swift_async_error)
+#define NS_SWIFT_ASYNC_THROWS_ON_FALSE(_flagIndex) __attribute__((swift_async_error(zero_argument, _flagIndex)))
+#else
+#define NS_SWIFT_ASYNC_THROWS_ON_FALSE(_flagIndex)
 #endif
 #endif
 

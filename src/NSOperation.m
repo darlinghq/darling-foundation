@@ -42,6 +42,8 @@ typedef NSUInteger _NSOperationState;
 @interface _NSOperationQueueInternal : NSObject {
 @package
     dispatch_queue_t _schedule_queue;
+    // The queue set as underlyingQueue, or NULL.
+    dispatch_queue_t _underlying_queue;
     NSString *_name;
 }
 
@@ -687,6 +689,8 @@ static char NSOperationNameKey;
 {
     dispatch_release(_schedule_queue);
     _schedule_queue = NULL;
+    if (_underlying_queue)
+        dispatch_release(_underlying_queue);
     [_name release];
     _name = nil;
     [super dealloc];
@@ -1127,6 +1131,10 @@ static NSComparisonResult compareOperationEffectivePriorities(id obj1, id obj2, 
             {
                 dispatch_async(dispatch_get_main_queue(), start);
             }
+            else if (_internal->_underlying_queue)
+            {
+                dispatch_async(_internal->_underlying_queue, start);
+            }
             else
             {
                 dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), start);
@@ -1138,17 +1146,42 @@ static NSComparisonResult compareOperationEffectivePriorities(id obj1, id obj2, 
     pthread_mutex_unlock(&_queuelock);
 }
 
+// The dispatch queue the operations run on: the main queue for the main
+// operation queue, and otherwise the one set, if any.
 - (dispatch_queue_t)underlyingQueue
 {
-    return _internal->_schedule_queue;
+    if (_isMainQueue)
+        return dispatch_get_main_queue();
+    pthread_mutex_lock(&_queuelock);
+    dispatch_queue_t queue = _internal->_underlying_queue;
+    pthread_mutex_unlock(&_queuelock);
+    return queue;
 }
 
 - (void)setUnderlyingQueue: (dispatch_queue_t)underlyingQueue
 {
-    dispatch_queue_t oldQueue = _internal->_schedule_queue;
-    dispatch_retain(underlyingQueue);
-    _internal->_schedule_queue = underlyingQueue;
-    dispatch_release(oldQueue);
+    // QUIRK: setting the main operation queue's underlying queue is ignored
+    // rather than refused; it keeps the main dispatch queue. Evidence:
+    // black-box observation on macOS 26.7.3 and Mac OS X 10.14.4 (tier 2).
+    // Test: "quirk: the main queue keeps the main dispatch queue" in
+    // tests/nsoperationqueue-underlying-queue.m.
+    if (_isMainQueue)
+        return;
+
+    pthread_mutex_lock(&_queuelock);
+    if ([_operations count] + [_pendingOperations count] != 0)
+    {
+        pthread_mutex_unlock(&_queuelock);
+        [NSException raise: NSInvalidArgumentException
+                    format: @"The underlying queue of an operation queue that has operations cannot change"];
+    }
+    dispatch_queue_t oldQueue = _internal->_underlying_queue;
+    if (underlyingQueue)
+        dispatch_retain(underlyingQueue);
+    _internal->_underlying_queue = underlyingQueue;
+    pthread_mutex_unlock(&_queuelock);
+    if (oldQueue)
+        dispatch_release(oldQueue);
 }
 
 @end

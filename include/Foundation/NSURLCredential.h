@@ -6,7 +6,8 @@
 typedef NS_ENUM(NSUInteger, NSURLCredentialPersistence) {
     NSURLCredentialPersistenceNone,
     NSURLCredentialPersistenceForSession,
-    NSURLCredentialPersistencePermanent
+    NSURLCredentialPersistencePermanent,
+    NSURLCredentialPersistenceSynchronizable
 };
 
 @interface NSURLCredential : NSObject <NSCoding, NSCopying>

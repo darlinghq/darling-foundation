@@ -39,6 +39,10 @@ NSString * const NSExtensionPointName = @"NSExtensionPointName";
 
 @end
 
+// A private class; the SDK's headers do not declare it.
+@interface NSExtension : NSObject
+@end
+
 @implementation NSExtension
 
 - (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector {

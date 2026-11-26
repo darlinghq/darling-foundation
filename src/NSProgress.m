@@ -734,6 +734,26 @@ static void runHandler(void (^handler)(void))
     [self setUserInfoObject: value forKey: NSProgressFileCompletedCountKey];
 }
 
+- (NSProgressFileOperationKind)fileOperationKind
+{
+    return [[self userInfo] objectForKey: NSProgressFileOperationKindKey];
+}
+
+- (void)setFileOperationKind: (NSProgressFileOperationKind)value
+{
+    [self setUserInfoObject: value forKey: NSProgressFileOperationKindKey];
+}
+
+- (NSURL *)fileURL
+{
+    return [[self userInfo] objectForKey: NSProgressFileURLKey];
+}
+
+- (void)setFileURL: (NSURL *)value
+{
+    [self setUserInfoObject: value forKey: NSProgressFileURLKey];
+}
+
 - (void)performAsCurrentWithPendingUnitCount: (int64_t)unitCount usingBlock: (void (^)(void))work
 {
     [self becomeCurrentWithPendingUnitCount: unitCount];

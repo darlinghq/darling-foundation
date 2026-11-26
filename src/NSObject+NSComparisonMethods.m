@@ -24,17 +24,7 @@
 #import <Foundation/NSString.h>
 #import <Foundation/NSException.h>
 
-@interface NSObject (NSComparisonMethods)
-- (BOOL) doesContain: (id) object;
-- (BOOL) isCaseInsensitiveLike: (NSString *)object;
-- (BOOL) isEqualTo: (id) object;
-- (BOOL) isGreaterThan: (id) object;
-- (BOOL) isGreaterThanOrEqualTo: (id) object;
-- (BOOL) isLessThan: (id) object;
-- (BOOL) isLessThanOrEqualTo: (id) object;
-- (BOOL) isLike: (NSString *)object;
-- (BOOL) isNotEqualTo: (id) object;
-@end
+#import <Foundation/NSScriptWhoseTests.h>
 
 @interface NSString (NSComparisonMethods)
 - (BOOL) isCaseInsensitiveLike: (NSString *)object;
