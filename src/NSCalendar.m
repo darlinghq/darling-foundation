@@ -80,6 +80,30 @@ OBJC_PROTOCOL_IMPL_POP
     return result;
 }
 
+// The documentation says nil is returned for components that do not make a date, and gives no boundary. This builds
+// the components and returns what -dateFromComponents: makes of them: nil exactly where that is nil, and its
+// treatment of out-of-range fields otherwise. The open-source reference implementation (the swift-foundation
+// sources vendored in the darling superproject, path src/external/swift-foundation there, Calendar_ObjC.swift) does
+// the same: a DateComponents with these eight fields passed to the calendar's date(from:).
+// The guard silences the diagnostic that comes from this method being declared in the primary class's interface.
+OBJC_PROTOCOL_IMPL_PUSH
+- (NSDate *)dateWithEra:(NSInteger)era year:(NSInteger)year month:(NSInteger)month day:(NSInteger)day hour:(NSInteger)hour minute:(NSInteger)minute second:(NSInteger)second nanosecond:(NSInteger)nanosecond
+{
+    NSDateComponents *components = [[NSDateComponents alloc] init];
+    [components setEra:era];
+    [components setYear:year];
+    [components setMonth:month];
+    [components setDay:day];
+    [components setHour:hour];
+    [components setMinute:minute];
+    [components setSecond:second];
+    [components setNanosecond:nanosecond];
+    NSDate *date = [self dateFromComponents:components];
+    [components release];
+    return date;
+}
+OBJC_PROTOCOL_IMPL_POP
+
 @end
 
 
