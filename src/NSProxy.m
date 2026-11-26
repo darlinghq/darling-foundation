@@ -16,7 +16,7 @@
 #import <objc/message.h>
 
 OBJC_EXPORT bool _objc_rootIsDeallocating(id obj);
-OBJC_EXPORT bool _objc_rootReleaseWasZero(id obj);
+OBJC_EXPORT void _objc_rootRelease(id obj);
 OBJC_EXPORT bool _objc_rootTryRetain(id obj);
 OBJC_EXPORT id _objc_rootAlloc(Class cls);
 OBJC_EXPORT id _objc_rootAllocWithZone(Class cls, NSZone *zone);
@@ -495,12 +495,12 @@ OBJC_EXPORT void _objc_rootDealloc(id obj);
     return _objc_rootAutorelease(self);
 }
 
+// The runtime deallocates the proxy on its last release, so that a class that set up custom
+// dealloc initiation gets -_objc_initiateDealloc (as on macOS 26.7.3) rather than -dealloc.
+// Test: objc4 tests/custom-dealloc-initiation.m.
 - (oneway void)release
 {
-    if (_objc_rootReleaseWasZero(self) == false) {
-        return;
-    }
-    [self dealloc];
+    _objc_rootRelease(self);
 }
 
 - (NSUInteger)retainCount

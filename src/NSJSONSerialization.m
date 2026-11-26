@@ -10,6 +10,7 @@
 #import <Foundation/NSData.h>
 #import <Foundation/NSDecimalNumber.h>
 #import <Foundation/NSDictionary.h>
+#import <Foundation/FoundationErrors.h>
 #import <Foundation/NSError.h>
 #import <Foundation/NSNull.h>
 #import <Foundation/NSStream.h>
@@ -52,15 +53,8 @@
 
     if (isString || isNumber || isNull)
     {
-        if (depth == 1 && frags)
-        {
-            return YES;
-        }
-        else if (depth == 0)
-        {
-            return NO;
-        }
-        return YES;
+        // At the top level, only with fragments allowed.
+        return depth != 1 || frags;
     }
     else if (isArray)
     {
@@ -237,7 +231,7 @@ static inline BOOL skipWhitespace(_NSJSONReader *reader, unichar **buffer) {
     while (is_utf8_whitespace(data)) {
         if (!incrementBuffer(&data)) {
             success = NO;
-            [reader setError:[NSError errorWithDomain:NSCocoaErrorDomain code:-1 userInfo:@{
+            [reader setError:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:@{
                 NSLocalizedDescriptionKey: @"unexpected end of document"
             }]];
             break;
@@ -522,34 +516,34 @@ static inline void handleParseFailure(_NSJSONReader *reader, JSONError failure) 
         case JSONErrorEOF:
             // "{\"foo\" : \"bar\""
             // "[1,2" (improper terminator)
-            [reader setError:[NSError errorWithDomain:NSCocoaErrorDomain code:-1 userInfo:@{
+            [reader setError:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:@{
                 NSLocalizedDescriptionKey: @"unexpected end of document"
             }]];
             break;
         case JSONErrorMalformedDictionary:
             // "{\"foo\" \"bar\"" (improper separator)
-            [reader setError:[NSError errorWithDomain:NSCocoaErrorDomain code:-1 userInfo:@{
+            [reader setError:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:@{
                 NSLocalizedDescriptionKey: @"unable to parse dictionary"
             }]];
             break;
         case JSONErrorMalformedArray:
             // "[1 2" (improper separator)
-            [reader setError:[NSError errorWithDomain:NSCocoaErrorDomain code:-1 userInfo:@{
+            [reader setError:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:@{
                 NSLocalizedDescriptionKey: @"unable to parse array"
             }]];
             break;
         case JSONErrorMalformedStringEscaping:
-            [reader setError:[NSError errorWithDomain:NSCocoaErrorDomain code:-1 userInfo:@{
+            [reader setError:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:@{
                 NSLocalizedDescriptionKey: @"unable to parse string; invalid escaping"
             }]];
             break;
         case JSONErrorUnterminatedString:
-            [reader setError:[NSError errorWithDomain:NSCocoaErrorDomain code:-1 userInfo:@{
+            [reader setError:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:@{
                 NSLocalizedDescriptionKey: @"unterminated string literal"
             }]];
             break;
         case JSONErrorCatastrophic:
-            [reader setError:[NSError errorWithDomain:NSCocoaErrorDomain code:-1 userInfo:@{
+            [reader setError:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:@{
                 NSLocalizedDescriptionKey: @"unable to parse document; out of memory"
             }]];
             break;
@@ -655,7 +649,7 @@ static inline NSUInteger parseEscape(_NSJSONReader *reader, unichar **buffer, un
                 }
                 else if (is_surrogate_trail(c))
                 {
-                    [reader setError:[NSError errorWithDomain:NSCocoaErrorDomain code:-1 userInfo:@{
+                    [reader setError:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:@{
                         NSLocalizedDescriptionKey: @"illegal surrogate code point"
                     }]];
                     return 0;
@@ -805,7 +799,7 @@ static inline NSNumber *parseNumber(_NSJSONReader *reader, unichar **buffer, NSJ
                     mantissa += **buffer - '0';
                     break;
                 } else {
-                    [reader setError:[NSError errorWithDomain:NSCocoaErrorDomain code:-1 userInfo:@{
+                    [reader setError:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:@{
                         NSLocalizedDescriptionKey: @"unable to parse number"
                     }]];
                     return nil;
@@ -824,7 +818,7 @@ static inline NSNumber *parseNumber(_NSJSONReader *reader, unichar **buffer, NSJ
                 // FALL THROUGH!
             case JSONNumberPhaseExponentPlusMinus:
                 if (!('0' <= **buffer && **buffer <= '9')) {
-                    [reader setError:[NSError errorWithDomain:NSCocoaErrorDomain code:-1 userInfo:@{
+                    [reader setError:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:@{
                         NSLocalizedDescriptionKey: @"unable to parse number"
                     }]];
                     return nil;
@@ -881,7 +875,7 @@ static inline NSNumber *parseNumber(_NSJSONReader *reader, unichar **buffer, NSJ
 
 
             default:
-                [reader setError:[NSError errorWithDomain:NSCocoaErrorDomain code:-1 userInfo:@{
+                [reader setError:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:@{
                     NSLocalizedDescriptionKey: @"unhandle number transition; likely invalid number"
                 }]];
                 return nil;
@@ -932,7 +926,7 @@ static inline NSNumber *parseBoolean(_NSJSONReader *reader, unichar **buffer, NS
         return @NO;
     }
 
-    [reader setError:[NSError errorWithDomain:NSCocoaErrorDomain code:-1 userInfo:@{
+    [reader setError:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:@{
         NSLocalizedDescriptionKey: @"unable to parse boolean"
     }]];
     return nil;
@@ -948,7 +942,7 @@ static inline NSNull *parseNull(_NSJSONReader *reader, unichar **buffer, NSJSONR
         return [NSNull null];
     }
 
-    [reader setError:[NSError errorWithDomain:NSCocoaErrorDomain code:-1 userInfo:@{
+    [reader setError:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:@{
         NSLocalizedDescriptionKey: @"unable to parse null element"
     }]];
     return nil;
@@ -1013,11 +1007,34 @@ static inline id parseObject(_NSJSONReader *reader, unichar **buffer, NSJSONRead
                 *jsonData != '[' &&
                 *jsonData != '{')
             {
-                [self setError:[NSError errorWithDomain:NSCocoaErrorDomain code:-1 userInfo:@{
+                [self setError:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:@{
                     NSLocalizedDescriptionKey: @"expected object or array when NSJSONReadingAllowFragments is not set"
                 }]];
             }
             jsonObject = parseObject(self, &jsonData, opts, 0);
+            if (jsonObject == nil)
+            {
+                if ([self error] == nil)
+                {
+                    [self setError:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:@{
+                        NSLocalizedDescriptionKey: @"unexpected end of document"
+                    }]];
+                }
+                break;
+            }
+            // Only whitespace may follow the top-level value.
+            while (*jsonData != '\0' && is_utf8_whitespace(jsonData))
+            {
+                jsonData++;
+            }
+            if (*jsonData != '\0')
+            {
+                [jsonObject release];
+                jsonObject = nil;
+                [self setError:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:@{
+                    NSLocalizedDescriptionKey: @"garbage at end of document"
+                }]];
+            }
 
         } while (0);
     }
@@ -1195,7 +1212,7 @@ static inline BOOL writeNumber(_NSJSONWriter *writer, NSNumber *object, NSJSONWr
 }
 
 static inline BOOL writeObject(_NSJSONWriter *writer, id object, NSJSONWritingOptions opts, NSUInteger depth) {
-    BOOL allowFragments = (opts & NSJSONReadingAllowFragments) != 0;
+    BOOL allowFragments = (opts & NSJSONWritingFragmentsAllowed) != 0;
     if (![_NSJSONReader validForJSON:object depth:depth + 1 allowFragments:allowFragments]) {
         // TODO populate error here
         return NO;
@@ -1283,6 +1300,15 @@ static inline BOOL writeObject(_NSJSONWriter *writer, id object, NSJSONWritingOp
 
 @end
 
+// Writing an object that would not give valid JSON raises, as documented.
+static void raiseIfInvalidForWriting(id obj, NSJSONWritingOptions opt)
+{
+    if (![_NSJSONReader validForJSON:obj depth:1 allowFragments:(opt & NSJSONWritingFragmentsAllowed) != 0])
+    {
+        [NSException raise:NSInvalidArgumentException format:@"Invalid type in JSON write"];
+    }
+}
+
 @implementation NSJSONSerialization
 
 + (BOOL)isValidJSONObject:(id)obj
@@ -1297,6 +1323,7 @@ static inline BOOL writeObject(_NSJSONWriter *writer, id object, NSJSONWritingOp
         [NSException raise:NSInvalidArgumentException format:@"object parameter is nil"];
         return nil;
     }
+    raiseIfInvalidForWriting(obj, opt);
     _NSJSONWriter *writer = [[_NSJSONWriter alloc] init];
     NSData *data = [writer dataWithRootObject:obj options:opt error:error];
     [writer release];
@@ -1327,6 +1354,7 @@ static inline BOOL writeObject(_NSJSONWriter *writer, id object, NSJSONWritingOp
         [NSException raise:NSInvalidArgumentException format:@"stream must be open before usage"];
         return 0;
     }
+    raiseIfInvalidForWriting(obj, opt);
     _NSJSONWriter *writer = [[_NSJSONWriter alloc] init];
     NSInteger written = [writer writeRootObject:obj toStream:stream options:opt error:error];
     [writer release];

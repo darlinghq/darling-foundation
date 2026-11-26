@@ -40,12 +40,78 @@ CF_PRIVATE
     return [[[NSAutoLocale alloc] _init] autorelease];
 }
 
+// The NSExtendedLocale properties are documented as the values of the matching
+// -objectForKey: keys, so they go through it and work for every NSLocale subclass.
 - (NSString *) languageCode {
     return [self objectForKey: NSLocaleLanguageCode];
 }
 
 - (NSString *)countryCode {
     return [self objectForKey: NSLocaleCountryCode];
+}
+
+- (NSString *)regionCode {
+    return [self objectForKey: NSLocaleCountryCode];
+}
+
+- (NSString *)scriptCode {
+    return [self objectForKey: NSLocaleScriptCode];
+}
+
+- (NSString *)variantCode {
+    return [self objectForKey: NSLocaleVariantCode];
+}
+
+- (NSCharacterSet *)exemplarCharacterSet {
+    return [self objectForKey: NSLocaleExemplarCharacterSet];
+}
+
+- (NSString *)calendarIdentifier {
+    return [[self objectForKey: NSLocaleCalendar] calendarIdentifier];
+}
+
+- (NSString *)collationIdentifier {
+    return [self objectForKey: NSLocaleCollationIdentifier];
+}
+
+- (BOOL)usesMetricSystem {
+    return [[self objectForKey: NSLocaleUsesMetricSystem] boolValue];
+}
+
+- (NSString *)decimalSeparator {
+    return [self objectForKey: NSLocaleDecimalSeparator];
+}
+
+- (NSString *)groupingSeparator {
+    return [self objectForKey: NSLocaleGroupingSeparator];
+}
+
+- (NSString *)currencySymbol {
+    return [self objectForKey: NSLocaleCurrencySymbol];
+}
+
+- (NSString *)currencyCode {
+    return [self objectForKey: NSLocaleCurrencyCode];
+}
+
+- (NSString *)collatorIdentifier {
+    return [self objectForKey: NSLocaleCollatorIdentifier];
+}
+
+- (NSString *)quotationBeginDelimiter {
+    return [self objectForKey: NSLocaleQuotationBeginDelimiterKey];
+}
+
+- (NSString *)quotationEndDelimiter {
+    return [self objectForKey: NSLocaleQuotationEndDelimiterKey];
+}
+
+- (NSString *)alternateQuotationBeginDelimiter {
+    return [self objectForKey: NSLocaleAlternateQuotationBeginDelimiterKey];
+}
+
+- (NSString *)alternateQuotationEndDelimiter {
+    return [self objectForKey: NSLocaleAlternateQuotationEndDelimiterKey];
 }
 
 - (NSString *)languageIdentifier {

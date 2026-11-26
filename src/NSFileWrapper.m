@@ -189,6 +189,9 @@ static NSError* fileWrapperReadError(NSURL* url, NSString* path, NSError* cause)
 
 @implementation NSFileWrapper
 
+// Not implemented yet; the property must not be synthesized.
+@dynamic serializedRepresentation;
+
 + (id) alloc
 {
 	static NSFileWrapper* sharedInstance = nil;

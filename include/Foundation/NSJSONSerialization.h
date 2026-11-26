@@ -5,12 +5,14 @@
 typedef NS_OPTIONS(NSUInteger, NSJSONReadingOptions) {
     NSJSONReadingMutableContainers = (1UL << 0),
     NSJSONReadingMutableLeaves     = (1UL << 1),
-    NSJSONReadingAllowFragments    = (1UL << 2)
+    NSJSONReadingFragmentsAllowed  = (1UL << 2),
+    NSJSONReadingAllowFragments    = NSJSONReadingFragmentsAllowed
 };
 
 typedef NS_OPTIONS(NSUInteger, NSJSONWritingOptions) {
     NSJSONWritingPrettyPrinted = (1UL << 0),
-    NSJSONWritingSortedKeys = (1UL << 1), // TODO: figure out the actual value
+    NSJSONWritingSortedKeys = (1UL << 1),
+    NSJSONWritingFragmentsAllowed = (1UL << 2),
 };
 
 @interface NSJSONSerialization : NSObject
