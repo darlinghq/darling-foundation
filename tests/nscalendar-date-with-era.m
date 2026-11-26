@@ -5,7 +5,7 @@
 // reference implementation (the swift-foundation sources vendored in the darling superproject, path
 // src/external/swift-foundation there; Calendar_ObjC.swift) hands the eight values to
 // the calendar's date-from-components method, so the checks here use dates that are valid and leave the boundary
-// (month 13, April 31, hour 24) untested; era 0 meaning the era before the common era is a GUESS. The method also has to
+// (month 13, April 31, hour 24) untested; era 0 meaning the era before the common era was observed on macOS 26.7.3 (black-box run of this file, tier 2). The method also has to
 // be there on the calendar that +autoupdatingCurrentCalendar returns (a private subclass), which is the receiver an
 // application is likely to have. Sub-millisecond precision is not checked: the calendar machinery underneath takes the
 // nanosecond in whole milliseconds.
@@ -68,7 +68,7 @@ int main(void)
         // The time zone of the calendar decides the instant; midnight in New York (UTC-5 in January) is five hours later.
         report("the calendar's time zone is used", near(make(ny, 1, 2001, 1, 1, 0, 0, 0, 0), 18000));
 
-        // GUESS: era 0 is the era before the common era in the Gregorian calendar, which the components of the result show.
+        // OBSERVED on macOS 26.7.3: era 0 is the era before the common era in the Gregorian calendar, which the components of the result show.
         NSDate *bce = make(utc, 0, 5, 3, 7, 0, 0, 0, 0);
         NSDateComponents *p = bce ? [utc components:NSCalendarUnitEra | NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay fromDate:bce] : nil;
         report("era 0 year 5 March 7 reads back as the same era, year, month and day",
