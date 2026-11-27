@@ -247,14 +247,14 @@ static UBool enumerateFindProgressCallback(const void *context, int64_t matchInd
     UErrorCode error = U_ZERO_ERROR;
     uregex_setText(regexp, text, len, &error);
     matchBlock match = ^UBool(int32_t matchIndex) {
-        UBool shouldStop = FALSE;
+        BOOL shouldStop = FALSE;
         NSTextCheckingResult *result = nil;
         NSMatchingFlags flags = 0;
         block(result, flags, &shouldStop);
         return (UBool)!shouldStop;
     };
     findProgressBlock findProgress = ^UBool(int64_t matchIndex) {
-        UBool shouldStop = TRUE;
+        BOOL shouldStop = TRUE;
         NSMatchingFlags flags = NSMatchingProgress;
         NSTextCheckingResult *result = nil;
         block(result, flags, &shouldStop);
