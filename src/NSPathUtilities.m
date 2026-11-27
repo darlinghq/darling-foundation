@@ -470,27 +470,30 @@ NSArray *NSSearchPathForDirectoriesInDomains(NSSearchPathDirectory directory, NS
         searchPaths = [[NSMutableDictionary alloc] init];
     });
     NSUInteger key = directory | (domainMask << 8) | (expandTilde ? (1 << 7) : 0);
-    NSArray *paths = searchPaths[@(key)];
-    if (paths == nil)
+    NSArray *paths = nil;
+    @synchronized(searchPaths)
     {
-        NSMutableArray *items = [[NSMutableArray alloc] init];
-        NSSearchPathEnumerationState state = NSStartSearchPathEnumeration(directory, domainMask);
-        uint8_t path[PATH_MAX];
-        while ((state = NSGetNextSearchPathEnumeration(state, path)))
+        paths = [searchPaths[@(key)] retain];
+        if (paths == nil)
         {
-            if (expandTilde && path[0] == PATH_HOME)
+            NSMutableArray *items = [[NSMutableArray alloc] init];
+            NSSearchPathEnumerationState state = NSStartSearchPathEnumeration(directory, domainMask);
+            uint8_t path[PATH_MAX];
+            while ((state = NSGetNextSearchPathEnumeration(state, path)))
             {
-                [items addObject:[NSHomeDirectory() stringByAppendingPathComponent:[NSString stringWithUTF8String:&path[1]]]];
+                if (expandTilde && path[0] == PATH_HOME)
+                {
+                    [items addObject:[NSHomeDirectory() stringByAppendingPathComponent:[NSString stringWithUTF8String:&path[1]]]];
+                }
+                else
+                {
+                    [items addObject:[NSString stringWithUTF8String:path]];
+                }
             }
-            else
-            {
-                [items addObject:[NSString stringWithUTF8String:path]];
-            }
+            paths = [items copy];
+            [items release];
+            searchPaths[@(key)] = paths;
         }
-        paths = [items copy];
-        [items release];
-        searchPaths[@(key)] = paths;
-        [paths release];
     }
-    return paths; // cached
+    return [paths autorelease]; // cached
 }
