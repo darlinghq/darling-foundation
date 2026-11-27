@@ -182,6 +182,8 @@ static CFHashCode NSTypeInfoHash(NSValueTypeInfo *type)
 
 @implementation NSPlaceholderValue
 
+SINGLETON_RR()
+
 + (BOOL)supportsSecureCoding
 {
     return YES;
