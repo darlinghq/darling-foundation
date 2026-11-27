@@ -43,7 +43,7 @@ NSString * const NSMetadataUbiquitousItemIsUploadedKey = @"NSMetadataUbiquitousI
 NSString * const NSMetadataUbiquitousItemIsUploadingKey = @"NSMetadataUbiquitousItemIsUploadingKey";
 NSString * const NSMetadataUbiquitousItemPercentDownloadedKey = @"NSMetadataUbiquitousItemPercentDownloadedKey";
 NSString * const NSMetadataUbiquitousItemPercentUploadedKey = @"NSMetadataUbiquitousItemPercentUploadedKey";
-/* Rung 6 guess: opaque constants matching the existing NSMetadataUbiquitousItem* keys. */
+/* String values as observed on macOS 26.7.3 (the constants are opaque to callers). */
 NSString * const NSMetadataUbiquitousItemDownloadingStatusKey = @"NSMetadataUbiquitousItemDownloadingStatusKey";
 NSString * const NSMetadataUbiquitousItemDownloadingStatusNotDownloaded = @"NSMetadataUbiquitousItemDownloadingStatusNotDownloaded";
 NSString * const NSMetadataUbiquitousItemDownloadingStatusDownloaded = @"NSMetadataUbiquitousItemDownloadingStatusDownloaded";

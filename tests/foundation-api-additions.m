@@ -159,10 +159,11 @@ static void testMetadataScopes(void)
 	expect([NSMetadataQueryNetworkScope isEqualToString:@"kMDQueryScopeNetwork"], "network scope value");
 	expect([NSMetadataQueryIndexedLocalComputerScope isEqualToString:@"kMDQueryScopeComputerIndexed"], "indexed local computer scope value");
 	expect([NSMetadataQueryIndexedNetworkScope isEqualToString:@"kMDQueryScopeNetworkIndexed"], "indexed network scope value");
-	expect([NSMetadataUbiquitousItemDownloadingStatusKey isKindOfClass:[NSString class]] && [NSMetadataUbiquitousItemDownloadingStatusKey length] > 0, "downloading status key");
-	expect([NSMetadataUbiquitousItemDownloadingStatusNotDownloaded isKindOfClass:[NSString class]] && [NSMetadataUbiquitousItemDownloadingStatusNotDownloaded length] > 0, "not downloaded status");
-	expect([NSMetadataUbiquitousItemDownloadingStatusDownloaded isKindOfClass:[NSString class]] && [NSMetadataUbiquitousItemDownloadingStatusDownloaded length] > 0, "downloaded status");
-	expect([NSMetadataUbiquitousItemDownloadingStatusCurrent isKindOfClass:[NSString class]] && [NSMetadataUbiquitousItemDownloadingStatusCurrent length] > 0, "current status");
+	// Values observed on macOS 26.7.3 (black-box: the strings the constants hold)
+	expect([NSMetadataUbiquitousItemDownloadingStatusKey isEqualToString:@"NSMetadataUbiquitousItemDownloadingStatusKey"], "downloading status key value");
+	expect([NSMetadataUbiquitousItemDownloadingStatusNotDownloaded isEqualToString:@"NSMetadataUbiquitousItemDownloadingStatusNotDownloaded"], "not downloaded status value");
+	expect([NSMetadataUbiquitousItemDownloadingStatusDownloaded isEqualToString:@"NSMetadataUbiquitousItemDownloadingStatusDownloaded"], "downloaded status value");
+	expect([NSMetadataUbiquitousItemDownloadingStatusCurrent isEqualToString:@"NSMetadataUbiquitousItemDownloadingStatusCurrent"], "current status value");
 	NSSet *statuses = [NSSet setWithObjects:
 		NSMetadataUbiquitousItemDownloadingStatusNotDownloaded,
 		NSMetadataUbiquitousItemDownloadingStatusDownloaded,
