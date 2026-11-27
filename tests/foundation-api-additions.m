@@ -159,6 +159,17 @@ static void testMetadataScopes(void)
 	expect([NSMetadataQueryNetworkScope isEqualToString:@"kMDQueryScopeNetwork"], "network scope value");
 	expect([NSMetadataQueryIndexedLocalComputerScope isEqualToString:@"kMDQueryScopeComputerIndexed"], "indexed local computer scope value");
 	expect([NSMetadataQueryIndexedNetworkScope isEqualToString:@"kMDQueryScopeNetworkIndexed"], "indexed network scope value");
+	// Values observed on macOS 26.7.3 (black-box: the strings the constants hold)
+	expect([NSMetadataUbiquitousItemDownloadingStatusKey isEqualToString:@"NSMetadataUbiquitousItemDownloadingStatusKey"], "downloading status key value");
+	expect([NSMetadataUbiquitousItemDownloadingStatusNotDownloaded isEqualToString:@"NSMetadataUbiquitousItemDownloadingStatusNotDownloaded"], "not downloaded status value");
+	expect([NSMetadataUbiquitousItemDownloadingStatusDownloaded isEqualToString:@"NSMetadataUbiquitousItemDownloadingStatusDownloaded"], "downloaded status value");
+	expect([NSMetadataUbiquitousItemDownloadingStatusCurrent isEqualToString:@"NSMetadataUbiquitousItemDownloadingStatusCurrent"], "current status value");
+	NSSet *statuses = [NSSet setWithObjects:
+		NSMetadataUbiquitousItemDownloadingStatusNotDownloaded,
+		NSMetadataUbiquitousItemDownloadingStatusDownloaded,
+		NSMetadataUbiquitousItemDownloadingStatusCurrent,
+		nil];
+	expect([statuses count] == 3, "downloading status values are distinct");
 }
 
 int main(void)
