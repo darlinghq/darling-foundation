@@ -15,19 +15,42 @@
 #
 # Only the domain org.darlinghq.defaultstest (also its -currentHost
 # variant) and files under a temporary directory are written; all are
-# removed at the end.
+# removed at the end. The test owns that domain and also reads all domains
+# (defaults find), so two runs on the same preferences store, such as
+# parallel test passes in one container, would disturb each other: a run
+# waits until a concurrent one has finished.
 
 DEFAULTS=${DEFAULTS:-defaults}
 D=org.darlinghq.defaultstest
 # Never written, so it does not exist.
 M=org.darlinghq.defaultstest.missing
+LOCK=${TMPDIR:-/tmp}/defaults-cli.lock
 T=$(mktemp -d "${TMPDIR:-/tmp}/defaults-cli.XXXXXX") || exit 2
 TR=$(cd "$T" && pwd -P)
+
+# Serialize with other runs: the lock is a directory holding the process id
+# of its owner, and a lock whose owner has died is taken over.
+waited=0
+until mkdir "$LOCK" 2>/dev/null; do
+	owner=$(cat "$LOCK/pid" 2>/dev/null)
+	if [ -n "$owner" ] && ! kill -0 "$owner" 2>/dev/null; then
+		rm -rf "$LOCK"
+		continue
+	fi
+	if [ "$waited" -ge 300 ]; then
+		echo "defaults-cli: another run holds $LOCK" >&2
+		rm -rf "$T"
+		exit 2
+	fi
+	sleep 1
+	waited=$((waited + 1))
+done
+echo $$ >"$LOCK/pid"
 
 cleanup() {
 	"$DEFAULTS" delete "$D" >/dev/null 2>&1
 	"$DEFAULTS" -currentHost delete "$D" >/dev/null 2>&1
-	rm -rf "$T"
+	rm -rf "$T" "$LOCK"
 }
 
 # Hide the scratch directory and $HOME from the transcript.
